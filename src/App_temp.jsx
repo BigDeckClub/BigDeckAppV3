@@ -823,7 +823,8 @@ export default function MTGInventoryTracker() {
         
         <div className="mb-6 border-b border-gray-200">
           <nav className="flex gap-8">
-            {['inventory', 'decklists', 'containers', 'analytics'].map(tab => (
+            {['inventory', 'decklists',
+'containers', 'analytics'].map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
