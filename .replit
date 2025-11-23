@@ -10,9 +10,10 @@ channel = "stable-24_05"
 language = "nodejs"
 
 [deployment]
-deploymentTarget = "static"
+deploymentTarget = "autoscale"
 build = ["npm", "run", "build"]
 publicDir = "dist"
+run = ["npm", "run"]
 
 [[ports]]
 localPort = 5000
