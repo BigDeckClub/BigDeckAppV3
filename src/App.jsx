@@ -98,31 +98,45 @@ export default function MTGInventoryTracker() {
     try {
       const lines = decklist.split('\n');
       let tcgTotal = 0, ckTotal = 0;
+      console.log('DEBUG: Starting price calculation for decklist with', lines.length, 'lines');
       
       for (const line of lines) {
         const match = line.match(/^(\d+)\s+(.+)$/);
-        if (!match) continue;
+        if (!match) {
+          console.log('DEBUG: Line does not match pattern:', line);
+          continue;
+        }
         
         const quantity = parseInt(match[1]);
         const cardName = match[2].trim();
+        console.log(`DEBUG: Processing card "${cardName}" with quantity ${quantity}`);
         
         try {
-          const response = await fetch(`https://api.scryfall.com/cards/search?q=!"${cardName}"&unique=prints&order=released`);
+          const url = `https://api.scryfall.com/cards/search?q=!"${cardName}"&unique=prints&order=released`;
+          console.log('DEBUG: Fetching from:', url);
+          const response = await fetch(url);
           if (response.ok) {
             const data = await response.json();
+            console.log(`DEBUG: Scryfall response for "${cardName}":`, data);
             if (data.data && data.data.length > 0) {
               const card = data.data[0];
               const tcgPrice = parseFloat(card.prices?.usd) || 0;
               const ckPrice = parseFloat(card.prices?.usd_foil) || 0;
+              console.log(`DEBUG: Card prices - TCG: ${tcgPrice}, CK: ${ckPrice}`);
               tcgTotal += tcgPrice * quantity;
               ckTotal += ckPrice * quantity;
+            } else {
+              console.log(`DEBUG: No cards found for "${cardName}"`);
             }
+          } else {
+            console.log(`DEBUG: Scryfall API error for "${cardName}": ${response.status}`);
           }
         } catch (err) {
           console.error('Error fetching price for', cardName, err);
         }
       }
       
+      console.log(`DEBUG: Final totals - TCG: ${tcgTotal}, CK: ${ckTotal}`);
       return { tcg: tcgTotal, ck: ckTotal };
     } catch (err) {
       console.error('Error calculating decklist prices:', err);
