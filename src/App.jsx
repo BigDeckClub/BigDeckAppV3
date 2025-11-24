@@ -791,7 +791,7 @@ export default function MTGInventoryTracker() {
                 ).map(([cardName, items]) => {
                   const totalQty = items.reduce((sum, item) => sum + item.quantity, 0);
                   const avgPrice = items.reduce((sum, item) => sum + (parseFloat(item.purchase_price) || 0) * item.quantity, 0) / totalQty;
-                  const totalContainers = items.reduce((max, item) => Math.max(max, item.containers_count || 0), 0);
+                  const totalInContainers = items.reduce((sum, item) => sum + (item.in_containers_qty || 0), 0);
                   const isExpanded = expandedCards[cardName];
                   
                   return (
@@ -816,7 +816,7 @@ export default function MTGInventoryTracker() {
                         </div>
                         <div className="bg-purple-900 bg-opacity-50 rounded p-2 border border-purple-500">
                           <div className="text-xs text-gray-400">In Containers</div>
-                          <div className="text-xl font-bold text-pink-300">{totalContainers}</div>
+                          <div className="text-xl font-bold text-pink-300">{totalInContainers}</div>
                         </div>
                       </div>
                       
@@ -893,7 +893,7 @@ export default function MTGInventoryTracker() {
                                       <div className="text-sm font-semibold text-purple-200">{item.set_name}</div>
                                       <div className="grid grid-cols-3 gap-3 mt-1 text-xs">
                                         <div><span className="text-gray-400">Qty:</span> <span className="text-white font-semibold">{item.quantity}</span></div>
-                                        <div><span className="text-gray-400">Containers:</span> <span className="text-white font-semibold">{item.containers_count || 0}</span></div>
+                                        <div><span className="text-gray-400">In Containers:</span> <span className="text-white font-semibold">{item.in_containers_qty || 0}</span></div>
                                         <div><span className="text-gray-400">Set:</span> <span className="text-white font-semibold">{item.set}</span></div>
                                       </div>
                                     </div>

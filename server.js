@@ -42,7 +42,7 @@ app.get('/api/inventory', async (req, res) => {
     const result = await pool.query(`
       SELECT 
         inv.*,
-        COUNT(DISTINCT ci.container_id) as containers_count
+        COALESCE(SUM(ci.quantity_used), 0) as in_containers_qty
       FROM inventory inv
       LEFT JOIN container_items ci ON inv.id = ci.inventory_id
       GROUP BY inv.id
