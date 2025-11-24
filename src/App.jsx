@@ -68,7 +68,7 @@ export default function MTGInventoryTracker() {
           } catch (error) {
             console.error('Error fetching prices from backend:', error);
           }
-          const fallback = { tcg: 'N/A' };
+          const fallback = { tcg: 'N/A', ck: 'N/A' };
           setPrices(fallback);
           setPriceCache(prev => ({...prev, [cacheKey]: fallback}));
         };
@@ -80,6 +80,7 @@ export default function MTGInventoryTracker() {
     return (
       <div className="text-xs whitespace-nowrap">
         <div className="text-purple-300">TCG: {prices.tcg}</div>
+        <div className="text-blue-300">CK: {prices.ck}</div>
       </div>
     );
   };

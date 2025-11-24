@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
 import pkg from 'pg';
+import { load } from 'cheerio';
 
 const { Pool } = pkg;
 const app = express();
@@ -208,11 +209,68 @@ app.post('/api/settings/:key', async (req, res) => {
   }
 });
 
-// Card prices endpoint - TCG pricing from Scryfall
+// Helper function to fetch Card Kingdom price from MTGGoldfish widget
+async function fetchCardKingdomPriceFromWidget(cardName, setCode) {
+  try {
+    // Build the card_id parameter that MTGGoldfish widget expects
+    // Format: "Card Name [SET_CODE]"
+    const cardId = `${cardName} [${setCode.toUpperCase()}]`;
+    
+    console.log('🔍 Fetching CK price from MTGGoldfish widget, card_id:', cardId);
+    
+    const widgetUrl = `https://www.mtggoldfish.com/cardkingdom/price_widget?card_id=${encodeURIComponent(cardId)}`;
+    
+    const response = await fetch(widgetUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      }
+    });
+    
+    if (!response.ok) {
+      console.log('⚠️ Widget returned status:', response.status);
+      return 'N/A';
+    }
+    
+    const html = await response.text();
+    const $ = load(html);
+    
+    // Parse the price widget HTML table
+    // Look for the first price in the table (usually lowest condition at top)
+    let price = 'N/A';
+    
+    $('table.cardkingdomPriceWidget-table tr').each((i, row) => {
+      if (i === 0) return; // skip header row
+      
+      const cells = $(row).find('td');
+      if (cells.length >= 4) {
+        // Last cell usually contains the price
+        const priceCell = $(cells[cells.length - 1]).text().trim();
+        const priceMatch = priceCell.match(/\$[\d.]+/);
+        
+        if (priceMatch) {
+          price = priceMatch[0];
+          console.log('✅ Found CK price:', price, 'Condition:', $(cells[1]).text().trim());
+          return false; // break
+        }
+      }
+    });
+    
+    return price;
+  } catch (error) {
+    console.log('❌ Widget scrape failed:', error.message);
+    return 'N/A';
+  }
+}
+
+// Card prices endpoint with both TCG and Card Kingdom
 app.get('/api/prices/:cardName/:setCode', async (req, res) => {
   const { cardName, setCode } = req.params;
   
+  console.log('=== PRICE REQUEST ===');
+  console.log('Card:', cardName, 'Set:', setCode);
+  
   try {
+    // Fetch TCG price from Scryfall
     const scryfallUrl = `https://api.scryfall.com/cards/search?q=!"${cardName}"+set:${setCode.toLowerCase()}&unique=prints`;
     
     const scryfallResponse = await fetch(scryfallUrl);
@@ -229,11 +287,17 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
       }
     }
     
-    res.json({ tcg: tcgPrice });
+    console.log('TCG Price:', tcgPrice);
+    
+    // Fetch Card Kingdom price from MTGGoldfish widget
+    const ckPrice = await fetchCardKingdomPriceFromWidget(cardName, setCode);
+    console.log('CK Price:', ckPrice);
+    
+    res.json({ tcg: tcgPrice, ck: ckPrice });
     
   } catch (error) {
     console.error('Error fetching price:', error.message);
-    res.json({ tcg: 'N/A', error: error.message });
+    res.json({ tcg: 'N/A', ck: 'N/A', error: error.message });
   }
 });
 
