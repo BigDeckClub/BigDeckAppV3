@@ -84,7 +84,6 @@ export default function MTGInventoryTracker() {
     
     if (!prices) return <div className="text-xs text-slate-500">Loading...</div>;
     return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
       <div className="text-xs whitespace-nowrap">
         <div className="text-teal-300">TCG: {prices.tcg}</div>
         <div className="text-cyan-300">CK: {prices.ck}</div>
@@ -126,12 +125,10 @@ export default function MTGInventoryTracker() {
       };
       
       loadPrices();
-      return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">) => { isMounted = false; };
+      return () => { isMounted = false; };
     }, [cardName, setCode]);
     
     return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
       <div className="text-xs flex gap-4 mt-2">
         <div className="text-teal-300">TCG: {tcgPrice}</div>
         <div className="text-cyan-300">CK: {ckPrice}</div>
