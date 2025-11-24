@@ -1319,7 +1319,6 @@ export default function MTGInventoryTracker() {
                       </div>
                     )}
                   </div>
-                    </div>
                   );
                 })}
                 {containers.length === 0 && <p className="text-gray-400">No containers yet.</p>}
