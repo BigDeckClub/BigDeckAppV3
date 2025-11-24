@@ -59,6 +59,7 @@ export default function MTGInventoryTracker() {
   const [editingDecklistCard, setEditingDecklistCard] = useState(null);
   const [editCardSet, setEditCardSet] = useState('');
   const [editCardAvailableSets, setEditCardAvailableSets] = useState([]);
+  const [lastUsedSets, setLastUsedSets] = useState({});
 
   // Price display component
   const MarketPrices = ({ cardName, setCode }) => {
@@ -690,7 +691,41 @@ export default function MTGInventoryTracker() {
     }
   };
 
+  const validateDecklistCards = (preview) => {
+    const missingCards = [];
+    const unverifiedCards = [];
+    
+    preview.forEach(card => {
+      if (!card.found) {
+        missingCards.push(card.cardName);
+      } else {
+        // Check if card exists in inventory
+        const inInventory = inventory.some(inv => inv.name.toLowerCase() === card.cardName.toLowerCase());
+        if (!inInventory) {
+          unverifiedCards.push(card.cardName);
+        }
+      }
+    });
+    
+    if (missingCards.length > 0) {
+      alert(`These cards were not found in Scryfall:\n${missingCards.join('\n')}`);
+      return false;
+    }
+    
+    if (unverifiedCards.length > 0) {
+      const msg = `These cards are not in your inventory (no matching set available):\n${unverifiedCards.join('\n')}\n\nPlease add these cards to your inventory first.`;
+      alert(msg);
+      return false;
+    }
+    
+    return true;
+  };
+
   const confirmAndAddDecklist = async () => {
+    if (!deckPreview || !validateDecklistCards(deckPreview)) {
+      return;
+    }
+    
     try {
       const response = await fetch(`${API_BASE}/decklists`, {
         method: 'POST',
@@ -1421,22 +1456,59 @@ export default function MTGInventoryTracker() {
                                       <div className="flex gap-2">
                                         <button
                                           onClick={() => {
-                                            // Update the decklist with new set code
-                                            const newDecklistText = deck.decklist.split('\n').map((line, lineIdx) => {
-                                              if (lineIdx === idx) {
-                                                return line.replace(cardSet, editCardSet);
-                                              }
-                                              return line;
-                                            }).join('\n');
+                                            if (!editCardSet) {
+                                              alert('Please select a set');
+                                              return;
+                                            }
                                             
-                                            fetch(`${API_BASE}/decklists/${deck.id}`, {
-                                              method: 'PUT',
-                                              headers: { 'Content-Type': 'application/json' },
-                                              body: JSON.stringify({ decklist: newDecklistText })
-                                            }).then(() => {
-                                              loadDecklists();
-                                              setEditingDecklistCard(null);
-                                            });
+                                            // Get the original lines (with quantities)
+                                            const lines = deck.decklist.split('\n').filter(line => line.trim());
+                                            let cardCount = 0;
+                                            let lineToUpdate = -1;
+                                            
+                                            // Find which line this card corresponds to
+                                            for (let i = 0; i < lines.length; i++) {
+                                              const match = lines[i].match(/^(\d+)\s+(.+)$/);
+                                              if (match) {
+                                                const cardName = match[2].trim();
+                                                const quantity = parseInt(match[1]);
+                                                
+                                                if (cardName.toLowerCase() === card.name.toLowerCase()) {
+                                                  if (cardCount === idx) {
+                                                    lineToUpdate = i;
+                                                    break;
+                                                  }
+                                                  cardCount += quantity - 1;
+                                                  if (cardCount >= idx) {
+                                                    lineToUpdate = i;
+                                                    break;
+                                                  }
+                                                  cardCount++;
+                                                }
+                                              }
+                                            }
+                                            
+                                            if (lineToUpdate !== -1) {
+                                              const newLines = lines.map((line, i) => {
+                                                if (i === lineToUpdate) {
+                                                  return line.replace(cardSet, editCardSet);
+                                                }
+                                                return line;
+                                              });
+                                              
+                                              const newDecklistText = newLines.join('\n');
+                                              
+                                              fetch(`${API_BASE}/decklists/${deck.id}`, {
+                                                method: 'PUT',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({ decklist: newDecklistText })
+                                              }).then(() => {
+                                                // Track last used set
+                                                setLastUsedSets(prev => ({...prev, [card.name.toLowerCase()]: editCardSet}));
+                                                loadDecklists();
+                                                setEditingDecklistCard(null);
+                                              });
+                                            }
                                           }}
                                           className="flex-1 bg-green-600 hover:bg-green-700 rounded px-2 py-1 text-xs font-semibold"
                                         >
@@ -1459,8 +1531,9 @@ export default function MTGInventoryTracker() {
                                         </div>
                                         <button
                                           onClick={async () => {
+                                            const lastSet = lastUsedSets[card.name.toLowerCase()];
                                             setEditingDecklistCard({ idx, deckId: deck.id });
-                                            setEditCardSet(cardSet);
+                                            setEditCardSet(lastSet || cardSet);
                                             
                                             // Fetch available sets for this card
                                             try {
@@ -1471,8 +1544,15 @@ export default function MTGInventoryTracker() {
                                                   code: card.set.toUpperCase(),
                                                   name: card.set_name
                                                 })) || [];
-                                                // Remove duplicates
+                                                // Remove duplicates, sort with last used first
                                                 const uniqueSets = Array.from(new Map(sets.map(s => [s.code, s])).values());
+                                                if (lastSet) {
+                                                  uniqueSets.sort((a, b) => {
+                                                    if (a.code === lastSet) return -1;
+                                                    if (b.code === lastSet) return 1;
+                                                    return 0;
+                                                  });
+                                                }
                                                 setEditCardAvailableSets(uniqueSets);
                                               }
                                             } catch (error) {
