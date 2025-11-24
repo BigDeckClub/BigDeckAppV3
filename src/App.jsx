@@ -101,10 +101,12 @@ export default function MTGInventoryTracker() {
 
   // Individual card price component for decklist views - fetches directly from Scryfall and backend
   const DecklistCardPrice = ({ cardName, setCode }) => {
-    const [tcgPrice, setTcgPrice] = useState(null);
-    const [ckPrice, setCkPrice] = useState(null);
+    const [tcgPrice, setTcgPrice] = useState('N/A');
+    const [ckPrice, setCkPrice] = useState('N/A');
     
     useEffect(() => {
+      let isMounted = true;
+      
       const fetchPrices = async () => {
         // Fetch TCG price from Scryfall
         try {
@@ -112,13 +114,13 @@ export default function MTGInventoryTracker() {
           if (scryfallRes.ok) {
             const scryfallData = await scryfallRes.json();
             const tcg = scryfallData.prices?.usd ? `$${scryfallData.prices.usd}` : 'N/A';
-            setTcgPrice(tcg);
+            if (isMounted) setTcgPrice(tcg);
           } else {
-            setTcgPrice('N/A');
+            if (isMounted) setTcgPrice('N/A');
           }
         } catch (error) {
           console.error('Error fetching TCG price from Scryfall:', error);
-          setTcgPrice('N/A');
+          if (isMounted) setTcgPrice('N/A');
         }
         
         // Fetch CK price from backend (MTG Goldfish widget)
@@ -126,23 +128,27 @@ export default function MTGInventoryTracker() {
           const ckRes = await fetch(`${API_BASE}/prices/${encodeURIComponent(cardName)}/${setCode}`);
           if (ckRes.ok) {
             const ckData = await ckRes.json();
-            setCkPrice(ckData.ck || 'N/A');
+            if (isMounted) setCkPrice(ckData.ck || 'N/A');
           } else {
-            setCkPrice('N/A');
+            if (isMounted) setCkPrice('N/A');
           }
         } catch (error) {
           console.error('Error fetching CK price from backend:', error);
-          setCkPrice('N/A');
+          if (isMounted) setCkPrice('N/A');
         }
       };
       
       fetchPrices();
+      
+      return () => {
+        isMounted = false;
+      };
     }, [cardName, setCode]);
     
     return (
       <div className="text-xs flex gap-4 mt-2">
-        <div className="text-purple-300">TCG: {tcgPrice === null ? 'Loading...' : tcgPrice}</div>
-        <div className="text-blue-300">CK: {ckPrice === null ? 'Loading...' : ckPrice}</div>
+        <div className="text-purple-300">TCG: {tcgPrice}</div>
+        <div className="text-blue-300">CK: {ckPrice}</div>
       </div>
     );
   };
