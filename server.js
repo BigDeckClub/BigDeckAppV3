@@ -60,6 +60,20 @@ app.post('/api/inventory', async (req, res) => {
   }
 });
 
+app.put('/api/inventory/:id', async (req, res) => {
+  try {
+    const { quantity, purchase_price, purchase_date, reorder_type } = req.body;
+    const result = await pool.query(
+      'UPDATE inventory SET quantity = $1, purchase_price = $2, purchase_date = $3, reorder_type = $4 WHERE id = $5 RETURNING *',
+      [quantity, purchase_price, purchase_date, reorder_type, req.params.id]
+    );
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Error updating inventory:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.delete('/api/inventory/:id', async (req, res) => {
   try {
     await pool.query('DELETE FROM inventory WHERE id = $1', [req.params.id]);

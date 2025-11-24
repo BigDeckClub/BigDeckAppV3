@@ -42,6 +42,8 @@ export default function MTGInventoryTracker() {
   const [showSetSelector, setShowSetSelector] = useState(false);
   const [setSelectionData, setSetSelectionData] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [editForm, setEditForm] = useState({});
 
   useEffect(() => {
     loadAllData();
@@ -94,6 +96,38 @@ export default function MTGInventoryTracker() {
       console.error('Error adding inventory item:', error.message, error);
       alert('Error adding card: ' + error.message);
       return false;
+    }
+  };
+
+  const startEditingItem = (item) => {
+    setEditingId(item.id);
+    setEditForm({
+      quantity: item.quantity,
+      purchase_price: item.purchase_price || '',
+      purchase_date: item.purchase_date || '',
+      reorder_type: item.reorder_type || 'normal'
+    });
+  };
+
+  const updateInventoryItem = async (id) => {
+    try {
+      const response = await fetch(`${API_BASE}/inventory/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          quantity: parseInt(editForm.quantity),
+          purchase_price: editForm.purchase_price ? parseFloat(editForm.purchase_price) : null,
+          purchase_date: editForm.purchase_date,
+          reorder_type: editForm.reorder_type
+        })
+      });
+      if (!response.ok) throw new Error('Failed to update card');
+      await loadInventory();
+      setEditingId(null);
+      alert('Card updated successfully!');
+    } catch (error) {
+      console.error('Error updating inventory item:', error);
+      alert('Error updating card: ' + error.message);
     }
   };
 
@@ -585,17 +619,80 @@ export default function MTGInventoryTracker() {
               <div className="grid gap-4">
                 {inventory.map((item) => (
                   <div key={item.id} className="bg-black bg-opacity-50 border border-purple-400 rounded p-4 flex justify-between items-center">
-                    <div className="flex-1">
-                      <div className="font-semibold">{item.name}</div>
-                      <div className="text-sm text-gray-300">Set: {item.set_name}</div>
-                      <div className="text-sm text-gray-300">Quantity: {item.quantity} | Price: ${item.purchase_price || 'N/A'}</div>
-                    </div>
-                    <button
-                      onClick={() => deleteInventoryItem(item.id)}
-                      className="bg-red-600 hover:bg-red-700 rounded px-3 py-2 ml-4"
-                    >
-                      <Trash2 className="w-5 h-5" />
-                    </button>
+                    {editingId === item.id ? (
+                      <div className="flex-1 space-y-3">
+                        <div className="font-semibold">{item.name}</div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <input
+                            type="number"
+                            min="1"
+                            value={editForm.quantity}
+                            onChange={(e) => setEditForm({...editForm, quantity: e.target.value})}
+                            placeholder="Quantity"
+                            className="bg-black bg-opacity-50 border border-purple-400 rounded px-2 py-1 text-white text-sm"
+                          />
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={editForm.purchase_price}
+                            onChange={(e) => setEditForm({...editForm, purchase_price: e.target.value})}
+                            placeholder="Price"
+                            className="bg-black bg-opacity-50 border border-purple-400 rounded px-2 py-1 text-white text-sm"
+                          />
+                          <input
+                            type="date"
+                            value={editForm.purchase_date}
+                            onChange={(e) => setEditForm({...editForm, purchase_date: e.target.value})}
+                            className="bg-black bg-opacity-50 border border-purple-400 rounded px-2 py-1 text-white text-sm"
+                          />
+                          <select
+                            value={editForm.reorder_type}
+                            onChange={(e) => setEditForm({...editForm, reorder_type: e.target.value})}
+                            className="bg-black bg-opacity-50 border border-purple-400 rounded px-2 py-1 text-white text-sm"
+                          >
+                            <option value="normal">Normal</option>
+                            <option value="land">Land</option>
+                            <option value="bulk">Bulk</option>
+                          </select>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => updateInventoryItem(item.id)}
+                            className="flex-1 bg-green-600 hover:bg-green-700 rounded px-3 py-1 text-sm font-semibold"
+                          >
+                            Save
+                          </button>
+                          <button
+                            onClick={() => setEditingId(null)}
+                            className="flex-1 bg-gray-600 hover:bg-gray-700 rounded px-3 py-1 text-sm"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex-1">
+                          <div className="font-semibold">{item.name}</div>
+                          <div className="text-sm text-gray-300">Set: {item.set_name}</div>
+                          <div className="text-sm text-gray-300">Quantity: {item.quantity} | Price: ${item.purchase_price || 'N/A'}</div>
+                        </div>
+                        <div className="flex gap-2 ml-4">
+                          <button
+                            onClick={() => startEditingItem(item)}
+                            className="bg-blue-600 hover:bg-blue-700 rounded px-3 py-2"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => deleteInventoryItem(item.id)}
+                            className="bg-red-600 hover:bg-red-700 rounded px-3 py-2"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        </div>
+                      </>
+                    )}
                   </div>
                 ))}
                 {inventory.length === 0 && <p className="text-gray-400">No cards in inventory yet.</p>}
