@@ -899,7 +899,13 @@ export default function MTGInventoryTracker() {
                                       </div>
                                     </div>
                                     <div className="flex items-center gap-3 ml-4">
-                                      <MarketPrices cardName={item.name} setCode={item.set} priceCache={priceCache} setPriceCache={setPriceCache} />
+                                      <div className="flex flex-col items-center gap-2">
+                                        <MarketPrices cardName={item.name} setCode={item.set} priceCache={priceCache} setPriceCache={setPriceCache} />
+                                        <div className="bg-purple-900 bg-opacity-50 border border-purple-400 rounded px-2 py-1 text-xs">
+                                          <div className="text-gray-400">Avg Cost</div>
+                                          <div className="font-bold text-green-300">${avgPrice.toFixed(2)}</div>
+                                        </div>
+                                      </div>
                                       <div className="flex gap-1">
                                         <button
                                           onClick={() => startEditingItem(item)}
