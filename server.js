@@ -214,105 +214,239 @@ const priceCache = {};
 const CACHE_DURATION = 1000 * 60 * 60; // 1 hour
 
 app.get('/api/prices/:cardName/:setCode', async (req, res) => {
+  const { cardName, setCode } = req.params;
+  
+  console.log('=== PRICE REQUEST RECEIVED ===');
+  console.log('Card Name:', cardName);
+  console.log('Set Code:', setCode);
+  console.log('Timestamp:', new Date().toISOString());
+  
   try {
-    const { cardName, setCode } = req.params;
-    const cacheKey = `${cardName}|${setCode}`;
-    const now = Date.now();
+    // Construct Card Kingdom URL
+    const ckSlug = cardName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    const ckUrl = `https://www.cardkingdom.com/mtg/${ckSlug}`;
     
-    // Check cache
-    if (priceCache[cacheKey] && (now - priceCache[cacheKey].timestamp) < CACHE_DURATION) {
-      return res.json(priceCache[cacheKey].data);
-    }
+    console.log('Card Kingdom URL:', ckUrl);
+    console.log('Attempting fetch...');
     
-    // Fetch TCG price from Scryfall
-    let tcgPrice = 'N/A';
-    try {
-      const scryfallRes = await fetch(`https://api.scryfall.com/cards/search?q=!"${cardName}"+set:${setCode.toLowerCase()}&unique=prints`);
-      if (scryfallRes.ok) {
-        const scryfallData = await scryfallRes.json();
-        if (scryfallData.data && scryfallData.data.length > 0) {
-          const card = scryfallData.data[0];
-          if (card.prices?.usd) {
-            tcgPrice = `$${parseFloat(card.prices.usd).toFixed(2)}`;
+    // Fetch Card Kingdom page
+    const ckResponse = await fetch(ckUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'none',
+        'Cache-Control': 'max-age=0'
+      },
+      redirect: 'follow'
+    });
+    
+    console.log('Fetch completed!');
+    console.log('Status Code:', ckResponse.status);
+    console.log('Status Text:', ckResponse.statusText);
+    console.log('Content-Type:', ckResponse.headers.get('content-type'));
+    console.log('Response OK?:', ckResponse.ok);
+    
+    if (!ckResponse.ok) {
+      console.log('❌ CK Response NOT OK - Status:', ckResponse.status);
+      // Try Scryfall fallback
+      let tcgPrice = 'N/A';
+      try {
+        const scryfallRes = await fetch(`https://api.scryfall.com/cards/search?q=!"${cardName}"+set:${setCode.toLowerCase()}&unique=prints`);
+        if (scryfallRes.ok) {
+          const scryfallData = await scryfallRes.json();
+          if (scryfallData.data && scryfallData.data.length > 0) {
+            const card = scryfallData.data[0];
+            if (card.prices?.usd) {
+              tcgPrice = `$${parseFloat(card.prices.usd).toFixed(2)}`;
+            }
           }
         }
+      } catch (err) {
+        console.error('Error fetching Scryfall prices:', err);
       }
-    } catch (err) {
-      console.error('Error fetching Scryfall prices:', err);
+      return res.json({ ck: 'N/A', tcg: tcgPrice });
     }
     
-    // Fetch Card Kingdom price by scraping their website
-    let ckPrice = 'N/A';
-    try {
-      // Build direct product URL based on card name and set code (lowercase)
-      const productName = cardName.toLowerCase().replace(/\s+/g, '-');
-      const ckProductUrl = `https://www.cardkingdom.com/mtg/${productName.replace(/[^a-z0-9-]/g, '')}`;
+    const html = await ckResponse.text();
+    console.log('HTML received, length:', html.length, 'characters');
+    console.log('First 500 chars of HTML:', html.substring(0, 500));
+    console.log('Does HTML contain "Add to Cart"?', html.includes('Add to Cart'));
+    console.log('Does HTML contain "$"?', html.includes('$'));
+    console.log('Does HTML contain "price"?', html.toLowerCase().includes('price'));
+    
+    // Parse with Cheerio
+    const $ = load(html);
+    console.log('Cheerio loaded successfully');
+    
+    // Try multiple selectors
+    console.log('\n=== SEARCHING FOR PRICES ===');
+    
+    // Method 1: Look for common price containers
+    const priceSelectors = [
+      '.itemAddToCart .stylePrice',
+      '.productDetailPrice',
+      '[class*="price"]',
+      '[id*="price"]',
+      'span.price',
+      'div.price',
+      '.itemAddToCart span',
+      '.product-price',
+      '[data-price]'
+    ];
+    
+    let foundPrices = [];
+    
+    priceSelectors.forEach(selector => {
+      const elements = $(selector);
+      console.log(`Selector "${selector}": found ${elements.length} elements`);
       
-      const ckRes = await fetch(ckProductUrl, {
-        headers: { 
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-          'Accept': 'text/html'
+      elements.each((i, elem) => {
+        const text = $(elem).text().trim();
+        if (text) {
+          console.log(`  [${i}] Text: "${text}"`);
+          foundPrices.push(text);
         }
       });
-      
-      if (ckRes.ok) {
-        const html = await ckRes.text();
-        const $ = load(html);
-        
-        // Look for the main product price - specifically target the price display near product info
-        // Card Kingdom typically shows price in elements like "productPrice", "price-large", or data attributes
-        let priceText = '';
-        
-        // Try to find price in order of specificity
-        let priceElem = $('[data-price-amount]').first();
-        if (priceElem.length && priceElem.attr('data-price-amount')) {
-          priceText = priceElem.attr('data-price-amount');
+    });
+    
+    // Method 2: Search all text nodes for $ signs
+    console.log('\n=== SEARCHING FOR $ PATTERNS ===');
+    const allText = $('body').text();
+    const dollarMatches = allText.match(/\$\d+\.\d{2}/g);
+    console.log('Found $ patterns:', dollarMatches?.slice(0, 10) || 'none');
+    
+    // Method 3: Look for specific Card Kingdom price structure
+    console.log('\n=== CHECKING SPECIFIC CK STRUCTURES ===');
+    
+    // CK often uses this structure
+    const ckPriceElements = $('.itemAddToCart');
+    console.log('Found .itemAddToCart elements:', ckPriceElements.length);
+    
+    ckPriceElements.each((i, elem) => {
+      const html = $(elem).html();
+      const text = $(elem).text();
+      console.log(`\nAddToCart [${i}]:`);
+      console.log('HTML:', html?.substring(0, 200));
+      console.log('Text:', text?.substring(0, 100));
+    });
+    
+    // Method 4: Check for JavaScript-rendered prices
+    console.log('\n=== CHECKING FOR DATA ATTRIBUTES ===');
+    $('[data-price], [data-amount], [data-value]').each((i, elem) => {
+      console.log(`Element [${i}]:`, {
+        tag: elem.name,
+        price: $(elem).attr('data-price'),
+        amount: $(elem).attr('data-amount'),
+        value: $(elem).attr('data-value'),
+        text: $(elem).text().substring(0, 50)
+      });
+    });
+    
+    // Try to parse any found price
+    let ckPrice = 'N/A';
+    
+    // Parse from foundPrices array
+    for (const priceText of foundPrices) {
+      const match = priceText.match(/\$?(\d+\.\d{2})/);
+      if (match) {
+        const price = parseFloat(match[1]);
+        console.log(`Attempting to parse: "${priceText}" -> $${price}`);
+        if (price > 0.50) {
+          ckPrice = price.toFixed(2);
+          console.log('✅ Valid CK price found:', ckPrice);
+          break;
         } else {
-          // Look for price in text content of price-related elements, excluding small elements
-          const potentialPrices = [];
-          $('span, div').each((i, elem) => {
-            const text = $(elem).text().trim();
-            const match = text.match(/^\$[\d.]+$/);
-            if (match && text.length > 3) { // Avoid tiny prices like $0.25
-              const price = parseFloat(text.replace('$', ''));
-              if (price > 0.50) { // Avoid shipping/misc charges
-                potentialPrices.push(price);
-              }
-            }
-          });
-          // Get the highest reasonable price (most likely the product price, not a discount)
-          if (potentialPrices.length > 0) {
-            priceText = '$' + Math.max(...potentialPrices).toFixed(2);
-          }
+          console.log('❌ Price too low:', price);
         }
-        
-        // Final extraction and formatting
-        if (priceText) {
-          const match = priceText.match(/[\d.]+/);
-          if (match && match[0]) {
-            const price = parseFloat(match[0]);
-            if (price >= 0.50) { // Sanity check - prices should be at least $0.50
-              ckPrice = `$${price.toFixed(2)}`;
-              console.log(`Found CK price for ${cardName}: ${ckPrice}`);
-            }
-          }
-        }
-      } else {
-        console.log(`Card Kingdom returned status ${ckRes.status} for ${cardName}`);
       }
-    } catch (err) {
-      console.error('Error fetching Card Kingdom prices:', err.message);
     }
     
-    const priceData = { tcg: tcgPrice, ck: ckPrice, updated: new Date().toISOString() };
+    // If still N/A, try direct text search
+    if (ckPrice === 'N/A' && dollarMatches && dollarMatches.length > 0) {
+      for (const match of dollarMatches) {
+        const price = parseFloat(match.replace('$', ''));
+        if (price > 0.50 && price < 10000) {
+          ckPrice = price.toFixed(2);
+          console.log('✅ Found price from pattern matching:', ckPrice);
+          break;
+        }
+      }
+    }
     
-    // Cache the result
-    priceCache[cacheKey] = { data: priceData, timestamp: now };
+    console.log('\n=== FINAL RESULT ===');
+    console.log('Card Kingdom Price:', ckPrice);
     
-    res.json(priceData);
-  } catch (err) {
-    console.error('Error fetching prices:', err);
-    res.status(500).json({ error: err.message });
+    // Get TCG price from Scryfall
+    console.log('\n=== FETCHING SCRYFALL DATA ===');
+    const scryfallUrl = `https://api.scryfall.com/cards/search?q=!"${cardName}"+set:${setCode.toLowerCase()}&unique=prints`;
+    console.log('Scryfall URL:', scryfallUrl);
+    
+    const scryfallResponse = await fetch(scryfallUrl);
+    console.log('Scryfall Status:', scryfallResponse.status);
+    
+    let tcgPrice = 'N/A';
+    
+    if (scryfallResponse.ok) {
+      const scryfallData = await scryfallResponse.json();
+      if (scryfallData.data && scryfallData.data.length > 0) {
+        tcgPrice = scryfallData.data[0].prices?.usd || 'N/A';
+        if (tcgPrice !== 'N/A') {
+          tcgPrice = `$${tcgPrice}`;
+        }
+      }
+      console.log('TCGPlayer Price:', tcgPrice);
+    } else {
+      console.log('❌ Scryfall fetch failed');
+    }
+    
+    console.log('=== REQUEST COMPLETE ===\n');
+    
+    res.json({ ck: ckPrice, tcg: tcgPrice });
+    
+  } catch (error) {
+    console.error('💥 ERROR IN PRICE ENDPOINT:');
+    console.error('Error name:', error.name);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+    res.json({ ck: 'N/A', tcg: 'N/A', error: error.message });
+  }
+});
+
+// DEBUG ENDPOINT - Remove after testing
+app.get('/api/debug/ck/:cardName', async (req, res) => {
+  const { cardName } = req.params;
+  
+  try {
+    const ckSlug = cardName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    const ckUrl = `https://www.cardkingdom.com/mtg/${ckSlug}`;
+    
+    console.log('DEBUG: Testing URL:', ckUrl);
+    
+    const response = await fetch(ckUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      }
+    });
+    
+    const html = await response.text();
+    
+    res.json({
+      url: ckUrl,
+      status: response.status,
+      htmlLength: html.length,
+      htmlPreview: html.substring(0, 1000),
+      containsDollar: html.includes('$'),
+      containsAddToCart: html.includes('Add to Cart')
+    });
+    
+  } catch (error) {
+    res.json({ error: error.message });
   }
 });
 
