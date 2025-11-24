@@ -791,6 +791,7 @@ export default function MTGInventoryTracker() {
                 ).map(([cardName, items]) => {
                   const totalQty = items.reduce((sum, item) => sum + item.quantity, 0);
                   const avgPrice = items.reduce((sum, item) => sum + (parseFloat(item.purchase_price) || 0) * item.quantity, 0) / totalQty;
+                  const totalContainers = items.reduce((max, item) => Math.max(max, item.containers_count || 0), 0);
                   const isExpanded = expandedCards[cardName];
                   
                   return (
@@ -798,7 +799,7 @@ export default function MTGInventoryTracker() {
                       <div className="flex justify-between items-center cursor-pointer" onClick={() => setExpandedCards({...expandedCards, [cardName]: !isExpanded})}>
                         <div className="flex-1">
                           <div className="font-semibold text-lg">{cardName}</div>
-                          <div className="text-sm text-gray-300">Total: {totalQty} copies | Avg Price: ${avgPrice.toFixed(2)}</div>
+                          <div className="text-sm text-gray-300">Total: {totalQty} copies | Avg Price: ${avgPrice.toFixed(2)} | In {totalContainers} container{totalContainers !== 1 ? 's' : ''}</div>
                         </div>
                         <div className="text-purple-400 ml-4">
                           {isExpanded ? '▼' : '▶'}

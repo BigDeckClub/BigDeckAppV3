@@ -39,7 +39,15 @@ app.get('/api/health', (req, res) => {
 // Inventory endpoints
 app.get('/api/inventory', async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM inventory ORDER BY name');
+    const result = await pool.query(`
+      SELECT 
+        inv.*,
+        COUNT(DISTINCT ci.container_id) as containers_count
+      FROM inventory inv
+      LEFT JOIN container_items ci ON inv.id = ci.inventory_id
+      GROUP BY inv.id
+      ORDER BY inv.name
+    `);
     res.json(result.rows);
   } catch (err) {
     console.error('Error fetching inventory:', err);
