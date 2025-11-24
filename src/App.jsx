@@ -7,24 +7,26 @@ let supabase = null;
 
 const initializeSupabase = () => {
   try {
-    // Try multiple sources for environment variables
-    let supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    let supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
     
-    console.log('Env check - URL:', supabaseUrl ? 'set' : 'not set', 'Key:', supabaseAnonKey ? 'set' : 'not set');
+    console.log('URL type:', typeof supabaseUrl, 'length:', supabaseUrl?.length);
+    console.log('Key type:', typeof supabaseAnonKey, 'length:', supabaseAnonKey?.length);
     
-    if (!supabaseUrl || !supabaseAnonKey) {
-      console.error('Supabase environment variables are not set');
-      console.error('VITE_SUPABASE_URL:', supabaseUrl);
-      console.error('VITE_SUPABASE_ANON_KEY:', supabaseAnonKey);
+    if (!supabaseUrl?.trim() || !supabaseAnonKey?.trim()) {
+      console.error('Missing Supabase credentials');
       return null;
     }
     
-    const client = createClient(supabaseUrl, supabaseAnonKey);
+    const trimmedUrl = supabaseUrl.trim();
+    const trimmedKey = supabaseAnonKey.trim();
+    
+    console.log('Creating client with URL:', trimmedUrl.substring(0, 30) + '...');
+    const client = createClient(trimmedUrl, trimmedKey);
     console.log('Supabase initialized successfully');
     return client;
   } catch (error) {
-    console.error('Failed to initialize Supabase:', error);
+    console.error('Failed to initialize Supabase:', error?.message || error);
     return null;
   }
 };
