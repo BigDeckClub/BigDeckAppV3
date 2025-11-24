@@ -80,7 +80,7 @@ export default function MTGInventoryTracker() {
               return;
             }
           } catch (error) {
-            console.error('Error fetching prices from backend:', error);
+
           }
           const fallback = { tcg: 'N/A', ck: 'N/A' };
           setPrices(fallback);
@@ -136,7 +136,7 @@ export default function MTGInventoryTracker() {
             tcg = scryfallData.prices?.usd ? `$${scryfallData.prices.usd}` : 'N/A';
           }
         } catch (error) {
-          console.error('Error fetching TCG price from Scryfall:', error);
+
         }
         
         // Fetch CK price from backend (MTG Goldfish widget)
@@ -147,7 +147,7 @@ export default function MTGInventoryTracker() {
             ck = ckData.ck || 'N/A';
           }
         } catch (error) {
-          console.error('Error fetching CK price from backend:', error);
+
         }
         
         // Cache the result with timestamp
@@ -261,20 +261,20 @@ export default function MTGInventoryTracker() {
                 }
               }
             } catch (err) {
-              console.error('Error fetching from Scryfall for', cardName, err);
+
             }
           }
           
           tcgTotal += tcgPrice * quantity;
           ckTotal += ckPrice * quantity;
         } catch (err) {
-          console.error('Error fetching price for', cardName, err);
+
         }
       }
       
       return { tcg: tcgTotal, ck: ckTotal };
     } catch (err) {
-      console.error('Error calculating decklist prices:', err);
+
       return { tcg: 0, ck: 0 };
     }
   };
@@ -304,7 +304,7 @@ export default function MTGInventoryTracker() {
           ckTotal += ckPrice * quantity;
         }
       } catch (err) {
-        console.error('Error fetching price for', item.name, err);
+
       }
     }
     
@@ -358,7 +358,7 @@ export default function MTGInventoryTracker() {
         setAllSets(sets);
       }
     } catch (error) {
-      console.error('Error loading sets from Scryfall:', error);
+
     }
   };
 
@@ -377,7 +377,7 @@ export default function MTGInventoryTracker() {
 
   const loadInventory = async () => {
     try {
-      console.log('Fetching inventory from:', `${API_BASE}/inventory`);
+
       const response = await fetch(`${API_BASE}/inventory`);
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -385,19 +385,19 @@ export default function MTGInventoryTracker() {
       const data = await response.json();
       setInventory(data || []);
     } catch (error) {
-      console.error('Error loading inventory:', error.message, error);
+
     }
   };
 
   const addInventoryItem = async (item) => {
     try {
-      console.log('Adding inventory item to:', `${API_BASE}/inventory`, 'Body:', item);
+
       const response = await fetch(`${API_BASE}/inventory`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(item)
       });
-      console.log('Response status:', response.status, response.statusText);
+
       if (!response.ok) {
         const errorText = await response.text();
         throw new Error(`HTTP ${response.status}: ${errorText}`);
@@ -407,7 +407,7 @@ export default function MTGInventoryTracker() {
       setTimeout(() => setSuccessMessage(''), 3000);
       return true;
     } catch (error) {
-      console.error('Error adding inventory item:', error.message, error);
+
       setSuccessMessage('Error adding card: ' + error.message);
       setTimeout(() => setSuccessMessage(''), 3000);
       return false;
@@ -441,7 +441,7 @@ export default function MTGInventoryTracker() {
       setEditingId(null);
       alert('Card updated successfully!');
     } catch (error) {
-      console.error('Error updating inventory item:', error);
+
       alert('Error updating card: ' + error.message);
     }
   };
@@ -451,7 +451,7 @@ export default function MTGInventoryTracker() {
       await fetch(`${API_BASE}/inventory/${id}`, { method: 'DELETE' });
       await loadInventory();
     } catch (error) {
-      console.error('Error deleting inventory item:', error);
+
     }
   };
 
@@ -475,7 +475,7 @@ export default function MTGInventoryTracker() {
         }
       }
     } catch (error) {
-      console.error('Error fetching prices:', error);
+
     }
     const fallback = { tcgplayer: 'N/A', cardkingdom: 'N/A' };
     setPriceCache(prev => ({...prev, [cacheKey]: fallback}));
@@ -553,7 +553,7 @@ export default function MTGInventoryTracker() {
       
       setSearchResults(prioritized.slice(0, 10));
     } catch (error) {
-      console.error('Error searching Scryfall:', error);
+
       setSearchResults([]);
     } finally {
       setIsSearching(false);
@@ -571,7 +571,7 @@ export default function MTGInventoryTracker() {
   const selectCard = async (card) => {
     // Fetch ALL printings of this card from Scryfall
     try {
-      console.log('Fetching all printings of:', card.name);
+
       const response = await fetch(`https://api.scryfall.com/cards/search?q=!"${card.name}"&unique=prints&order=released`);
       if (response.ok) {
         const data = await response.json();
@@ -583,7 +583,7 @@ export default function MTGInventoryTracker() {
           type: c.type_line,
           imageUrl: c.image_uris?.normal || null
         }));
-        console.log('Found', allVersions.length, 'printings of', card.name);
+
         setSelectedCardSets(allVersions);
       } else {
         // Fallback to search results if API call fails
@@ -591,7 +591,7 @@ export default function MTGInventoryTracker() {
         setSelectedCardSets(cardVersions.length > 0 ? cardVersions : [card]);
       }
     } catch (error) {
-      console.error('Error fetching card printings:', error);
+
       const cardVersions = searchResults.filter(c => c.name === card.name);
       setSelectedCardSets(cardVersions.length > 0 ? cardVersions : [card]);
     }
@@ -645,7 +645,7 @@ export default function MTGInventoryTracker() {
       const data = await response.json();
       setDecklists(data || []);
     } catch (error) {
-      console.error('Error loading decklists:', error);
+
     }
   };
 
@@ -717,7 +717,7 @@ export default function MTGInventoryTracker() {
 
       setDeckPreview(previewCards);
     } catch (error) {
-      console.error('Error parsing decklist:', error);
+
       alert('Error parsing decklist: ' + error.message);
     } finally {
       setDeckPreviewLoading(false);
@@ -759,7 +759,7 @@ export default function MTGInventoryTracker() {
       setDeckPreview(null);
       await loadDecklists();
     } catch (error) {
-      console.error('Error adding decklist:', error);
+
       alert('Error adding decklist: ' + error.message);
     }
   };
@@ -769,7 +769,7 @@ export default function MTGInventoryTracker() {
       await fetch(`${API_BASE}/decklists/${id}`, { method: 'DELETE' });
       await loadDecklists();
     } catch (error) {
-      console.error('Error deleting decklist:', error);
+
     }
   };
 
@@ -788,14 +788,14 @@ export default function MTGInventoryTracker() {
             const itemsData = await itemResponse.json();
             itemsMap[container.id] = itemsData || [];
           } catch (err) {
-            console.error(`Error loading items for container ${container.id}:`, err);
+
             itemsMap[container.id] = [];
           }
         }
         setContainerItems(itemsMap);
       }
     } catch (error) {
-      console.error('Error loading containers:', error);
+
     }
   };
 
@@ -810,7 +810,7 @@ export default function MTGInventoryTracker() {
           [containerId]: data || []
         }));
       } catch (error) {
-        console.error('Error loading container items:', error);
+
       }
     }
 
@@ -838,7 +838,7 @@ export default function MTGInventoryTracker() {
       setShowContainerForm(false);
       await loadContainers();
     } catch (error) {
-      console.error('Error adding container:', error);
+
     }
   };
 
@@ -847,7 +847,7 @@ export default function MTGInventoryTracker() {
       await fetch(`${API_BASE}/containers/${id}`, { method: 'DELETE' });
       await loadContainers();
     } catch (error) {
-      console.error('Error deleting container:', error);
+
     }
   };
 
@@ -857,7 +857,7 @@ export default function MTGInventoryTracker() {
       const data = await response.json();
       setSales(data || []);
     } catch (error) {
-      console.error('Error loading sales:', error);
+
       setSales([]);
     }
   };
@@ -917,7 +917,7 @@ export default function MTGInventoryTracker() {
       setSalePrice('');
       alert('Container sold! Sale recorded.');
     } catch (error) {
-      console.error('Error recording sale:', error);
+
       alert('Error recording sale: ' + error.message);
     }
   };
@@ -930,7 +930,7 @@ export default function MTGInventoryTracker() {
         setReorderSettings(data);
       }
     } catch (error) {
-      console.error('Error loading reorder settings:', error);
+
     }
   };
 
@@ -943,7 +943,7 @@ export default function MTGInventoryTracker() {
       });
       setShowSettings(false);
     } catch (error) {
-      console.error('Error saving reorder settings:', error);
+
     }
   };
 
@@ -965,7 +965,6 @@ export default function MTGInventoryTracker() {
   const calculateContainerPrices = (containerId) => {
     return containerPriceCache[containerId] || { tcg: 0, ck: 0 };
   };
-
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 to-black text-white">
@@ -1525,7 +1524,7 @@ export default function MTGInventoryTracker() {
                                                 loadDecklists();
                                                 setEditingDecklistCard(null);
                                               }).catch(err => {
-                                                console.error('Error updating decklist:', err);
+
                                                 alert('Failed to update decklist');
                                               });
                                             } else {
@@ -1578,7 +1577,7 @@ export default function MTGInventoryTracker() {
                                                 setEditCardAvailableSets(uniqueSets);
                                               }
                                             } catch (error) {
-                                              console.error('Error fetching card sets:', error);
+
                                               setEditCardAvailableSets([]);
                                             }
                                           }}

@@ -25,9 +25,9 @@ const pool = new Pool({
 // Test connection on startup
 pool.query('SELECT NOW()', (err, res) => {
   if (err) {
-    console.error('Database connection error:', err);
+
   } else {
-    console.log('Database connected successfully at', res.rows[0].now);
+
   }
 });
 
@@ -50,7 +50,7 @@ app.get('/api/inventory', async (req, res) => {
     `);
     res.json(result.rows);
   } catch (err) {
-    console.error('Error fetching inventory:', err);
+
     res.status(500).json({ error: err.message });
   }
 });
@@ -64,7 +64,7 @@ app.post('/api/inventory', async (req, res) => {
     );
     res.json(result.rows[0]);
   } catch (err) {
-    console.error('Error adding inventory:', err);
+
     res.status(500).json({ error: err.message });
   }
 });
@@ -78,7 +78,7 @@ app.put('/api/inventory/:id', async (req, res) => {
     );
     res.json(result.rows[0]);
   } catch (err) {
-    console.error('Error updating inventory:', err);
+
     res.status(500).json({ error: err.message });
   }
 });
@@ -88,7 +88,7 @@ app.delete('/api/inventory/:id', async (req, res) => {
     await pool.query('DELETE FROM inventory WHERE id = $1', [req.params.id]);
     res.json({ success: true });
   } catch (err) {
-    console.error('Error deleting inventory:', err);
+
     res.status(500).json({ error: err.message });
   }
 });
@@ -99,7 +99,7 @@ app.get('/api/decklists', async (req, res) => {
     const result = await pool.query('SELECT * FROM decklists ORDER BY name');
     res.json(result.rows);
   } catch (err) {
-    console.error('Error fetching decklists:', err);
+
     res.status(500).json({ error: err.message });
   }
 });
@@ -113,7 +113,7 @@ app.post('/api/decklists', async (req, res) => {
     );
     res.json(result.rows[0]);
   } catch (err) {
-    console.error('Error adding decklist:', err);
+
     res.status(500).json({ error: err.message });
   }
 });
@@ -127,7 +127,7 @@ app.put('/api/decklists/:id', async (req, res) => {
     );
     res.json(result.rows[0]);
   } catch (err) {
-    console.error('Error updating decklist:', err);
+
     res.status(500).json({ error: err.message });
   }
 });
@@ -137,7 +137,7 @@ app.delete('/api/decklists/:id', async (req, res) => {
     await pool.query('DELETE FROM decklists WHERE id = $1', [req.params.id]);
     res.json({ success: true });
   } catch (err) {
-    console.error('Error deleting decklist:', err);
+
     res.status(500).json({ error: err.message });
   }
 });
@@ -148,7 +148,7 @@ app.get('/api/containers', async (req, res) => {
     const result = await pool.query('SELECT * FROM containers ORDER BY name');
     res.json(result.rows);
   } catch (err) {
-    console.error('Error fetching containers:', err);
+
     res.status(500).json({ error: err.message });
   }
 });
@@ -221,7 +221,7 @@ app.post('/api/containers', async (req, res) => {
       }
       
       if (remainingQty > 0) {
-        console.warn(`Warning: Could not find enough inventory for ${neededQty}x ${cardName}, needed ${remainingQty} more`);
+
       }
     }
     
@@ -229,7 +229,7 @@ app.post('/api/containers', async (req, res) => {
     res.json(container);
   } catch (err) {
     await client.query('ROLLBACK');
-    console.error('Error adding container:', err);
+
     res.status(500).json({ error: err.message });
   } finally {
     client.release();
@@ -250,7 +250,7 @@ app.get('/api/containers/:id/items', async (req, res) => {
     );
     res.json(result.rows);
   } catch (err) {
-    console.error('Error fetching container items:', err);
+
     res.status(500).json({ error: err.message });
   }
 });
@@ -284,7 +284,7 @@ app.delete('/api/containers/:id', async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     await client.query('ROLLBACK');
-    console.error('Error deleting container:', err);
+
     res.status(500).json({ error: err.message });
   } finally {
     client.release();
@@ -297,7 +297,7 @@ app.get('/api/sales', async (req, res) => {
     const result = await pool.query('SELECT * FROM sales ORDER BY sold_date DESC');
     res.json(result.rows);
   } catch (err) {
-    console.error('Error fetching sales:', err);
+
     res.status(500).json({ error: err.message });
   }
 });
@@ -311,7 +311,7 @@ app.post('/api/sales', async (req, res) => {
     );
     res.json(result.rows[0]);
   } catch (err) {
-    console.error('Error recording sale:', err);
+
     res.status(500).json({ error: err.message });
   }
 });
@@ -326,7 +326,7 @@ app.get('/api/settings/:key', async (req, res) => {
       res.json(null);
     }
   } catch (err) {
-    console.error('Error fetching settings:', err);
+
     res.status(500).json({ error: err.message });
   }
 });
@@ -340,7 +340,7 @@ app.post('/api/settings/:key', async (req, res) => {
     );
     res.json(result.rows[0]);
   } catch (err) {
-    console.error('Error saving settings:', err);
+
     res.status(500).json({ error: err.message });
   }
 });
@@ -349,7 +349,6 @@ app.post('/api/settings/:key', async (req, res) => {
 async function fetchCardKingdomPriceFromWidget(cardName, setCode) {
   try {
     const cardId = `${cardName} [${setCode.toUpperCase()}]`;
-    console.log('🔍 Fetching CK price from widget, card_id:', cardId);
     
     const widgetUrl = `https://www.mtggoldfish.com/cardkingdom/price_widget?card_id=${encodeURIComponent(cardId)}`;
     
@@ -360,7 +359,7 @@ async function fetchCardKingdomPriceFromWidget(cardName, setCode) {
     });
     
     if (!response.ok) {
-      console.log('⚠️ Widget status:', response.status);
+
       return 'N/A';
     }
     
@@ -376,7 +375,7 @@ async function fetchCardKingdomPriceFromWidget(cardName, setCode) {
     
     if (nmMatch && nmMatch[2]) {
       price = nmMatch[2];
-      console.log('✅ Found CK NM price:', price);
+
     } else {
       // Fallback: Look for any row with quantity > 0 and extract its price
       const tables = $('table');
@@ -403,13 +402,13 @@ async function fetchCardKingdomPriceFromWidget(cardName, setCode) {
       
       if (bestPrice !== 'N/A') {
         price = bestPrice;
-        console.log('✅ Found CK price (highest qty):', price);
+
       }
     }
     
     return price;
   } catch (error) {
-    console.log('❌ Widget parse failed:', error.message);
+
     return 'N/A';
   }
 }
@@ -417,9 +416,6 @@ async function fetchCardKingdomPriceFromWidget(cardName, setCode) {
 // Card prices endpoint with both TCG and Card Kingdom
 app.get('/api/prices/:cardName/:setCode', async (req, res) => {
   const { cardName, setCode } = req.params;
-  
-  console.log('=== PRICE REQUEST ===');
-  console.log('Card:', cardName, 'Set:', setCode);
   
   try {
     let tcgPrice = 'N/A';
@@ -450,11 +446,10 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
         const tcgNum = parseFloat(tcgPrice.replace('$', ''));
         const estimatedCk = (tcgNum * 1.15).toFixed(2);
         ckPrice = `$${estimatedCk}`;
-        console.log(`📊 Estimated CK price from TCG: ${ckPrice}`);
+
       }
     } else {
       // Primary set failed, try alternative set codes
-      console.log(`⚠️ Set ${setCode} not found for ${cardName}, trying alternative sets...`);
       
       // Try to find a printing with CK pricing available
       const printingsUrl = `https://api.scryfall.com/cards/search?q=!"${cardName}"&unique=prints&order=released`;
@@ -475,7 +470,7 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
               if (card.prices?.usd) {
                 tcgPrice = `$${card.prices.usd}`;
               }
-              console.log(`✅ Found alternative set: ${altSetCode} with CK price: ${ckPrice}`);
+
               break;
             }
           }
@@ -487,26 +482,22 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
               const tcgNum = parseFloat(tcgPrice.replace('$', ''));
               const estimatedCk = (tcgNum * 1.15).toFixed(2);
               ckPrice = `$${estimatedCk}`;
-              console.log(`📊 Estimated CK price from TCG: ${ckPrice}`);
+
             }
           }
         }
       }
     }
     
-    console.log('TCG Price:', tcgPrice);
-    console.log('CK Price:', ckPrice);
-    
     res.json({ tcg: tcgPrice, ck: ckPrice });
     
   } catch (error) {
-    console.error('Error fetching price:', error.message);
+
     res.json({ tcg: 'N/A', ck: 'N/A', error: error.message });
   }
 });
 
-
 const PORT = 3000;
 app.listen(PORT, () => {
-  console.log(`Backend server running on port ${PORT}`);
+
 });
