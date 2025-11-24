@@ -282,22 +282,7 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
     
     if (!ckResponse.ok) {
       console.log('❌ CK Response NOT OK - Status:', ckResponse.status);
-      // Try Scryfall fallback
-      let tcgPrice = 'N/A';
-      try {
-        const scryfallRes = await fetch(`https://api.scryfall.com/cards/search?q=!"${cardName}"+set:${setCode.toLowerCase()}&unique=prints`);
-        if (scryfallRes.ok) {
-          const scryfallData = await scryfallRes.json();
-          if (scryfallData.data && scryfallData.data.length > 0) {
-            const card = scryfallData.data[0];
-            if (card.prices?.usd) {
-              tcgPrice = `$${parseFloat(card.prices.usd).toFixed(2)}`;
-            }
-          }
-        }
-      } catch (err) {
-        console.error('Error fetching Scryfall prices:', err);
-      }
+      // Return with tcgPrice we already fetched from Scryfall
       return res.json({ ck: 'N/A', tcg: tcgPrice });
     }
     
@@ -409,30 +394,7 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
     
     console.log('\n=== FINAL RESULT ===');
     console.log('Card Kingdom Price:', ckPrice);
-    
-    // Get TCG price from Scryfall
-    console.log('\n=== FETCHING SCRYFALL DATA ===');
-    const scryfallUrl = `https://api.scryfall.com/cards/search?q=!"${cardName}"+set:${setCode.toLowerCase()}&unique=prints`;
-    console.log('Scryfall URL:', scryfallUrl);
-    
-    const scryfallResponse = await fetch(scryfallUrl);
-    console.log('Scryfall Status:', scryfallResponse.status);
-    
-    let tcgPrice = 'N/A';
-    
-    if (scryfallResponse.ok) {
-      const scryfallData = await scryfallResponse.json();
-      if (scryfallData.data && scryfallData.data.length > 0) {
-        tcgPrice = scryfallData.data[0].prices?.usd || 'N/A';
-        if (tcgPrice !== 'N/A') {
-          tcgPrice = `$${tcgPrice}`;
-        }
-      }
-      console.log('TCGPlayer Price:', tcgPrice);
-    } else {
-      console.log('❌ Scryfall fetch failed');
-    }
-    
+    console.log('TCGPlayer Price:', tcgPrice);
     console.log('=== REQUEST COMPLETE ===\n');
     
     res.json({ ck: ckPrice, tcg: tcgPrice });
