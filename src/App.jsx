@@ -430,7 +430,7 @@ export default function MTGInventoryTracker() {
         );
         
         if (inventoryCard && inventoryCard.purchase_price) {
-          totalCost += quantity * inventoryCard.purchase_price;
+          totalCost += quantity * (parseFloat(inventoryCard.purchase_price) || 0);
         }
       }
     });
@@ -694,7 +694,7 @@ export default function MTGInventoryTracker() {
                   }, {})
                 ).map(([cardName, items]) => {
                   const totalQty = items.reduce((sum, item) => sum + item.quantity, 0);
-                  const avgPrice = items.reduce((sum, item) => sum + (item.purchase_price || 0) * item.quantity, 0) / totalQty;
+                  const avgPrice = items.reduce((sum, item) => sum + (parseFloat(item.purchase_price) || 0) * item.quantity, 0) / totalQty;
                   const isExpanded = expandedCards[cardName];
                   
                   return (
@@ -1062,7 +1062,7 @@ export default function MTGInventoryTracker() {
                 </div>
                 <div className="bg-black bg-opacity-50 border border-purple-400 rounded p-4">
                   <div className="text-gray-400 text-sm">Total Value</div>
-                  <div className="text-2xl font-bold text-purple-300">${inventory.reduce((sum, card) => sum + (card.purchase_price || 0), 0).toFixed(2)}</div>
+                  <div className="text-2xl font-bold text-purple-300">${inventory.reduce((sum, card) => sum + (parseFloat(card.purchase_price) || 0), 0).toFixed(2)}</div>
                 </div>
               </div>
             </div>
