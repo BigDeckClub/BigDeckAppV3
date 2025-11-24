@@ -51,6 +51,7 @@ export default function MTGInventoryTracker() {
   const [expandedContainers, setExpandedContainers] = useState({});
   const [containerItems, setContainerItems] = useState({});
   const [defaultSearchSet, setDefaultSearchSet] = useState('');
+  const [allSets, setAllSets] = useState([]);
 
   // Price display component
   const MarketPrices = ({ cardName, setCode }) => {
@@ -92,9 +93,28 @@ export default function MTGInventoryTracker() {
 
   useEffect(() => {
     loadAllData();
+    loadAllSets();
     const saved = localStorage.getItem('defaultSearchSet');
     if (saved) setDefaultSearchSet(saved);
   }, []);
+
+  const loadAllSets = async () => {
+    try {
+      const response = await fetch('https://api.scryfall.com/sets');
+      if (response.ok) {
+        const data = await response.json();
+        const sets = data.data
+          .map(set => ({
+            code: set.code.toUpperCase(),
+            name: set.name
+          }))
+          .sort((a, b) => a.code.localeCompare(b.code));
+        setAllSets(sets);
+      }
+    } catch (error) {
+      console.error('Error loading sets from Scryfall:', error);
+    }
+  };
 
   const loadAllData = async () => {
     setIsLoading(true);
@@ -735,8 +755,8 @@ export default function MTGInventoryTracker() {
                     className="w-full bg-black bg-opacity-50 border border-purple-400 rounded px-4 py-2 text-white mb-4"
                   >
                     <option value="">Show most recent from inventory</option>
-                    {[...new Set(inventory.map(item => item.set))].sort().map(set => (
-                      <option key={set} value={set}>{set}</option>
+                    {allSets.map(set => (
+                      <option key={set.code} value={set.code}>{set.name} ({set.code})</option>
                     ))}
                   </select>
                 </div>
