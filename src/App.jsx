@@ -1042,7 +1042,7 @@ export default function MTGInventoryTracker() {
                 New Decklist
               </button>
             ) : (
-              <div className="card p-6 border rounded-lg p-6 border border-slate-700 hover:border-teal-500">
+              <div className="card p-6">
                 <h2 className="text-xl font-bold mb-4">Create Decklist</h2>
                 <input
                   type="text"
@@ -1098,7 +1098,7 @@ export default function MTGInventoryTracker() {
               </div>
             )}
 
-            <div className="card p-6 border rounded-lg p-6 border border-slate-700 hover:border-teal-500">
+            <div className="card p-6">
               <h2 className="text-xl font-bold mb-4">Decklists ({decklists.length})</h2>
               <div className="grid gap-4">
                 {decklists.map((deck) => {
@@ -1309,7 +1309,7 @@ export default function MTGInventoryTracker() {
                 New Container
               </button>
             ) : (
-              <div className="card p-6 border rounded-lg p-6 border border-slate-700 hover:border-teal-500">
+              <div className="card p-6">
                 <h2 className="text-xl font-bold mb-4">Create Container</h2>
                 <input
                   type="text"
@@ -1345,7 +1345,7 @@ export default function MTGInventoryTracker() {
               </div>
             )}
 
-            <div className="card p-6 border rounded-lg p-6 border border-slate-700 hover:border-teal-500">
+            <div className="card p-6">
               <h2 className="text-xl font-bold mb-4">Containers ({containers.length})</h2>
               <div className="space-y-3">
                 {containers.map((container) => {
@@ -1425,7 +1425,7 @@ export default function MTGInventoryTracker() {
         {/* Sales Tab */}
         {activeTab === 'sales' && !isLoading && (
           <div className="space-y-6">
-            <div className="card p-6 border rounded-lg p-6 border border-slate-700 hover:border-teal-500">
+            <div className="card p-6">
               <h2 className="text-xl font-bold mb-4 flex items-center">
                 <DollarSign className="w-5 h-5 mr-2 text-emerald-400" />
                 Sales Analytics
@@ -1498,7 +1498,7 @@ export default function MTGInventoryTracker() {
         {/* Analytics Tab */}
         {activeTab === 'analytics' && !isLoading && (
           <div className="space-y-6">
-            <div className="card p-6 border rounded-lg p-6 border border-slate-700 hover:border-teal-500">
+            <div className="card p-6">
               <h2 className="text-xl font-bold mb-4 flex items-center">
                 <AlertCircle className="w-5 h-5 mr-2 text-red-300" />
                 Reorder Alerts
@@ -1518,7 +1518,7 @@ export default function MTGInventoryTracker() {
               </div>
             </div>
 
-            <div className="card p-6 border rounded-lg p-6 border border-slate-700 hover:border-teal-500">
+            <div className="card p-6">
               <h2 className="text-xl font-bold mb-4">Inventory Statistics</h2>
               <div className="grid grid-cols-3 gap-4">
                 <div className="bg-slate-800 border border-slate-600 rounded p-4">
@@ -1536,7 +1536,7 @@ export default function MTGInventoryTracker() {
               </div>
             </div>
 
-            <div className="card p-6 border rounded-lg p-6 border border-slate-700 hover:border-teal-500">
+            <div className="card p-6">
               <h2 className="text-xl font-bold mb-4">Recent Activity</h2>
               <div className="grid gap-2">
                 {usageHistory.length > 0 ? (
