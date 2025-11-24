@@ -50,6 +50,7 @@ export default function MTGInventoryTracker() {
   const [priceCache, setPriceCache] = useState({});
   const [expandedContainers, setExpandedContainers] = useState({});
   const [containerItems, setContainerItems] = useState({});
+  const [defaultSearchSet, setDefaultSearchSet] = useState('');
 
   // Price display component
   const MarketPrices = ({ cardName, setCode }) => {
@@ -91,6 +92,8 @@ export default function MTGInventoryTracker() {
 
   useEffect(() => {
     loadAllData();
+    const saved = localStorage.getItem('defaultSearchSet');
+    if (saved) setDefaultSearchSet(saved);
   }, []);
 
   const loadAllData = async () => {
@@ -232,11 +235,9 @@ export default function MTGInventoryTracker() {
         imageUrl: card.image_uris?.normal || null
       }));
       
-      // Prioritize cards already in inventory, showing most recent 2 sets first
       const prioritized = [];
       const seen = new Set();
       
-      // First, add cards that exist in inventory (most recent first)
       const inventoryByName = {};
       inventory.forEach(item => {
         if (!inventoryByName[item.name]) {
@@ -249,12 +250,21 @@ export default function MTGInventoryTracker() {
         });
       });
       
-      // Sort each card's variants by purchase date (most recent first) and take top 2
       Object.keys(inventoryByName).forEach(cardName => {
         inventoryByName[cardName].sort((a, b) => new Date(b.purchaseDate) - new Date(a.purchaseDate));
       });
       
-      // Add prioritized inventory cards to results
+      // First, if default set is selected, show matches from that set
+      if (defaultSearchSet) {
+        cards.forEach(card => {
+          if (!seen.has(`${card.name}|${card.set}`) && card.set === defaultSearchSet) {
+            prioritized.push(card);
+            seen.add(`${card.name}|${card.set}`);
+          }
+        });
+      }
+      
+      // Then add prioritized inventory cards (most recent 2 sets)
       cards.forEach(card => {
         if (!seen.has(`${card.name}|${card.set}`) && inventoryByName[card.name]) {
           const inventoryVariants = inventoryByName[card.name].slice(0, 2);
@@ -714,6 +724,22 @@ export default function MTGInventoryTracker() {
             <div className="bg-purple-900 bg-opacity-30 rounded-lg p-6 border border-purple-500">
               <h2 className="text-xl font-bold mb-4">Add Card to Inventory</h2>
               <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold mb-2">Preferred Set (optional):</label>
+                  <select
+                    value={defaultSearchSet}
+                    onChange={(e) => {
+                      setDefaultSearchSet(e.target.value);
+                      localStorage.setItem('defaultSearchSet', e.target.value);
+                    }}
+                    className="w-full bg-black bg-opacity-50 border border-purple-400 rounded px-4 py-2 text-white mb-4"
+                  >
+                    <option value="">Show most recent from inventory</option>
+                    {[...new Set(inventory.map(item => item.set))].sort().map(set => (
+                      <option key={set} value={set}>{set}</option>
+                    ))}
+                  </select>
+                </div>
                 <div className="relative">
                   <input
                     type="text"
