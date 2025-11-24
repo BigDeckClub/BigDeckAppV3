@@ -232,7 +232,48 @@ export default function MTGInventoryTracker() {
         imageUrl: card.image_uris?.normal || null
       }));
       
-      setSearchResults(cards.slice(0, 10));
+      // Prioritize cards already in inventory, showing most recent 2 sets first
+      const prioritized = [];
+      const seen = new Set();
+      
+      // First, add cards that exist in inventory (most recent first)
+      const inventoryByName = {};
+      inventory.forEach(item => {
+        if (!inventoryByName[item.name]) {
+          inventoryByName[item.name] = [];
+        }
+        inventoryByName[item.name].push({
+          set: item.set,
+          setName: item.set_name,
+          purchaseDate: item.purchase_date
+        });
+      });
+      
+      // Sort each card's variants by purchase date (most recent first) and take top 2
+      Object.keys(inventoryByName).forEach(cardName => {
+        inventoryByName[cardName].sort((a, b) => new Date(b.purchaseDate) - new Date(a.purchaseDate));
+      });
+      
+      // Add prioritized inventory cards to results
+      cards.forEach(card => {
+        if (!seen.has(`${card.name}|${card.set}`) && inventoryByName[card.name]) {
+          const inventoryVariants = inventoryByName[card.name].slice(0, 2);
+          if (inventoryVariants.some(v => v.set === card.set)) {
+            prioritized.push(card);
+            seen.add(`${card.name}|${card.set}`);
+          }
+        }
+      });
+      
+      // Then add remaining cards
+      cards.forEach(card => {
+        if (!seen.has(`${card.name}|${card.set}`)) {
+          prioritized.push(card);
+          seen.add(`${card.name}|${card.set}`);
+        }
+      });
+      
+      setSearchResults(prioritized.slice(0, 10));
     } catch (error) {
       console.error('Error searching Scryfall:', error);
       setSearchResults([]);
