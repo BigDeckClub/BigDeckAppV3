@@ -95,6 +95,54 @@ export default function MTGInventoryTracker() {
     );
   };
 
+  // Individual card price component for decklist views - fetches directly from Scryfall and backend
+  const DecklistCardPrice = ({ cardName, setCode }) => {
+    const [tcgPrice, setTcgPrice] = useState(null);
+    const [ckPrice, setCkPrice] = useState(null);
+    
+    useEffect(() => {
+      const fetchPrices = async () => {
+        // Fetch TCG price from Scryfall
+        try {
+          const scryfallRes = await fetch(`https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(cardName)}`);
+          if (scryfallRes.ok) {
+            const scryfallData = await scryfallRes.json();
+            const tcg = scryfallData.prices?.usd ? `$${scryfallData.prices.usd}` : 'N/A';
+            setTcgPrice(tcg);
+          } else {
+            setTcgPrice('N/A');
+          }
+        } catch (error) {
+          console.error('Error fetching TCG price from Scryfall:', error);
+          setTcgPrice('N/A');
+        }
+        
+        // Fetch CK price from backend (MTG Goldfish widget)
+        try {
+          const ckRes = await fetch(`${API_BASE}/prices/${encodeURIComponent(cardName)}/${setCode}`);
+          if (ckRes.ok) {
+            const ckData = await ckRes.json();
+            setCkPrice(ckData.ck || 'N/A');
+          } else {
+            setCkPrice('N/A');
+          }
+        } catch (error) {
+          console.error('Error fetching CK price from backend:', error);
+          setCkPrice('N/A');
+        }
+      };
+      
+      fetchPrices();
+    }, [cardName, setCode]);
+    
+    return (
+      <div className="text-xs flex gap-4 mt-2">
+        <div className="text-purple-300">TCG: {tcgPrice === null ? 'Loading...' : tcgPrice}</div>
+        <div className="text-blue-300">CK: {ckPrice === null ? 'Loading...' : ckPrice}</div>
+      </div>
+    );
+  };
+
   const calculateDecklistPrices = async (decklist) => {
     try {
       const lines = decklist.split('\n');
@@ -1342,15 +1390,13 @@ export default function MTGInventoryTracker() {
                               
                               return (
                                 <div key={idx} className="bg-purple-900 bg-opacity-30 rounded p-3">
-                                  <div className="flex justify-between items-start">
+                                  <div className="flex justify-between items-start mb-2">
                                     <div className="flex-1">
                                       <div className="font-semibold">{card.quantity}x {card.name}</div>
-                                      <div className="text-xs text-gray-400 mt-1">{cardSet.toUpperCase()}</div>
+                                      <div className="text-xs text-gray-400">{cardSet.toUpperCase()}</div>
                                     </div>
                                   </div>
-                                  <div className="mt-2">
-                                    <MarketPrices cardName={card.name} setCode={cardSet} />
-                                  </div>
+                                  <DecklistCardPrice cardName={card.name} setCode={cardSet} />
                                 </div>
                               );
                             })}
