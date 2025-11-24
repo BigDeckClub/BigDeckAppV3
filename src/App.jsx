@@ -342,10 +342,18 @@ export default function MTGInventoryTracker() {
         .select('*')
         .order('sold_date', { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        // Silently handle schema cache errors for sales table
+        if (error.code === 'PGRST205' || error.code === 'PGRST204') {
+          setSales([]);
+          return;
+        }
+        throw error;
+      }
       setSales(data || []);
     } catch (error) {
-      console.error('Error loading sales:', error);
+      // Silently fail for sales - it's a new feature
+      setSales([]);
     }
   };
 
