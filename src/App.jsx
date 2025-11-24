@@ -444,13 +444,8 @@ export default function MTGInventoryTracker() {
   };
 
   const toggleContainerExpand = async (containerId) => {
-    setExpandedContainers(prev => ({
-      ...prev,
-      [containerId]: !prev[containerId]
-    }));
-
     // Load items if not already loaded
-    if (!containerItems[containerId] && expandedContainers[containerId] === false) {
+    if (!containerItems[containerId]) {
       try {
         const response = await fetch(`${API_BASE}/containers/${containerId}/items`);
         const data = await response.json();
@@ -462,6 +457,11 @@ export default function MTGInventoryTracker() {
         console.error('Error loading container items:', error);
       }
     }
+
+    setExpandedContainers(prev => ({
+      ...prev,
+      [containerId]: !prev[containerId]
+    }));
   };
 
   const addContainer = async () => {
