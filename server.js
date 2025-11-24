@@ -424,68 +424,60 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
   try {
     let tcgPrice = 'N/A';
     let ckPrice = 'N/A';
-    let finalSetCode = setCode;
     
     // Try to fetch with the primary set code first
-    let scryfallUrl = `https://api.scryfall.com/cards/search?q=!"${cardName}"+set:${setCode.toLowerCase()}&unique=prints`;
-    let scryfallResponse = await fetch(scryfallUrl);
+    const scryfallUrl = `https://api.scryfall.com/cards/search?q=!"${cardName}"+set:${setCode.toLowerCase()}&unique=prints`;
+    const scryfallResponse = await fetch(scryfallUrl);
+    let scryfallData = null;
     
-    // If primary set fails, try alternative set codes by searching for all printings
-    if (!scryfallResponse.ok || (await scryfallResponse.json()).data?.length === 0) {
-      console.log(`⚠️ Set ${setCode} not found for ${cardName}, trying alternative sets...`);
-      
-      // Get all printings of the card
-      const allPrintingsUrl = `https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(cardName)}`;
-      const allPrintingsResponse = await fetch(allPrintingsUrl);
-      
-      if (allPrintingsResponse.ok) {
-        const allPrintingsData = await allPrintingsResponse.json();
-        
-        // Try to find a printing with CK pricing available
-        const printingsUrl = `https://api.scryfall.com/cards/search?q=!"${cardName}"&unique=prints&order=released`;
-        const printingsResponse = await fetch(printingsUrl);
-        
-        if (printingsResponse.ok) {
-          const printingsData = await printingsResponse.json();
-          
-          if (printingsData.data && printingsData.data.length > 0) {
-            // Try each printing to find one with CK pricing (limit to 5 attempts)
-            for (const card of printingsData.data.slice(0, 5)) {
-              const altSetCode = card.set.toUpperCase();
-              const altCkPrice = await fetchCardKingdomPriceFromWidget(cardName, altSetCode);
-              
-              if (altCkPrice !== 'N/A') {
-                finalSetCode = altSetCode;
-                ckPrice = altCkPrice;
-                // Get TCG price for this set
-                if (card.prices?.usd) {
-                  tcgPrice = `$${card.prices.usd}`;
-                }
-                console.log(`✅ Found alternative set: ${finalSetCode} with CK price: ${ckPrice}`);
-                break;
-              }
-            }
-            
-            // If no CK pricing found, just use the primary set's TCG price
-            if (ckPrice === 'N/A' && printingsData.data[0].prices?.usd) {
-              tcgPrice = `$${printingsData.data[0].prices.usd}`;
-            }
-          }
-        }
-      }
-    } else {
-      // Primary set was found, fetch pricing
-      const scryfallData = await scryfallResponse.json();
-      if (scryfallData.data && scryfallData.data.length > 0) {
-        const card = scryfallData.data[0];
-        tcgPrice = card.prices?.usd || 'N/A';
-        if (tcgPrice !== 'N/A') {
-          tcgPrice = `$${tcgPrice}`;
-        }
+    if (scryfallResponse.ok) {
+      scryfallData = await scryfallResponse.json();
+    }
+    
+    // If primary set was found, use it
+    if (scryfallData && scryfallData.data && scryfallData.data.length > 0) {
+      const card = scryfallData.data[0];
+      tcgPrice = card.prices?.usd || 'N/A';
+      if (tcgPrice !== 'N/A') {
+        tcgPrice = `$${tcgPrice}`;
       }
       
       // Fetch Card Kingdom price from MTGGoldfish widget
       ckPrice = await fetchCardKingdomPriceFromWidget(cardName, setCode);
+    } else {
+      // Primary set failed, try alternative set codes
+      console.log(`⚠️ Set ${setCode} not found for ${cardName}, trying alternative sets...`);
+      
+      // Try to find a printing with CK pricing available
+      const printingsUrl = `https://api.scryfall.com/cards/search?q=!"${cardName}"&unique=prints&order=released`;
+      const printingsResponse = await fetch(printingsUrl);
+      
+      if (printingsResponse.ok) {
+        const printingsData = await printingsResponse.json();
+        
+        if (printingsData.data && printingsData.data.length > 0) {
+          // Try each printing to find one with CK pricing (limit to 5 attempts)
+          for (const card of printingsData.data.slice(0, 5)) {
+            const altSetCode = card.set.toUpperCase();
+            const altCkPrice = await fetchCardKingdomPriceFromWidget(cardName, altSetCode);
+            
+            if (altCkPrice !== 'N/A') {
+              ckPrice = altCkPrice;
+              // Get TCG price for this set
+              if (card.prices?.usd) {
+                tcgPrice = `$${card.prices.usd}`;
+              }
+              console.log(`✅ Found alternative set: ${altSetCode} with CK price: ${ckPrice}`);
+              break;
+            }
+          }
+          
+          // If no CK pricing found, just use first printing's TCG price
+          if (ckPrice === 'N/A' && printingsData.data[0].prices?.usd) {
+            tcgPrice = `$${printingsData.data[0].prices.usd}`;
+          }
+        }
+      }
     }
     
     console.log('TCG Price:', tcgPrice);
