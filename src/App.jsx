@@ -108,15 +108,20 @@ export default function MTGInventoryTracker() {
       let isMounted = true;
       
       const cacheKey = `${cardName}|${setCode}`;
+      const CACHE_DURATION_MS = 12 * 60 * 60 * 1000; // 12 hours
       
       // Check cache first
       if (priceCache[cacheKey]) {
         const cached = priceCache[cacheKey];
-        if (isMounted) {
-          setTcgPrice(cached.tcg);
-          setCkPrice(cached.ck);
+        const now = Date.now();
+        // Check if cache is still valid
+        if (now - cached.timestamp < CACHE_DURATION_MS) {
+          if (isMounted) {
+            setTcgPrice(cached.tcg);
+            setCkPrice(cached.ck);
+          }
+          return;
         }
-        return;
       }
       
       const fetchPrices = async () => {
@@ -145,9 +150,9 @@ export default function MTGInventoryTracker() {
           console.error('Error fetching CK price from backend:', error);
         }
         
-        // Cache the result
+        // Cache the result with timestamp
         if (isMounted) {
-          setPriceCache(prev => ({...prev, [cacheKey]: { tcg, ck }}));
+          setPriceCache(prev => ({...prev, [cacheKey]: { tcg, ck, timestamp: Date.now() }}));
           setTcgPrice(tcg);
           setCkPrice(ck);
         }
