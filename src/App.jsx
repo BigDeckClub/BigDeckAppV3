@@ -107,14 +107,19 @@ export default function MTGInventoryTracker() {
         const cardName = match[2].trim();
         
         try {
-          // Use the backend API which has proper pricing with CK data
-          const response = await fetch(`${API_BASE}/prices/${encodeURIComponent(cardName)}/`);
-          if (response.ok) {
-            const priceData = await response.json();
-            const tcgPrice = parseFloat(priceData.tcg) || 0;
-            const ckPrice = parseFloat(priceData.ck) || 0;
-            tcgTotal += tcgPrice * quantity;
-            ckTotal += ckPrice * quantity;
+          // Find the card in inventory to get a set code
+          const inventoryCard = inventory.find(card => card.name.toLowerCase() === cardName.toLowerCase());
+          
+          if (inventoryCard) {
+            // Use the set code from inventory
+            const response = await fetch(`${API_BASE}/prices/${encodeURIComponent(cardName)}/${inventoryCard.set}`);
+            if (response.ok) {
+              const priceData = await response.json();
+              const tcgPrice = parseFloat(priceData.tcg) || 0;
+              const ckPrice = parseFloat(priceData.ck) || 0;
+              tcgTotal += tcgPrice * quantity;
+              ckTotal += ckPrice * quantity;
+            }
           }
         } catch (err) {
           console.error('Error fetching price for', cardName, err);
