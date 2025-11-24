@@ -42,7 +42,7 @@ export const InventoryTab = ({
           </button>
         </div>
       )}
-      <div className="bg-purple-900 bg-opacity-30 rounded-lg p-6 border border-purple-500">
+      <div className="card rounded-lg p-6 border border-slate-700">
         <h2 className="text-xl font-bold mb-4">Add Card to Inventory</h2>
         <div className="space-y-4">
           <div>
@@ -53,7 +53,7 @@ export const InventoryTab = ({
                 setDefaultSearchSet(e.target.value);
                 localStorage.setItem('defaultSearchSet', e.target.value);
               }}
-              className="w-full bg-black bg-opacity-50 border border-purple-400 rounded px-4 py-2 text-white mb-4"
+              className="w-full bg-slate-800 border border-slate-600 rounded px-4 py-2 text-white mb-4"
             >
               <option value="">Show most recent from inventory</option>
               {allSets.map(set => (
@@ -68,19 +68,19 @@ export const InventoryTab = ({
               value={searchQuery}
               onChange={handleSearch}
               onFocus={() => setShowDropdown(true)}
-              className="w-full bg-black bg-opacity-50 border border-purple-400 rounded px-4 py-2 text-white placeholder-gray-400"
+              className="w-full bg-slate-800 border border-slate-600 rounded px-4 py-2 text-white placeholder-gray-400"
             />
             
             {showDropdown && searchResults.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-black border border-purple-400 rounded shadow-lg max-h-64 overflow-y-auto z-10">
+              <div className="absolute top-full left-0 right-0 mt-2 bg-black border border-slate-600 rounded shadow-lg max-h-64 overflow-y-auto z-10">
                 {searchResults.map((card) => (
                   <div
                     key={card.id}
                     onClick={() => selectCard(card)}
-                    className="px-4 py-2 hover:bg-purple-700 cursor-pointer border-b border-purple-400"
+                    className="px-4 py-2 hover:bg-purple-700 cursor-pointer border-b border-slate-600"
                   >
                     <div className="font-semibold">{card.name}</div>
-                    <div className="text-sm text-gray-300">{card.setName} ({card.set})</div>
+                    <div className="text-sm text-slate-300">{card.setName} ({card.set})</div>
                   </div>
                 ))}
               </div>
@@ -89,9 +89,9 @@ export const InventoryTab = ({
 
           {newEntry.selectedSet && (
             <div className="space-y-2">
-              <div className="bg-black bg-opacity-50 border border-purple-400 rounded p-3">
+              <div className="bg-slate-800 border border-slate-600 rounded p-3">
                 <div className="font-semibold">{newEntry.selectedSet.name}</div>
-                <div className="text-sm text-gray-300">{newEntry.selectedSet.setName} ({newEntry.selectedSet.set})</div>
+                <div className="text-sm text-slate-300">{newEntry.selectedSet.setName} ({newEntry.selectedSet.set})</div>
               </div>
               {selectedCardSets.length > 1 && (
                 <div>
@@ -102,7 +102,7 @@ export const InventoryTab = ({
                       const selectedCard = selectedCardSets.find(c => `${c.set}|${c.name}` === e.target.value);
                       if (selectedCard) selectCard(selectedCard);
                     }}
-                    className="w-full bg-black bg-opacity-50 border border-purple-400 rounded px-4 py-2 text-white"
+                    className="w-full bg-slate-800 border border-slate-600 rounded px-4 py-2 text-white"
                   >
                     {selectedCardSets.map((card) => (
                       <option key={`${card.id}`} value={`${card.set}|${card.name}`}>
@@ -122,13 +122,13 @@ export const InventoryTab = ({
               value={newEntry.quantity}
               onChange={(e) => setNewEntry({...newEntry, quantity: parseInt(e.target.value)})}
               placeholder="Quantity"
-              className="bg-black bg-opacity-50 border border-purple-400 rounded px-4 py-2 text-white"
+              className="bg-slate-800 border border-slate-600 rounded px-4 py-2 text-white"
             />
             <input
               type="date"
               value={newEntry.purchaseDate}
               onChange={(e) => setNewEntry({...newEntry, purchaseDate: e.target.value})}
-              className="bg-black bg-opacity-50 border border-purple-400 rounded px-4 py-2 text-white"
+              className="bg-slate-800 border border-slate-600 rounded px-4 py-2 text-white"
             />
           </div>
 
@@ -139,12 +139,12 @@ export const InventoryTab = ({
               value={newEntry.purchasePrice}
               onChange={(e) => setNewEntry({...newEntry, purchasePrice: e.target.value})}
               placeholder="Purchase Price ($)"
-              className="bg-black bg-opacity-50 border border-purple-400 rounded px-4 py-2 text-white"
+              className="bg-slate-800 border border-slate-600 rounded px-4 py-2 text-white"
             />
             <select
               value={newEntry.reorderType}
               onChange={(e) => setNewEntry({...newEntry, reorderType: e.target.value})}
-              className="bg-black bg-opacity-50 border border-purple-400 rounded px-4 py-2 text-white"
+              className="bg-slate-800 border border-slate-600 rounded px-4 py-2 text-white"
             >
               <option value="normal">Normal</option>
               <option value="land">Land</option>
@@ -164,7 +164,7 @@ export const InventoryTab = ({
       </div>
 
       {/* Inventory List */}
-      <div className="bg-purple-900 bg-opacity-30 rounded-lg p-6 border border-purple-500">
+      <div className="card rounded-lg p-6 border border-slate-700">
         <h2 className="text-xl font-bold mb-4">Card Inventory</h2>
         <div className="grid gap-4">
           {Object.entries(
@@ -193,10 +193,10 @@ export const InventoryTab = ({
             const isExpanded = expandedCards[cardName];
             
             return (
-              <div key={cardName} className="bg-black bg-opacity-50 border border-purple-400 rounded p-4">
+              <div key={cardName} className="bg-slate-800 border border-slate-600 rounded p-4">
                 <div className="flex justify-between items-start mb-3 cursor-pointer" onClick={() => setExpandedCards({...expandedCards, [cardName]: !isExpanded})}>
                   <div>
-                    <h3 className="text-lg font-bold text-purple-200">{cardName}</h3>
+                    <h3 className="text-lg font-bold text-slate-100">{cardName}</h3>
                   </div>
                   <div className="text-purple-400">
                     {isExpanded ? '▼' : '▶'}
@@ -204,20 +204,20 @@ export const InventoryTab = ({
                 </div>
                 
                 <div className="grid grid-cols-4 gap-3 mb-3">
-                  <div className="bg-purple-900 bg-opacity-50 rounded p-2 border border-purple-500">
-                    <div className="text-xs text-gray-400">Total Copies</div>
-                    <div className="text-xl font-bold text-purple-300">{totalQty}</div>
+                  <div className="bg-slate-800 bg-opacity-50 rounded p-2 border border-slate-700">
+                    <div className="text-xs text-slate-400">Total Copies</div>
+                    <div className="text-xl font-bold text-teal-300">{totalQty}</div>
                   </div>
-                  <div className="bg-purple-900 bg-opacity-50 rounded p-2 border border-purple-500">
-                    <div className="text-xs text-gray-400">Available</div>
+                  <div className="bg-slate-800 bg-opacity-50 rounded p-2 border border-slate-700">
+                    <div className="text-xs text-slate-400">Available</div>
                     <div className="text-xl font-bold text-green-300">{available}</div>
                   </div>
-                  <div className="bg-purple-900 bg-opacity-50 rounded p-2 border border-purple-500">
-                    <div className="text-xs text-gray-400">In Containers</div>
+                  <div className="bg-slate-800 bg-opacity-50 rounded p-2 border border-slate-700">
+                    <div className="text-xs text-slate-400">In Containers</div>
                     <div className="text-xl font-bold text-pink-300">{totalInContainers}</div>
                   </div>
-                  <div className="bg-purple-900 bg-opacity-50 rounded p-2 border border-purple-500">
-                    <div className="text-xs text-gray-400">Avg Price (60d)</div>
+                  <div className="bg-slate-800 bg-opacity-50 rounded p-2 border border-slate-700">
+                    <div className="text-xs text-slate-400">Avg Price (60d)</div>
                     <div className="text-xl font-bold text-blue-300">${avgPrice.toFixed(2)}</div>
                   </div>
                 </div>
@@ -227,46 +227,46 @@ export const InventoryTab = ({
                     {items.map((item) => {
                       const isEditing = editingId === item.id;
                       return (
-                        <div key={item.id} className="bg-purple-900 bg-opacity-30 border border-purple-400 rounded p-3">
+                        <div key={item.id} className="card border border-slate-600 rounded p-3">
                           {isEditing ? (
                             <div className="space-y-2">
-                              <div className="text-sm font-semibold text-purple-200">{item.set_name} ({item.set})</div>
+                              <div className="text-sm font-semibold text-slate-100">{item.set_name} ({item.set})</div>
                               <div className="grid grid-cols-2 gap-2">
                                 <div>
-                                  <label className="text-xs text-gray-400">Qty</label>
+                                  <label className="text-xs text-slate-400">Qty</label>
                                   <input
                                     type="number"
                                     min="1"
                                     value={editForm.quantity}
                                     onChange={(e) => setEditForm({...editForm, quantity: e.target.value})}
-                                    className="w-full bg-black bg-opacity-50 border border-purple-400 rounded px-2 py-1 text-white text-sm"
+                                    className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-sm"
                                   />
                                 </div>
                                 <div>
-                                  <label className="text-xs text-gray-400">Price</label>
+                                  <label className="text-xs text-slate-400">Price</label>
                                   <input
                                     type="number"
                                     step="0.01"
                                     value={editForm.purchase_price}
                                     onChange={(e) => setEditForm({...editForm, purchase_price: e.target.value})}
-                                    className="w-full bg-black bg-opacity-50 border border-purple-400 rounded px-2 py-1 text-white text-sm"
+                                    className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-sm"
                                   />
                                 </div>
                                 <div>
-                                  <label className="text-xs text-gray-400">Date</label>
+                                  <label className="text-xs text-slate-400">Date</label>
                                   <input
                                     type="date"
                                     value={editForm.purchase_date}
                                     onChange={(e) => setEditForm({...editForm, purchase_date: e.target.value})}
-                                    className="w-full bg-black bg-opacity-50 border border-purple-400 rounded px-2 py-1 text-white text-sm"
+                                    className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-sm"
                                   />
                                 </div>
                                 <div>
-                                  <label className="text-xs text-gray-400">Type</label>
+                                  <label className="text-xs text-slate-400">Type</label>
                                   <select
                                     value={editForm.reorder_type}
                                     onChange={(e) => setEditForm({...editForm, reorder_type: e.target.value})}
-                                    className="w-full bg-black bg-opacity-50 border border-purple-400 rounded px-2 py-1 text-white text-sm"
+                                    className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-sm"
                                   >
                                     <option value="normal">Normal</option>
                                     <option value="land">Land</option>
@@ -292,18 +292,18 @@ export const InventoryTab = ({
                           ) : (
                             <div className="flex justify-between items-center">
                               <div className="flex-1">
-                                <div className="text-sm font-semibold text-purple-200">{item.set_name}</div>
+                                <div className="text-sm font-semibold text-slate-100">{item.set_name}</div>
                                 <div className="grid grid-cols-3 gap-3 mt-1 text-xs">
-                                  <div><span className="text-gray-400">Qty:</span> <span className="text-white font-semibold">{item.quantity}</span></div>
-                                  <div><span className="text-gray-400">In Containers:</span> <span className="text-white font-semibold">{item.in_containers_qty || 0}</span></div>
-                                  <div><span className="text-gray-400">Set:</span> <span className="text-white font-semibold">{item.set}</span></div>
+                                  <div><span className="text-slate-400">Qty:</span> <span className="text-white font-semibold">{item.quantity}</span></div>
+                                  <div><span className="text-slate-400">In Containers:</span> <span className="text-white font-semibold">{item.in_containers_qty || 0}</span></div>
+                                  <div><span className="text-slate-400">Set:</span> <span className="text-white font-semibold">{item.set}</span></div>
                                 </div>
                               </div>
                               <div className="flex items-center gap-3 ml-4">
                                 <div className="flex flex-col items-center gap-2">
                                   <MarketPrices cardName={item.name} setCode={item.set} />
-                                  <div className="bg-purple-900 bg-opacity-50 border border-purple-400 rounded px-2 py-1 text-xs">
-                                    <div className="text-gray-400">Avg Cost</div>
+                                  <div className="bg-slate-800 bg-opacity-50 border border-slate-600 rounded px-2 py-1 text-xs">
+                                    <div className="text-slate-400">Avg Cost</div>
                                     <div className="font-bold text-green-300">${avgPrice.toFixed(2)}</div>
                                   </div>
                                 </div>
@@ -332,7 +332,7 @@ export const InventoryTab = ({
               </div>
             );
           })}
-          {inventory.length === 0 && <p className="text-gray-400">No cards in inventory yet.</p>}
+          {inventory.length === 0 && <p className="text-slate-400">No cards in inventory yet.</p>}
         </div>
       </div>
     </div>

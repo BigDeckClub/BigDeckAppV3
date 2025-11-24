@@ -82,11 +82,11 @@ export default function MTGInventoryTracker() {
       }
     }, [cardName, setCode]);
     
-    if (!prices) return <div className="text-xs text-gray-500">Loading...</div>;
+    if (!prices) return <div className="text-xs text-slate-500">Loading...</div>;
     return (
       <div className="text-xs whitespace-nowrap">
         <div className="text-teal-300">TCG: {prices.tcg}</div>
-        <div className="text-blue-300">CK: {prices.ck}</div>
+        <div className="text-cyan-300">CK: {prices.ck}</div>
       </div>
     );
   };
@@ -131,7 +131,7 @@ export default function MTGInventoryTracker() {
     return (
       <div className="text-xs flex gap-4 mt-2">
         <div className="text-teal-300">TCG: {tcgPrice}</div>
-        <div className="text-blue-300">CK: {ckPrice}</div>
+        <div className="text-cyan-300">CK: {ckPrice}</div>
       </div>
     );
   };
@@ -1081,7 +1081,7 @@ export default function MTGInventoryTracker() {
                     <h3 className="font-semibold mb-3">Decklist Preview</h3>
                     <div className="bg-slate-800 rounded p-4 max-h-96 overflow-y-auto space-y-2">
                       {deckPreview.map((card, idx) => (
-                        <div key={idx} className={`p-2 rounded border-l-4 flex justify-between items-center ${card.found ? 'border-green-500 bg-green-900 bg-opacity-20' : 'border-red-500 bg-red-900 bg-opacity-20'}`}>
+                        <div key={idx} className={`p-2 rounded border-l-4 flex justify-between items-center ${card.found ? 'border-green-500 bg-emerald-900 bg-opacity-20' : 'border-red-600 bg-red-950 bg-opacity-20'}`}>
                           <span className="text-sm font-semibold">{card.quantity}x {card.cardName}</span>
                           <span className="text-xs">{card.found ? '✓ Found' : card.error || '✗ Not found'}</span>
                         </div>
@@ -1100,7 +1100,7 @@ export default function MTGInventoryTracker() {
 
             <div className="card p-6 border rounded-lg p-6 border border-slate-700 hover:border-teal-500">
               <h2 className="text-xl font-bold mb-4">Decklists ({decklists.length})</h2>
-              <div className="grid gap-4">
+              <div className="grid gap-4 text-white">
                 {decklists.map((deck) => {
                   const prices = decklistPrices[deck.id] || { tcg: 0, ck: 0 };
                   const isExpanded = expandedDecklists[deck.id];
@@ -1137,7 +1137,7 @@ export default function MTGInventoryTracker() {
                       </div>
                       <div className="grid grid-cols-2 gap-2 text-xs border-t border-slate-700 hover:border-teal-500 pt-2 mt-2">
                         <div className="text-teal-300">TCG: ${prices.tcg.toFixed(2)}</div>
-                        <div className="text-blue-300">CK: ${prices.ck.toFixed(2)}</div>
+                        <div className="text-cyan-300">CK: ${prices.ck.toFixed(2)}</div>
                       </div>
                       
                       {isExpanded && (
@@ -1357,7 +1357,7 @@ export default function MTGInventoryTracker() {
                           <div className="text-sm text-slate-300">Decklist ID: {container.decklist_id}</div>
                           <div className="grid grid-cols-2 gap-2 text-xs mt-2 text-slate-400">
                             <div className="text-teal-300">TCG: ${containerPrices.tcg.toFixed(2)}</div>
-                            <div className="text-blue-300">CK: ${containerPrices.ck.toFixed(2)}</div>
+                            <div className="text-cyan-300">CK: ${containerPrices.ck.toFixed(2)}</div>
                           </div>
                         </div>
                         <div className="flex gap-2">
@@ -1425,7 +1425,7 @@ export default function MTGInventoryTracker() {
           <div className="space-y-6 text-white">
             <div className="card p-6 border rounded-lg p-6 border border-slate-700 hover:border-teal-500">
               <h2 className="text-xl font-bold mb-4 flex items-center">
-                <DollarSign className="w-5 h-5 mr-2 text-green-400" />
+                <DollarSign className="w-5 h-5 mr-2 text-emerald-400" />
                 Sales Analytics
               </h2>
               
@@ -1445,7 +1445,7 @@ export default function MTGInventoryTracker() {
                             <div className="font-semibold text-lg">{container?.name || 'Unknown Container'}</div>
                             <div className="text-sm text-slate-400">{new Date(sale.sold_date).toLocaleDateString()}</div>
                           </div>
-                          <div className={`text-lg font-bold ${profit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          <div className={`text-lg font-bold ${profit >= 0 ? 'text-emerald-400' : 'text-red-300'}`}>
                             {profit >= 0 ? '+' : ''} ${profit.toFixed(2)}
                           </div>
                         </div>
@@ -1457,11 +1457,11 @@ export default function MTGInventoryTracker() {
                           </div>
                           <div className="bg-slate-800 bg-opacity-50 border border-slate-600 rounded p-3">
                             <div className="text-slate-400 text-xs">Sale Price</div>
-                            <div className="font-semibold text-blue-300">${salePrice.toFixed(2)}</div>
+                            <div className="font-semibold text-cyan-300">${salePrice.toFixed(2)}</div>
                           </div>
                           <div className="bg-slate-800 bg-opacity-50 border border-slate-600 rounded p-3">
                             <div className="text-slate-400 text-xs">Profit %</div>
-                            <div className={`font-semibold ${profit >= 0 ? 'text-green-300' : 'text-red-300'}`}>{profitPercentage}%</div>
+                            <div className={`font-semibold ${profit >= 0 ? 'text-emerald-300' : 'text-red-300'}`}>{profitPercentage}%</div>
                           </div>
                         </div>
                       </div>
@@ -1476,11 +1476,11 @@ export default function MTGInventoryTracker() {
                       </div>
                       <div className="bg-slate-800 bg-opacity-50 rounded p-4 border border-slate-600">
                         <div className="text-slate-400 text-sm">Total Revenue</div>
-                        <div className="text-2xl font-bold text-blue-300">${sales.reduce((sum, s) => sum + (parseFloat(s.sale_price) || 0), 0).toFixed(2)}</div>
+                        <div className="text-2xl font-bold text-cyan-300">${sales.reduce((sum, s) => sum + (parseFloat(s.sale_price) || 0), 0).toFixed(2)}</div>
                       </div>
                       <div className="bg-slate-800 bg-opacity-50 rounded p-4 border border-slate-600">
                         <div className="text-slate-400 text-sm">Total Profit</div>
-                        <div className="text-2xl font-bold text-green-300">${sales.reduce((sum, s) => sum + ((parseFloat(s.sale_price) || 0) - calculateDeckCOGS(s.decklist_id)), 0).toFixed(2)}</div>
+                        <div className="text-2xl font-bold text-emerald-300">${sales.reduce((sum, s) => sum + ((parseFloat(s.sale_price) || 0) - calculateDeckCOGS(s.decklist_id)), 0).toFixed(2)}</div>
                       </div>
                     </div>
                   </div>
@@ -1497,14 +1497,14 @@ export default function MTGInventoryTracker() {
           <div className="space-y-6 text-white">
             <div className="card p-6 border rounded-lg p-6 border border-slate-700 hover:border-teal-500">
               <h2 className="text-xl font-bold mb-4 flex items-center">
-                <AlertCircle className="w-5 h-5 mr-2 text-red-400" />
+                <AlertCircle className="w-5 h-5 mr-2 text-red-300" />
                 Reorder Alerts
               </h2>
-              <div className="grid gap-4">
+              <div className="grid gap-4 text-white">
                 {getReorderAlerts().length > 0 ? (
                   getReorderAlerts().map((item) => (
                     <div key={item.id} className="bg-slate-800 border border-red-400 rounded p-4">
-                      <div className="font-semibold text-red-400">{item.name}</div>
+                      <div className="font-semibold text-red-300">{item.name}</div>
                       <div className="text-sm text-slate-300">Quantity: {item.quantity} (Type: {item.reorder_type})</div>
                       <div className="text-sm text-slate-300">Set: {item.set_name}</div>
                     </div>
@@ -1600,9 +1600,9 @@ export default function MTGInventoryTracker() {
                 </div>
                 
                 {salePrice && (
-                  <div className="bg-green-900 bg-opacity-30 border border-green-500 rounded p-3">
+                  <div className="bg-emerald-900 bg-opacity-30 border border-green-500 rounded p-3">
                     <div className="text-sm text-slate-400">Estimated Profit</div>
-                    <div className={`font-semibold text-lg ${(salePrice - calculateDeckCOGS(containers.find(c => c.id === selectedContainerForSale)?.decklist_id)) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    <div className={`font-semibold text-lg ${(salePrice - calculateDeckCOGS(containers.find(c => c.id === selectedContainerForSale)?.decklist_id)) >= 0 ? 'text-emerald-400' : 'text-red-300'}`}>
                       ${(salePrice - calculateDeckCOGS(containers.find(c => c.id === selectedContainerForSale)?.decklist_id)).toFixed(2)}
                     </div>
                   </div>
