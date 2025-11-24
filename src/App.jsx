@@ -47,6 +47,51 @@ export default function MTGInventoryTracker() {
   const [expandedCards, setExpandedCards] = useState({});
   const [priceCache, setPriceCache] = useState({});
 
+  // Price display component
+  const MarketPrices = ({ cardName, setCode }) => {
+    const [prices, setPrices] = useState(null);
+    
+    useEffect(() => {
+      const cacheKey = `${cardName}|${setCode}`;
+      if (priceCache[cacheKey]) {
+        setPrices(priceCache[cacheKey]);
+      } else {
+        const fetchPrices = async () => {
+          try {
+            const response = await fetch(`https://api.scryfall.com/cards/search?q=!"${cardName}"+set:${setCode.toLowerCase()}&unique=prints`);
+            if (response.ok) {
+              const data = await response.json();
+              if (data.data && data.data.length > 0) {
+                const card = data.data[0];
+                const priceData = {
+                  tcg: card.prices?.usd ? `$${parseFloat(card.prices.usd).toFixed(2)}` : 'N/A',
+                  ck: card.prices?.usd_foil ? `$${parseFloat(card.prices.usd_foil).toFixed(2)}` : 'N/A'
+                };
+                setPrices(priceData);
+                setPriceCache(prev => ({...prev, [cacheKey]: priceData}));
+                return;
+              }
+            }
+          } catch (error) {
+            console.error('Error fetching prices:', error);
+          }
+          const fallback = { tcg: 'N/A', ck: 'N/A' };
+          setPrices(fallback);
+          setPriceCache(prev => ({...prev, [cacheKey]: fallback}));
+        };
+        fetchPrices();
+      }
+    }, [cardName, setCode]);
+    
+    if (!prices) return <div className="text-xs text-gray-500">Loading...</div>;
+    return (
+      <div className="text-xs whitespace-nowrap">
+        <div className="text-purple-300">TCG: {prices.tcg}</div>
+        <div className="text-blue-300">CK: {prices.ck}</div>
+      </div>
+    );
+  };
+
   useEffect(() => {
     loadAllData();
   }, []);
@@ -735,7 +780,7 @@ export default function MTGInventoryTracker() {
                                       <div className="text-sm text-gray-300">Qty: {item.quantity} | Purchase: ${item.purchase_price || 'N/A'}</div>
                                     </div>
                                     <div className="flex items-center gap-6 ml-4">
-                                      <PriceDisplay cardName={item.name} setCode={item.set} fetchPrices={fetchCardPrices} />
+                                      <MarketPrices cardName={item.name} setCode={item.set} priceCache={priceCache} setPriceCache={setPriceCache} />
                                       <div className="flex gap-2">
                                         <button
                                           onClick={() => startEditingItem(item)}
