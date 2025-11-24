@@ -7,11 +7,13 @@ let supabase = null;
 
 const initializeSupabase = () => {
   try {
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    let supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    let supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
     
-    console.log('URL type:', typeof supabaseUrl, 'length:', supabaseUrl?.length);
-    console.log('Key type:', typeof supabaseAnonKey, 'length:', supabaseAnonKey?.length);
+    // Handle swapped credentials - they seem to come in reversed
+    if (supabaseUrl?.startsWith('eyJ') && supabaseAnonKey?.startsWith('https')) {
+      [supabaseUrl, supabaseAnonKey] = [supabaseAnonKey, supabaseUrl];
+    }
     
     if (!supabaseUrl?.trim() || !supabaseAnonKey?.trim()) {
       console.error('Missing Supabase credentials');
@@ -21,9 +23,7 @@ const initializeSupabase = () => {
     const trimmedUrl = supabaseUrl.trim();
     const trimmedKey = supabaseAnonKey.trim();
     
-    console.log('Creating client with URL:', trimmedUrl.substring(0, 30) + '...');
     const client = createClient(trimmedUrl, trimmedKey);
-    console.log('Supabase initialized successfully');
     return client;
   } catch (error) {
     console.error('Failed to initialize Supabase:', error?.message || error);
