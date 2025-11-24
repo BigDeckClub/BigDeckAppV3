@@ -1,35 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Plus, Trash2, FileText, Package, Copy, Layers, AlertCircle, TrendingUp, Settings, RefreshCw, DollarSign, X } from 'lucide-react';
-import { createClient } from '@supabase/supabase-js';
 
-// Initialize Supabase client with proper env var handling
-let supabase = null;
-
-const initializeSupabase = () => {
-  try {
-    let supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    let supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-    
-    // Handle swapped credentials - they seem to come in reversed
-    if (supabaseUrl?.startsWith('eyJ') && supabaseAnonKey?.startsWith('https')) {
-      [supabaseUrl, supabaseAnonKey] = [supabaseAnonKey, supabaseUrl];
-    }
-    
-    if (!supabaseUrl?.trim() || !supabaseAnonKey?.trim()) {
-      console.error('Missing Supabase credentials');
-      return null;
-    }
-    
-    const trimmedUrl = supabaseUrl.trim();
-    const trimmedKey = supabaseAnonKey.trim();
-    
-    const client = createClient(trimmedUrl, trimmedKey);
-    return client;
-  } catch (error) {
-    console.error('Failed to initialize Supabase:', error?.message || error);
-    return null;
-  }
-};
+const API_BASE = 'http://localhost:3000/api';
 
 export default function MTGInventoryTracker() {
   const [activeTab, setActiveTab] = useState('inventory');
@@ -71,16 +43,10 @@ export default function MTGInventoryTracker() {
   const [showSettings, setShowSettings] = useState(false);
 
   useEffect(() => {
-    supabase = initializeSupabase();
-    if (supabase) {
-      loadAllData();
-    } else {
-      console.error('Cannot load data - Supabase is not initialized');
-    }
+    loadAllData();
   }, []);
 
   const loadAllData = async () => {
-    if (!supabase) return;
     setIsLoading(true);
     await Promise.all([
       loadInventory(),
@@ -94,14 +60,9 @@ export default function MTGInventoryTracker() {
   };
 
   const loadInventory = async () => {
-    if (!supabase) return;
     try {
-      const { data, error } = await supabase
-        .from('inventory')
-        .select('*')
-        .order('name');
-      
-      if (error) throw error;
+      const response = await fetch(`${API_BASE}/inventory`);
+      const data = await response.json();
       setInventory(data || []);
     } catch (error) {
       console.error('Error loading inventory:', error);
@@ -109,17 +70,13 @@ export default function MTGInventoryTracker() {
   };
 
   const addInventoryItem = async (item) => {
-    if (!supabase) return;
     try {
-      const { error } = await supabase
-        .from('inventory')
-        .insert([item]);
-      
-      if (error) {
-        console.error('Error adding inventory item:', error);
-        alert('Error adding card. Check that Supabase tables exist and schema cache is refreshed.');
-        return false;
-      }
+      const response = await fetch(`${API_BASE}/inventory`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(item)
+      });
+      if (!response.ok) throw new Error('Failed to add card');
       await loadInventory();
       alert('Card added successfully!');
       return true;
@@ -131,14 +88,8 @@ export default function MTGInventoryTracker() {
   };
 
   const deleteInventoryItem = async (id) => {
-    if (!supabase) return;
     try {
-      const { error } = await supabase
-        .from('inventory')
-        .delete()
-        .eq('id', id);
-      
-      if (error) throw error;
+      await fetch(`${API_BASE}/inventory/${id}`, { method: 'DELETE' });
       await loadInventory();
     } catch (error) {
       console.error('Error deleting inventory item:', error);
@@ -228,14 +179,9 @@ export default function MTGInventoryTracker() {
   };
 
   const loadDecklists = async () => {
-    if (!supabase) return;
     try {
-      const { data, error } = await supabase
-        .from('decklists')
-        .select('*')
-        .order('name');
-      
-      if (error) throw error;
+      const response = await fetch(`${API_BASE}/decklists`);
+      const data = await response.json();
       setDecklists(data || []);
     } catch (error) {
       console.error('Error loading decklists:', error);
@@ -243,40 +189,31 @@ export default function MTGInventoryTracker() {
   };
 
   const addDecklist = async () => {
-    if (!supabase) return;
     if (!decklistName || !decklistPaste) {
       alert('Please fill in all fields');
       return;
     }
 
     try {
-      const { error } = await supabase
-        .from('decklists')
-        .insert([{
-          name: decklistName,
-          decklist: decklistPaste
-        }]);
-      
-      if (error) throw error;
+      const response = await fetch(`${API_BASE}/decklists`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: decklistName, decklist: decklistPaste })
+      });
+      if (!response.ok) throw new Error('Failed to add decklist');
       setDecklistName('');
       setDecklistPaste('');
       setShowDecklistForm(false);
       await loadDecklists();
     } catch (error) {
       console.error('Error adding decklist:', error);
-      alert('Error adding decklist. Check browser console for details.');
+      alert('Error adding decklist: ' + error.message);
     }
   };
 
   const deleteDecklist = async (id) => {
-    if (!supabase) return;
     try {
-      const { error } = await supabase
-        .from('decklists')
-        .delete()
-        .eq('id', id);
-      
-      if (error) throw error;
+      await fetch(`${API_BASE}/decklists/${id}`, { method: 'DELETE' });
       await loadDecklists();
     } catch (error) {
       console.error('Error deleting decklist:', error);
@@ -284,14 +221,9 @@ export default function MTGInventoryTracker() {
   };
 
   const loadContainers = async () => {
-    if (!supabase) return;
     try {
-      const { data, error } = await supabase
-        .from('containers')
-        .select('*')
-        .order('name');
-      
-      if (error) throw error;
+      const response = await fetch(`${API_BASE}/containers`);
+      const data = await response.json();
       setContainers(data || []);
     } catch (error) {
       console.error('Error loading containers:', error);
@@ -299,22 +231,18 @@ export default function MTGInventoryTracker() {
   };
 
   const addContainer = async () => {
-    if (!supabase) return;
     if (!containerName || !selectedDecklist) {
       alert('Please fill in all fields');
       return;
     }
 
     try {
-      const { error } = await supabase
-        .from('containers')
-        .insert([{
-          name: containerName,
-          decklist_id: selectedDecklist,
-          created_at: new Date().toISOString()
-        }]);
-      
-      if (error) throw error;
+      const response = await fetch(`${API_BASE}/containers`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: containerName, decklist_id: parseInt(selectedDecklist) })
+      });
+      if (!response.ok) throw new Error('Failed to add container');
       setContainerName('');
       setSelectedDecklist(null);
       setShowContainerForm(false);
@@ -325,14 +253,8 @@ export default function MTGInventoryTracker() {
   };
 
   const deleteContainer = async (id) => {
-    if (!supabase) return;
     try {
-      const { error } = await supabase
-        .from('containers')
-        .delete()
-        .eq('id', id);
-      
-      if (error) throw error;
+      await fetch(`${API_BASE}/containers/${id}`, { method: 'DELETE' });
       await loadContainers();
     } catch (error) {
       console.error('Error deleting container:', error);
@@ -340,24 +262,12 @@ export default function MTGInventoryTracker() {
   };
 
   const loadSales = async () => {
-    if (!supabase) return;
     try {
-      const { data, error } = await supabase
-        .from('sales')
-        .select('*')
-        .order('sold_date', { ascending: false });
-      
-      if (error) {
-        // Silently handle schema cache errors for sales table
-        if (error.code === 'PGRST205' || error.code === 'PGRST204') {
-          setSales([]);
-          return;
-        }
-        throw error;
-      }
+      const response = await fetch(`${API_BASE}/sales`);
+      const data = await response.json();
       setSales(data || []);
     } catch (error) {
-      // Silently fail for sales - it's a new feature
+      console.error('Error loading sales:', error);
       setSales([]);
     }
   };
@@ -391,7 +301,7 @@ export default function MTGInventoryTracker() {
   };
 
   const sellContainer = async () => {
-    if (!supabase || !selectedContainerForSale || !salePrice) {
+    if (!selectedContainerForSale || !salePrice) {
       alert('Please enter a sale price');
       return;
     }
@@ -399,16 +309,17 @@ export default function MTGInventoryTracker() {
     try {
       const container = containers.find(c => c.id === selectedContainerForSale);
       
-      const { error } = await supabase
-        .from('sales')
-        .insert([{
+      const response = await fetch(`${API_BASE}/sales`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           container_id: selectedContainerForSale,
           decklist_id: container.decklist_id,
-          sale_price: parseFloat(salePrice),
-          sold_date: new Date().toISOString()
-        }]);
+          sale_price: parseFloat(salePrice)
+        })
+      });
       
-      if (error) throw error;
+      if (!response.ok) throw new Error('Failed to record sale');
       
       await loadSales();
       setShowSellModal(false);
@@ -417,22 +328,16 @@ export default function MTGInventoryTracker() {
       alert('Container sold! Sale recorded.');
     } catch (error) {
       console.error('Error recording sale:', error);
-      alert('Error recording sale');
+      alert('Error recording sale: ' + error.message);
     }
   };
 
   const loadReorderSettings = async () => {
-    if (!supabase) return;
     try {
-      const { data, error } = await supabase
-        .from('settings')
-        .select('*')
-        .eq('key', 'reorder_thresholds')
-        .single();
-      
-      if (error && error.code !== 'PGRST116') throw error;
-      if (data && data.value) {
-        setReorderSettings(data.value);
+      const response = await fetch(`${API_BASE}/settings/reorder_thresholds`);
+      const data = await response.json();
+      if (data) {
+        setReorderSettings(data);
       }
     } catch (error) {
       console.error('Error loading reorder settings:', error);
@@ -440,16 +345,12 @@ export default function MTGInventoryTracker() {
   };
 
   const saveReorderSettings = async () => {
-    if (!supabase) return;
     try {
-      await supabase
-        .from('settings')
-        .upsert([{
-          key: 'reorder_thresholds',
-          value: reorderSettings,
-          updated_at: new Date().toISOString()
-        }]);
-      
+      await fetch(`${API_BASE}/settings/reorder_thresholds`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ value: reorderSettings })
+      });
       setShowSettings(false);
     } catch (error) {
       console.error('Error saving reorder settings:', error);
@@ -457,36 +358,11 @@ export default function MTGInventoryTracker() {
   };
 
   const loadUsageHistory = async () => {
-    if (!supabase) return;
-    try {
-      const { data, error } = await supabase
-        .from('usage_history')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(50);
-      
-      if (error) throw error;
-      setUsageHistory(data || []);
-    } catch (error) {
-      console.error('Error loading usage history:', error);
-    }
+    // Usage history is not critical, skip for now
   };
 
   const recordUsage = async (action, details) => {
-    if (!supabase) return;
-    try {
-      await supabase
-        .from('usage_history')
-        .insert([{
-          action,
-          details,
-          created_at: new Date().toISOString()
-        }]);
-      
-      await loadUsageHistory();
-    } catch (error) {
-      console.error('Error recording usage:', error);
-    }
+    // Usage history is not critical, skip for now
   };
 
   const getReorderAlerts = () => {
@@ -496,17 +372,6 @@ export default function MTGInventoryTracker() {
     });
   };
 
-  if (!supabase) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-purple-900 to-black">
-        <div className="text-center">
-          <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-white mb-2">Configuration Error</h1>
-          <p className="text-gray-300">Supabase credentials are not configured. Please add your Supabase URL and Anon Key to the environment variables.</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 to-black text-white">
