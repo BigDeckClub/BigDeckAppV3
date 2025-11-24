@@ -1089,7 +1089,7 @@ export default function MTGInventoryTracker() {
                     </div>
                     <button
                       onClick={confirmAndAddDecklist}
-                      className="w-full mt-4 bg-green-600 hover:bg-green-700 px-4 py-2 font-semibold"
+                      className="w-full mt-4 btn-primary px-4 py-2 font-semibold"
                     >
                       Confirm & Create Decklist
                     </button>
@@ -1283,14 +1283,14 @@ export default function MTGInventoryTracker() {
                                     </>
                                   )}
                                 </div>
-                            ))}
+                              ))}
+                            </div>
                           </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               {decklists.length === 0 && <p className="text-slate-400">No decklists yet.</p>}
             </div>
           </div>
@@ -1350,7 +1350,6 @@ export default function MTGInventoryTracker() {
                 {containers.map((container) => {
                   const containerPrices = calculateContainerPrices(container.id);
                   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
                     <div key={container.id} className="bg-slate-800 border border-slate-600 p-4">
                       <div className="flex justify-between items-start mb-3">
                         <div className="flex-1">
@@ -1373,7 +1372,7 @@ export default function MTGInventoryTracker() {
                               setSelectedContainerForSale(container.id);
                               setShowSellModal(true);
                             }}
-                            className="bg-green-600 hover:bg-green-700 px-4 py-2 font-semibold flex items-center gap-2"
+                            className="btn-primary px-4 py-2 font-semibold flex items-center gap-2"
                           >
                             <DollarSign className="w-5 h-5" />
                             Sell
@@ -1416,7 +1415,7 @@ export default function MTGInventoryTracker() {
                   );
                 })}
               </div>
-              {containers.length === 0 && <p className="text-slate-400">No containers yet.</p>}
+            {containers.length === 0 && <p className="text-slate-400">No containers yet.</p>}
             </div>
           </div>
         )}
