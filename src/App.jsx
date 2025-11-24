@@ -48,6 +48,8 @@ export default function MTGInventoryTracker() {
   const [editForm, setEditForm] = useState({});
   const [expandedCards, setExpandedCards] = useState({});
   const [priceCache, setPriceCache] = useState({});
+  const [expandedContainers, setExpandedContainers] = useState({});
+  const [containerItems, setContainerItems] = useState({});
 
   // Price display component
   const MarketPrices = ({ cardName, setCode }) => {
@@ -438,6 +440,27 @@ export default function MTGInventoryTracker() {
       setContainers(data || []);
     } catch (error) {
       console.error('Error loading containers:', error);
+    }
+  };
+
+  const toggleContainerExpand = async (containerId) => {
+    setExpandedContainers(prev => ({
+      ...prev,
+      [containerId]: !prev[containerId]
+    }));
+
+    // Load items if not already loaded
+    if (!containerItems[containerId] && expandedContainers[containerId] === false) {
+      try {
+        const response = await fetch(`${API_BASE}/containers/${containerId}/items`);
+        const data = await response.json();
+        setContainerItems(prev => ({
+          ...prev,
+          [containerId]: data || []
+        }));
+      } catch (error) {
+        console.error('Error loading container items:', error);
+      }
     }
   };
 
@@ -1019,31 +1042,65 @@ export default function MTGInventoryTracker() {
 
             <div className="bg-purple-900 bg-opacity-30 rounded-lg p-6 border border-purple-500">
               <h2 className="text-xl font-bold mb-4">Containers ({containers.length})</h2>
-              <div className="grid gap-4">
+              <div className="space-y-3">
                 {containers.map((container) => (
-                  <div key={container.id} className="bg-black bg-opacity-50 border border-purple-400 rounded p-4 flex justify-between items-center">
-                    <div>
-                      <div className="font-semibold">{container.name}</div>
-                      <div className="text-sm text-gray-300">Decklist ID: {container.decklist_id}</div>
+                  <div key={container.id} className="bg-black bg-opacity-50 border border-purple-400 rounded p-4">
+                    <div className="flex justify-between items-center">
+                      <div className="flex-1">
+                        <div className="font-semibold">{container.name}</div>
+                        <div className="text-sm text-gray-300">Decklist ID: {container.decklist_id}</div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => toggleContainerExpand(container.id)}
+                          className="bg-blue-600 hover:bg-blue-700 rounded px-4 py-2 font-semibold"
+                        >
+                          {expandedContainers[container.id] ? 'Hide' : 'View'} Contents
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedContainerForSale(container.id);
+                            setShowSellModal(true);
+                          }}
+                          className="bg-green-600 hover:bg-green-700 rounded px-4 py-2 font-semibold flex items-center gap-2"
+                        >
+                          <DollarSign className="w-5 h-5" />
+                          Sell
+                        </button>
+                        <button
+                          onClick={() => deleteContainer(container.id)}
+                          className="bg-red-600 hover:bg-red-700 rounded px-3 py-2"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => {
-                          setSelectedContainerForSale(container.id);
-                          setShowSellModal(true);
-                        }}
-                        className="bg-green-600 hover:bg-green-700 rounded px-4 py-2 font-semibold flex items-center gap-2"
-                      >
-                        <DollarSign className="w-5 h-5" />
-                        Sell
-                      </button>
-                      <button
-                        onClick={() => deleteContainer(container.id)}
-                        className="bg-red-600 hover:bg-red-700 rounded px-3 py-2"
-                      >
-                        <Trash2 className="w-5 h-5" />
-                      </button>
-                    </div>
+
+                    {expandedContainers[container.id] && (
+                      <div className="mt-4 pt-4 border-t border-purple-500">
+                        <h4 className="font-semibold mb-3">Cards in Container</h4>
+                        {containerItems[container.id] && containerItems[container.id].length > 0 ? (
+                          <div className="space-y-2 max-h-64 overflow-y-auto">
+                            {containerItems[container.id].map((item, idx) => (
+                              <div key={idx} className="bg-purple-900 bg-opacity-50 border border-purple-300 rounded p-3 text-sm">
+                                <div className="flex justify-between">
+                                  <div>
+                                    <div className="font-semibold">{item.name}</div>
+                                    <div className="text-xs text-gray-400">{item.set_name} ({item.set})</div>
+                                  </div>
+                                  <div className="text-right">
+                                    <div className="text-purple-300 font-semibold">{item.quantity_used}x</div>
+                                    <div className="text-xs text-gray-400">${item.purchase_price || 'N/A'}</div>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-gray-400 text-sm">Loading container contents...</p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ))}
                 {containers.length === 0 && <p className="text-gray-400">No containers yet.</p>}
