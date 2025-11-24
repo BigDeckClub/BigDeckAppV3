@@ -208,6 +208,72 @@ app.post('/api/settings/:key', async (req, res) => {
   }
 });
 
+// Card prices endpoint with caching
+const priceCache = {};
+const CACHE_DURATION = 1000 * 60 * 60; // 1 hour
+
+app.get('/api/prices/:cardName/:setCode', async (req, res) => {
+  try {
+    const { cardName, setCode } = req.params;
+    const cacheKey = `${cardName}|${setCode}`;
+    const now = Date.now();
+    
+    // Check cache
+    if (priceCache[cacheKey] && (now - priceCache[cacheKey].timestamp) < CACHE_DURATION) {
+      return res.json(priceCache[cacheKey].data);
+    }
+    
+    // Fetch TCG price from Scryfall
+    let tcgPrice = 'N/A';
+    try {
+      const scryfallRes = await fetch(`https://api.scryfall.com/cards/search?q=!"${cardName}"+set:${setCode.toLowerCase()}&unique=prints`);
+      if (scryfallRes.ok) {
+        const scryfallData = await scryfallRes.json();
+        if (scryfallData.data && scryfallData.data.length > 0) {
+          const card = scryfallData.data[0];
+          if (card.prices?.usd) {
+            tcgPrice = `$${parseFloat(card.prices.usd).toFixed(2)}`;
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching Scryfall prices:', err);
+    }
+    
+    // Fetch Card Kingdom price (using Scryfall data as fallback, try usd_foil as estimate)
+    let ckPrice = 'N/A';
+    try {
+      const scryfallRes = await fetch(`https://api.scryfall.com/cards/search?q=!"${cardName}"+set:${setCode.toLowerCase()}&unique=prints`);
+      if (scryfallRes.ok) {
+        const scryfallData = await scryfallRes.json();
+        if (scryfallData.data && scryfallData.data.length > 0) {
+          const card = scryfallData.data[0];
+          // Card Kingdom often prices higher, use estimated markup if foil data exists
+          if (card.prices?.usd_foil) {
+            ckPrice = `$${parseFloat(card.prices.usd_foil).toFixed(2)}`;
+          } else if (card.prices?.usd) {
+            // Estimate CK price as roughly 10-20% higher than TCGPlayer
+            const estimated = parseFloat(card.prices.usd) * 1.15;
+            ckPrice = `$${estimated.toFixed(2)}`;
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching Card Kingdom prices:', err);
+    }
+    
+    const priceData = { tcg: tcgPrice, ck: ckPrice, updated: new Date().toISOString() };
+    
+    // Cache the result
+    priceCache[cacheKey] = { data: priceData, timestamp: now };
+    
+    res.json(priceData);
+  } catch (err) {
+    console.error('Error fetching prices:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 const PORT = 3000;
 app.listen(PORT, () => {
   console.log(`Backend server running on port ${PORT}`);

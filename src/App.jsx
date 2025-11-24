@@ -58,22 +58,15 @@ export default function MTGInventoryTracker() {
       } else {
         const fetchPrices = async () => {
           try {
-            const response = await fetch(`https://api.scryfall.com/cards/search?q=!"${cardName}"+set:${setCode.toLowerCase()}&unique=prints`);
+            const response = await fetch(`${API_BASE}/prices/${encodeURIComponent(cardName)}/${setCode}`);
             if (response.ok) {
-              const data = await response.json();
-              if (data.data && data.data.length > 0) {
-                const card = data.data[0];
-                const priceData = {
-                  tcg: card.prices?.usd ? `$${parseFloat(card.prices.usd).toFixed(2)}` : 'N/A',
-                  ck: card.prices?.usd_foil ? `$${parseFloat(card.prices.usd_foil).toFixed(2)}` : 'N/A'
-                };
-                setPrices(priceData);
-                setPriceCache(prev => ({...prev, [cacheKey]: priceData}));
-                return;
-              }
+              const priceData = await response.json();
+              setPrices(priceData);
+              setPriceCache(prev => ({...prev, [cacheKey]: priceData}));
+              return;
             }
           } catch (error) {
-            console.error('Error fetching prices:', error);
+            console.error('Error fetching prices from backend:', error);
           }
           const fallback = { tcg: 'N/A', ck: 'N/A' };
           setPrices(fallback);
