@@ -119,7 +119,13 @@ export default function MTGInventoryTracker() {
               const priceData = await response.json();
               // Strip $ sign and parse the price
               tcgPrice = parseFloat(String(priceData.tcg).replace('$', '')) || 0;
-              ckPrice = parseFloat(String(priceData.ck).replace('$', '')) || 0;
+              const ckRaw = String(priceData.ck).replace('$', '');
+              ckPrice = parseFloat(ckRaw) || 0;
+              
+              // If CK price is N/A or 0, use fallback
+              if (ckPrice === 0 && tcgPrice > 0) {
+                ckPrice = tcgPrice * 1.15;
+              }
             }
           } else {
             // Card not in inventory - find set from Scryfall and use backend API for CK widget
@@ -141,9 +147,13 @@ export default function MTGInventoryTracker() {
                         const backendResponse = await fetch(`${API_BASE}/prices/${encodeURIComponent(cardName)}/${card.set}`);
                         if (backendResponse.ok) {
                           const backendData = await backendResponse.json();
-                          ckPrice = parseFloat(String(backendData.ck).replace('$', '')) || 0;
-                          foundPrice = true;
-                          break;
+                          const ckRaw = String(backendData.ck).replace('$', '');
+                          ckPrice = parseFloat(ckRaw) || 0;
+                          // Only consider this a success if we got a real CK price
+                          if (ckPrice > 0) {
+                            foundPrice = true;
+                            break;
+                          }
                         }
                       } catch (err) {
                         // Continue to next set
@@ -188,7 +198,14 @@ export default function MTGInventoryTracker() {
           const priceData = await response.json();
           // Strip $ sign and parse the price
           const tcgPrice = parseFloat(String(priceData.tcg).replace('$', '')) || 0;
-          const ckPrice = parseFloat(String(priceData.ck).replace('$', '')) || 0;
+          const ckRaw = String(priceData.ck).replace('$', '');
+          let ckPrice = parseFloat(ckRaw) || 0;
+          
+          // If CK price is N/A or 0, use fallback
+          if (ckPrice === 0 && tcgPrice > 0) {
+            ckPrice = tcgPrice * 1.15;
+          }
+          
           const quantity = parseInt(item.quantity_used) || 0;
           tcgTotal += tcgPrice * quantity;
           ckTotal += ckPrice * quantity;
