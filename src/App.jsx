@@ -186,9 +186,15 @@ export default function MTGInventoryTracker() {
                 if (scryfallData.data && scryfallData.data.length > 0) {
                   // Try to find a set with good CK data
                   let foundPrice = false;
-                  for (const card of scryfallData.data.slice(0, 5)) {
+                  let bestTcgPrice = 0;
+                  
+                  for (const card of scryfallData.data.slice(0, 10)) {
                     // Get TCG price from Scryfall
-                    tcgPrice = parseFloat(card.prices?.usd) || 0;
+                    const currentTcgPrice = parseFloat(card.prices?.usd) || 0;
+                    if (currentTcgPrice > 0) {
+                      bestTcgPrice = currentTcgPrice;
+                      tcgPrice = currentTcgPrice;
+                    }
                     
                     if (card.set) {
                       // Try backend API to get CK widget price
@@ -197,9 +203,10 @@ export default function MTGInventoryTracker() {
                         if (backendResponse.ok) {
                           const backendData = await backendResponse.json();
                           const ckRaw = String(backendData.ck).replace('$', '');
-                          ckPrice = parseFloat(ckRaw) || 0;
-                          // Only consider this a success if we got a real CK price
-                          if (ckPrice > 0) {
+                          const potentialCkPrice = parseFloat(ckRaw) || 0;
+                          // Only consider this a success if we got a real CK price (not 0 or N/A)
+                          if (potentialCkPrice > 0) {
+                            ckPrice = potentialCkPrice;
                             foundPrice = true;
                             break;
                           }
@@ -210,7 +217,7 @@ export default function MTGInventoryTracker() {
                     }
                   }
                   
-                  // Fallback if CK widget price not found
+                  // Fallback if CK widget price not found - use TCG * 1.15
                   if (!foundPrice && tcgPrice > 0) {
                     ckPrice = tcgPrice * 1.15;
                   }
@@ -285,7 +292,7 @@ export default function MTGInventoryTracker() {
     if (decklists.length > 0) {
       calculateAllDecklistPrices();
     }
-  }, [decklists]);
+  }, [decklists, inventory]);
 
   useEffect(() => {
     const calculateAllContainerPrices = async () => {
