@@ -797,9 +797,12 @@ export default function MTGInventoryTracker() {
                   const sixtyDaysAgo = new Date();
                   sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
                   const recentItems = items.filter(item => new Date(item.purchase_date) >= sixtyDaysAgo);
-                  const avgPrice = recentItems.length > 0 
-                    ? recentItems.reduce((sum, item) => sum + (parseFloat(item.purchase_price) || 0) * item.quantity, 0) / recentItems.reduce((sum, item) => sum + item.quantity, 0)
-                    : items.reduce((sum, item) => sum + (parseFloat(item.purchase_price) || 0) * item.quantity, 0) / totalQty;
+                  const itemsForAvg = recentItems.length > 0 ? recentItems : items;
+                  let avgPrice = 0;
+                  if (itemsForAvg.length > 0) {
+                    const totalPrice = itemsForAvg.reduce((sum, item) => sum + (parseFloat(item.purchase_price) || 0), 0);
+                    avgPrice = totalPrice / itemsForAvg.length;
+                  }
                   
                   const isExpanded = expandedCards[cardName];
                   
