@@ -84,6 +84,7 @@ export default function MTGInventoryTracker() {
     
     if (!prices) return <div className="text-xs text-slate-500">Loading...</div>;
     return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
       <div className="text-xs whitespace-nowrap">
         <div className="text-teal-300">TCG: {prices.tcg}</div>
         <div className="text-cyan-300">CK: {prices.ck}</div>
@@ -125,10 +126,12 @@ export default function MTGInventoryTracker() {
       };
       
       loadPrices();
-      return () => { isMounted = false; };
+      return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">) => { isMounted = false; };
     }, [cardName, setCode]);
     
     return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
       <div className="text-xs flex gap-4 mt-2">
         <div className="text-teal-300">TCG: {tcgPrice}</div>
         <div className="text-cyan-300">CK: {ckPrice}</div>
@@ -937,9 +940,10 @@ export default function MTGInventoryTracker() {
   };
 
   return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
     <div className="min-h-screen bg-gradient-to-br from-purple-900 to-black text-white">
       {/* Navigation */}
-      <nav className="bg-slate-800 border-b border-slate-700 hover:border-teal-500 sticky top-0 z-50">
+      <nav className="bg-gradient-to-r from-slate-900 to-slate-800 border-b border-slate-700 sticky top-0 z-50 shadow-xl shadow-slate-900/50">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <h1 className="text-2xl font-bold text-teal-300">MTG Card Manager</h1>
           <div className="flex gap-2">
@@ -1032,7 +1036,7 @@ export default function MTGInventoryTracker() {
 
         {/* Decklists Tab */}
         {activeTab === 'decklists' && !isLoading && (
-          <div className="space-y-6 text-white">
+          <div className="space-y-6">
             {!showDecklistForm ? (
               <button
                 onClick={() => setShowDecklistForm(true)}
@@ -1100,7 +1104,7 @@ export default function MTGInventoryTracker() {
 
             <div className="card p-6 border rounded-lg p-6 border border-slate-700 hover:border-teal-500">
               <h2 className="text-xl font-bold mb-4">Decklists ({decklists.length})</h2>
-              <div className="grid gap-4 text-white">
+              <div className="grid gap-4">
                 {decklists.map((deck) => {
                   const prices = decklistPrices[deck.id] || { tcg: 0, ck: 0 };
                   const isExpanded = expandedDecklists[deck.id];
@@ -1114,6 +1118,7 @@ export default function MTGInventoryTracker() {
                   }).filter(Boolean);
                   
                   return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
                     <div key={deck.id} className="bg-slate-800 border border-slate-600 rounded p-4">
                       <div className="flex justify-between items-start mb-3">
                         <div className="flex-1">
@@ -1153,6 +1158,7 @@ export default function MTGInventoryTracker() {
                               const isEditingThisCard = editingDecklistCard?.idx === idx && editingDecklistCard?.deckId === deck.id;
                               
                               return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
                                 <div key={idx} className="card p-6 border rounded p-3">
                                   {isEditingThisCard ? (
                                     <div className="space-y-2">
@@ -1298,7 +1304,7 @@ export default function MTGInventoryTracker() {
 
         {/* Containers Tab */}
         {activeTab === 'containers' && !isLoading && (
-          <div className="space-y-6 text-white">
+          <div className="space-y-6">
             {!showContainerForm ? (
               <button
                 onClick={() => setShowContainerForm(true)}
@@ -1350,6 +1356,7 @@ export default function MTGInventoryTracker() {
                 {containers.map((container) => {
                   const containerPrices = calculateContainerPrices(container.id);
                   return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
                     <div key={container.id} className="bg-slate-800 border border-slate-600 rounded p-4">
                       <div className="flex justify-between items-start mb-3">
                         <div className="flex-1">
@@ -1422,7 +1429,7 @@ export default function MTGInventoryTracker() {
 
         {/* Sales Tab */}
         {activeTab === 'sales' && !isLoading && (
-          <div className="space-y-6 text-white">
+          <div className="space-y-6">
             <div className="card p-6 border rounded-lg p-6 border border-slate-700 hover:border-teal-500">
               <h2 className="text-xl font-bold mb-4 flex items-center">
                 <DollarSign className="w-5 h-5 mr-2 text-emerald-400" />
@@ -1439,6 +1446,7 @@ export default function MTGInventoryTracker() {
                     const container = containers.find(c => c.id === sale.container_id);
                     
                     return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
                       <div key={sale.id} className="bg-slate-800 border border-slate-600 rounded p-4">
                         <div className="flex justify-between items-start mb-3">
                           <div>
@@ -1494,13 +1502,13 @@ export default function MTGInventoryTracker() {
 
         {/* Analytics Tab */}
         {activeTab === 'analytics' && !isLoading && (
-          <div className="space-y-6 text-white">
+          <div className="space-y-6">
             <div className="card p-6 border rounded-lg p-6 border border-slate-700 hover:border-teal-500">
               <h2 className="text-xl font-bold mb-4 flex items-center">
                 <AlertCircle className="w-5 h-5 mr-2 text-red-300" />
                 Reorder Alerts
               </h2>
-              <div className="grid gap-4 text-white">
+              <div className="grid gap-4">
                 {getReorderAlerts().length > 0 ? (
                   getReorderAlerts().map((item) => (
                     <div key={item.id} className="bg-slate-800 border border-red-400 rounded p-4">
@@ -1701,4 +1709,5 @@ export default function MTGInventoryTracker() {
       </main>
     </div>
   );
-}
+    </div>
+  );
