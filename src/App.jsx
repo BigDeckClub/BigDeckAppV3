@@ -1032,7 +1032,7 @@ export default function MTGInventoryTracker() {
 
         {/* Decklists Tab */}
         {activeTab === 'decklists' && !isLoading && (
-          <div className="space-y-6">
+          <div className="space-y-6 text-white">
             {!showDecklistForm ? (
               <button
                 onClick={() => setShowDecklistForm(true)}
@@ -1298,7 +1298,7 @@ export default function MTGInventoryTracker() {
 
         {/* Containers Tab */}
         {activeTab === 'containers' && !isLoading && (
-          <div className="space-y-6">
+          <div className="space-y-6 text-white">
             {!showContainerForm ? (
               <button
                 onClick={() => setShowContainerForm(true)}
@@ -1422,7 +1422,7 @@ export default function MTGInventoryTracker() {
 
         {/* Sales Tab */}
         {activeTab === 'sales' && !isLoading && (
-          <div className="space-y-6">
+          <div className="space-y-6 text-white">
             <div className="bg-purple-900 bg-opacity-30 rounded-lg p-6 border border-purple-500">
               <h2 className="text-xl font-bold mb-4 flex items-center">
                 <DollarSign className="w-5 h-5 mr-2 text-green-400" />
@@ -1432,8 +1432,9 @@ export default function MTGInventoryTracker() {
               {sales.length > 0 ? (
                 <div className="space-y-4">
                   {sales.map((sale) => {
+                    const salePrice = parseFloat(sale.sale_price) || 0;
                     const deckCOGS = calculateDeckCOGS(sale.decklist_id);
-                    const profit = sale.sale_price - deckCOGS;
+                    const profit = salePrice - deckCOGS;
                     const profitPercentage = deckCOGS > 0 ? ((profit / deckCOGS) * 100).toFixed(2) : 0;
                     const container = containers.find(c => c.id === sale.container_id);
                     
@@ -1456,7 +1457,7 @@ export default function MTGInventoryTracker() {
                           </div>
                           <div className="bg-purple-900 bg-opacity-50 border border-purple-300 rounded p-3">
                             <div className="text-gray-400 text-xs">Sale Price</div>
-                            <div className="font-semibold text-blue-300">${sale.sale_price.toFixed(2)}</div>
+                            <div className="font-semibold text-blue-300">${salePrice.toFixed(2)}</div>
                           </div>
                           <div className="bg-purple-900 bg-opacity-50 border border-purple-300 rounded p-3">
                             <div className="text-gray-400 text-xs">Profit %</div>
@@ -1475,11 +1476,11 @@ export default function MTGInventoryTracker() {
                       </div>
                       <div className="bg-purple-900 bg-opacity-50 rounded p-4 border border-purple-400">
                         <div className="text-gray-400 text-sm">Total Revenue</div>
-                        <div className="text-2xl font-bold text-blue-300">${sales.reduce((sum, s) => sum + s.sale_price, 0).toFixed(2)}</div>
+                        <div className="text-2xl font-bold text-blue-300">${sales.reduce((sum, s) => sum + (parseFloat(s.sale_price) || 0), 0).toFixed(2)}</div>
                       </div>
                       <div className="bg-purple-900 bg-opacity-50 rounded p-4 border border-purple-400">
                         <div className="text-gray-400 text-sm">Total Profit</div>
-                        <div className="text-2xl font-bold text-green-300">${sales.reduce((sum, s) => sum + (s.sale_price - calculateDeckCOGS(s.decklist_id)), 0).toFixed(2)}</div>
+                        <div className="text-2xl font-bold text-green-300">${sales.reduce((sum, s) => sum + ((parseFloat(s.sale_price) || 0) - calculateDeckCOGS(s.decklist_id)), 0).toFixed(2)}</div>
                       </div>
                     </div>
                   </div>
@@ -1493,7 +1494,7 @@ export default function MTGInventoryTracker() {
 
         {/* Analytics Tab */}
         {activeTab === 'analytics' && !isLoading && (
-          <div className="space-y-6">
+          <div className="space-y-6 text-white">
             <div className="bg-purple-900 bg-opacity-30 rounded-lg p-6 border border-purple-500">
               <h2 className="text-xl font-bold mb-4 flex items-center">
                 <AlertCircle className="w-5 h-5 mr-2 text-red-400" />
