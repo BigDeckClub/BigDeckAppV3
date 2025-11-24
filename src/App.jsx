@@ -526,6 +526,22 @@ export default function MTGInventoryTracker() {
       const response = await fetch(`${API_BASE}/containers`);
       const data = await response.json();
       setContainers(data || []);
+      
+      // Preload all container items in the background
+      if (data && data.length > 0) {
+        const itemsMap = {};
+        for (const container of data) {
+          try {
+            const itemResponse = await fetch(`${API_BASE}/containers/${container.id}/items`);
+            const itemsData = await itemResponse.json();
+            itemsMap[container.id] = itemsData || [];
+          } catch (err) {
+            console.error(`Error loading items for container ${container.id}:`, err);
+            itemsMap[container.id] = [];
+          }
+        }
+        setContainerItems(itemsMap);
+      }
     } catch (error) {
       console.error('Error loading containers:', error);
     }
