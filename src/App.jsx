@@ -791,7 +791,7 @@ export default function MTGInventoryTracker() {
                 ).map(([cardName, items]) => {
                   const totalQty = items.reduce((sum, item) => sum + item.quantity, 0);
                   const avgPrice = items.reduce((sum, item) => sum + (parseFloat(item.purchase_price) || 0) * item.quantity, 0) / totalQty;
-                  const totalInContainers = items.reduce((sum, item) => sum + (item.in_containers_qty || 0), 0);
+                  const totalInContainers = items.reduce((sum, item) => sum + (parseInt(item.in_containers_qty) || 0), 0);
                   const isExpanded = expandedCards[cardName];
                   
                   return (
