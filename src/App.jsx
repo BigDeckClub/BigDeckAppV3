@@ -45,6 +45,7 @@ export default function MTGInventoryTracker() {
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [expandedCards, setExpandedCards] = useState({});
+  const [priceCache, setPriceCache] = useState({});
 
   useEffect(() => {
     loadAllData();
@@ -139,6 +140,33 @@ export default function MTGInventoryTracker() {
     } catch (error) {
       console.error('Error deleting inventory item:', error);
     }
+  };
+
+  const fetchCardPrices = async (cardName, setCode) => {
+    const cacheKey = `${cardName}|${setCode}`;
+    if (priceCache[cacheKey]) {
+      return priceCache[cacheKey];
+    }
+    try {
+      const response = await fetch(`https://api.scryfall.com/cards/search?q=!"${cardName}"+set:${setCode}&unique=prints`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.data && data.data.length > 0) {
+          const card = data.data[0];
+          const prices = {
+            tcgplayer: card.prices?.usd ? `$${parseFloat(card.prices.usd).toFixed(2)}` : 'N/A',
+            cardkingdom: card.prices?.usd_foil ? `$${parseFloat(card.prices.usd_foil).toFixed(2)}` : 'N/A'
+          };
+          setPriceCache(prev => ({...prev, [cacheKey]: prices}));
+          return prices;
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching prices:', error);
+    }
+    const fallback = { tcgplayer: 'N/A', cardkingdom: 'N/A' };
+    setPriceCache(prev => ({...prev, [cacheKey]: fallback}));
+    return fallback;
   };
 
   const searchScryfall = async (query) => {
@@ -704,21 +732,24 @@ export default function MTGInventoryTracker() {
                                   <div className="flex justify-between items-center">
                                     <div className="flex-1">
                                       <div className="text-sm text-gray-400">{item.set_name} ({item.set})</div>
-                                      <div className="text-sm text-gray-300">Qty: {item.quantity} | Price: ${item.purchase_price || 'N/A'}</div>
+                                      <div className="text-sm text-gray-300">Qty: {item.quantity} | Purchase: ${item.purchase_price || 'N/A'}</div>
                                     </div>
-                                    <div className="flex gap-2 ml-4">
-                                      <button
-                                        onClick={() => startEditingItem(item)}
-                                        className="bg-blue-600 hover:bg-blue-700 rounded px-3 py-1 text-sm"
-                                      >
-                                        Edit
-                                      </button>
-                                      <button
-                                        onClick={() => deleteInventoryItem(item.id)}
-                                        className="bg-red-600 hover:bg-red-700 rounded px-3 py-1 text-sm"
-                                      >
-                                        <Trash2 className="w-4 h-4" />
-                                      </button>
+                                    <div className="flex items-center gap-6 ml-4">
+                                      <PriceDisplay cardName={item.name} setCode={item.set} fetchPrices={fetchCardPrices} />
+                                      <div className="flex gap-2">
+                                        <button
+                                          onClick={() => startEditingItem(item)}
+                                          className="bg-blue-600 hover:bg-blue-700 rounded px-3 py-1 text-sm"
+                                        >
+                                          Edit
+                                        </button>
+                                        <button
+                                          onClick={() => deleteInventoryItem(item.id)}
+                                          className="bg-red-600 hover:bg-red-700 rounded px-3 py-1 text-sm"
+                                        >
+                                          <Trash2 className="w-4 h-4" />
+                                        </button>
+                                      </div>
                                     </div>
                                   </div>
                                 )}
