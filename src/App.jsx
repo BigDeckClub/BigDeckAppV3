@@ -107,20 +107,31 @@ export default function MTGInventoryTracker() {
     useEffect(() => {
       let isMounted = true;
       
+      const cacheKey = `${cardName}|${setCode}`;
+      
+      // Check cache first
+      if (priceCache[cacheKey]) {
+        const cached = priceCache[cacheKey];
+        if (isMounted) {
+          setTcgPrice(cached.tcg);
+          setCkPrice(cached.ck);
+        }
+        return;
+      }
+      
       const fetchPrices = async () => {
+        let tcg = 'N/A';
+        let ck = 'N/A';
+        
         // Fetch TCG price from Scryfall
         try {
           const scryfallRes = await fetch(`https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(cardName)}`);
           if (scryfallRes.ok) {
             const scryfallData = await scryfallRes.json();
-            const tcg = scryfallData.prices?.usd ? `$${scryfallData.prices.usd}` : 'N/A';
-            if (isMounted) setTcgPrice(tcg);
-          } else {
-            if (isMounted) setTcgPrice('N/A');
+            tcg = scryfallData.prices?.usd ? `$${scryfallData.prices.usd}` : 'N/A';
           }
         } catch (error) {
           console.error('Error fetching TCG price from Scryfall:', error);
-          if (isMounted) setTcgPrice('N/A');
         }
         
         // Fetch CK price from backend (MTG Goldfish widget)
@@ -128,13 +139,17 @@ export default function MTGInventoryTracker() {
           const ckRes = await fetch(`${API_BASE}/prices/${encodeURIComponent(cardName)}/${setCode}`);
           if (ckRes.ok) {
             const ckData = await ckRes.json();
-            if (isMounted) setCkPrice(ckData.ck || 'N/A');
-          } else {
-            if (isMounted) setCkPrice('N/A');
+            ck = ckData.ck || 'N/A';
           }
         } catch (error) {
           console.error('Error fetching CK price from backend:', error);
-          if (isMounted) setCkPrice('N/A');
+        }
+        
+        // Cache the result
+        if (isMounted) {
+          setPriceCache(prev => ({...prev, [cacheKey]: { tcg, ck }}));
+          setTcgPrice(tcg);
+          setCkPrice(ck);
         }
       };
       
