@@ -790,8 +790,17 @@ export default function MTGInventoryTracker() {
                   }, {})
                 ).map(([cardName, items]) => {
                   const totalQty = items.reduce((sum, item) => sum + item.quantity, 0);
-                  const avgPrice = items.reduce((sum, item) => sum + (parseFloat(item.purchase_price) || 0) * item.quantity, 0) / totalQty;
                   const totalInContainers = items.reduce((sum, item) => sum + (parseInt(item.in_containers_qty) || 0), 0);
+                  const available = totalQty - totalInContainers;
+                  
+                  // Calculate avg price for items from last 60 days
+                  const sixtyDaysAgo = new Date();
+                  sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+                  const recentItems = items.filter(item => new Date(item.purchase_date) >= sixtyDaysAgo);
+                  const avgPrice = recentItems.length > 0 
+                    ? recentItems.reduce((sum, item) => sum + (parseFloat(item.purchase_price) || 0) * item.quantity, 0) / recentItems.reduce((sum, item) => sum + item.quantity, 0)
+                    : items.reduce((sum, item) => sum + (parseFloat(item.purchase_price) || 0) * item.quantity, 0) / totalQty;
+                  
                   const isExpanded = expandedCards[cardName];
                   
                   return (
@@ -805,18 +814,22 @@ export default function MTGInventoryTracker() {
                         </div>
                       </div>
                       
-                      <div className="grid grid-cols-3 gap-3 mb-3">
+                      <div className="grid grid-cols-4 gap-3 mb-3">
                         <div className="bg-purple-900 bg-opacity-50 rounded p-2 border border-purple-500">
                           <div className="text-xs text-gray-400">Total Copies</div>
                           <div className="text-xl font-bold text-purple-300">{totalQty}</div>
                         </div>
                         <div className="bg-purple-900 bg-opacity-50 rounded p-2 border border-purple-500">
-                          <div className="text-xs text-gray-400">Avg Price</div>
-                          <div className="text-xl font-bold text-blue-300">${avgPrice.toFixed(2)}</div>
+                          <div className="text-xs text-gray-400">Available</div>
+                          <div className="text-xl font-bold text-green-300">{available}</div>
                         </div>
                         <div className="bg-purple-900 bg-opacity-50 rounded p-2 border border-purple-500">
                           <div className="text-xs text-gray-400">In Containers</div>
                           <div className="text-xl font-bold text-pink-300">{totalInContainers}</div>
+                        </div>
+                        <div className="bg-purple-900 bg-opacity-50 rounded p-2 border border-purple-500">
+                          <div className="text-xs text-gray-400">Avg Price (60d)</div>
+                          <div className="text-xl font-bold text-blue-300">${avgPrice.toFixed(2)}</div>
                         </div>
                       </div>
                       
