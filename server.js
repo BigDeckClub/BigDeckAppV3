@@ -6,8 +6,15 @@ import pkg from 'pg';
 const { Pool } = pkg;
 const app = express();
 
-app.use(cors());
+// Enable CORS for all origins
+app.use(cors({
+  origin: '*',
+  credentials: true,
+  methods: ['GET', 'POST', 'DELETE', 'PUT', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
 // Create pool with Replit database connection
 const pool = new Pool({
@@ -21,6 +28,11 @@ pool.query('SELECT NOW()', (err, res) => {
   } else {
     console.log('Database connected successfully at', res.rows[0].now);
   }
+});
+
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', message: 'Backend is running' });
 });
 
 // Inventory endpoints
