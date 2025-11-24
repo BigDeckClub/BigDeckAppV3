@@ -940,8 +940,7 @@ export default function MTGInventoryTracker() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 to-black text-white">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white">
       {/* Navigation */}
       <nav className="bg-gradient-to-r from-slate-900 to-slate-800 border-b border-slate-700 sticky top-0 z-50 shadow-xl shadow-slate-900/50">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
@@ -1065,7 +1064,7 @@ export default function MTGInventoryTracker() {
                   <button
                     onClick={parseAndPreviewDecklist}
                     disabled={deckPreviewLoading}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 rounded px-4 py-2 font-semibold"
+                    className="flex-1 btn-primary disabled:opacity-50 rounded px-4 py-2 font-semibold"
                   >
                     {deckPreviewLoading ? 'Checking...' : 'Check Inventory'}
                   </button>
@@ -1074,7 +1073,7 @@ export default function MTGInventoryTracker() {
                       setShowDecklistForm(false);
                       setDeckPreview(null);
                     }}
-                    className="flex-1 bg-gray-600 hover:bg-gray-700 rounded px-4 py-2 font-semibold"
+                    className="flex-1 btn-secondary rounded px-4 py-2 font-semibold"
                   >
                     Cancel
                   </button>
@@ -1235,7 +1234,7 @@ export default function MTGInventoryTracker() {
                                         </button>
                                         <button
                                           onClick={() => setEditingDecklistCard(null)}
-                                          className="flex-1 bg-gray-600 hover:bg-gray-700 rounded px-2 py-1 text-xs font-semibold"
+                                          className="flex-1 btn-secondary rounded px-2 py-1 text-xs font-semibold"
                                         >
                                           Cancel
                                         </button>
@@ -1342,7 +1341,7 @@ export default function MTGInventoryTracker() {
                   </button>
                   <button
                     onClick={() => setShowContainerForm(false)}
-                    className="flex-1 bg-gray-600 hover:bg-gray-700 rounded px-4 py-2 font-semibold"
+                    className="flex-1 btn-secondary rounded px-4 py-2 font-semibold"
                   >
                     Cancel
                   </button>
@@ -1629,7 +1628,7 @@ export default function MTGInventoryTracker() {
                       setSelectedContainerForSale(null);
                       setSalePrice('');
                     }}
-                    className="flex-1 bg-gray-600 hover:bg-gray-700 rounded px-4 py-2 font-semibold"
+                    className="flex-1 btn-secondary rounded px-4 py-2 font-semibold"
                   >
                     Cancel
                   </button>
@@ -1697,7 +1696,7 @@ export default function MTGInventoryTracker() {
                   </button>
                   <button
                     onClick={() => setShowSettings(false)}
-                    className="flex-1 bg-gray-600 hover:bg-gray-700 rounded px-4 py-2 font-semibold"
+                    className="flex-1 btn-secondary rounded px-4 py-2 font-semibold"
                   >
                     Close
                   </button>
@@ -1707,7 +1706,5 @@ export default function MTGInventoryTracker() {
           </div>
         )}
       </main>
-    </div>
-  );
     </div>
   );
