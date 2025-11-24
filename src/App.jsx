@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Trash2, FileText, Package, Copy, Layers, AlertCircle, TrendingUp, Settings, RefreshCw } from 'lucide-react';
+import { Search, Plus, Trash2, FileText, Package, Copy, Layers, AlertCircle, TrendingUp, Settings, RefreshCw, DollarSign, X } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
 
 // Initialize Supabase client with proper env var handling
@@ -36,9 +36,14 @@ export default function MTGInventoryTracker() {
   const [inventory, setInventory] = useState([]);
   const [decklists, setDecklists] = useState([]);
   const [containers, setContainers] = useState([]);
+  const [sales, setSales] = useState([]);
   const [reorderSettings, setReorderSettings] = useState({ bulk: 12, land: 20, normal: 4 });
   const [usageHistory, setUsageHistory] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  
+  const [showSellModal, setShowSellModal] = useState(false);
+  const [selectedContainerForSale, setSelectedContainerForSale] = useState(null);
+  const [salePrice, setSalePrice] = useState('');
   
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
@@ -81,6 +86,7 @@ export default function MTGInventoryTracker() {
       loadInventory(),
       loadDecklists(),
       loadContainers(),
+      loadSales(),
       loadReorderSettings(),
       loadUsageHistory()
     ]);
@@ -328,6 +334,80 @@ export default function MTGInventoryTracker() {
     }
   };
 
+  const loadSales = async () => {
+    if (!supabase) return;
+    try {
+      const { data, error } = await supabase
+        .from('sales')
+        .select('*')
+        .order('sold_date', { ascending: false });
+      
+      if (error) throw error;
+      setSales(data || []);
+    } catch (error) {
+      console.error('Error loading sales:', error);
+    }
+  };
+
+  const calculateDeckCOGS = (decklistId) => {
+    // Parse decklist to find card names and quantities
+    const deck = decklists.find(d => d.id === decklistId);
+    if (!deck || !deck.decklist) return 0;
+
+    let totalCost = 0;
+    const lines = deck.decklist.split('\n');
+    
+    lines.forEach(line => {
+      const match = line.match(/^(\d+)\s+(.+)$/);
+      if (match) {
+        const quantity = parseInt(match[1]);
+        const cardName = match[2].trim();
+        
+        // Find matching card in inventory
+        const inventoryCard = inventory.find(card => 
+          card.name.toLowerCase() === cardName.toLowerCase()
+        );
+        
+        if (inventoryCard && inventoryCard.purchase_price) {
+          totalCost += quantity * inventoryCard.purchase_price;
+        }
+      }
+    });
+    
+    return totalCost;
+  };
+
+  const sellContainer = async () => {
+    if (!supabase || !selectedContainerForSale || !salePrice) {
+      alert('Please enter a sale price');
+      return;
+    }
+
+    try {
+      const container = containers.find(c => c.id === selectedContainerForSale);
+      
+      const { error } = await supabase
+        .from('sales')
+        .insert([{
+          container_id: selectedContainerForSale,
+          decklist_id: container.decklist_id,
+          sale_price: parseFloat(salePrice),
+          sold_date: new Date().toISOString()
+        }]);
+      
+      if (error) throw error;
+      
+      await loadSales();
+      setShowSellModal(false);
+      setSelectedContainerForSale(null);
+      setSalePrice('');
+      alert('Container sold! Sale recorded.');
+    } catch (error) {
+      console.error('Error recording sale:', error);
+      alert('Error recording sale');
+    }
+  };
+
   const loadReorderSettings = async () => {
     if (!supabase) return;
     try {
@@ -449,6 +529,13 @@ export default function MTGInventoryTracker() {
             >
               <TrendingUp className="w-5 h-5 inline mr-2" />
               Analytics
+            </button>
+            <button
+              onClick={() => setActiveTab('sales')}
+              className={`px-4 py-2 rounded transition ${activeTab === 'sales' ? 'bg-purple-600' : 'hover:bg-purple-700'}`}
+            >
+              <DollarSign className="w-5 h-5 inline mr-2" />
+              Sales
             </button>
             <button
               onClick={() => setShowSettings(!showSettings)}
@@ -705,16 +792,99 @@ export default function MTGInventoryTracker() {
                       <div className="font-semibold">{container.name}</div>
                       <div className="text-sm text-gray-300">Decklist ID: {container.decklist_id}</div>
                     </div>
-                    <button
-                      onClick={() => deleteContainer(container.id)}
-                      className="bg-red-600 hover:bg-red-700 rounded px-3 py-2"
-                    >
-                      <Trash2 className="w-5 h-5" />
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          setSelectedContainerForSale(container.id);
+                          setShowSellModal(true);
+                        }}
+                        className="bg-green-600 hover:bg-green-700 rounded px-4 py-2 font-semibold flex items-center gap-2"
+                      >
+                        <DollarSign className="w-5 h-5" />
+                        Sell
+                      </button>
+                      <button
+                        onClick={() => deleteContainer(container.id)}
+                        className="bg-red-600 hover:bg-red-700 rounded px-3 py-2"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    </div>
                   </div>
                 ))}
                 {containers.length === 0 && <p className="text-gray-400">No containers yet.</p>}
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Sales Tab */}
+        {activeTab === 'sales' && !isLoading && (
+          <div className="space-y-6">
+            <div className="bg-purple-900 bg-opacity-30 rounded-lg p-6 border border-purple-500">
+              <h2 className="text-xl font-bold mb-4 flex items-center">
+                <DollarSign className="w-5 h-5 mr-2 text-green-400" />
+                Sales Analytics
+              </h2>
+              
+              {sales.length > 0 ? (
+                <div className="space-y-4">
+                  {sales.map((sale) => {
+                    const deckCOGS = calculateDeckCOGS(sale.decklist_id);
+                    const profit = sale.sale_price - deckCOGS;
+                    const profitPercentage = deckCOGS > 0 ? ((profit / deckCOGS) * 100).toFixed(2) : 0;
+                    const container = containers.find(c => c.id === sale.container_id);
+                    
+                    return (
+                      <div key={sale.id} className="bg-black bg-opacity-50 border border-purple-400 rounded p-4">
+                        <div className="flex justify-between items-start mb-3">
+                          <div>
+                            <div className="font-semibold text-lg">{container?.name || 'Unknown Container'}</div>
+                            <div className="text-sm text-gray-400">{new Date(sale.sold_date).toLocaleDateString()}</div>
+                          </div>
+                          <div className={`text-lg font-bold ${profit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                            {profit >= 0 ? '+' : ''} ${profit.toFixed(2)}
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-3 gap-4 text-sm">
+                          <div className="bg-purple-900 bg-opacity-50 border border-purple-300 rounded p-3">
+                            <div className="text-gray-400 text-xs">COGS</div>
+                            <div className="font-semibold text-purple-300">${deckCOGS.toFixed(2)}</div>
+                          </div>
+                          <div className="bg-purple-900 bg-opacity-50 border border-purple-300 rounded p-3">
+                            <div className="text-gray-400 text-xs">Sale Price</div>
+                            <div className="font-semibold text-blue-300">${sale.sale_price.toFixed(2)}</div>
+                          </div>
+                          <div className="bg-purple-900 bg-opacity-50 border border-purple-300 rounded p-3">
+                            <div className="text-gray-400 text-xs">Profit %</div>
+                            <div className={`font-semibold ${profit >= 0 ? 'text-green-300' : 'text-red-300'}`}>{profitPercentage}%</div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  
+                  <div className="mt-6 pt-6 border-t border-purple-500">
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="bg-purple-900 bg-opacity-50 rounded p-4 border border-purple-400">
+                        <div className="text-gray-400 text-sm">Total Sales</div>
+                        <div className="text-2xl font-bold text-purple-300">{sales.length}</div>
+                      </div>
+                      <div className="bg-purple-900 bg-opacity-50 rounded p-4 border border-purple-400">
+                        <div className="text-gray-400 text-sm">Total Revenue</div>
+                        <div className="text-2xl font-bold text-blue-300">${sales.reduce((sum, s) => sum + s.sale_price, 0).toFixed(2)}</div>
+                      </div>
+                      <div className="bg-purple-900 bg-opacity-50 rounded p-4 border border-purple-400">
+                        <div className="text-gray-400 text-sm">Total Profit</div>
+                        <div className="text-2xl font-bold text-green-300">${sales.reduce((sum, s) => sum + (s.sale_price - calculateDeckCOGS(s.decklist_id)), 0).toFixed(2)}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-gray-400">No sales recorded yet. Sell containers to see analytics here.</p>
+              )}
             </div>
           </div>
         )}
@@ -773,6 +943,86 @@ export default function MTGInventoryTracker() {
                 ) : (
                   <p className="text-gray-400">No activity yet.</p>
                 )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Sell Modal */}
+        {showSellModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+            <div className="bg-purple-900 border border-purple-500 rounded-lg p-6 max-w-md w-full mx-4">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold">Sell Container</h2>
+                <button
+                  onClick={() => {
+                    setShowSellModal(false);
+                    setSelectedContainerForSale(null);
+                    setSalePrice('');
+                  }}
+                  className="text-gray-400 hover:text-white"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              
+              {selectedContainerForSale && (
+                <div className="mb-4">
+                  <div className="bg-black bg-opacity-50 border border-purple-400 rounded p-3 mb-4">
+                    <div className="text-sm text-gray-400">Container</div>
+                    <div className="font-semibold">{containers.find(c => c.id === selectedContainerForSale)?.name}</div>
+                  </div>
+                  
+                  <div className="bg-black bg-opacity-50 border border-purple-400 rounded p-3 mb-4">
+                    <div className="text-sm text-gray-400">Estimated COGS</div>
+                    <div className="font-semibold text-purple-300">
+                      ${calculateDeckCOGS(containers.find(c => c.id === selectedContainerForSale)?.decklist_id).toFixed(2)}
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold mb-2">Sale Price ($)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={salePrice}
+                    onChange={(e) => setSalePrice(e.target.value)}
+                    placeholder="Enter sale price"
+                    className="w-full bg-black bg-opacity-50 border border-purple-400 rounded px-4 py-2 text-white"
+                  />
+                </div>
+                
+                {salePrice && (
+                  <div className="bg-green-900 bg-opacity-30 border border-green-500 rounded p-3">
+                    <div className="text-sm text-gray-400">Estimated Profit</div>
+                    <div className={`font-semibold text-lg ${(salePrice - calculateDeckCOGS(containers.find(c => c.id === selectedContainerForSale)?.decklist_id)) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      ${(salePrice - calculateDeckCOGS(containers.find(c => c.id === selectedContainerForSale)?.decklist_id)).toFixed(2)}
+                    </div>
+                  </div>
+                )}
+                
+                <div className="flex gap-2">
+                  <button
+                    onClick={sellContainer}
+                    className="flex-1 bg-green-600 hover:bg-green-700 rounded px-4 py-2 font-semibold"
+                  >
+                    Confirm Sale
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowSellModal(false);
+                      setSelectedContainerForSale(null);
+                      setSalePrice('');
+                    }}
+                    className="flex-1 bg-gray-600 hover:bg-gray-700 rounded px-4 py-2 font-semibold"
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
             </div>
           </div>
