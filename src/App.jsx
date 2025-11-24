@@ -7,15 +7,22 @@ let supabase = null;
 
 const initializeSupabase = () => {
   try {
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    // Try multiple sources for environment variables
+    let supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    let supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    
+    console.log('Env check - URL:', supabaseUrl ? 'set' : 'not set', 'Key:', supabaseAnonKey ? 'set' : 'not set');
     
     if (!supabaseUrl || !supabaseAnonKey) {
       console.error('Supabase environment variables are not set');
+      console.error('VITE_SUPABASE_URL:', supabaseUrl);
+      console.error('VITE_SUPABASE_ANON_KEY:', supabaseAnonKey);
       return null;
     }
     
-    return createClient(supabaseUrl, supabaseAnonKey);
+    const client = createClient(supabaseUrl, supabaseAnonKey);
+    console.log('Supabase initialized successfully');
+    return client;
   } catch (error) {
     console.error('Failed to initialize Supabase:', error);
     return null;
