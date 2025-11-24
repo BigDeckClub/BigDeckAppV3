@@ -891,9 +891,8 @@ export default function MTGInventoryTracker() {
                                   <div className="flex justify-between items-center">
                                     <div className="flex-1">
                                       <div className="text-sm font-semibold text-purple-200">{item.set_name}</div>
-                                      <div className="grid grid-cols-4 gap-3 mt-1 text-xs">
+                                      <div className="grid grid-cols-3 gap-3 mt-1 text-xs">
                                         <div><span className="text-gray-400">Qty:</span> <span className="text-white font-semibold">{item.quantity}</span></div>
-                                        <div><span className="text-gray-400">Purchase:</span> <span className="text-white font-semibold">${item.purchase_price || 'N/A'}</span></div>
                                         <div><span className="text-gray-400">Containers:</span> <span className="text-white font-semibold">{item.containers_count || 0}</span></div>
                                         <div><span className="text-gray-400">Set:</span> <span className="text-white font-semibold">{item.set}</span></div>
                                       </div>
