@@ -1070,7 +1070,7 @@ export default function MTGInventoryTracker() {
                       setShowDecklistForm(false);
                       setDeckPreview(null);
                     }}
-                    className="flex-1 btn-secondary rounded px-4 py-2 font-semibold"
+                    className="flex-1 btn-secondary px-4 py-2 font-semibold"
                   >
                     Cancel
                   </button>
@@ -1114,23 +1114,22 @@ export default function MTGInventoryTracker() {
                   }).filter(Boolean);
                   
                   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
                     <div key={deck.id} className="bg-slate-800 border border-slate-600 rounded p-4">
                       <div className="flex justify-between items-start mb-3">
                         <div className="flex-1">
                           <div className="font-semibold">{deck.name}</div>
                           <div className="text-sm text-slate-300 mt-2">{deckCards.length} cards</div>
                         </div>
-                        <div className="flex gap-2 ml-4">
+                        <div className="flex gap-2 ml-4 justify-end">
                           <button
                             onClick={() => setExpandedDecklists(prev => ({...prev, [deck.id]: !prev[deck.id]}))}
-                            className="bg-blue-600 hover:bg-blue-700 rounded px-4 py-2 font-semibold"
+                            className="btn-primary px-4 py-2 font-semibold"
                           >
                             {isExpanded ? 'Hide' : 'View'} Cards
                           </button>
                           <button
                             onClick={() => deleteDecklist(deck.id)}
-                            className="bg-red-600 hover:bg-red-700 rounded px-3 py-2"
+                            className="btn-danger px-3 py-2"
                           >
                             <Trash2 className="w-5 h-5" />
                           </button>
@@ -1225,13 +1224,13 @@ export default function MTGInventoryTracker() {
                                               alert('Could not find card in decklist');
                                             }
                                           }}
-                                          className="flex-1 bg-green-600 hover:bg-green-700 rounded px-2 py-1 text-xs font-semibold"
+                                          className="flex-1 btn-primary px-2 py-1 text-xs font-semibold"
                                         >
                                           Save
                                         </button>
                                         <button
                                           onClick={() => setEditingDecklistCard(null)}
-                                          className="flex-1 btn-secondary rounded px-2 py-1 text-xs font-semibold"
+                                          className="flex-1 btn-secondary px-2 py-1 text-xs font-semibold"
                                         >
                                           Cancel
                                         </button>
@@ -1275,7 +1274,7 @@ export default function MTGInventoryTracker() {
                                               setEditCardAvailableSets([]);
                                             }
                                           }}
-                                          className="bg-blue-600 hover:bg-blue-700 rounded px-2 py-1 text-xs ml-2"
+                                          className="btn-primary px-2 py-1 text-xs ml-2"
                                         >
                                           Edit Set
                                         </button>
@@ -1331,13 +1330,13 @@ export default function MTGInventoryTracker() {
                 <div className="flex gap-2">
                   <button
                     onClick={addContainer}
-                    className="flex-1 btn-primary hover:shadow-lg rounded px-4 py-2 font-semibold"
+                    className="flex-1 btn-primary px-4 py-2 font-semibold"
                   >
                     Create
                   </button>
                   <button
                     onClick={() => setShowContainerForm(false)}
-                    className="flex-1 btn-secondary rounded px-4 py-2 font-semibold"
+                    className="flex-1 btn-secondary px-4 py-2 font-semibold"
                   >
                     Cancel
                   </button>
@@ -1365,7 +1364,7 @@ export default function MTGInventoryTracker() {
                         <div className="flex gap-2">
                           <button
                             onClick={() => toggleContainerExpand(container.id)}
-                            className="bg-blue-600 hover:bg-blue-700 rounded px-4 py-2 font-semibold"
+                            className="btn-primary px-4 py-2 font-semibold"
                           >
                             {expandedContainers[container.id] ? 'Hide' : 'View'} Contents
                           </button>
@@ -1381,7 +1380,7 @@ export default function MTGInventoryTracker() {
                           </button>
                           <button
                             onClick={() => deleteContainer(container.id)}
-                            className="bg-red-600 hover:bg-red-700 rounded px-3 py-2"
+                            className="btn-danger px-3 py-2"
                           >
                             <Trash2 className="w-5 h-5" />
                           </button>
@@ -1598,7 +1597,7 @@ export default function MTGInventoryTracker() {
                     value={salePrice}
                     onChange={(e) => setSalePrice(e.target.value)}
                     placeholder="Enter sale price"
-                    className="w-full bg-slate-800 border border-slate-600 rounded px-4 py-2 text-white"
+                    className="w-full bg-slate-800 border border-slate-600 rounded px-4 py-2 text-white text-base"
                   />
                 </div>
                 
@@ -1614,7 +1613,7 @@ export default function MTGInventoryTracker() {
                 <div className="flex gap-2">
                   <button
                     onClick={sellContainer}
-                    className="flex-1 bg-green-600 hover:bg-green-700 rounded px-4 py-2 font-semibold"
+                    className="flex-1 btn-primary px-4 py-2 font-semibold"
                   >
                     Confirm Sale
                   </button>
@@ -1624,7 +1623,7 @@ export default function MTGInventoryTracker() {
                       setSelectedContainerForSale(null);
                       setSalePrice('');
                     }}
-                    className="flex-1 btn-secondary rounded px-4 py-2 font-semibold"
+                    className="flex-1 btn-secondary px-4 py-2 font-semibold"
                   >
                     Cancel
                   </button>
@@ -1647,7 +1646,7 @@ export default function MTGInventoryTracker() {
                     min="0"
                     value={reorderSettings.normal}
                     onChange={(e) => setReorderSettings({...reorderSettings, normal: parseInt(e.target.value)})}
-                    className="w-full bg-slate-800 border border-slate-600 rounded px-4 py-2 text-white"
+                    className="w-full bg-slate-800 border border-slate-600 rounded px-4 py-2 text-white text-base"
                   />
                 </div>
                 <div>
@@ -1657,7 +1656,7 @@ export default function MTGInventoryTracker() {
                     min="0"
                     value={reorderSettings.land}
                     onChange={(e) => setReorderSettings({...reorderSettings, land: parseInt(e.target.value)})}
-                    className="w-full bg-slate-800 border border-slate-600 rounded px-4 py-2 text-white"
+                    className="w-full bg-slate-800 border border-slate-600 rounded px-4 py-2 text-white text-base"
                   />
                 </div>
                 <div>
@@ -1667,7 +1666,7 @@ export default function MTGInventoryTracker() {
                     min="0"
                     value={reorderSettings.bulk}
                     onChange={(e) => setReorderSettings({...reorderSettings, bulk: parseInt(e.target.value)})}
-                    className="w-full bg-slate-800 border border-slate-600 rounded px-4 py-2 text-white"
+                    className="w-full bg-slate-800 border border-slate-600 rounded px-4 py-2 text-white text-base"
                   />
                 </div>
                 <div className="border-t border-slate-700 hover:border-teal-500 pt-4 mt-4">
@@ -1683,16 +1682,16 @@ export default function MTGInventoryTracker() {
                   </button>
                   <p className="text-xs text-slate-400">Clears cached card prices and fetches fresh data</p>
                 </div>
-                <div className="flex gap-2 mt-4">
+                <div className="flex gap-2 mt-4 justify-end">
                   <button
                     onClick={saveReorderSettings}
-                    className="flex-1 btn-primary hover:shadow-lg rounded px-4 py-2 font-semibold"
+                    className="flex-1 btn-primary px-4 py-2 font-semibold"
                   >
                     Save
                   </button>
                   <button
                     onClick={() => setShowSettings(false)}
-                    className="flex-1 btn-secondary rounded px-4 py-2 font-semibold"
+                    className="flex-1 btn-secondary px-4 py-2 font-semibold"
                   >
                     Close
                   </button>
