@@ -35,6 +35,8 @@ export default function MTGInventoryTracker() {
   const [decklistName, setDecklistName] = useState('');
   const [decklistPaste, setDecklistPaste] = useState('');
   const [showDecklistForm, setShowDecklistForm] = useState(false);
+  const [deckPreview, setDeckPreview] = useState(null);
+  const [deckPreviewLoading, setDeckPreviewLoading] = useState(false);
 
   const [containerName, setContainerName] = useState('');
   const [selectedDecklist, setSelectedDecklist] = useState(null);
@@ -326,12 +328,68 @@ export default function MTGInventoryTracker() {
     }
   };
 
-  const addDecklist = async () => {
+  const parseAndPreviewDecklist = async () => {
     if (!decklistName || !decklistPaste) {
       alert('Please fill in all fields');
       return;
     }
 
+    setDeckPreviewLoading(true);
+    try {
+      const lines = decklistPaste.split('\n').filter(line => line.trim());
+      const cardsToFind = [];
+
+      // Parse decklist lines
+      lines.forEach(line => {
+        const match = line.match(/^(\d+)\s+(.+)$/);
+        if (match) {
+          const quantity = parseInt(match[1]);
+          const cardName = match[2].trim();
+          cardsToFind.push({ name: cardName, quantity });
+        }
+      });
+
+      // Find matches in inventory
+      const previewCards = await Promise.all(cardsToFind.map(async (card) => {
+        // Search for this card in Scryfall
+        try {
+          const scryfallRes = await fetch(`https://api.scryfall.com/cards/search?q=!"${card.name}"&unique=prints`);
+          const scryfallData = await scryfallRes.json();
+          
+          // Find matching cards in inventory
+          const inventoryMatches = inventory.filter(inv => 
+            inv.name.toLowerCase() === card.name.toLowerCase()
+          );
+
+          return {
+            cardName: card.name,
+            needed: card.quantity,
+            available: inventoryMatches.reduce((sum, item) => sum + (item.quantity || 0), 0),
+            inventoryItems: inventoryMatches,
+            scryfallCards: scryfallData.data || []
+          };
+        } catch (err) {
+          return {
+            cardName: card.name,
+            needed: card.quantity,
+            available: 0,
+            inventoryItems: [],
+            scryfallCards: [],
+            error: 'Failed to fetch from Scryfall'
+          };
+        }
+      }));
+
+      setDeckPreview(previewCards);
+    } catch (error) {
+      console.error('Error parsing decklist:', error);
+      alert('Error parsing decklist: ' + error.message);
+    } finally {
+      setDeckPreviewLoading(false);
+    }
+  };
+
+  const confirmAndAddDecklist = async () => {
     try {
       const response = await fetch(`${API_BASE}/decklists`, {
         method: 'POST',
@@ -342,6 +400,7 @@ export default function MTGInventoryTracker() {
       setDecklistName('');
       setDecklistPaste('');
       setShowDecklistForm(false);
+      setDeckPreview(null);
       await loadDecklists();
     } catch (error) {
       console.error('Error adding decklist:', error);
@@ -827,25 +886,60 @@ export default function MTGInventoryTracker() {
                   className="w-full bg-black bg-opacity-50 border border-purple-400 rounded px-4 py-2 text-white mb-4"
                 />
                 <textarea
-                  placeholder="Paste decklist here..."
+                  placeholder="Paste decklist here (e.g., '2 Lightning Bolt')"
                   value={decklistPaste}
                   onChange={(e) => setDecklistPaste(e.target.value)}
                   className="w-full bg-black bg-opacity-50 border border-purple-400 rounded px-4 py-2 text-white mb-4 h-48"
                 />
                 <div className="flex gap-2">
                   <button
-                    onClick={addDecklist}
-                    className="flex-1 bg-purple-600 hover:bg-purple-700 rounded px-4 py-2 font-semibold"
+                    onClick={parseAndPreviewDecklist}
+                    disabled={deckPreviewLoading}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 rounded px-4 py-2 font-semibold"
                   >
-                    Create
+                    {deckPreviewLoading ? 'Checking...' : 'Check Inventory'}
                   </button>
                   <button
-                    onClick={() => setShowDecklistForm(false)}
+                    onClick={() => {
+                      setShowDecklistForm(false);
+                      setDeckPreview(null);
+                    }}
                     className="flex-1 bg-gray-600 hover:bg-gray-700 rounded px-4 py-2 font-semibold"
                   >
                     Cancel
                   </button>
                 </div>
+
+                {deckPreview && (
+                  <div className="mt-6 border-t border-purple-500 pt-4">
+                    <h3 className="font-semibold mb-3">Inventory Preview</h3>
+                    <div className="bg-black bg-opacity-50 rounded p-4 max-h-64 overflow-y-auto space-y-2">
+                      {deckPreview.map((card, idx) => (
+                        <div key={idx} className={`p-2 rounded border-l-4 ${card.available >= card.needed ? 'border-green-500 bg-green-900 bg-opacity-20' : 'border-red-500 bg-red-900 bg-opacity-20'}`}>
+                          <div className="flex justify-between text-sm">
+                            <span className="font-semibold">{card.cardName}</span>
+                            <span className={card.available >= card.needed ? 'text-green-400' : 'text-red-400'}>
+                              {card.available}/{card.needed}
+                            </span>
+                          </div>
+                          {card.inventoryItems.length > 0 && (
+                            <div className="text-xs text-gray-400 ml-2 mt-1">
+                              {card.inventoryItems.map((item, i) => (
+                                <div key={i}>{item.set_name} ({item.quantity}x)</div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    <button
+                      onClick={confirmAndAddDecklist}
+                      className="w-full mt-4 bg-green-600 hover:bg-green-700 rounded px-4 py-2 font-semibold"
+                    >
+                      Confirm & Create Decklist
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 
