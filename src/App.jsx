@@ -1348,9 +1348,12 @@ export default function MTGInventoryTracker() {
                 {decklists.map((deck) => {
                   const prices = decklistPrices[deck.id] || { tcg: 0, ck: 0 };
                   const isExpanded = expandedDecklists[deck.id];
-                  const deckCards = deck.decklist.split('\n').filter(line => line.trim()).map(line => {
+                  const deckCards = deck.decklist.split('\n').filter(line => line.trim()).flatMap(line => {
                     const match = line.match(/^(\d+)\s+(.+)$/);
-                    return match ? { quantity: parseInt(match[1]), name: match[2].trim() } : null;
+                    if (!match) return [];
+                    const quantity = parseInt(match[1]);
+                    const name = match[2].trim();
+                    return Array.from({ length: quantity }, () => ({ name }));
                   }).filter(Boolean);
                   
                   return (
@@ -1358,7 +1361,7 @@ export default function MTGInventoryTracker() {
                       <div className="flex justify-between items-start mb-3">
                         <div className="flex-1">
                           <div className="font-semibold">{deck.name}</div>
-                          <div className="text-sm text-gray-300 mt-2">{deckCards.length} unique cards</div>
+                          <div className="text-sm text-gray-300 mt-2">{deckCards.length} cards</div>
                         </div>
                         <div className="flex gap-2 ml-4">
                           <button
