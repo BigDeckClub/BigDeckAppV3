@@ -789,9 +789,9 @@ export default function MTGInventoryTracker() {
                     return acc;
                   }, {})
                 ).map(([cardName, items]) => {
-                  const totalQty = items.reduce((sum, item) => sum + item.quantity, 0);
+                  const available = items.reduce((sum, item) => sum + item.quantity, 0);
                   const totalInContainers = items.reduce((sum, item) => sum + (parseInt(item.in_containers_qty) || 0), 0);
-                  const available = totalQty - totalInContainers;
+                  const totalQty = available + totalInContainers;
                   
                   // Calculate avg price for items from last 60 days
                   const sixtyDaysAgo = new Date();
