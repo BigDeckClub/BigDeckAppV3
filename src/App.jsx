@@ -52,6 +52,7 @@ export default function MTGInventoryTracker() {
   const [containerItems, setContainerItems] = useState({});
   const [defaultSearchSet, setDefaultSearchSet] = useState('');
   const [allSets, setAllSets] = useState([]);
+  const [successMessage, setSuccessMessage] = useState('');
 
   // Price display component
   const MarketPrices = ({ cardName, setCode }) => {
@@ -157,11 +158,13 @@ export default function MTGInventoryTracker() {
         throw new Error(`HTTP ${response.status}: ${errorText}`);
       }
       await loadInventory();
-      alert('Card added successfully!');
+      setSuccessMessage('Card added successfully!');
+      setTimeout(() => setSuccessMessage(''), 3000);
       return true;
     } catch (error) {
       console.error('Error adding inventory item:', error.message, error);
-      alert('Error adding card: ' + error.message);
+      setSuccessMessage('Error adding card: ' + error.message);
+      setTimeout(() => setSuccessMessage(''), 3000);
       return false;
     }
   };
@@ -756,7 +759,7 @@ export default function MTGInventoryTracker() {
                   >
                     <option value="">Show most recent from inventory</option>
                     {allSets.map(set => (
-                      <option key={set.code} value={set.code}>{set.name} ({set.code})</option>
+                      <option key={set.code} value={set.code}>{set.code} - {set.name}</option>
                     ))}
                   </select>
                 </div>
