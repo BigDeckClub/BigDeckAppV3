@@ -1290,8 +1290,8 @@ export default function MTGInventoryTracker() {
                     </div>
                   );
                 })}
-                {decklists.length === 0 && <p className="text-slate-400">No decklists yet.</p>}
               </div>
+              {decklists.length === 0 && <p className="text-slate-400">No decklists yet.</p>}
             </div>
           </div>
         )}
@@ -1415,8 +1415,8 @@ export default function MTGInventoryTracker() {
                   </div>
                   );
                 })}
-                {containers.length === 0 && <p className="text-slate-400">No containers yet.</p>}
               </div>
+              {containers.length === 0 && <p className="text-slate-400">No containers yet.</p>}
             </div>
           </div>
         )}
@@ -1431,45 +1431,46 @@ export default function MTGInventoryTracker() {
               </h2>
               
               {sales.length > 0 ? (
-                <div className="space-y-4">
-                  {sales.map((sale) => {
-                    const salePrice = parseFloat(sale.sale_price) || 0;
-                    const deckCOGS = calculateDeckCOGS(sale.decklist_id);
-                    const profit = salePrice - deckCOGS;
-                    const profitPercentage = deckCOGS > 0 ? ((profit / deckCOGS) * 100).toFixed(2) : 0;
-                    const container = containers.find(c => c.id === sale.container_id);
-                    
-                    return (
-                      <div key={sale.id} className="bg-slate-800 border border-slate-600 p-4">
-                        <div className="flex justify-between items-start mb-3">
-                          <div>
-                            <div className="font-semibold text-lg">{container?.name || 'Unknown Container'}</div>
-                            <div className="text-sm text-slate-400">{new Date(sale.sold_date).toLocaleDateString()}</div>
+                <>
+                  <div className="space-y-4">
+                    {sales.map((sale) => {
+                      const salePrice = parseFloat(sale.sale_price) || 0;
+                      const deckCOGS = calculateDeckCOGS(sale.decklist_id);
+                      const profit = salePrice - deckCOGS;
+                      const profitPercentage = deckCOGS > 0 ? ((profit / deckCOGS) * 100).toFixed(2) : 0;
+                      const container = containers.find(c => c.id === sale.container_id);
+                      
+                      return (
+                        <div key={sale.id} className="bg-slate-800 border border-slate-600 p-4">
+                          <div className="flex justify-between items-start mb-3">
+                            <div>
+                              <div className="font-semibold text-lg">{container?.name || 'Unknown Container'}</div>
+                              <div className="text-sm text-slate-400">{new Date(sale.sold_date).toLocaleDateString()}</div>
+                            </div>
+                            <div className={`text-lg font-bold ${profit >= 0 ? 'text-emerald-400' : 'text-red-300'}`}>
+                              {profit >= 0 ? '+' : ''} ${profit.toFixed(2)}
+                            </div>
                           </div>
-                          <div className={`text-lg font-bold ${profit >= 0 ? 'text-emerald-400' : 'text-red-300'}`}>
-                            {profit >= 0 ? '+' : ''} ${profit.toFixed(2)}
+                          
+                          <div className="grid grid-cols-3 gap-4 text-sm">
+                            <div className="bg-slate-800 bg-opacity-50 border border-slate-600 p-3">
+                              <div className="text-slate-400 text-xs">COGS</div>
+                              <div className="font-semibold text-teal-300">${deckCOGS.toFixed(2)}</div>
+                            </div>
+                            <div className="bg-slate-800 bg-opacity-50 border border-slate-600 p-3">
+                              <div className="text-slate-400 text-xs">Sale Price</div>
+                              <div className="font-semibold text-cyan-300">${salePrice.toFixed(2)}</div>
+                            </div>
+                            <div className="bg-slate-800 bg-opacity-50 border border-slate-600 p-3">
+                              <div className="text-slate-400 text-xs">Profit %</div>
+                              <div className={`font-semibold ${profit >= 0 ? 'text-emerald-300' : 'text-red-300'}`}>{profitPercentage}%</div>
+                            </div>
                           </div>
                         </div>
-                        
-                        <div className="grid grid-cols-3 gap-4 text-sm">
-                          <div className="bg-slate-800 bg-opacity-50 border border-slate-600 p-3">
-                            <div className="text-slate-400 text-xs">COGS</div>
-                            <div className="font-semibold text-teal-300">${deckCOGS.toFixed(2)}</div>
-                          </div>
-                          <div className="bg-slate-800 bg-opacity-50 border border-slate-600 p-3">
-                            <div className="text-slate-400 text-xs">Sale Price</div>
-                            <div className="font-semibold text-cyan-300">${salePrice.toFixed(2)}</div>
-                          </div>
-                          <div className="bg-slate-800 bg-opacity-50 border border-slate-600 p-3">
-                            <div className="text-slate-400 text-xs">Profit %</div>
-                            <div className={`font-semibold ${profit >= 0 ? 'text-emerald-300' : 'text-red-300'}`}>{profitPercentage}%</div>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-                
+                      );
+                    })}
+                  </div>
+
                   <div className="mt-6 pt-6 border-t border-slate-700 hover:border-teal-500">
                     <div className="grid grid-cols-3 gap-4">
                       <div className="bg-slate-800 bg-opacity-50 p-4 border border-slate-600">
@@ -1486,7 +1487,7 @@ export default function MTGInventoryTracker() {
                       </div>
                     </div>
                   </div>
-                </div>
+                </>
               ) : (
                 <p className="text-slate-400">No sales recorded yet. Sell containers to see analytics here.</p>
               )}
