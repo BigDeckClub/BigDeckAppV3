@@ -58,6 +58,7 @@ export default function MTGInventoryTracker() {
   const [expandedDecklists, setExpandedDecklists] = useState({});
   const [editingDecklistCard, setEditingDecklistCard] = useState(null);
   const [editCardSet, setEditCardSet] = useState('');
+  const [editCardAvailableSets, setEditCardAvailableSets] = useState([]);
 
   // Price display component
   const MarketPrices = ({ cardName, setCode }) => {
@@ -1405,13 +1406,18 @@ export default function MTGInventoryTracker() {
                                 <div key={idx} className="bg-purple-900 bg-opacity-30 rounded p-3">
                                   {isEditingThisCard ? (
                                     <div className="space-y-2">
-                                      <input
-                                        type="text"
+                                      <select
                                         value={editCardSet}
-                                        onChange={(e) => setEditCardSet(e.target.value.toUpperCase())}
-                                        placeholder="Set Code (e.g., M11)"
+                                        onChange={(e) => setEditCardSet(e.target.value)}
                                         className="w-full bg-black bg-opacity-50 border border-purple-400 rounded px-3 py-2 text-white text-xs"
-                                      />
+                                      >
+                                        <option value="">Select a set...</option>
+                                        {editCardAvailableSets.map((set) => (
+                                          <option key={set.code} value={set.code}>
+                                            {set.code.toUpperCase()} - {set.name}
+                                          </option>
+                                        ))}
+                                      </select>
                                       <div className="flex gap-2">
                                         <button
                                           onClick={() => {
@@ -1452,9 +1458,27 @@ export default function MTGInventoryTracker() {
                                           <div className="text-xs text-gray-400">{cardSet.toUpperCase()}</div>
                                         </div>
                                         <button
-                                          onClick={() => {
+                                          onClick={async () => {
                                             setEditingDecklistCard({ idx, deckId: deck.id });
                                             setEditCardSet(cardSet);
+                                            
+                                            // Fetch available sets for this card
+                                            try {
+                                              const response = await fetch(`https://api.scryfall.com/cards/search?q=!"${encodeURIComponent(card.name)}"&unique=prints&order=released`);
+                                              if (response.ok) {
+                                                const data = await response.json();
+                                                const sets = data.data?.map(card => ({
+                                                  code: card.set.toUpperCase(),
+                                                  name: card.set_name
+                                                })) || [];
+                                                // Remove duplicates
+                                                const uniqueSets = Array.from(new Map(sets.map(s => [s.code, s])).values());
+                                                setEditCardAvailableSets(uniqueSets);
+                                              }
+                                            } catch (error) {
+                                              console.error('Error fetching card sets:', error);
+                                              setEditCardAvailableSets([]);
+                                            }
                                           }}
                                           className="bg-blue-600 hover:bg-blue-700 rounded px-2 py-1 text-xs ml-2"
                                         >
