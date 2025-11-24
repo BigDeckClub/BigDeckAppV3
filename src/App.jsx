@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Plus, Trash2, FileText, Package, Copy, Layers, AlertCircle, TrendingUp, Settings, RefreshCw, DollarSign, X } from 'lucide-react';
+import { fetchCardPrices } from './utils/priceUtils';
 
 // Use relative path - Vite dev server will proxy to backend
 const API_BASE = '/api';
@@ -70,23 +71,12 @@ export default function MTGInventoryTracker() {
       if (priceCache[cacheKey]) {
         setPrices(priceCache[cacheKey]);
       } else {
-        const fetchPrices = async () => {
-          try {
-            const response = await fetch(`${API_BASE}/prices/${encodeURIComponent(cardName)}/${setCode}`);
-            if (response.ok) {
-              const priceData = await response.json();
-              setPrices(priceData);
-              setPriceCache(prev => ({...prev, [cacheKey]: priceData}));
-              return;
-            }
-          } catch (error) {
-
-          }
-          const fallback = { tcg: 'N/A', ck: 'N/A' };
-          setPrices(fallback);
-          setPriceCache(prev => ({...prev, [cacheKey]: fallback}));
+        const loadPrices = async () => {
+          const priceData = await fetchCardPrices(cardName, setCode);
+          setPrices(priceData);
+          setPriceCache(prev => ({...prev, [cacheKey]: priceData}));
         };
-        fetchPrices();
+        loadPrices();
       }
     }, [cardName, setCode]);
     
@@ -99,14 +89,13 @@ export default function MTGInventoryTracker() {
     );
   };
 
-  // Individual card price component for decklist views - fetches directly from Scryfall and backend
+  // Individual card price component for decklist views
   const DecklistCardPrice = ({ cardName, setCode }) => {
     const [tcgPrice, setTcgPrice] = useState('N/A');
     const [ckPrice, setCkPrice] = useState('N/A');
     
     useEffect(() => {
       let isMounted = true;
-      
       const cacheKey = `${cardName}|${setCode}`;
       const CACHE_DURATION_MS = 12 * 60 * 60 * 1000; // 12 hours
       
@@ -115,7 +104,7 @@ export default function MTGInventoryTracker() {
         const cached = priceCache[cacheKey];
         const now = Date.now();
         // Check if cache is still valid
-        if (now - cached.timestamp < CACHE_DURATION_MS) {
+        if (now - (cached.timestamp || 0) < CACHE_DURATION_MS) {
           if (isMounted) {
             setTcgPrice(cached.tcg);
             setCkPrice(cached.ck);
@@ -124,45 +113,17 @@ export default function MTGInventoryTracker() {
         }
       }
       
-      const fetchPrices = async () => {
-        let tcg = 'N/A';
-        let ck = 'N/A';
-        
-        // Fetch TCG price from Scryfall
-        try {
-          const scryfallRes = await fetch(`https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(cardName)}`);
-          if (scryfallRes.ok) {
-            const scryfallData = await scryfallRes.json();
-            tcg = scryfallData.prices?.usd ? `$${scryfallData.prices.usd}` : 'N/A';
-          }
-        } catch (error) {
-
-        }
-        
-        // Fetch CK price from backend (MTG Goldfish widget)
-        try {
-          const ckRes = await fetch(`${API_BASE}/prices/${encodeURIComponent(cardName)}/${setCode}`);
-          if (ckRes.ok) {
-            const ckData = await ckRes.json();
-            ck = ckData.ck || 'N/A';
-          }
-        } catch (error) {
-
-        }
-        
-        // Cache the result with timestamp
+      const loadPrices = async () => {
+        const priceData = await fetchCardPrices(cardName, setCode);
         if (isMounted) {
-          setPriceCache(prev => ({...prev, [cacheKey]: { tcg, ck, timestamp: Date.now() }}));
-          setTcgPrice(tcg);
-          setCkPrice(ck);
+          setPriceCache(prev => ({...prev, [cacheKey]: { ...priceData, timestamp: Date.now() }}));
+          setTcgPrice(priceData.tcg);
+          setCkPrice(priceData.ck);
         }
       };
       
-      fetchPrices();
-      
-      return () => {
-        isMounted = false;
-      };
+      loadPrices();
+      return () => { isMounted = false; };
     }, [cardName, setCode]);
     
     return (

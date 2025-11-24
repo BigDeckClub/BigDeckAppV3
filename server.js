@@ -25,11 +25,14 @@ const pool = new Pool({
 // Test connection on startup
 pool.query('SELECT NOW()', (err, res) => {
   if (err) {
-
-  } else {
-
+    // Connection error silently handled
   }
 });
+
+// Unified error handler middleware
+const handleDbError = (err, res) => {
+  res.status(500).json({ error: err.message });
+};
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -50,8 +53,7 @@ app.get('/api/inventory', async (req, res) => {
     `);
     res.json(result.rows);
   } catch (err) {
-
-    res.status(500).json({ error: err.message });
+    handleDbError(err, res);
   }
 });
 
@@ -64,8 +66,7 @@ app.post('/api/inventory', async (req, res) => {
     );
     res.json(result.rows[0]);
   } catch (err) {
-
-    res.status(500).json({ error: err.message });
+    handleDbError(err, res);
   }
 });
 
@@ -78,8 +79,7 @@ app.put('/api/inventory/:id', async (req, res) => {
     );
     res.json(result.rows[0]);
   } catch (err) {
-
-    res.status(500).json({ error: err.message });
+    handleDbError(err, res);
   }
 });
 
@@ -88,8 +88,7 @@ app.delete('/api/inventory/:id', async (req, res) => {
     await pool.query('DELETE FROM inventory WHERE id = $1', [req.params.id]);
     res.json({ success: true });
   } catch (err) {
-
-    res.status(500).json({ error: err.message });
+    handleDbError(err, res);
   }
 });
 
@@ -99,8 +98,7 @@ app.get('/api/decklists', async (req, res) => {
     const result = await pool.query('SELECT * FROM decklists ORDER BY name');
     res.json(result.rows);
   } catch (err) {
-
-    res.status(500).json({ error: err.message });
+    handleDbError(err, res);
   }
 });
 
@@ -113,8 +111,7 @@ app.post('/api/decklists', async (req, res) => {
     );
     res.json(result.rows[0]);
   } catch (err) {
-
-    res.status(500).json({ error: err.message });
+    handleDbError(err, res);
   }
 });
 
@@ -127,8 +124,7 @@ app.put('/api/decklists/:id', async (req, res) => {
     );
     res.json(result.rows[0]);
   } catch (err) {
-
-    res.status(500).json({ error: err.message });
+    handleDbError(err, res);
   }
 });
 
@@ -137,8 +133,7 @@ app.delete('/api/decklists/:id', async (req, res) => {
     await pool.query('DELETE FROM decklists WHERE id = $1', [req.params.id]);
     res.json({ success: true });
   } catch (err) {
-
-    res.status(500).json({ error: err.message });
+    handleDbError(err, res);
   }
 });
 
@@ -148,8 +143,7 @@ app.get('/api/containers', async (req, res) => {
     const result = await pool.query('SELECT * FROM containers ORDER BY name');
     res.json(result.rows);
   } catch (err) {
-
-    res.status(500).json({ error: err.message });
+    handleDbError(err, res);
   }
 });
 
@@ -219,18 +213,13 @@ app.post('/api/containers', async (req, res) => {
         
         remainingQty -= qtyToUse;
       }
-      
-      if (remainingQty > 0) {
-
-      }
     }
     
     await client.query('COMMIT');
     res.json(container);
   } catch (err) {
     await client.query('ROLLBACK');
-
-    res.status(500).json({ error: err.message });
+    handleDbError(err, res);
   } finally {
     client.release();
   }
@@ -250,8 +239,7 @@ app.get('/api/containers/:id/items', async (req, res) => {
     );
     res.json(result.rows);
   } catch (err) {
-
-    res.status(500).json({ error: err.message });
+    handleDbError(err, res);
   }
 });
 
@@ -274,7 +262,7 @@ app.delete('/api/containers/:id', async (req, res) => {
       );
     }
     
-    // Delete container_items (cascade will handle it with FK)
+    // Delete container_items
     await client.query(`DELETE FROM container_items WHERE container_id = $1`, [req.params.id]);
     
     // Delete container
@@ -284,8 +272,7 @@ app.delete('/api/containers/:id', async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     await client.query('ROLLBACK');
-
-    res.status(500).json({ error: err.message });
+    handleDbError(err, res);
   } finally {
     client.release();
   }
@@ -297,8 +284,7 @@ app.get('/api/sales', async (req, res) => {
     const result = await pool.query('SELECT * FROM sales ORDER BY sold_date DESC');
     res.json(result.rows);
   } catch (err) {
-
-    res.status(500).json({ error: err.message });
+    handleDbError(err, res);
   }
 });
 
@@ -311,8 +297,7 @@ app.post('/api/sales', async (req, res) => {
     );
     res.json(result.rows[0]);
   } catch (err) {
-
-    res.status(500).json({ error: err.message });
+    handleDbError(err, res);
   }
 });
 
@@ -326,8 +311,7 @@ app.get('/api/settings/:key', async (req, res) => {
       res.json(null);
     }
   } catch (err) {
-
-    res.status(500).json({ error: err.message });
+    handleDbError(err, res);
   }
 });
 
@@ -340,8 +324,7 @@ app.post('/api/settings/:key', async (req, res) => {
     );
     res.json(result.rows[0]);
   } catch (err) {
-
-    res.status(500).json({ error: err.message });
+    handleDbError(err, res);
   }
 });
 
@@ -349,7 +332,6 @@ app.post('/api/settings/:key', async (req, res) => {
 async function fetchCardKingdomPriceFromWidget(cardName, setCode) {
   try {
     const cardId = `${cardName} [${setCode.toUpperCase()}]`;
-    
     const widgetUrl = `https://www.mtggoldfish.com/cardkingdom/price_widget?card_id=${encodeURIComponent(cardId)}`;
     
     const response = await fetch(widgetUrl, {
@@ -359,7 +341,6 @@ async function fetchCardKingdomPriceFromWidget(cardName, setCode) {
     });
     
     if (!response.ok) {
-
       return 'N/A';
     }
     
@@ -375,7 +356,6 @@ async function fetchCardKingdomPriceFromWidget(cardName, setCode) {
     
     if (nmMatch && nmMatch[2]) {
       price = nmMatch[2];
-
     } else {
       // Fallback: Look for any row with quantity > 0 and extract its price
       const tables = $('table');
@@ -402,13 +382,11 @@ async function fetchCardKingdomPriceFromWidget(cardName, setCode) {
       
       if (bestPrice !== 'N/A') {
         price = bestPrice;
-
       }
     }
     
     return price;
   } catch (error) {
-
     return 'N/A';
   }
 }
@@ -446,7 +424,6 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
         const tcgNum = parseFloat(tcgPrice.replace('$', ''));
         const estimatedCk = (tcgNum * 1.15).toFixed(2);
         ckPrice = `$${estimatedCk}`;
-
       }
     } else {
       // Primary set failed, try alternative set codes
@@ -470,7 +447,6 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
               if (card.prices?.usd) {
                 tcgPrice = `$${card.prices.usd}`;
               }
-
               break;
             }
           }
@@ -482,7 +458,6 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
               const tcgNum = parseFloat(tcgPrice.replace('$', ''));
               const estimatedCk = (tcgNum * 1.15).toFixed(2);
               ckPrice = `$${estimatedCk}`;
-
             }
           }
         }
@@ -492,12 +467,11 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
     res.json({ tcg: tcgPrice, ck: ckPrice });
     
   } catch (error) {
-
     res.json({ tcg: 'N/A', ck: 'N/A', error: error.message });
   }
 });
 
+
 const PORT = 3000;
 app.listen(PORT, () => {
-
 });
