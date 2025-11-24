@@ -44,6 +44,7 @@ export default function MTGInventoryTracker() {
   const [showSettings, setShowSettings] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({});
+  const [expandedCards, setExpandedCards] = useState({});
 
   useEffect(() => {
     loadAllData();
@@ -615,86 +616,120 @@ export default function MTGInventoryTracker() {
 
             {/* Inventory List */}
             <div className="bg-purple-900 bg-opacity-30 rounded-lg p-6 border border-purple-500">
-              <h2 className="text-xl font-bold mb-4">Card Inventory ({inventory.length})</h2>
+              <h2 className="text-xl font-bold mb-4">Card Inventory</h2>
               <div className="grid gap-4">
-                {inventory.map((item) => (
-                  <div key={item.id} className="bg-black bg-opacity-50 border border-purple-400 rounded p-4 flex justify-between items-center">
-                    {editingId === item.id ? (
-                      <div className="flex-1 space-y-3">
-                        <div className="font-semibold">{item.name}</div>
-                        <div className="grid grid-cols-2 gap-2">
-                          <input
-                            type="number"
-                            min="1"
-                            value={editForm.quantity}
-                            onChange={(e) => setEditForm({...editForm, quantity: e.target.value})}
-                            placeholder="Quantity"
-                            className="bg-black bg-opacity-50 border border-purple-400 rounded px-2 py-1 text-white text-sm"
-                          />
-                          <input
-                            type="number"
-                            step="0.01"
-                            value={editForm.purchase_price}
-                            onChange={(e) => setEditForm({...editForm, purchase_price: e.target.value})}
-                            placeholder="Price"
-                            className="bg-black bg-opacity-50 border border-purple-400 rounded px-2 py-1 text-white text-sm"
-                          />
-                          <input
-                            type="date"
-                            value={editForm.purchase_date}
-                            onChange={(e) => setEditForm({...editForm, purchase_date: e.target.value})}
-                            className="bg-black bg-opacity-50 border border-purple-400 rounded px-2 py-1 text-white text-sm"
-                          />
-                          <select
-                            value={editForm.reorder_type}
-                            onChange={(e) => setEditForm({...editForm, reorder_type: e.target.value})}
-                            className="bg-black bg-opacity-50 border border-purple-400 rounded px-2 py-1 text-white text-sm"
-                          >
-                            <option value="normal">Normal</option>
-                            <option value="land">Land</option>
-                            <option value="bulk">Bulk</option>
-                          </select>
+                {Object.entries(
+                  inventory.reduce((acc, item) => {
+                    if (!acc[item.name]) {
+                      acc[item.name] = [];
+                    }
+                    acc[item.name].push(item);
+                    return acc;
+                  }, {})
+                ).map(([cardName, items]) => {
+                  const totalQty = items.reduce((sum, item) => sum + item.quantity, 0);
+                  const avgPrice = items.reduce((sum, item) => sum + (item.purchase_price || 0) * item.quantity, 0) / totalQty;
+                  const isExpanded = expandedCards[cardName];
+                  
+                  return (
+                    <div key={cardName} className="bg-black bg-opacity-50 border border-purple-400 rounded p-4">
+                      <div className="flex justify-between items-center cursor-pointer" onClick={() => setExpandedCards({...expandedCards, [cardName]: !isExpanded})}>
+                        <div className="flex-1">
+                          <div className="font-semibold text-lg">{cardName}</div>
+                          <div className="text-sm text-gray-300">Total: {totalQty} copies | Avg Price: ${avgPrice.toFixed(2)}</div>
                         </div>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => updateInventoryItem(item.id)}
-                            className="flex-1 bg-green-600 hover:bg-green-700 rounded px-3 py-1 text-sm font-semibold"
-                          >
-                            Save
-                          </button>
-                          <button
-                            onClick={() => setEditingId(null)}
-                            className="flex-1 bg-gray-600 hover:bg-gray-700 rounded px-3 py-1 text-sm"
-                          >
-                            Cancel
-                          </button>
+                        <div className="text-purple-400 ml-4">
+                          {isExpanded ? '▼' : '▶'}
                         </div>
                       </div>
-                    ) : (
-                      <>
-                        <div className="flex-1">
-                          <div className="font-semibold">{item.name}</div>
-                          <div className="text-sm text-gray-300">Set: {item.set_name}</div>
-                          <div className="text-sm text-gray-300">Quantity: {item.quantity} | Price: ${item.purchase_price || 'N/A'}</div>
+                      
+                      {isExpanded && (
+                        <div className="mt-4 space-y-3 border-t border-purple-600 pt-4">
+                          {items.map((item) => {
+                            const isEditing = editingId === item.id;
+                            return (
+                              <div key={item.id} className="bg-black bg-opacity-50 border border-purple-300 rounded p-3">
+                                {isEditing ? (
+                                  <div className="space-y-2">
+                                    <div className="text-sm text-gray-400">{item.set_name} ({item.set})</div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                      <input
+                                        type="number"
+                                        min="1"
+                                        value={editForm.quantity}
+                                        onChange={(e) => setEditForm({...editForm, quantity: e.target.value})}
+                                        placeholder="Quantity"
+                                        className="bg-black bg-opacity-50 border border-purple-400 rounded px-2 py-1 text-white text-sm"
+                                      />
+                                      <input
+                                        type="number"
+                                        step="0.01"
+                                        value={editForm.purchase_price}
+                                        onChange={(e) => setEditForm({...editForm, purchase_price: e.target.value})}
+                                        placeholder="Price"
+                                        className="bg-black bg-opacity-50 border border-purple-400 rounded px-2 py-1 text-white text-sm"
+                                      />
+                                      <input
+                                        type="date"
+                                        value={editForm.purchase_date}
+                                        onChange={(e) => setEditForm({...editForm, purchase_date: e.target.value})}
+                                        className="bg-black bg-opacity-50 border border-purple-400 rounded px-2 py-1 text-white text-sm"
+                                      />
+                                      <select
+                                        value={editForm.reorder_type}
+                                        onChange={(e) => setEditForm({...editForm, reorder_type: e.target.value})}
+                                        className="bg-black bg-opacity-50 border border-purple-400 rounded px-2 py-1 text-white text-sm"
+                                      >
+                                        <option value="normal">Normal</option>
+                                        <option value="land">Land</option>
+                                        <option value="bulk">Bulk</option>
+                                      </select>
+                                    </div>
+                                    <div className="flex gap-2">
+                                      <button
+                                        onClick={() => updateInventoryItem(item.id)}
+                                        className="flex-1 bg-green-600 hover:bg-green-700 rounded px-3 py-1 text-sm font-semibold"
+                                      >
+                                        Save
+                                      </button>
+                                      <button
+                                        onClick={() => setEditingId(null)}
+                                        className="flex-1 bg-gray-600 hover:bg-gray-700 rounded px-3 py-1 text-sm"
+                                      >
+                                        Cancel
+                                      </button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="flex justify-between items-center">
+                                    <div className="flex-1">
+                                      <div className="text-sm text-gray-400">{item.set_name} ({item.set})</div>
+                                      <div className="text-sm text-gray-300">Qty: {item.quantity} | Price: ${item.purchase_price || 'N/A'}</div>
+                                    </div>
+                                    <div className="flex gap-2 ml-4">
+                                      <button
+                                        onClick={() => startEditingItem(item)}
+                                        className="bg-blue-600 hover:bg-blue-700 rounded px-3 py-1 text-sm"
+                                      >
+                                        Edit
+                                      </button>
+                                      <button
+                                        onClick={() => deleteInventoryItem(item.id)}
+                                        className="bg-red-600 hover:bg-red-700 rounded px-3 py-1 text-sm"
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
-                        <div className="flex gap-2 ml-4">
-                          <button
-                            onClick={() => startEditingItem(item)}
-                            className="bg-blue-600 hover:bg-blue-700 rounded px-3 py-2"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => deleteInventoryItem(item.id)}
-                            className="bg-red-600 hover:bg-red-700 rounded px-3 py-2"
-                          >
-                            <Trash2 className="w-5 h-5" />
-                          </button>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                ))}
+                      )}
+                    </div>
+                  );
+                })}
                 {inventory.length === 0 && <p className="text-gray-400">No cards in inventory yet.</p>}
               </div>
             </div>
