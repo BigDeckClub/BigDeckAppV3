@@ -1975,7 +1975,20 @@ export default function MTGInventoryTracker() {
                     className="w-full bg-black bg-opacity-50 border border-purple-400 rounded px-4 py-2 text-white"
                   />
                 </div>
-                <div className="flex gap-2">
+                <div className="border-t border-purple-500 pt-4 mt-4">
+                  <button
+                    onClick={() => {
+                      setPriceCache({});
+                      setSuccessMessage('Price cache cleared successfully!');
+                      setTimeout(() => setSuccessMessage(''), 3000);
+                    }}
+                    className="w-full bg-orange-600 hover:bg-orange-700 rounded px-4 py-2 font-semibold mb-2"
+                  >
+                    Refresh Price Cache
+                  </button>
+                  <p className="text-xs text-gray-400">Clears cached card prices and fetches fresh data</p>
+                </div>
+                <div className="flex gap-2 mt-4">
                   <button
                     onClick={saveReorderSettings}
                     className="flex-1 bg-purple-600 hover:bg-purple-700 rounded px-4 py-2 font-semibold"
