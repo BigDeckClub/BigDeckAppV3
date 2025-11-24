@@ -53,6 +53,7 @@ export default function MTGInventoryTracker() {
   const [defaultSearchSet, setDefaultSearchSet] = useState('');
   const [allSets, setAllSets] = useState([]);
   const [successMessage, setSuccessMessage] = useState('');
+  const [decklistPrices, setDecklistPrices] = useState({});
 
   // Price display component
   const MarketPrices = ({ cardName, setCode }) => {
@@ -98,6 +99,19 @@ export default function MTGInventoryTracker() {
     const saved = localStorage.getItem('defaultSearchSet');
     if (saved) setDefaultSearchSet(saved);
   }, []);
+
+  useEffect(() => {
+    const calculateAllDecklistPrices = async () => {
+      const prices = {};
+      for (const deck of decklists) {
+        prices[deck.id] = await calculateDecklistPrices(deck.decklist);
+      }
+      setDecklistPrices(prices);
+    };
+    if (decklists.length > 0) {
+      calculateAllDecklistPrices();
+    }
+  }, [decklists]);
 
   const loadAllSets = async () => {
     try {
@@ -1175,7 +1189,7 @@ export default function MTGInventoryTracker() {
               <h2 className="text-xl font-bold mb-4">Decklists ({decklists.length})</h2>
               <div className="grid gap-4">
                 {decklists.map((deck) => {
-                  const deckPrices = calculateDecklistPrices(deck.decklist);
+                  const prices = decklistPrices[deck.id] || { tcg: 0, ck: 0 };
                   return (
                     <div key={deck.id} className="bg-black bg-opacity-50 border border-purple-400 rounded p-4">
                       <div className="flex justify-between items-start mb-3">
@@ -1191,8 +1205,8 @@ export default function MTGInventoryTracker() {
                         </button>
                       </div>
                       <div className="grid grid-cols-2 gap-2 text-xs border-t border-purple-500 pt-2 mt-2">
-                        <div className="text-purple-300">TCG: ${deckPrices.tcg.toFixed(2)}</div>
-                        <div className="text-blue-300">CK: ${deckPrices.ck.toFixed(2)}</div>
+                        <div className="text-purple-300">TCG: ${prices.tcg.toFixed(2)}</div>
+                        <div className="text-blue-300">CK: ${prices.ck.toFixed(2)}</div>
                       </div>
                     </div>
                   );
