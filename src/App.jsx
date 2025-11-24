@@ -1697,7 +1697,6 @@ export default function MTGInventoryTracker() {
               </div>
             </div>
           </div>
-            </div>
         )}
       </main>
     </div>
