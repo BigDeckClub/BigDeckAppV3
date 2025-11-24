@@ -329,7 +329,6 @@ export default function MTGInventoryTracker() {
   };
 
   const parseAndPreviewDecklist = async () => {
-    console.log('parseAndPreviewDecklist called');
     if (!decklistName || !decklistPaste) {
       alert('Please fill in all fields');
       return;
@@ -350,8 +349,6 @@ export default function MTGInventoryTracker() {
         }
       });
 
-      console.log('Parsed cards:', cardsToFind);
-
       if (cardsToFind.length === 0) {
         alert('No cards found. Please use format: "3 Card Name"');
         setDeckPreviewLoading(false);
@@ -362,47 +359,41 @@ export default function MTGInventoryTracker() {
       const previewCards = await Promise.all(cardsToFind.map(async (card) => {
         try {
           const query = `!"${card.name}"`;
-          console.log('Fetching Scryfall for:', query);
           const scryfallRes = await fetch(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(query)}&unique=prints`);
           
           if (!scryfallRes.ok) {
-            console.warn('Scryfall response not ok for:', card.name, scryfallRes.status);
             return {
               cardName: card.name,
               quantity: card.quantity,
-              scryfallCards: [],
-              error: `Card not found (${scryfallRes.status})`
+              found: false,
+              error: `Card not found`
             };
           }
 
           const scryfallData = await scryfallRes.json();
           const cards = scryfallData.data || [];
-          console.log(`Found ${cards.length} printings for ${card.name}`);
 
           return {
             cardName: card.name,
             quantity: card.quantity,
-            scryfallCards: cards.map(c => ({
-              name: c.name,
+            found: cards.length > 0,
+            sets: cards.map(c => ({
               set: c.set.toUpperCase(),
               setName: c.set_name,
               rarity: c.rarity,
-              price: c.prices?.usd || 'N/A',
-              imageUrl: c.image_uris?.small || null
+              price: c.prices?.usd || 'N/A'
             }))
           };
         } catch (err) {
-          console.error('Error fetching card:', card.name, err);
           return {
             cardName: card.name,
             quantity: card.quantity,
-            scryfallCards: [],
+            found: false,
             error: err.message
           };
         }
       }));
 
-      console.log('Preview cards:', previewCards);
       setDeckPreview(previewCards);
     } catch (error) {
       console.error('Error parsing decklist:', error);
@@ -935,29 +926,12 @@ export default function MTGInventoryTracker() {
 
                 {deckPreview && (
                   <div className="mt-6 border-t border-purple-500 pt-4">
-                    <h3 className="font-semibold mb-3">Decklist Preview (Scryfall)</h3>
-                    <div className="bg-black bg-opacity-50 rounded p-4 max-h-96 overflow-y-auto space-y-3">
+                    <h3 className="font-semibold mb-3">Decklist Preview</h3>
+                    <div className="bg-black bg-opacity-50 rounded p-4 max-h-96 overflow-y-auto space-y-2">
                       {deckPreview.map((card, idx) => (
-                        <div key={idx} className="border border-purple-400 rounded p-3">
-                          <div className="flex justify-between items-center mb-2">
-                            <span className="font-semibold">{card.quantity}x {card.cardName}</span>
-                            {card.error && <span className="text-xs text-red-400">{card.error}</span>}
-                          </div>
-                          {card.scryfallCards.length > 0 ? (
-                            <div className="grid gap-2">
-                              {card.scryfallCards.map((scryCard, i) => (
-                                <div key={i} className="bg-black bg-opacity-30 rounded p-2 text-xs">
-                                  <div className="flex justify-between items-center">
-                                    <span className="text-purple-300">{scryCard.set} - {scryCard.setName}</span>
-                                    <span className="text-yellow-400">${scryCard.price}</span>
-                                  </div>
-                                  <div className="text-gray-400 mt-1">Rarity: {scryCard.rarity}</div>
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <div className="text-xs text-gray-400">No printings found</div>
-                          )}
+                        <div key={idx} className={`p-2 rounded border-l-4 flex justify-between items-center ${card.found ? 'border-green-500 bg-green-900 bg-opacity-20' : 'border-red-500 bg-red-900 bg-opacity-20'}`}>
+                          <span className="text-sm font-semibold">{card.quantity}x {card.cardName}</span>
+                          <span className="text-xs">{card.found ? '✓ Found' : card.error || '✗ Not found'}</span>
                         </div>
                       ))}
                     </div>
