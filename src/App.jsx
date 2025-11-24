@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Plus, Trash2, FileText, Package, Copy, Layers, AlertCircle, TrendingUp, Settings, RefreshCw, DollarSign, X } from 'lucide-react';
 
-// Use current hostname with port 3000 for API
-const API_BASE = `http://${window.location.hostname}:3000/api`;
+// Use relative path - Vite dev server will proxy to backend
+const API_BASE = '/api';
 
 export default function MTGInventoryTracker() {
   const [activeTab, setActiveTab] = useState('inventory');
@@ -62,27 +62,36 @@ export default function MTGInventoryTracker() {
 
   const loadInventory = async () => {
     try {
+      console.log('Fetching inventory from:', `${API_BASE}/inventory`);
       const response = await fetch(`${API_BASE}/inventory`);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
       const data = await response.json();
       setInventory(data || []);
     } catch (error) {
-      console.error('Error loading inventory:', error);
+      console.error('Error loading inventory:', error.message, error);
     }
   };
 
   const addInventoryItem = async (item) => {
     try {
+      console.log('Adding inventory item to:', `${API_BASE}/inventory`, 'Body:', item);
       const response = await fetch(`${API_BASE}/inventory`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(item)
       });
-      if (!response.ok) throw new Error('Failed to add card');
+      console.log('Response status:', response.status, response.statusText);
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      }
       await loadInventory();
       alert('Card added successfully!');
       return true;
     } catch (error) {
-      console.error('Error adding inventory item:', error);
+      console.error('Error adding inventory item:', error.message, error);
       alert('Error adding card: ' + error.message);
       return false;
     }
