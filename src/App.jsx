@@ -1293,6 +1293,7 @@ export default function MTGInventoryTracker() {
               </div>
               {decklists.length === 0 && <p className="text-slate-400">No decklists yet.</p>}
             </div>
+          </div>
         )}
 
         {/* Containers Tab */}
