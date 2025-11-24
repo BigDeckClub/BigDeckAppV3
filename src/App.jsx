@@ -85,7 +85,7 @@ export default function MTGInventoryTracker() {
     if (!prices) return <div className="text-xs text-gray-500">Loading...</div>;
     return (
       <div className="text-xs whitespace-nowrap">
-        <div className="text-purple-300">TCG: {prices.tcg}</div>
+        <div className="text-teal-300">TCG: {prices.tcg}</div>
         <div className="text-blue-300">CK: {prices.ck}</div>
       </div>
     );
@@ -130,7 +130,7 @@ export default function MTGInventoryTracker() {
     
     return (
       <div className="text-xs flex gap-4 mt-2">
-        <div className="text-purple-300">TCG: {tcgPrice}</div>
+        <div className="text-teal-300">TCG: {tcgPrice}</div>
         <div className="text-blue-300">CK: {ckPrice}</div>
       </div>
     );
@@ -939,48 +939,48 @@ export default function MTGInventoryTracker() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 to-black text-white">
       {/* Navigation */}
-      <nav className="bg-black bg-opacity-50 border-b border-purple-500 sticky top-0 z-50">
+      <nav className="bg-slate-800 border-b border-slate-700 hover:border-teal-500 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-purple-300">MTG Card Manager</h1>
+          <h1 className="text-2xl font-bold text-teal-300">MTG Card Manager</h1>
           <div className="flex gap-2">
             <button
               onClick={() => setActiveTab('inventory')}
-              className={`px-4 py-2 rounded transition ${activeTab === 'inventory' ? 'bg-purple-600' : 'hover:bg-purple-700'}`}
+              className={`px-4 py-2 nav-tab inactive ${activeTab === 'inventory' ? 'btn-primary' : 'hover:shadow-lg'}`}
             >
               <Layers className="w-5 h-5 inline mr-2" />
               Inventory
             </button>
             <button
               onClick={() => setActiveTab('decklists')}
-              className={`px-4 py-2 rounded transition ${activeTab === 'decklists' ? 'bg-purple-600' : 'hover:bg-purple-700'}`}
+              className={`px-4 py-2 nav-tab inactive ${activeTab === 'decklists' ? 'btn-primary' : 'hover:shadow-lg'}`}
             >
               <FileText className="w-5 h-5 inline mr-2" />
               Decklists
             </button>
             <button
               onClick={() => setActiveTab('containers')}
-              className={`px-4 py-2 rounded transition ${activeTab === 'containers' ? 'bg-purple-600' : 'hover:bg-purple-700'}`}
+              className={`px-4 py-2 nav-tab inactive ${activeTab === 'containers' ? 'btn-primary' : 'hover:shadow-lg'}`}
             >
               <Package className="w-5 h-5 inline mr-2" />
               Containers
             </button>
             <button
               onClick={() => setActiveTab('analytics')}
-              className={`px-4 py-2 rounded transition ${activeTab === 'analytics' ? 'bg-purple-600' : 'hover:bg-purple-700'}`}
+              className={`px-4 py-2 nav-tab inactive ${activeTab === 'analytics' ? 'btn-primary' : 'hover:shadow-lg'}`}
             >
               <TrendingUp className="w-5 h-5 inline mr-2" />
               Analytics
             </button>
             <button
               onClick={() => setActiveTab('sales')}
-              className={`px-4 py-2 rounded transition ${activeTab === 'sales' ? 'bg-purple-600' : 'hover:bg-purple-700'}`}
+              className={`px-4 py-2 nav-tab inactive ${activeTab === 'sales' ? 'btn-primary' : 'hover:shadow-lg'}`}
             >
               <DollarSign className="w-5 h-5 inline mr-2" />
               Sales
             </button>
             <button
               onClick={() => setShowSettings(!showSettings)}
-              className="px-4 py-2 rounded hover:bg-purple-700 transition"
+              className="px-4 py-2 rounded hover:shadow-lg transition"
             >
               <Settings className="w-5 h-5" />
             </button>
@@ -992,7 +992,7 @@ export default function MTGInventoryTracker() {
       <main className="max-w-7xl mx-auto px-4 py-8">
         {isLoading && (
           <div className="text-center py-8">
-            <RefreshCw className="w-8 h-8 animate-spin mx-auto text-purple-400" />
+            <RefreshCw className="w-8 h-8 animate-spin mx-auto text-teal-400" />
           </div>
         )}
 
@@ -1036,26 +1036,26 @@ export default function MTGInventoryTracker() {
             {!showDecklistForm ? (
               <button
                 onClick={() => setShowDecklistForm(true)}
-                className="bg-purple-600 hover:bg-purple-700 rounded px-6 py-3 font-semibold transition"
+                className="btn-primary hover:shadow-lg rounded px-6 py-3 font-semibold transition"
               >
                 <Plus className="w-5 h-5 inline mr-2" />
                 New Decklist
               </button>
             ) : (
-              <div className="bg-purple-900 bg-opacity-30 rounded-lg p-6 border border-purple-500">
+              <div className="card p-6 border rounded-lg p-6 border border-slate-700 hover:border-teal-500">
                 <h2 className="text-xl font-bold mb-4">Create Decklist</h2>
                 <input
                   type="text"
                   placeholder="Decklist Name"
                   value={decklistName}
                   onChange={(e) => setDecklistName(e.target.value)}
-                  className="w-full bg-black bg-opacity-50 border border-purple-400 rounded px-4 py-2 text-white mb-4"
+                  className="w-full bg-slate-800 border border-slate-600 rounded px-4 py-2 text-white mb-4"
                 />
                 <textarea
                   placeholder="Paste decklist here (e.g., '2 Lightning Bolt')"
                   value={decklistPaste}
                   onChange={(e) => setDecklistPaste(e.target.value)}
-                  className="w-full bg-black bg-opacity-50 border border-purple-400 rounded px-4 py-2 text-white mb-4 h-48"
+                  className="w-full bg-slate-800 border border-slate-600 rounded px-4 py-2 text-white mb-4 h-48"
                 />
                 <div className="flex gap-2">
                   <button
@@ -1077,9 +1077,9 @@ export default function MTGInventoryTracker() {
                 </div>
 
                 {deckPreview && (
-                  <div className="mt-6 border-t border-purple-500 pt-4">
+                  <div className="mt-6 border-t border-slate-700 hover:border-teal-500 pt-4">
                     <h3 className="font-semibold mb-3">Decklist Preview</h3>
-                    <div className="bg-black bg-opacity-50 rounded p-4 max-h-96 overflow-y-auto space-y-2">
+                    <div className="bg-slate-800 rounded p-4 max-h-96 overflow-y-auto space-y-2">
                       {deckPreview.map((card, idx) => (
                         <div key={idx} className={`p-2 rounded border-l-4 flex justify-between items-center ${card.found ? 'border-green-500 bg-green-900 bg-opacity-20' : 'border-red-500 bg-red-900 bg-opacity-20'}`}>
                           <span className="text-sm font-semibold">{card.quantity}x {card.cardName}</span>
@@ -1098,7 +1098,7 @@ export default function MTGInventoryTracker() {
               </div>
             )}
 
-            <div className="bg-purple-900 bg-opacity-30 rounded-lg p-6 border border-purple-500">
+            <div className="card p-6 border rounded-lg p-6 border border-slate-700 hover:border-teal-500">
               <h2 className="text-xl font-bold mb-4">Decklists ({decklists.length})</h2>
               <div className="grid gap-4">
                 {decklists.map((deck) => {
@@ -1114,11 +1114,11 @@ export default function MTGInventoryTracker() {
                   }).filter(Boolean);
                   
                   return (
-                    <div key={deck.id} className="bg-black bg-opacity-50 border border-purple-400 rounded p-4">
+                    <div key={deck.id} className="bg-slate-800 border border-slate-600 rounded p-4">
                       <div className="flex justify-between items-start mb-3">
                         <div className="flex-1">
                           <div className="font-semibold">{deck.name}</div>
-                          <div className="text-sm text-gray-300 mt-2">{deckCards.length} cards</div>
+                          <div className="text-sm text-slate-300 mt-2">{deckCards.length} cards</div>
                         </div>
                         <div className="flex gap-2 ml-4">
                           <button
@@ -1135,13 +1135,13 @@ export default function MTGInventoryTracker() {
                           </button>
                         </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-2 text-xs border-t border-purple-500 pt-2 mt-2">
-                        <div className="text-purple-300">TCG: ${prices.tcg.toFixed(2)}</div>
+                      <div className="grid grid-cols-2 gap-2 text-xs border-t border-slate-700 hover:border-teal-500 pt-2 mt-2">
+                        <div className="text-teal-300">TCG: ${prices.tcg.toFixed(2)}</div>
                         <div className="text-blue-300">CK: ${prices.ck.toFixed(2)}</div>
                       </div>
                       
                       {isExpanded && (
-                        <div className="mt-4 border-t border-purple-500 pt-4">
+                        <div className="mt-4 border-t border-slate-700 hover:border-teal-500 pt-4">
                           <div className="space-y-3">
                             {deckCards.map((card, idx) => {
                               // Use set from decklist, fallback to inventory, then default
@@ -1153,13 +1153,13 @@ export default function MTGInventoryTracker() {
                               const isEditingThisCard = editingDecklistCard?.idx === idx && editingDecklistCard?.deckId === deck.id;
                               
                               return (
-                                <div key={idx} className="bg-purple-900 bg-opacity-30 rounded p-3">
+                                <div key={idx} className="card p-6 border rounded p-3">
                                   {isEditingThisCard ? (
                                     <div className="space-y-2">
                                       <select
                                         value={editCardSet}
                                         onChange={(e) => setEditCardSet(e.target.value)}
-                                        className="w-full bg-black bg-opacity-50 border border-purple-400 rounded px-3 py-2 text-white text-xs"
+                                        className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-white text-xs"
                                       >
                                         <option value="">Select a set...</option>
                                         {editCardAvailableSets.map((set) => (
@@ -1240,7 +1240,7 @@ export default function MTGInventoryTracker() {
                                       <div className="flex justify-between items-start mb-2">
                                         <div className="flex-1">
                                           <div className="font-semibold">{card.name}</div>
-                                          <div className="text-xs text-gray-400">{cardSet.toUpperCase()}</div>
+                                          <div className="text-xs text-slate-400">{cardSet.toUpperCase()}</div>
                                         </div>
                                         <button
                                           onClick={async () => {
@@ -1290,7 +1290,7 @@ export default function MTGInventoryTracker() {
                     </div>
                   );
                 })}
-                {decklists.length === 0 && <p className="text-gray-400">No decklists yet.</p>}
+                {decklists.length === 0 && <p className="text-slate-400">No decklists yet.</p>}
               </div>
             </div>
           </div>
@@ -1302,25 +1302,25 @@ export default function MTGInventoryTracker() {
             {!showContainerForm ? (
               <button
                 onClick={() => setShowContainerForm(true)}
-                className="bg-purple-600 hover:bg-purple-700 rounded px-6 py-3 font-semibold transition"
+                className="btn-primary hover:shadow-lg rounded px-6 py-3 font-semibold transition"
               >
                 <Plus className="w-5 h-5 inline mr-2" />
                 New Container
               </button>
             ) : (
-              <div className="bg-purple-900 bg-opacity-30 rounded-lg p-6 border border-purple-500">
+              <div className="card p-6 border rounded-lg p-6 border border-slate-700 hover:border-teal-500">
                 <h2 className="text-xl font-bold mb-4">Create Container</h2>
                 <input
                   type="text"
                   placeholder="Container Name"
                   value={containerName}
                   onChange={(e) => setContainerName(e.target.value)}
-                  className="w-full bg-black bg-opacity-50 border border-purple-400 rounded px-4 py-2 text-white mb-4"
+                  className="w-full bg-slate-800 border border-slate-600 rounded px-4 py-2 text-white mb-4"
                 />
                 <select
                   value={selectedDecklist || ''}
                   onChange={(e) => setSelectedDecklist(e.target.value)}
-                  className="w-full bg-black bg-opacity-50 border border-purple-400 rounded px-4 py-2 text-white mb-4"
+                  className="w-full bg-slate-800 border border-slate-600 rounded px-4 py-2 text-white mb-4"
                 >
                   <option value="">Select a Decklist</option>
                   {decklists.map((deck) => (
@@ -1330,7 +1330,7 @@ export default function MTGInventoryTracker() {
                 <div className="flex gap-2">
                   <button
                     onClick={addContainer}
-                    className="flex-1 bg-purple-600 hover:bg-purple-700 rounded px-4 py-2 font-semibold"
+                    className="flex-1 btn-primary hover:shadow-lg rounded px-4 py-2 font-semibold"
                   >
                     Create
                   </button>
@@ -1344,19 +1344,19 @@ export default function MTGInventoryTracker() {
               </div>
             )}
 
-            <div className="bg-purple-900 bg-opacity-30 rounded-lg p-6 border border-purple-500">
+            <div className="card p-6 border rounded-lg p-6 border border-slate-700 hover:border-teal-500">
               <h2 className="text-xl font-bold mb-4">Containers ({containers.length})</h2>
               <div className="space-y-3">
                 {containers.map((container) => {
                   const containerPrices = calculateContainerPrices(container.id);
                   return (
-                    <div key={container.id} className="bg-black bg-opacity-50 border border-purple-400 rounded p-4">
+                    <div key={container.id} className="bg-slate-800 border border-slate-600 rounded p-4">
                       <div className="flex justify-between items-start mb-3">
                         <div className="flex-1">
                           <div className="font-semibold">{container.name}</div>
-                          <div className="text-sm text-gray-300">Decklist ID: {container.decklist_id}</div>
-                          <div className="grid grid-cols-2 gap-2 text-xs mt-2 text-gray-400">
-                            <div className="text-purple-300">TCG: ${containerPrices.tcg.toFixed(2)}</div>
+                          <div className="text-sm text-slate-300">Decklist ID: {container.decklist_id}</div>
+                          <div className="grid grid-cols-2 gap-2 text-xs mt-2 text-slate-400">
+                            <div className="text-teal-300">TCG: ${containerPrices.tcg.toFixed(2)}</div>
                             <div className="text-blue-300">CK: ${containerPrices.ck.toFixed(2)}</div>
                           </div>
                         </div>
@@ -1387,34 +1387,34 @@ export default function MTGInventoryTracker() {
                       </div>
 
                     {expandedContainers[container.id] && (
-                      <div className="mt-4 pt-4 border-t border-purple-500">
+                      <div className="mt-4 pt-4 border-t border-slate-700 hover:border-teal-500">
                         <h4 className="font-semibold mb-3">Cards in Container</h4>
                         {containerItems[container.id] && containerItems[container.id].length > 0 ? (
                           <div className="space-y-2 max-h-64 overflow-y-auto">
                             {containerItems[container.id].map((item, idx) => (
-                              <div key={idx} className="bg-purple-900 bg-opacity-50 border border-purple-300 rounded p-3 text-sm">
+                              <div key={idx} className="bg-slate-800 bg-opacity-50 border border-slate-600 rounded p-3 text-sm">
                                 <div className="flex justify-between">
                                   <div>
                                     <div className="font-semibold">{item.name}</div>
-                                    <div className="text-xs text-gray-400">{item.set_name} ({item.set})</div>
+                                    <div className="text-xs text-slate-400">{item.set_name} ({item.set})</div>
                                   </div>
                                   <div className="text-right">
-                                    <div className="text-purple-300 font-semibold">{item.quantity_used}x</div>
-                                    <div className="text-xs text-gray-400">${item.purchase_price || 'N/A'}</div>
+                                    <div className="text-teal-300 font-semibold">{item.quantity_used}x</div>
+                                    <div className="text-xs text-slate-400">${item.purchase_price || 'N/A'}</div>
                                   </div>
                                 </div>
                               </div>
                             ))}
                           </div>
                         ) : (
-                          <p className="text-gray-400 text-sm">Loading container contents...</p>
+                          <p className="text-slate-400 text-sm">Loading container contents...</p>
                         )}
                       </div>
                     )}
                   </div>
                   );
                 })}
-                {containers.length === 0 && <p className="text-gray-400">No containers yet.</p>}
+                {containers.length === 0 && <p className="text-slate-400">No containers yet.</p>}
               </div>
             </div>
           </div>
@@ -1423,7 +1423,7 @@ export default function MTGInventoryTracker() {
         {/* Sales Tab */}
         {activeTab === 'sales' && !isLoading && (
           <div className="space-y-6 text-white">
-            <div className="bg-purple-900 bg-opacity-30 rounded-lg p-6 border border-purple-500">
+            <div className="card p-6 border rounded-lg p-6 border border-slate-700 hover:border-teal-500">
               <h2 className="text-xl font-bold mb-4 flex items-center">
                 <DollarSign className="w-5 h-5 mr-2 text-green-400" />
                 Sales Analytics
@@ -1439,11 +1439,11 @@ export default function MTGInventoryTracker() {
                     const container = containers.find(c => c.id === sale.container_id);
                     
                     return (
-                      <div key={sale.id} className="bg-black bg-opacity-50 border border-purple-400 rounded p-4">
+                      <div key={sale.id} className="bg-slate-800 border border-slate-600 rounded p-4">
                         <div className="flex justify-between items-start mb-3">
                           <div>
                             <div className="font-semibold text-lg">{container?.name || 'Unknown Container'}</div>
-                            <div className="text-sm text-gray-400">{new Date(sale.sold_date).toLocaleDateString()}</div>
+                            <div className="text-sm text-slate-400">{new Date(sale.sold_date).toLocaleDateString()}</div>
                           </div>
                           <div className={`text-lg font-bold ${profit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                             {profit >= 0 ? '+' : ''} ${profit.toFixed(2)}
@@ -1451,16 +1451,16 @@ export default function MTGInventoryTracker() {
                         </div>
                         
                         <div className="grid grid-cols-3 gap-4 text-sm">
-                          <div className="bg-purple-900 bg-opacity-50 border border-purple-300 rounded p-3">
-                            <div className="text-gray-400 text-xs">COGS</div>
-                            <div className="font-semibold text-purple-300">${deckCOGS.toFixed(2)}</div>
+                          <div className="bg-slate-800 bg-opacity-50 border border-slate-600 rounded p-3">
+                            <div className="text-slate-400 text-xs">COGS</div>
+                            <div className="font-semibold text-teal-300">${deckCOGS.toFixed(2)}</div>
                           </div>
-                          <div className="bg-purple-900 bg-opacity-50 border border-purple-300 rounded p-3">
-                            <div className="text-gray-400 text-xs">Sale Price</div>
+                          <div className="bg-slate-800 bg-opacity-50 border border-slate-600 rounded p-3">
+                            <div className="text-slate-400 text-xs">Sale Price</div>
                             <div className="font-semibold text-blue-300">${salePrice.toFixed(2)}</div>
                           </div>
-                          <div className="bg-purple-900 bg-opacity-50 border border-purple-300 rounded p-3">
-                            <div className="text-gray-400 text-xs">Profit %</div>
+                          <div className="bg-slate-800 bg-opacity-50 border border-slate-600 rounded p-3">
+                            <div className="text-slate-400 text-xs">Profit %</div>
                             <div className={`font-semibold ${profit >= 0 ? 'text-green-300' : 'text-red-300'}`}>{profitPercentage}%</div>
                           </div>
                         </div>
@@ -1468,25 +1468,25 @@ export default function MTGInventoryTracker() {
                     );
                   })}
                   
-                  <div className="mt-6 pt-6 border-t border-purple-500">
+                  <div className="mt-6 pt-6 border-t border-slate-700 hover:border-teal-500">
                     <div className="grid grid-cols-3 gap-4">
-                      <div className="bg-purple-900 bg-opacity-50 rounded p-4 border border-purple-400">
-                        <div className="text-gray-400 text-sm">Total Sales</div>
-                        <div className="text-2xl font-bold text-purple-300">{sales.length}</div>
+                      <div className="bg-slate-800 bg-opacity-50 rounded p-4 border border-slate-600">
+                        <div className="text-slate-400 text-sm">Total Sales</div>
+                        <div className="text-2xl font-bold text-teal-300">{sales.length}</div>
                       </div>
-                      <div className="bg-purple-900 bg-opacity-50 rounded p-4 border border-purple-400">
-                        <div className="text-gray-400 text-sm">Total Revenue</div>
+                      <div className="bg-slate-800 bg-opacity-50 rounded p-4 border border-slate-600">
+                        <div className="text-slate-400 text-sm">Total Revenue</div>
                         <div className="text-2xl font-bold text-blue-300">${sales.reduce((sum, s) => sum + (parseFloat(s.sale_price) || 0), 0).toFixed(2)}</div>
                       </div>
-                      <div className="bg-purple-900 bg-opacity-50 rounded p-4 border border-purple-400">
-                        <div className="text-gray-400 text-sm">Total Profit</div>
+                      <div className="bg-slate-800 bg-opacity-50 rounded p-4 border border-slate-600">
+                        <div className="text-slate-400 text-sm">Total Profit</div>
                         <div className="text-2xl font-bold text-green-300">${sales.reduce((sum, s) => sum + ((parseFloat(s.sale_price) || 0) - calculateDeckCOGS(s.decklist_id)), 0).toFixed(2)}</div>
                       </div>
                     </div>
                   </div>
                 </div>
               ) : (
-                <p className="text-gray-400">No sales recorded yet. Sell containers to see analytics here.</p>
+                <p className="text-slate-400">No sales recorded yet. Sell containers to see analytics here.</p>
               )}
             </div>
           </div>
@@ -1495,7 +1495,7 @@ export default function MTGInventoryTracker() {
         {/* Analytics Tab */}
         {activeTab === 'analytics' && !isLoading && (
           <div className="space-y-6 text-white">
-            <div className="bg-purple-900 bg-opacity-30 rounded-lg p-6 border border-purple-500">
+            <div className="card p-6 border rounded-lg p-6 border border-slate-700 hover:border-teal-500">
               <h2 className="text-xl font-bold mb-4 flex items-center">
                 <AlertCircle className="w-5 h-5 mr-2 text-red-400" />
                 Reorder Alerts
@@ -1503,48 +1503,48 @@ export default function MTGInventoryTracker() {
               <div className="grid gap-4">
                 {getReorderAlerts().length > 0 ? (
                   getReorderAlerts().map((item) => (
-                    <div key={item.id} className="bg-black bg-opacity-50 border border-red-400 rounded p-4">
+                    <div key={item.id} className="bg-slate-800 border border-red-400 rounded p-4">
                       <div className="font-semibold text-red-400">{item.name}</div>
-                      <div className="text-sm text-gray-300">Quantity: {item.quantity} (Type: {item.reorder_type})</div>
-                      <div className="text-sm text-gray-300">Set: {item.set_name}</div>
+                      <div className="text-sm text-slate-300">Quantity: {item.quantity} (Type: {item.reorder_type})</div>
+                      <div className="text-sm text-slate-300">Set: {item.set_name}</div>
                     </div>
                   ))
                 ) : (
-                  <p className="text-gray-400">No items below reorder threshold.</p>
+                  <p className="text-slate-400">No items below reorder threshold.</p>
                 )}
               </div>
             </div>
 
-            <div className="bg-purple-900 bg-opacity-30 rounded-lg p-6 border border-purple-500">
+            <div className="card p-6 border rounded-lg p-6 border border-slate-700 hover:border-teal-500">
               <h2 className="text-xl font-bold mb-4">Inventory Statistics</h2>
               <div className="grid grid-cols-3 gap-4">
-                <div className="bg-black bg-opacity-50 border border-purple-400 rounded p-4">
-                  <div className="text-gray-400 text-sm">Total Cards</div>
-                  <div className="text-2xl font-bold text-purple-300">{inventory.length}</div>
+                <div className="bg-slate-800 border border-slate-600 rounded p-4">
+                  <div className="text-slate-400 text-sm">Total Cards</div>
+                  <div className="text-2xl font-bold text-teal-300">{inventory.length}</div>
                 </div>
-                <div className="bg-black bg-opacity-50 border border-purple-400 rounded p-4">
-                  <div className="text-gray-400 text-sm">Total Quantity</div>
-                  <div className="text-2xl font-bold text-purple-300">{inventory.reduce((sum, card) => sum + (card.quantity || 0), 0)}</div>
+                <div className="bg-slate-800 border border-slate-600 rounded p-4">
+                  <div className="text-slate-400 text-sm">Total Quantity</div>
+                  <div className="text-2xl font-bold text-teal-300">{inventory.reduce((sum, card) => sum + (card.quantity || 0), 0)}</div>
                 </div>
-                <div className="bg-black bg-opacity-50 border border-purple-400 rounded p-4">
-                  <div className="text-gray-400 text-sm">Total Value</div>
-                  <div className="text-2xl font-bold text-purple-300">${inventory.reduce((sum, card) => sum + (parseFloat(card.purchase_price) || 0), 0).toFixed(2)}</div>
+                <div className="bg-slate-800 border border-slate-600 rounded p-4">
+                  <div className="text-slate-400 text-sm">Total Value</div>
+                  <div className="text-2xl font-bold text-teal-300">${inventory.reduce((sum, card) => sum + (parseFloat(card.purchase_price) || 0), 0).toFixed(2)}</div>
                 </div>
               </div>
             </div>
 
-            <div className="bg-purple-900 bg-opacity-30 rounded-lg p-6 border border-purple-500">
+            <div className="card p-6 border rounded-lg p-6 border border-slate-700 hover:border-teal-500">
               <h2 className="text-xl font-bold mb-4">Recent Activity</h2>
               <div className="grid gap-2">
                 {usageHistory.length > 0 ? (
                   usageHistory.map((entry, idx) => (
-                    <div key={idx} className="bg-black bg-opacity-50 border border-purple-400 rounded p-3 text-sm">
-                      <span className="font-semibold text-purple-300">{entry.action}</span>
-                      <span className="text-gray-400"> - {new Date(entry.created_at).toLocaleString()}</span>
+                    <div key={idx} className="bg-slate-800 border border-slate-600 rounded p-3 text-sm">
+                      <span className="font-semibold text-teal-300">{entry.action}</span>
+                      <span className="text-slate-400"> - {new Date(entry.created_at).toLocaleString()}</span>
                     </div>
                   ))
                 ) : (
-                  <p className="text-gray-400">No activity yet.</p>
+                  <p className="text-slate-400">No activity yet.</p>
                 )}
               </div>
             </div>
@@ -1554,7 +1554,7 @@ export default function MTGInventoryTracker() {
         {/* Sell Modal */}
         {showSellModal && (
           <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-            <div className="bg-purple-900 border border-purple-500 rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="bg-slate-800 border border-slate-700 hover:border-teal-500 rounded-lg p-6 max-w-md w-full mx-4">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold">Sell Container</h2>
                 <button
@@ -1563,7 +1563,7 @@ export default function MTGInventoryTracker() {
                     setSelectedContainerForSale(null);
                     setSalePrice('');
                   }}
-                  className="text-gray-400 hover:text-white"
+                  className="text-slate-400 hover:text-white"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -1571,14 +1571,14 @@ export default function MTGInventoryTracker() {
               
               {selectedContainerForSale && (
                 <div className="mb-4">
-                  <div className="bg-black bg-opacity-50 border border-purple-400 rounded p-3 mb-4">
-                    <div className="text-sm text-gray-400">Container</div>
+                  <div className="bg-slate-800 border border-slate-600 rounded p-3 mb-4">
+                    <div className="text-sm text-slate-400">Container</div>
                     <div className="font-semibold">{containers.find(c => c.id === selectedContainerForSale)?.name}</div>
                   </div>
                   
-                  <div className="bg-black bg-opacity-50 border border-purple-400 rounded p-3 mb-4">
-                    <div className="text-sm text-gray-400">Estimated COGS</div>
-                    <div className="font-semibold text-purple-300">
+                  <div className="bg-slate-800 border border-slate-600 rounded p-3 mb-4">
+                    <div className="text-sm text-slate-400">Estimated COGS</div>
+                    <div className="font-semibold text-teal-300">
                       ${calculateDeckCOGS(containers.find(c => c.id === selectedContainerForSale)?.decklist_id).toFixed(2)}
                     </div>
                   </div>
@@ -1595,13 +1595,13 @@ export default function MTGInventoryTracker() {
                     value={salePrice}
                     onChange={(e) => setSalePrice(e.target.value)}
                     placeholder="Enter sale price"
-                    className="w-full bg-black bg-opacity-50 border border-purple-400 rounded px-4 py-2 text-white"
+                    className="w-full bg-slate-800 border border-slate-600 rounded px-4 py-2 text-white"
                   />
                 </div>
                 
                 {salePrice && (
                   <div className="bg-green-900 bg-opacity-30 border border-green-500 rounded p-3">
-                    <div className="text-sm text-gray-400">Estimated Profit</div>
+                    <div className="text-sm text-slate-400">Estimated Profit</div>
                     <div className={`font-semibold text-lg ${(salePrice - calculateDeckCOGS(containers.find(c => c.id === selectedContainerForSale)?.decklist_id)) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                       ${(salePrice - calculateDeckCOGS(containers.find(c => c.id === selectedContainerForSale)?.decklist_id)).toFixed(2)}
                     </div>
@@ -1634,7 +1634,7 @@ export default function MTGInventoryTracker() {
         {/* Settings */}
         {showSettings && (
           <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-            <div className="bg-purple-900 border border-purple-500 rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="bg-slate-800 border border-slate-700 hover:border-teal-500 rounded-lg p-6 max-w-md w-full mx-4">
               <h2 className="text-xl font-bold mb-4">Reorder Thresholds</h2>
               <div className="space-y-4">
                 <div>
@@ -1644,7 +1644,7 @@ export default function MTGInventoryTracker() {
                     min="0"
                     value={reorderSettings.normal}
                     onChange={(e) => setReorderSettings({...reorderSettings, normal: parseInt(e.target.value)})}
-                    className="w-full bg-black bg-opacity-50 border border-purple-400 rounded px-4 py-2 text-white"
+                    className="w-full bg-slate-800 border border-slate-600 rounded px-4 py-2 text-white"
                   />
                 </div>
                 <div>
@@ -1654,7 +1654,7 @@ export default function MTGInventoryTracker() {
                     min="0"
                     value={reorderSettings.land}
                     onChange={(e) => setReorderSettings({...reorderSettings, land: parseInt(e.target.value)})}
-                    className="w-full bg-black bg-opacity-50 border border-purple-400 rounded px-4 py-2 text-white"
+                    className="w-full bg-slate-800 border border-slate-600 rounded px-4 py-2 text-white"
                   />
                 </div>
                 <div>
@@ -1664,26 +1664,26 @@ export default function MTGInventoryTracker() {
                     min="0"
                     value={reorderSettings.bulk}
                     onChange={(e) => setReorderSettings({...reorderSettings, bulk: parseInt(e.target.value)})}
-                    className="w-full bg-black bg-opacity-50 border border-purple-400 rounded px-4 py-2 text-white"
+                    className="w-full bg-slate-800 border border-slate-600 rounded px-4 py-2 text-white"
                   />
                 </div>
-                <div className="border-t border-purple-500 pt-4 mt-4">
+                <div className="border-t border-slate-700 hover:border-teal-500 pt-4 mt-4">
                   <button
                     onClick={() => {
                       setPriceCache({});
                       setSuccessMessage('Price cache cleared successfully!');
                       setTimeout(() => setSuccessMessage(''), 3000);
                     }}
-                    className="w-full bg-orange-600 hover:bg-orange-700 rounded px-4 py-2 font-semibold mb-2"
+                    className="w-full btn-accent mb-2"
                   >
                     Refresh Price Cache
                   </button>
-                  <p className="text-xs text-gray-400">Clears cached card prices and fetches fresh data</p>
+                  <p className="text-xs text-slate-400">Clears cached card prices and fetches fresh data</p>
                 </div>
                 <div className="flex gap-2 mt-4">
                   <button
                     onClick={saveReorderSettings}
-                    className="flex-1 bg-purple-600 hover:bg-purple-700 rounded px-4 py-2 font-semibold"
+                    className="flex-1 btn-primary hover:shadow-lg rounded px-4 py-2 font-semibold"
                   >
                     Save
                   </button>
