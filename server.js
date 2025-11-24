@@ -132,26 +132,140 @@ app.get('/api/containers', async (req, res) => {
 });
 
 app.post('/api/containers', async (req, res) => {
+  const client = await pool.connect();
   try {
+    await client.query('BEGIN');
+    
     const { name, decklist_id } = req.body;
-    const result = await pool.query(
+    
+    // Insert container
+    const containerResult = await client.query(
       'INSERT INTO containers (name, decklist_id) VALUES ($1, $2) RETURNING *',
       [name, decklist_id]
     );
-    res.json(result.rows[0]);
+    const container = containerResult.rows[0];
+    
+    // Fetch the decklist to get card names and quantities
+    const decklistResult = await client.query(
+      'SELECT decklist FROM decklists WHERE id = $1',
+      [decklist_id]
+    );
+    
+    if (decklistResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Decklist not found' });
+    }
+    
+    const decklistText = decklistResult.rows[0].decklist;
+    const lines = decklistText.split('\n').filter(line => line.trim());
+    
+    // Parse decklist and allocate inventory
+    for (const line of lines) {
+      const match = line.match(/^(\d+)\s+(.+)$/);
+      if (!match) continue;
+      
+      const neededQty = parseInt(match[1]);
+      const cardName = match[2].trim();
+      let remainingQty = neededQty;
+      
+      // Find inventory items for this card, sorted by purchase_date (oldest first)
+      const inventoryItems = await client.query(
+        `SELECT id, quantity, purchase_date FROM inventory 
+         WHERE name ILIKE $1 AND quantity > 0
+         ORDER BY purchase_date ASC, id ASC`,
+        [cardName]
+      );
+      
+      // Allocate oldest items first
+      for (const item of inventoryItems.rows) {
+        if (remainingQty <= 0) break;
+        
+        const qtyToUse = Math.min(remainingQty, item.quantity);
+        
+        // Add to container_items
+        await client.query(
+          `INSERT INTO container_items (container_id, inventory_id, quantity_used) 
+           VALUES ($1, $2, $3)`,
+          [container.id, item.id, qtyToUse]
+        );
+        
+        // Reduce inventory quantity
+        await client.query(
+          `UPDATE inventory SET quantity = quantity - $1 WHERE id = $2`,
+          [qtyToUse, item.id]
+        );
+        
+        remainingQty -= qtyToUse;
+      }
+      
+      if (remainingQty > 0) {
+        console.warn(`Warning: Could not find enough inventory for ${neededQty}x ${cardName}, needed ${remainingQty} more`);
+      }
+    }
+    
+    await client.query('COMMIT');
+    res.json(container);
   } catch (err) {
+    await client.query('ROLLBACK');
     console.error('Error adding container:', err);
+    res.status(500).json({ error: err.message });
+  } finally {
+    client.release();
+  }
+});
+
+// Get container items
+app.get('/api/containers/:id/items', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT ci.id, ci.inventory_id, ci.quantity_used, 
+              inv.name, inv.set, inv.set_name, inv.purchase_price
+       FROM container_items ci
+       JOIN inventory inv ON ci.inventory_id = inv.id
+       WHERE ci.container_id = $1
+       ORDER BY inv.name`,
+      [req.params.id]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching container items:', err);
     res.status(500).json({ error: err.message });
   }
 });
 
 app.delete('/api/containers/:id', async (req, res) => {
+  const client = await pool.connect();
   try {
-    await pool.query('DELETE FROM containers WHERE id = $1', [req.params.id]);
+    await client.query('BEGIN');
+    
+    // Get all items in this container to restore inventory
+    const itemsResult = await client.query(
+      `SELECT inventory_id, quantity_used FROM container_items WHERE container_id = $1`,
+      [req.params.id]
+    );
+    
+    // Restore inventory quantities
+    for (const item of itemsResult.rows) {
+      await client.query(
+        `UPDATE inventory SET quantity = quantity + $1 WHERE id = $2`,
+        [item.quantity_used, item.inventory_id]
+      );
+    }
+    
+    // Delete container_items (cascade will handle it with FK)
+    await client.query(`DELETE FROM container_items WHERE container_id = $1`, [req.params.id]);
+    
+    // Delete container
+    await client.query('DELETE FROM containers WHERE id = $1', [req.params.id]);
+    
+    await client.query('COMMIT');
     res.json({ success: true });
   } catch (err) {
+    await client.query('ROLLBACK');
     console.error('Error deleting container:', err);
     res.status(500).json({ error: err.message });
+  } finally {
+    client.release();
   }
 });
 
