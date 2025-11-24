@@ -107,7 +107,9 @@ export default function MTGInventoryTracker() {
         const cardName = match[2].trim();
         
         try {
-          // Find the card in inventory to get a set code
+          let tcgPrice = 0, ckPrice = 0;
+          
+          // Try to find the card in inventory to get a set code
           const inventoryCard = inventory.find(card => card.name.toLowerCase() === cardName.toLowerCase());
           
           if (inventoryCard) {
@@ -115,12 +117,33 @@ export default function MTGInventoryTracker() {
             const response = await fetch(`${API_BASE}/prices/${encodeURIComponent(cardName)}/${inventoryCard.set}`);
             if (response.ok) {
               const priceData = await response.json();
-              const tcgPrice = parseFloat(priceData.tcg) || 0;
-              const ckPrice = parseFloat(priceData.ck) || 0;
-              tcgTotal += tcgPrice * quantity;
-              ckTotal += ckPrice * quantity;
+              // Strip $ sign and parse the price
+              tcgPrice = parseFloat(String(priceData.tcg).replace('$', '')) || 0;
+              ckPrice = parseFloat(String(priceData.ck).replace('$', '')) || 0;
+            }
+          } else {
+            // Card not in inventory - fetch from Scryfall directly without set code
+            try {
+              const scryfallUrl = `https://api.scryfall.com/cards/search?q=!"${cardName}"&unique=prints`;
+              const scryfallResponse = await fetch(scryfallUrl);
+              if (scryfallResponse.ok) {
+                const scryfallData = await scryfallResponse.json();
+                if (scryfallData.data && scryfallData.data.length > 0) {
+                  const card = scryfallData.data[0];
+                  tcgPrice = parseFloat(card.prices?.usd) || 0;
+                  ckPrice = parseFloat(card.prices?.usd_foil) || 0;
+                  if (ckPrice === 0) {
+                    ckPrice = tcgPrice * 1.15; // 15% markup as fallback
+                  }
+                }
+              }
+            } catch (err) {
+              console.error('Error fetching from Scryfall for', cardName, err);
             }
           }
+          
+          tcgTotal += tcgPrice * quantity;
+          ckTotal += ckPrice * quantity;
         } catch (err) {
           console.error('Error fetching price for', cardName, err);
         }
@@ -143,8 +166,9 @@ export default function MTGInventoryTracker() {
         const response = await fetch(`${API_BASE}/prices/${encodeURIComponent(item.name)}/${item.set}`);
         if (response.ok) {
           const priceData = await response.json();
-          const tcgPrice = parseFloat(priceData.tcg) || 0;
-          const ckPrice = parseFloat(priceData.ck) || 0;
+          // Strip $ sign and parse the price
+          const tcgPrice = parseFloat(String(priceData.tcg).replace('$', '')) || 0;
+          const ckPrice = parseFloat(String(priceData.ck).replace('$', '')) || 0;
           const quantity = parseInt(item.quantity_used) || 0;
           tcgTotal += tcgPrice * quantity;
           ckTotal += ckPrice * quantity;
