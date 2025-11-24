@@ -54,6 +54,7 @@ export default function MTGInventoryTracker() {
   const [allSets, setAllSets] = useState([]);
   const [successMessage, setSuccessMessage] = useState('');
   const [decklistPrices, setDecklistPrices] = useState({});
+  const [containerPriceCache, setContainerPriceCache] = useState({});
 
   // Price display component
   const MarketPrices = ({ cardName, setCode }) => {
@@ -112,6 +113,19 @@ export default function MTGInventoryTracker() {
       calculateAllDecklistPrices();
     }
   }, [decklists]);
+
+  useEffect(() => {
+    const calculateAllContainerPrices = async () => {
+      const prices = {};
+      for (const containerId of Object.keys(containerItems)) {
+        prices[containerId] = await calculateContainerMarketPrices(parseInt(containerId));
+      }
+      setContainerPriceCache(prices);
+    };
+    if (Object.keys(containerItems).length > 0) {
+      calculateAllContainerPrices();
+    }
+  }, [containerItems]);
 
   const loadAllSets = async () => {
     try {
@@ -746,18 +760,34 @@ export default function MTGInventoryTracker() {
     }
   };
 
-  const calculateContainerPrices = (containerId) => {
+  const calculateContainerMarketPrices = async (containerId) => {
     const items = containerItems[containerId] || [];
     let tcgTotal = 0, ckTotal = 0;
     
-    items.forEach(item => {
-      const quantity = parseInt(item.quantity_used) || 0;
-      const price = parseFloat(item.purchase_price) || 0;
-      tcgTotal += price * quantity;
-      ckTotal += price * quantity;
-    });
+    for (const item of items) {
+      try {
+        const response = await fetch(`https://api.scryfall.com/cards/search?q=!"${item.name}"+set:${item.set}&unique=prints`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.data && data.data.length > 0) {
+            const card = data.data[0];
+            const quantity = parseInt(item.quantity_used) || 0;
+            const tcgPrice = parseFloat(card.prices?.usd) || 0;
+            const ckPrice = parseFloat(card.prices?.usd_foil) || 0;
+            tcgTotal += tcgPrice * quantity;
+            ckTotal += ckPrice * quantity;
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching price for', item.name, err);
+      }
+    }
     
     return { tcg: tcgTotal, ck: ckTotal };
+  };
+
+  const calculateContainerPrices = (containerId) => {
+    return containerPriceCache[containerId] || { tcg: 0, ck: 0 };
   };
 
 
