@@ -1,0 +1,69 @@
+Problem Statement
+We're building an MTG (Magic: The Gathering) card inventory management app and need to fetch Card Kingdom prices for cards. The app successfully fetches TCG prices from Scryfall API, but Card Kingdom pricing has proven impossible to retrieve despite multiple approaches.
+
+Goal
+Fetch Card Kingdom prices for cards like "Sol Ring" from various sets (e.g., Edge of Eternities Commander, Doctor Who) so they display alongside TCG prices in our inventory tracker.
+
+URL Format
+The correct Card Kingdom URL format is:
+
+https://www.cardkingdom.com/mtg/edge-of-eternities-commander-decks/sol-ring
+Pattern: cardkingdom.com/mtg/{set-name-slug}/{card-name-slug}
+Troubleshooting Summary
+Attempt 1: Direct Web Scraping with Cheerio
+
+Approach: Simple fetch + HTML parsing with CSS selectors
+Result: HTTP 403 Forbidden
+Error: Card Kingdom returned status 403 before we could access HTML
+Console logs confirmed: "Status Code: 403, Status Text: Forbidden, Response OK?: false"
+Attempt 2: Improved Web Scraping with Better Headers
+
+Approach: Added realistic User-Agent, Accept headers, Sec-Fetch headers to mimic browser
+Result: Still HTTP 403 Forbidden
+Error: Even with comprehensive browser-like headers, Card Kingdom blocked the request
+Evidence: Every request attempt returned 403
+Attempt 3: Puppeteer Headless Browser Rendering
+
+Approach: Use headless Chrome to render page like real user, bypassing bot detection
+Code: puppeteer.launch() with page rendering
+Result: Failed with system library error
+Error: Failed to launch the browser process: libglib-2.0.so.0: cannot open shared object file
+Why it failed: Replit environment lacks required system dependencies for Chromium
+Attempt 4: MTGJSON API (Third-Party Aggregator)
+
+Approach: Fetch Card Kingdom prices from MTGJSON's official data (they aggregate pricing)
+Endpoints tried:
+https://mtgjson.com/api/v5/cards.json (master dataset)
+https://mtgjson.com/api/v5/{SETCODE}.json (set-specific)
+Result: API responds with 200 OK but Card Kingdom price data isn't present in response structure
+Console logs: "Trying MTGJSON set-specific endpoint... === FINAL RESULT === Card Kingdom Price: N/A"
+What We Know
+Working ✅
+
+Scryfall API works perfectly - retrieves card data, TCG prices, set names
+Backend successfully fetches and processes Scryfall responses
+URL construction with set names works correctly
+Not Working ❌
+
+Any direct HTTP request to Card Kingdom (HTTP 403 Forbidden)
+Web scraping via Cheerio (blocked at HTTP level before HTML parsing)
+Browser-like headers and realistic User-Agent strings (still blocked)
+Puppeteer headless browser (system dependencies unavailable on Replit)
+MTGJSON API aggregator (data not in expected format or not available for CK)
+Environment Context
+Runtime: Node.js on Replit
+Cannot install additional system libraries due to platform limitations
+Backend uses Express.js
+Frontend uses React + Vite
+Question for Claude
+What additional approaches could we try to retrieve Card Kingdom pricing without:
+
+Direct web scraping (blocked with 403)
+Headless browser rendering (no system libs available)
+Official Card Kingdom API (doesn't exist)
+Third-party aggregators (data missing)
+Or should we:
+
+Accept that CK prices are unavailable and remove this feature?
+Contact Card Kingdom for partnership data access?
+Use a paid proxy/scraping service?
