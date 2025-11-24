@@ -145,6 +145,10 @@ export default function MTGInventoryTracker() {
   };
 
   const selectCard = (card) => {
+    // Get all versions of this card from search results
+    const cardVersions = searchResults.filter(c => c.name === card.name);
+    setSelectedCardSets(cardVersions.length > 0 ? cardVersions : [card]);
+    
     setNewEntry({
       ...newEntry,
       selectedSet: {
@@ -477,9 +481,30 @@ export default function MTGInventoryTracker() {
                 </div>
 
                 {newEntry.selectedSet && (
-                  <div className="bg-black bg-opacity-50 border border-purple-400 rounded p-3">
-                    <div className="font-semibold">{newEntry.selectedSet.name}</div>
-                    <div className="text-sm text-gray-300">{newEntry.selectedSet.setName}</div>
+                  <div className="space-y-2">
+                    <div className="bg-black bg-opacity-50 border border-purple-400 rounded p-3">
+                      <div className="font-semibold">{newEntry.selectedSet.name}</div>
+                      <div className="text-sm text-gray-300">{newEntry.selectedSet.setName} ({newEntry.selectedSet.set})</div>
+                    </div>
+                    {selectedCardSets.length > 1 && (
+                      <div>
+                        <label className="block text-sm font-semibold mb-2">Change Set (if available):</label>
+                        <select
+                          value={`${newEntry.selectedSet.set}|${newEntry.selectedSet.name}`}
+                          onChange={(e) => {
+                            const selectedCard = selectedCardSets.find(c => `${c.set}|${c.name}` === e.target.value);
+                            if (selectedCard) selectCard(selectedCard);
+                          }}
+                          className="w-full bg-black bg-opacity-50 border border-purple-400 rounded px-4 py-2 text-white"
+                        >
+                          {selectedCardSets.map((card) => (
+                            <option key={`${card.id}`} value={`${card.set}|${card.name}`}>
+                              {card.setName} ({card.set})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
                   </div>
                 )}
 
