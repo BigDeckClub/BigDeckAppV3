@@ -244,33 +244,45 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
     // Fetch Card Kingdom price by scraping their website
     let ckPrice = 'N/A';
     try {
-      // Try to find the card on Card Kingdom
-      const ckSearchUrl = `https://www.cardkingdom.com/mtg/search?q=${encodeURIComponent(cardName)}+${encodeURIComponent(setCode)}`;
-      const ckRes = await fetch(ckSearchUrl, {
-        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
+      // Build direct product URL based on card name and set code (lowercase)
+      const productName = cardName.toLowerCase().replace(/\s+/g, '-');
+      const ckProductUrl = `https://www.cardkingdom.com/mtg/${productName.replace(/[^a-z0-9-]/g, '')}`;
+      
+      const ckRes = await fetch(ckProductUrl, {
+        headers: { 
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          'Accept': 'text/html'
+        }
       });
       
       if (ckRes.ok) {
         const html = await ckRes.text();
         const $ = load(html);
         
-        // Look for price in the search results or product page
-        // Card Kingdom uses data-product-price or price classes
-        let priceText = $('[data-product-price]').first().attr('data-product-price');
-        if (!priceText) {
-          priceText = $('.productPrice').first().text();
-        }
-        if (!priceText) {
-          priceText = $('[class*="price"]').first().text();
-        }
+        // Try multiple selectors to find the price
+        let priceElement = null;
         
-        if (priceText) {
+        // Try common price selectors
+        priceElement = $('span[data-price]').first();
+        if (!priceElement.length) priceElement = $('[class*="Price"]').first();
+        if (!priceElement.length) priceElement = $('[class*="price"]').first();
+        if (!priceElement.length) priceElement = $('.basePrice').first();
+        if (!priceElement.length) priceElement = $('[data-bind*="price"]').first();
+        
+        if (priceElement.length) {
+          let priceText = priceElement.text() || priceElement.attr('data-price') || priceElement.attr('content');
+          
           // Extract price number from text
           const match = priceText.match(/\$?([\d.]+)/);
           if (match && match[1]) {
             ckPrice = `$${parseFloat(match[1]).toFixed(2)}`;
+            console.log(`Found CK price for ${cardName}: ${ckPrice}`);
           }
+        } else {
+          console.log(`Could not find price element for ${cardName} at ${ckProductUrl}`);
         }
+      } else {
+        console.log(`Card Kingdom returned status ${ckRes.status} for ${cardName}`);
       }
     } catch (err) {
       console.error('Error fetching Card Kingdom prices:', err.message);
