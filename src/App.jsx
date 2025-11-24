@@ -796,59 +796,83 @@ export default function MTGInventoryTracker() {
                   
                   return (
                     <div key={cardName} className="bg-black bg-opacity-50 border border-purple-400 rounded p-4">
-                      <div className="flex justify-between items-center cursor-pointer" onClick={() => setExpandedCards({...expandedCards, [cardName]: !isExpanded})}>
-                        <div className="flex-1">
-                          <div className="font-semibold text-lg">{cardName}</div>
-                          <div className="text-sm text-gray-300">Total: {totalQty} copies | Avg Price: ${avgPrice.toFixed(2)} | In {totalContainers} container{totalContainers !== 1 ? 's' : ''}</div>
+                      <div className="flex justify-between items-start mb-3 cursor-pointer" onClick={() => setExpandedCards({...expandedCards, [cardName]: !isExpanded})}>
+                        <div>
+                          <h3 className="text-lg font-bold text-purple-200">{cardName}</h3>
                         </div>
-                        <div className="text-purple-400 ml-4">
+                        <div className="text-purple-400">
                           {isExpanded ? '▼' : '▶'}
                         </div>
                       </div>
                       
+                      <div className="grid grid-cols-3 gap-3 mb-3">
+                        <div className="bg-purple-900 bg-opacity-50 rounded p-2 border border-purple-500">
+                          <div className="text-xs text-gray-400">Total Copies</div>
+                          <div className="text-xl font-bold text-purple-300">{totalQty}</div>
+                        </div>
+                        <div className="bg-purple-900 bg-opacity-50 rounded p-2 border border-purple-500">
+                          <div className="text-xs text-gray-400">Avg Price</div>
+                          <div className="text-xl font-bold text-blue-300">${avgPrice.toFixed(2)}</div>
+                        </div>
+                        <div className="bg-purple-900 bg-opacity-50 rounded p-2 border border-purple-500">
+                          <div className="text-xs text-gray-400">In Containers</div>
+                          <div className="text-xl font-bold text-pink-300">{totalContainers}</div>
+                        </div>
+                      </div>
+                      
                       {isExpanded && (
-                        <div className="mt-4 space-y-3 border-t border-purple-600 pt-4">
+                        <div className="border-t border-purple-600 pt-4 space-y-2">
                           {items.map((item) => {
                             const isEditing = editingId === item.id;
                             return (
-                              <div key={item.id} className="bg-black bg-opacity-50 border border-purple-300 rounded p-3">
+                              <div key={item.id} className="bg-purple-900 bg-opacity-30 border border-purple-400 rounded p-3">
                                 {isEditing ? (
                                   <div className="space-y-2">
-                                    <div className="text-sm text-gray-400">{item.set_name} ({item.set})</div>
+                                    <div className="text-sm font-semibold text-purple-200">{item.set_name} ({item.set})</div>
                                     <div className="grid grid-cols-2 gap-2">
-                                      <input
-                                        type="number"
-                                        min="1"
-                                        value={editForm.quantity}
-                                        onChange={(e) => setEditForm({...editForm, quantity: e.target.value})}
-                                        placeholder="Quantity"
-                                        className="bg-black bg-opacity-50 border border-purple-400 rounded px-2 py-1 text-white text-sm"
-                                      />
-                                      <input
-                                        type="number"
-                                        step="0.01"
-                                        value={editForm.purchase_price}
-                                        onChange={(e) => setEditForm({...editForm, purchase_price: e.target.value})}
-                                        placeholder="Price"
-                                        className="bg-black bg-opacity-50 border border-purple-400 rounded px-2 py-1 text-white text-sm"
-                                      />
-                                      <input
-                                        type="date"
-                                        value={editForm.purchase_date}
-                                        onChange={(e) => setEditForm({...editForm, purchase_date: e.target.value})}
-                                        className="bg-black bg-opacity-50 border border-purple-400 rounded px-2 py-1 text-white text-sm"
-                                      />
-                                      <select
-                                        value={editForm.reorder_type}
-                                        onChange={(e) => setEditForm({...editForm, reorder_type: e.target.value})}
-                                        className="bg-black bg-opacity-50 border border-purple-400 rounded px-2 py-1 text-white text-sm"
-                                      >
-                                        <option value="normal">Normal</option>
-                                        <option value="land">Land</option>
-                                        <option value="bulk">Bulk</option>
-                                      </select>
+                                      <div>
+                                        <label className="text-xs text-gray-400">Qty</label>
+                                        <input
+                                          type="number"
+                                          min="1"
+                                          value={editForm.quantity}
+                                          onChange={(e) => setEditForm({...editForm, quantity: e.target.value})}
+                                          className="w-full bg-black bg-opacity-50 border border-purple-400 rounded px-2 py-1 text-white text-sm"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="text-xs text-gray-400">Price</label>
+                                        <input
+                                          type="number"
+                                          step="0.01"
+                                          value={editForm.purchase_price}
+                                          onChange={(e) => setEditForm({...editForm, purchase_price: e.target.value})}
+                                          className="w-full bg-black bg-opacity-50 border border-purple-400 rounded px-2 py-1 text-white text-sm"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="text-xs text-gray-400">Date</label>
+                                        <input
+                                          type="date"
+                                          value={editForm.purchase_date}
+                                          onChange={(e) => setEditForm({...editForm, purchase_date: e.target.value})}
+                                          className="w-full bg-black bg-opacity-50 border border-purple-400 rounded px-2 py-1 text-white text-sm"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="text-xs text-gray-400">Type</label>
+                                        <select
+                                          value={editForm.reorder_type}
+                                          onChange={(e) => setEditForm({...editForm, reorder_type: e.target.value})}
+                                          className="w-full bg-black bg-opacity-50 border border-purple-400 rounded px-2 py-1 text-white text-sm"
+                                        >
+                                          <option value="normal">Normal</option>
+                                          <option value="land">Land</option>
+                                          <option value="bulk">Bulk</option>
+                                        </select>
+                                      </div>
                                     </div>
-                                    <div className="flex gap-2">
+                                    <div className="flex gap-2 pt-2">
                                       <button
                                         onClick={() => updateInventoryItem(item.id)}
                                         className="flex-1 bg-green-600 hover:bg-green-700 rounded px-3 py-1 text-sm font-semibold"
@@ -866,21 +890,26 @@ export default function MTGInventoryTracker() {
                                 ) : (
                                   <div className="flex justify-between items-center">
                                     <div className="flex-1">
-                                      <div className="text-sm text-gray-400">{item.set_name} ({item.set})</div>
-                                      <div className="text-sm text-gray-300">Qty: {item.quantity} | Purchase: ${item.purchase_price || 'N/A'} | In {item.containers_count || 0} container{(item.containers_count || 0) !== 1 ? 's' : ''}</div>
+                                      <div className="text-sm font-semibold text-purple-200">{item.set_name}</div>
+                                      <div className="grid grid-cols-4 gap-3 mt-1 text-xs">
+                                        <div><span className="text-gray-400">Qty:</span> <span className="text-white font-semibold">{item.quantity}</span></div>
+                                        <div><span className="text-gray-400">Purchase:</span> <span className="text-white font-semibold">${item.purchase_price || 'N/A'}</span></div>
+                                        <div><span className="text-gray-400">Containers:</span> <span className="text-white font-semibold">{item.containers_count || 0}</span></div>
+                                        <div><span className="text-gray-400">Set:</span> <span className="text-white font-semibold">{item.set}</span></div>
+                                      </div>
                                     </div>
-                                    <div className="flex items-center gap-6 ml-4">
+                                    <div className="flex items-center gap-3 ml-4">
                                       <MarketPrices cardName={item.name} setCode={item.set} priceCache={priceCache} setPriceCache={setPriceCache} />
-                                      <div className="flex gap-2">
+                                      <div className="flex gap-1">
                                         <button
                                           onClick={() => startEditingItem(item)}
-                                          className="bg-blue-600 hover:bg-blue-700 rounded px-3 py-1 text-sm"
+                                          className="bg-blue-600 hover:bg-blue-700 rounded px-2 py-1 text-xs font-semibold"
                                         >
                                           Edit
                                         </button>
                                         <button
                                           onClick={() => deleteInventoryItem(item.id)}
-                                          className="bg-red-600 hover:bg-red-700 rounded px-3 py-1 text-sm"
+                                          className="bg-red-600 hover:bg-red-700 rounded px-2 py-1"
                                         >
                                           <Trash2 className="w-4 h-4" />
                                         </button>
