@@ -1153,7 +1153,6 @@ export default function MTGInventoryTracker() {
                               const isEditingThisCard = editingDecklistCard?.idx === idx && editingDecklistCard?.deckId === deck.id;
                               
                               return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
                                 <div key={idx} className="card p-6 border p-3">
                                   {isEditingThisCard ? (
                                     <div className="space-y-2">
@@ -1283,15 +1282,15 @@ export default function MTGInventoryTracker() {
                                     </>
                                   )}
                                 </div>
-                              ))}
-                            </div>
+                              );
+                            })}
                           </div>
-                        )}
-                      </div>
+                        </div>
+                      )}
                     </div>
-                    );
-                  })}
-                </div>
+                  );
+                })}
+              </div>
               {decklists.length === 0 && <p className="text-slate-400">No decklists yet.</p>}
             </div>
           </div>
