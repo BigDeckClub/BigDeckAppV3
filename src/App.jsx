@@ -122,18 +122,38 @@ export default function MTGInventoryTracker() {
               ckPrice = parseFloat(String(priceData.ck).replace('$', '')) || 0;
             }
           } else {
-            // Card not in inventory - fetch from Scryfall directly without set code
+            // Card not in inventory - find set from Scryfall and use backend API for CK widget
             try {
-              const scryfallUrl = `https://api.scryfall.com/cards/search?q=!"${cardName}"&unique=prints`;
+              const scryfallUrl = `https://api.scryfall.com/cards/search?q=!"${cardName}"&unique=prints&order=released`;
               const scryfallResponse = await fetch(scryfallUrl);
               if (scryfallResponse.ok) {
                 const scryfallData = await scryfallResponse.json();
                 if (scryfallData.data && scryfallData.data.length > 0) {
-                  const card = scryfallData.data[0];
-                  tcgPrice = parseFloat(card.prices?.usd) || 0;
-                  ckPrice = parseFloat(card.prices?.usd_foil) || 0;
-                  if (ckPrice === 0) {
-                    ckPrice = tcgPrice * 1.15; // 15% markup as fallback
+                  // Try to find a set with good CK data
+                  let foundPrice = false;
+                  for (const card of scryfallData.data.slice(0, 5)) {
+                    // Get TCG price from Scryfall
+                    tcgPrice = parseFloat(card.prices?.usd) || 0;
+                    
+                    if (card.set) {
+                      // Try backend API to get CK widget price
+                      try {
+                        const backendResponse = await fetch(`${API_BASE}/prices/${encodeURIComponent(cardName)}/${card.set}`);
+                        if (backendResponse.ok) {
+                          const backendData = await backendResponse.json();
+                          ckPrice = parseFloat(String(backendData.ck).replace('$', '')) || 0;
+                          foundPrice = true;
+                          break;
+                        }
+                      } catch (err) {
+                        // Continue to next set
+                      }
+                    }
+                  }
+                  
+                  // Fallback if CK widget price not found
+                  if (!foundPrice && tcgPrice > 0) {
+                    ckPrice = tcgPrice * 1.15;
                   }
                 }
               }
