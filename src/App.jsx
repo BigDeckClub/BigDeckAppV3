@@ -1395,7 +1395,7 @@ export default function MTGInventoryTracker() {
                                 <div key={idx} className="bg-purple-900 bg-opacity-30 rounded p-3">
                                   <div className="flex justify-between items-start mb-2">
                                     <div className="flex-1">
-                                      <div className="font-semibold">{card.quantity}x {card.name}</div>
+                                      <div className="font-semibold">{card.name}</div>
                                       <div className="text-xs text-gray-400">{cardSet.toUpperCase()}</div>
                                     </div>
                                   </div>
