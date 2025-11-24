@@ -231,42 +231,43 @@ async function fetchCardKingdomPriceFromWidget(cardName, setCode) {
     const html = await response.text();
     const $ = load(html);
     
-    // Try multiple parsing strategies to find the price
+    // Parse Card Kingdom price from widget (prices listed by condition: G, VG, EX, NM)
     let price = 'N/A';
     
-    // Strategy 1: Look for price in table cells
-    const tables = $('table');
-    tables.each((tableIdx, table) => {
-      if (price !== 'N/A') return false;
+    // Look for NM (Near Mint) condition price - this is the standard retail price
+    const nmRegex = /NM<\/a><\/td>\s*<td[^>]*>\s*(\d+)<\/td>\s*<td[^>]*>\s*(\$[\d.]+)/;
+    const nmMatch = html.match(nmRegex);
+    
+    if (nmMatch && nmMatch[2]) {
+      price = nmMatch[2];
+      console.log('✅ Found CK NM price:', price);
+    } else {
+      // Fallback: Look for any row with quantity > 0 and extract its price
+      const tables = $('table');
+      let bestPrice = 'N/A';
+      let bestQty = 0;
       
-      $(table).find('tr').each((rowIdx, row) => {
-        if (price !== 'N/A') return false;
-        const cells = $(row).find('td');
-        
-        // Look through all cells for a price pattern
-        cells.each((cellIdx, cell) => {
-          const text = $(cell).text().trim();
-          const match = text.match(/^\$[\d.]+/);
-          if (match) {
-            price = match[0];
-            console.log('✅ Found CK price:', price);
-            return false;
+      tables.each((tableIdx, table) => {
+        $(table).find('tr').each((rowIdx, row) => {
+          const cells = $(row).find('td');
+          if (cells.length >= 3) {
+            // Cells are: condition, qty, price
+            const qtyText = $(cells[1]).text().trim();
+            const priceText = $(cells[2]).text().trim();
+            const qty = parseInt(qtyText);
+            const priceMatch = priceText.match(/\$[\d.]+/);
+            
+            if (priceMatch && qty > bestQty) {
+              bestPrice = priceMatch[0];
+              bestQty = qty;
+            }
           }
         });
       });
-    });
-    
-    // Strategy 2: Look for price anywhere in the HTML with regex
-    if (price === 'N/A') {
-      const priceRegex = /\$[\d.]+/g;
-      const matches = html.match(priceRegex);
-      if (matches && matches.length > 0) {
-        // Filter out common false positives and get the smallest price
-        const prices = matches.map(p => parseFloat(p.replace('$', ''))).sort((a, b) => a - b);
-        if (prices.length > 0) {
-          price = `$${prices[0].toFixed(2)}`;
-          console.log('✅ Found CK price (regex):', price);
-        }
+      
+      if (bestPrice !== 'N/A') {
+        price = bestPrice;
+        console.log('✅ Found CK price (highest qty):', price);
       }
     }
     
