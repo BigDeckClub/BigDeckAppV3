@@ -240,46 +240,7 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
       console.error('Error fetching Scryfall prices:', err);
     }
     
-    // Fetch Card Kingdom price from their website
-    let ckPrice = 'N/A';
-    try {
-      const scryfallRes = await fetch(`https://api.scryfall.com/cards/search?q=!"${cardName}"+set:${setCode.toLowerCase()}&unique=prints`);
-      if (scryfallRes.ok) {
-        const scryfallData = await scryfallRes.json();
-        if (scryfallData.data && scryfallData.data.length > 0) {
-          const card = scryfallData.data[0];
-          // Try to find the scryfall_id and search Card Kingdom for exact card
-          if (card.id) {
-            try {
-              // Construct Card Kingdom search URL based on card name and set
-              const ckSearch = encodeURIComponent(`${cardName} ${setCode}`);
-              const ckRes = await fetch(`https://www.cardkingdom.com/api/mtg/card/search?q=${ckSearch}`, {
-                headers: { 'User-Agent': 'MTGCardManager/1.0' }
-              });
-              if (ckRes.ok) {
-                const ckData = await ckRes.json();
-                if (ckData && ckData[0] && ckData[0].price) {
-                  ckPrice = `$${parseFloat(ckData[0].price).toFixed(2)}`;
-                }
-              }
-            } catch (ckErr) {
-              console.error('Card Kingdom API not available, using estimation:', ckErr);
-              // Fallback: estimate based on Scryfall data
-              if (card.prices?.usd_foil) {
-                ckPrice = `$${parseFloat(card.prices.usd_foil).toFixed(2)}`;
-              } else if (card.prices?.usd) {
-                const estimated = parseFloat(card.prices.usd) * 1.15;
-                ckPrice = `$${estimated.toFixed(2)}`;
-              }
-            }
-          }
-        }
-      }
-    } catch (err) {
-      console.error('Error fetching prices:', err);
-    }
-    
-    const priceData = { tcg: tcgPrice, ck: ckPrice, updated: new Date().toISOString() };
+    const priceData = { tcg: tcgPrice, updated: new Date().toISOString() };
     
     // Cache the result
     priceCache[cacheKey] = { data: priceData, timestamp: now };
