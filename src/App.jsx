@@ -56,6 +56,8 @@ export default function MTGInventoryTracker() {
   const [decklistPrices, setDecklistPrices] = useState({});
   const [containerPriceCache, setContainerPriceCache] = useState({});
   const [expandedDecklists, setExpandedDecklists] = useState({});
+  const [editingDecklistCard, setEditingDecklistCard] = useState(null);
+  const [editCardSet, setEditCardSet] = useState('');
 
   // Price display component
   const MarketPrices = ({ cardName, setCode }) => {
@@ -1397,16 +1399,71 @@ export default function MTGInventoryTracker() {
                               // Find card in inventory to get set
                               const inventoryCard = inventory.find(inv => inv.name.toLowerCase() === card.name.toLowerCase());
                               const cardSet = inventoryCard?.set || defaultSearchSet || 'UNK';
+                              const isEditingThisCard = editingDecklistCard?.idx === idx && editingDecklistCard?.deckId === deck.id;
                               
                               return (
                                 <div key={idx} className="bg-purple-900 bg-opacity-30 rounded p-3">
-                                  <div className="flex justify-between items-start mb-2">
-                                    <div className="flex-1">
-                                      <div className="font-semibold">{card.name}</div>
-                                      <div className="text-xs text-gray-400">{cardSet.toUpperCase()}</div>
+                                  {isEditingThisCard ? (
+                                    <div className="space-y-2">
+                                      <input
+                                        type="text"
+                                        value={editCardSet}
+                                        onChange={(e) => setEditCardSet(e.target.value.toUpperCase())}
+                                        placeholder="Set Code (e.g., M11)"
+                                        className="w-full bg-black bg-opacity-50 border border-purple-400 rounded px-3 py-2 text-white text-xs"
+                                      />
+                                      <div className="flex gap-2">
+                                        <button
+                                          onClick={() => {
+                                            // Update the decklist with new set code
+                                            const newDecklistText = deck.decklist.split('\n').map((line, lineIdx) => {
+                                              if (lineIdx === idx) {
+                                                return line.replace(cardSet, editCardSet);
+                                              }
+                                              return line;
+                                            }).join('\n');
+                                            
+                                            fetch(`${API_BASE}/decklists/${deck.id}`, {
+                                              method: 'PUT',
+                                              headers: { 'Content-Type': 'application/json' },
+                                              body: JSON.stringify({ decklist: newDecklistText })
+                                            }).then(() => {
+                                              loadDecklists();
+                                              setEditingDecklistCard(null);
+                                            });
+                                          }}
+                                          className="flex-1 bg-green-600 hover:bg-green-700 rounded px-2 py-1 text-xs font-semibold"
+                                        >
+                                          Save
+                                        </button>
+                                        <button
+                                          onClick={() => setEditingDecklistCard(null)}
+                                          className="flex-1 bg-gray-600 hover:bg-gray-700 rounded px-2 py-1 text-xs font-semibold"
+                                        >
+                                          Cancel
+                                        </button>
+                                      </div>
                                     </div>
-                                  </div>
-                                  <DecklistCardPrice cardName={card.name} setCode={cardSet} />
+                                  ) : (
+                                    <>
+                                      <div className="flex justify-between items-start mb-2">
+                                        <div className="flex-1">
+                                          <div className="font-semibold">{card.name}</div>
+                                          <div className="text-xs text-gray-400">{cardSet.toUpperCase()}</div>
+                                        </div>
+                                        <button
+                                          onClick={() => {
+                                            setEditingDecklistCard({ idx, deckId: deck.id });
+                                            setEditCardSet(cardSet);
+                                          }}
+                                          className="bg-blue-600 hover:bg-blue-700 rounded px-2 py-1 text-xs ml-2"
+                                        >
+                                          Edit Set
+                                        </button>
+                                      </div>
+                                      <DecklistCardPrice cardName={card.name} setCode={cardSet} />
+                                    </>
+                                  )}
                                 </div>
                               );
                             })}

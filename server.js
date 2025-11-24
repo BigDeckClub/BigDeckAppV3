@@ -118,6 +118,20 @@ app.post('/api/decklists', async (req, res) => {
   }
 });
 
+app.put('/api/decklists/:id', async (req, res) => {
+  try {
+    const { decklist } = req.body;
+    const result = await pool.query(
+      'UPDATE decklists SET decklist = $1 WHERE id = $2 RETURNING *',
+      [decklist, req.params.id]
+    );
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Error updating decklist:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.delete('/api/decklists/:id', async (req, res) => {
   try {
     await pool.query('DELETE FROM decklists WHERE id = $1', [req.params.id]);
@@ -408,13 +422,59 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
   console.log('Card:', cardName, 'Set:', setCode);
   
   try {
-    // Fetch TCG price from Scryfall
-    const scryfallUrl = `https://api.scryfall.com/cards/search?q=!"${cardName}"+set:${setCode.toLowerCase()}&unique=prints`;
-    
-    const scryfallResponse = await fetch(scryfallUrl);
     let tcgPrice = 'N/A';
+    let ckPrice = 'N/A';
+    let finalSetCode = setCode;
     
-    if (scryfallResponse.ok) {
+    // Try to fetch with the primary set code first
+    let scryfallUrl = `https://api.scryfall.com/cards/search?q=!"${cardName}"+set:${setCode.toLowerCase()}&unique=prints`;
+    let scryfallResponse = await fetch(scryfallUrl);
+    
+    // If primary set fails, try alternative set codes by searching for all printings
+    if (!scryfallResponse.ok || (await scryfallResponse.json()).data?.length === 0) {
+      console.log(`⚠️ Set ${setCode} not found for ${cardName}, trying alternative sets...`);
+      
+      // Get all printings of the card
+      const allPrintingsUrl = `https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(cardName)}`;
+      const allPrintingsResponse = await fetch(allPrintingsUrl);
+      
+      if (allPrintingsResponse.ok) {
+        const allPrintingsData = await allPrintingsResponse.json();
+        
+        // Try to find a printing with CK pricing available
+        const printingsUrl = `https://api.scryfall.com/cards/search?q=!"${cardName}"&unique=prints&order=released`;
+        const printingsResponse = await fetch(printingsUrl);
+        
+        if (printingsResponse.ok) {
+          const printingsData = await printingsResponse.json();
+          
+          if (printingsData.data && printingsData.data.length > 0) {
+            // Try each printing to find one with CK pricing (limit to 5 attempts)
+            for (const card of printingsData.data.slice(0, 5)) {
+              const altSetCode = card.set.toUpperCase();
+              const altCkPrice = await fetchCardKingdomPriceFromWidget(cardName, altSetCode);
+              
+              if (altCkPrice !== 'N/A') {
+                finalSetCode = altSetCode;
+                ckPrice = altCkPrice;
+                // Get TCG price for this set
+                if (card.prices?.usd) {
+                  tcgPrice = `$${card.prices.usd}`;
+                }
+                console.log(`✅ Found alternative set: ${finalSetCode} with CK price: ${ckPrice}`);
+                break;
+              }
+            }
+            
+            // If no CK pricing found, just use the primary set's TCG price
+            if (ckPrice === 'N/A' && printingsData.data[0].prices?.usd) {
+              tcgPrice = `$${printingsData.data[0].prices.usd}`;
+            }
+          }
+        }
+      }
+    } else {
+      // Primary set was found, fetch pricing
       const scryfallData = await scryfallResponse.json();
       if (scryfallData.data && scryfallData.data.length > 0) {
         const card = scryfallData.data[0];
@@ -423,12 +483,12 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
           tcgPrice = `$${tcgPrice}`;
         }
       }
+      
+      // Fetch Card Kingdom price from MTGGoldfish widget
+      ckPrice = await fetchCardKingdomPriceFromWidget(cardName, setCode);
     }
     
     console.log('TCG Price:', tcgPrice);
-    
-    // Fetch Card Kingdom price from MTGGoldfish widget
-    const ckPrice = await fetchCardKingdomPriceFromWidget(cardName, setCode);
     console.log('CK Price:', ckPrice);
     
     res.json({ tcg: tcgPrice, ck: ckPrice });
