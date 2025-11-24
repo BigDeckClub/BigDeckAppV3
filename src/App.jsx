@@ -329,6 +329,7 @@ export default function MTGInventoryTracker() {
   };
 
   const parseAndPreviewDecklist = async () => {
+    console.log('parseAndPreviewDecklist called');
     if (!decklistName || !decklistPaste) {
       alert('Please fill in all fields');
       return;
@@ -349,23 +350,34 @@ export default function MTGInventoryTracker() {
         }
       });
 
+      console.log('Parsed cards:', cardsToFind);
+
+      if (cardsToFind.length === 0) {
+        alert('No cards found. Please use format: "3 Card Name"');
+        setDeckPreviewLoading(false);
+        return;
+      }
+
       // Fetch from Scryfall for each card
       const previewCards = await Promise.all(cardsToFind.map(async (card) => {
         try {
-          // Search Scryfall for all printings of this card
-          const scryfallRes = await fetch(`https://api.scryfall.com/cards/search?q=!"${encodeURIComponent(card.name)}"&unique=prints`);
+          const query = `!"${card.name}"`;
+          console.log('Fetching Scryfall for:', query);
+          const scryfallRes = await fetch(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(query)}&unique=prints`);
           
           if (!scryfallRes.ok) {
+            console.warn('Scryfall response not ok for:', card.name, scryfallRes.status);
             return {
               cardName: card.name,
               quantity: card.quantity,
               scryfallCards: [],
-              error: `Card not found on Scryfall`
+              error: `Card not found (${scryfallRes.status})`
             };
           }
 
           const scryfallData = await scryfallRes.json();
           const cards = scryfallData.data || [];
+          console.log(`Found ${cards.length} printings for ${card.name}`);
 
           return {
             cardName: card.name,
@@ -390,6 +402,7 @@ export default function MTGInventoryTracker() {
         }
       }));
 
+      console.log('Preview cards:', previewCards);
       setDeckPreview(previewCards);
     } catch (error) {
       console.error('Error parsing decklist:', error);
