@@ -1455,13 +1455,17 @@ export default function MTGInventoryTracker() {
                                             let found = false;
                                             const newLines = lines.map(line => {
                                               if (!found) {
-                                                const match = line.match(/^(\d+)\s+(.+)$/);
+                                                const match = line.match(/^(\d+x?)\s+(.+?)(?:\s+\(([A-Z0-9]+)\))?(.*)$/);
                                                 if (match) {
-                                                  const cardName = match[2].trim();
-                                                  if (cardName.toLowerCase() === card.name.toLowerCase()) {
+                                                  const qty = match[1];
+                                                  const cardNamePart = match[2].trim();
+                                                  const existingSet = match[3];
+                                                  const rest = match[4];
+                                                  
+                                                  if (cardNamePart.toLowerCase() === card.name.toLowerCase()) {
                                                     found = true;
-                                                    // Replace the old set code with the new one
-                                                    return line.replace(new RegExp(`\\[${cardSet}\\]`, 'i'), `[${editCardSet.toUpperCase()}]`);
+                                                    // Replace with new set code
+                                                    return `${qty} ${cardNamePart} (${editCardSet.toUpperCase()})${rest}`;
                                                   }
                                                 }
                                               }
