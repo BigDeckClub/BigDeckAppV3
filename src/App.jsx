@@ -680,6 +680,56 @@ export default function MTGInventoryTracker() {
     });
   };
 
+  const calculateDecklistPrices = async (decklist) => {
+    try {
+      const lines = decklist.split('\n');
+      let tcgTotal = 0, ckTotal = 0;
+      
+      for (const line of lines) {
+        const match = line.match(/^(\d+)\s+(.+)$/);
+        if (!match) continue;
+        
+        const quantity = parseInt(match[1]);
+        const cardName = match[2].trim();
+        
+        try {
+          const response = await fetch(`https://api.scryfall.com/cards/search?q=!"${cardName}"&unique=prints&order=released`);
+          if (response.ok) {
+            const data = await response.json();
+            if (data.data && data.data.length > 0) {
+              const card = data.data[0];
+              const tcgPrice = parseFloat(card.prices?.usd) || 0;
+              const ckPrice = parseFloat(card.prices?.usd_foil) || 0;
+              tcgTotal += tcgPrice * quantity;
+              ckTotal += ckPrice * quantity;
+            }
+          }
+        } catch (err) {
+          console.error('Error fetching price for', cardName, err);
+        }
+      }
+      
+      return { tcg: tcgTotal, ck: ckTotal };
+    } catch (err) {
+      console.error('Error calculating decklist prices:', err);
+      return { tcg: 0, ck: 0 };
+    }
+  };
+
+  const calculateContainerPrices = (containerId) => {
+    const items = containerItems[containerId] || [];
+    let tcgTotal = 0, ckTotal = 0;
+    
+    items.forEach(item => {
+      const quantity = parseInt(item.quantity_used) || 0;
+      const price = parseFloat(item.purchase_price) || 0;
+      tcgTotal += price * quantity;
+      ckTotal += price * quantity;
+    });
+    
+    return { tcg: tcgTotal, ck: ckTotal };
+  };
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 to-black text-white">
@@ -1124,20 +1174,29 @@ export default function MTGInventoryTracker() {
             <div className="bg-purple-900 bg-opacity-30 rounded-lg p-6 border border-purple-500">
               <h2 className="text-xl font-bold mb-4">Decklists ({decklists.length})</h2>
               <div className="grid gap-4">
-                {decklists.map((deck) => (
-                  <div key={deck.id} className="bg-black bg-opacity-50 border border-purple-400 rounded p-4 flex justify-between items-start">
-                    <div className="flex-1">
-                      <div className="font-semibold">{deck.name}</div>
-                      <div className="text-sm text-gray-300 mt-2 line-clamp-2">{deck.decklist}</div>
+                {decklists.map((deck) => {
+                  const deckPrices = calculateDecklistPrices(deck.decklist);
+                  return (
+                    <div key={deck.id} className="bg-black bg-opacity-50 border border-purple-400 rounded p-4">
+                      <div className="flex justify-between items-start mb-3">
+                        <div className="flex-1">
+                          <div className="font-semibold">{deck.name}</div>
+                          <div className="text-sm text-gray-300 mt-2 line-clamp-2">{deck.decklist}</div>
+                        </div>
+                        <button
+                          onClick={() => deleteDecklist(deck.id)}
+                          className="bg-red-600 hover:bg-red-700 rounded px-3 py-2 ml-4"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-xs border-t border-purple-500 pt-2 mt-2">
+                        <div className="text-purple-300">TCG: ${deckPrices.tcg.toFixed(2)}</div>
+                        <div className="text-blue-300">CK: ${deckPrices.ck.toFixed(2)}</div>
+                      </div>
                     </div>
-                    <button
-                      onClick={() => deleteDecklist(deck.id)}
-                      className="bg-red-600 hover:bg-red-700 rounded px-3 py-2 ml-4"
-                    >
-                      <Trash2 className="w-5 h-5" />
-                    </button>
-                  </div>
-                ))}
+                  );
+                })}
                 {decklists.length === 0 && <p className="text-gray-400">No decklists yet.</p>}
               </div>
             </div>
@@ -1195,38 +1254,44 @@ export default function MTGInventoryTracker() {
             <div className="bg-purple-900 bg-opacity-30 rounded-lg p-6 border border-purple-500">
               <h2 className="text-xl font-bold mb-4">Containers ({containers.length})</h2>
               <div className="space-y-3">
-                {containers.map((container) => (
-                  <div key={container.id} className="bg-black bg-opacity-50 border border-purple-400 rounded p-4">
-                    <div className="flex justify-between items-center">
-                      <div className="flex-1">
-                        <div className="font-semibold">{container.name}</div>
-                        <div className="text-sm text-gray-300">Decklist ID: {container.decklist_id}</div>
+                {containers.map((container) => {
+                  const containerPrices = calculateContainerPrices(container.id);
+                  return (
+                    <div key={container.id} className="bg-black bg-opacity-50 border border-purple-400 rounded p-4">
+                      <div className="flex justify-between items-start mb-3">
+                        <div className="flex-1">
+                          <div className="font-semibold">{container.name}</div>
+                          <div className="text-sm text-gray-300">Decklist ID: {container.decklist_id}</div>
+                          <div className="grid grid-cols-2 gap-2 text-xs mt-2 text-gray-400">
+                            <div className="text-purple-300">TCG: ${containerPrices.tcg.toFixed(2)}</div>
+                            <div className="text-blue-300">CK: ${containerPrices.ck.toFixed(2)}</div>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => toggleContainerExpand(container.id)}
+                            className="bg-blue-600 hover:bg-blue-700 rounded px-4 py-2 font-semibold"
+                          >
+                            {expandedContainers[container.id] ? 'Hide' : 'View'} Contents
+                          </button>
+                          <button
+                            onClick={() => {
+                              setSelectedContainerForSale(container.id);
+                              setShowSellModal(true);
+                            }}
+                            className="bg-green-600 hover:bg-green-700 rounded px-4 py-2 font-semibold flex items-center gap-2"
+                          >
+                            <DollarSign className="w-5 h-5" />
+                            Sell
+                          </button>
+                          <button
+                            onClick={() => deleteContainer(container.id)}
+                            className="bg-red-600 hover:bg-red-700 rounded px-3 py-2"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        </div>
                       </div>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => toggleContainerExpand(container.id)}
-                          className="bg-blue-600 hover:bg-blue-700 rounded px-4 py-2 font-semibold"
-                        >
-                          {expandedContainers[container.id] ? 'Hide' : 'View'} Contents
-                        </button>
-                        <button
-                          onClick={() => {
-                            setSelectedContainerForSale(container.id);
-                            setShowSellModal(true);
-                          }}
-                          className="bg-green-600 hover:bg-green-700 rounded px-4 py-2 font-semibold flex items-center gap-2"
-                        >
-                          <DollarSign className="w-5 h-5" />
-                          Sell
-                        </button>
-                        <button
-                          onClick={() => deleteContainer(container.id)}
-                          className="bg-red-600 hover:bg-red-700 rounded px-3 py-2"
-                        >
-                          <Trash2 className="w-5 h-5" />
-                        </button>
-                      </div>
-                    </div>
 
                     {expandedContainers[container.id] && (
                       <div className="mt-4 pt-4 border-t border-purple-500">
@@ -1254,7 +1319,9 @@ export default function MTGInventoryTracker() {
                       </div>
                     )}
                   </div>
-                ))}
+                    </div>
+                  );
+                })}
                 {containers.length === 0 && <p className="text-gray-400">No containers yet.</p>}
               </div>
             </div>
