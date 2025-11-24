@@ -1334,13 +1334,29 @@ export default function MTGInventoryTracker() {
                       
                       {isExpanded && (
                         <div className="mt-4 border-t border-purple-500 pt-4">
-                          <div className="space-y-2">
-                            {deckCards.map((card, idx) => (
-                              <div key={idx} className="bg-purple-900 bg-opacity-30 rounded p-2 flex justify-between items-center text-sm">
-                                <span>{card.quantity}x {card.name}</span>
-                                <span className="text-xs text-gray-400">{card.quantity}</span>
-                              </div>
-                            ))}
+                          <div className="space-y-3">
+                            {deckCards.map((card, idx) => {
+                              // Find card in inventory to get set
+                              const inventoryCard = inventory.find(inv => inv.name.toLowerCase() === card.name.toLowerCase());
+                              const cardSet = inventoryCard?.set || defaultSearchSet || 'UNK';
+                              const cacheKey = `${card.name}|${cardSet}`;
+                              const cardPrices = priceCache[cacheKey] || { tcg: 'N/A', ck: 'N/A' };
+                              
+                              return (
+                                <div key={idx} className="bg-purple-900 bg-opacity-30 rounded p-3">
+                                  <div className="flex justify-between items-start">
+                                    <div className="flex-1">
+                                      <div className="font-semibold">{card.quantity}x {card.name}</div>
+                                      <div className="text-xs text-gray-400 mt-1">{cardSet.toUpperCase()}</div>
+                                    </div>
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-2 mt-2 text-xs">
+                                    <div className="text-purple-300">TCG: {cardPrices.tcg === 'N/A' ? 'N/A' : `$${cardPrices.tcg}`}</div>
+                                    <div className="text-blue-300">CK: {cardPrices.ck === 'N/A' ? 'N/A' : `$${cardPrices.ck}`}</div>
+                                  </div>
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
                       )}
