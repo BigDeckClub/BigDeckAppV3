@@ -1339,8 +1339,6 @@ export default function MTGInventoryTracker() {
                               // Find card in inventory to get set
                               const inventoryCard = inventory.find(inv => inv.name.toLowerCase() === card.name.toLowerCase());
                               const cardSet = inventoryCard?.set || defaultSearchSet || 'UNK';
-                              const cacheKey = `${card.name}|${cardSet}`;
-                              const cardPrices = priceCache[cacheKey] || { tcg: 'N/A', ck: 'N/A' };
                               
                               return (
                                 <div key={idx} className="bg-purple-900 bg-opacity-30 rounded p-3">
@@ -1350,9 +1348,8 @@ export default function MTGInventoryTracker() {
                                       <div className="text-xs text-gray-400 mt-1">{cardSet.toUpperCase()}</div>
                                     </div>
                                   </div>
-                                  <div className="grid grid-cols-2 gap-2 mt-2 text-xs">
-                                    <div className="text-purple-300">TCG: {cardPrices.tcg === 'N/A' ? 'N/A' : `$${cardPrices.tcg}`}</div>
-                                    <div className="text-blue-300">CK: {cardPrices.ck === 'N/A' ? 'N/A' : `$${cardPrices.ck}`}</div>
+                                  <div className="mt-2">
+                                    <MarketPrices cardName={card.name} setCode={cardSet} />
                                   </div>
                                 </div>
                               );
