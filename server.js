@@ -259,27 +259,43 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
         const html = await ckRes.text();
         const $ = load(html);
         
-        // Try multiple selectors to find the price
-        let priceElement = null;
+        // Look for the main product price - specifically target the price display near product info
+        // Card Kingdom typically shows price in elements like "productPrice", "price-large", or data attributes
+        let priceText = '';
         
-        // Try common price selectors
-        priceElement = $('span[data-price]').first();
-        if (!priceElement.length) priceElement = $('[class*="Price"]').first();
-        if (!priceElement.length) priceElement = $('[class*="price"]').first();
-        if (!priceElement.length) priceElement = $('.basePrice').first();
-        if (!priceElement.length) priceElement = $('[data-bind*="price"]').first();
-        
-        if (priceElement.length) {
-          let priceText = priceElement.text() || priceElement.attr('data-price') || priceElement.attr('content');
-          
-          // Extract price number from text
-          const match = priceText.match(/\$?([\d.]+)/);
-          if (match && match[1]) {
-            ckPrice = `$${parseFloat(match[1]).toFixed(2)}`;
-            console.log(`Found CK price for ${cardName}: ${ckPrice}`);
-          }
+        // Try to find price in order of specificity
+        let priceElem = $('[data-price-amount]').first();
+        if (priceElem.length && priceElem.attr('data-price-amount')) {
+          priceText = priceElem.attr('data-price-amount');
         } else {
-          console.log(`Could not find price element for ${cardName} at ${ckProductUrl}`);
+          // Look for price in text content of price-related elements, excluding small elements
+          const potentialPrices = [];
+          $('span, div').each((i, elem) => {
+            const text = $(elem).text().trim();
+            const match = text.match(/^\$[\d.]+$/);
+            if (match && text.length > 3) { // Avoid tiny prices like $0.25
+              const price = parseFloat(text.replace('$', ''));
+              if (price > 0.50) { // Avoid shipping/misc charges
+                potentialPrices.push(price);
+              }
+            }
+          });
+          // Get the highest reasonable price (most likely the product price, not a discount)
+          if (potentialPrices.length > 0) {
+            priceText = '$' + Math.max(...potentialPrices).toFixed(2);
+          }
+        }
+        
+        // Final extraction and formatting
+        if (priceText) {
+          const match = priceText.match(/[\d.]+/);
+          if (match && match[0]) {
+            const price = parseFloat(match[0]);
+            if (price >= 0.50) { // Sanity check - prices should be at least $0.50
+              ckPrice = `$${price.toFixed(2)}`;
+              console.log(`Found CK price for ${cardName}: ${ckPrice}`);
+            }
+          }
         }
       } else {
         console.log(`Card Kingdom returned status ${ckRes.status} for ${cardName}`);
