@@ -144,10 +144,33 @@ export default function MTGInventoryTracker() {
     }
   };
 
-  const selectCard = (card) => {
-    // Get all versions of this card from search results
-    const cardVersions = searchResults.filter(c => c.name === card.name);
-    setSelectedCardSets(cardVersions.length > 0 ? cardVersions : [card]);
+  const selectCard = async (card) => {
+    // Fetch ALL printings of this card from Scryfall
+    try {
+      console.log('Fetching all printings of:', card.name);
+      const response = await fetch(`https://api.scryfall.com/cards/search?q=!"${card.name}"&unique=prints&order=released`);
+      if (response.ok) {
+        const data = await response.json();
+        const allVersions = data.data.map(c => ({
+          id: c.id,
+          name: c.name,
+          set: c.set.toUpperCase(),
+          setName: c.set_name,
+          type: c.type_line,
+          imageUrl: c.image_uris?.normal || null
+        }));
+        console.log('Found', allVersions.length, 'printings of', card.name);
+        setSelectedCardSets(allVersions);
+      } else {
+        // Fallback to search results if API call fails
+        const cardVersions = searchResults.filter(c => c.name === card.name);
+        setSelectedCardSets(cardVersions.length > 0 ? cardVersions : [card]);
+      }
+    } catch (error) {
+      console.error('Error fetching card printings:', error);
+      const cardVersions = searchResults.filter(c => c.name === card.name);
+      setSelectedCardSets(cardVersions.length > 0 ? cardVersions : [card]);
+    }
     
     setNewEntry({
       ...newEntry,
