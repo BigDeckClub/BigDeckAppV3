@@ -1,3 +1,1298 @@
+import React, { useState, useEffect } from 'react';
+import { Search, Plus, Trash2, FileText, Package, Copy, Layers, AlertCircle, TrendingUp, Settings, RefreshCw, DollarSign, X } from 'lucide-react';
+import { fetchCardPrices } from './utils/priceUtils';
+import { useDebounce } from './utils/useDebounce';
+import { InventoryTab } from './components/InventoryTab';
+
+// Use relative path - Vite dev server will proxy to backend
+const API_BASE = '/api';
+
+export default function MTGInventoryTracker() {
+  const [activeTab, setActiveTab] = useState('inventory');
+  const [inventory, setInventory] = useState([]);
+  const [decklists, setDecklists] = useState([]);
+  const [containers, setContainers] = useState([]);
+  const [sales, setSales] = useState([]);
+  const [reorderSettings, setReorderSettings] = useState({ bulk: 12, land: 20, normal: 4 });
+  const [usageHistory, setUsageHistory] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  
+  const [showSellModal, setShowSellModal] = useState(false);
+  const [selectedContainerForSale, setSelectedContainerForSale] = useState(null);
+  const [salePrice, setSalePrice] = useState('');
+  
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [selectedCardSets, setSelectedCardSets] = useState([]);
+  
+  const [newEntry, setNewEntry] = useState({
+    quantity: 1,
+    purchaseDate: new Date().toISOString().split('T')[0],
+    purchasePrice: '',
+    reorderType: 'normal',
+    selectedSet: null
+  });
+
+  const [decklistName, setDecklistName] = useState('');
+  const [decklistPaste, setDecklistPaste] = useState('');
+  const [showDecklistForm, setShowDecklistForm] = useState(false);
+  const [deckPreview, setDeckPreview] = useState(null);
+  const [deckPreviewLoading, setDeckPreviewLoading] = useState(false);
+
+  const [containerName, setContainerName] = useState('');
+  const [selectedDecklist, setSelectedDecklist] = useState(null);
+  const [showContainerForm, setShowContainerForm] = useState(false);
+  const [showSetSelector, setShowSetSelector] = useState(false);
+  const [setSelectionData, setSetSelectionData] = useState(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [editForm, setEditForm] = useState({});
+  const [expandedCards, setExpandedCards] = useState({});
+  const [priceCache, setPriceCache] = useState({});
+  const [expandedContainers, setExpandedContainers] = useState({});
+  const [containerItems, setContainerItems] = useState({});
+  const [defaultSearchSet, setDefaultSearchSet] = useState('');
+  const [allSets, setAllSets] = useState([]);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [decklistPrices, setDecklistPrices] = useState({});
+  const [containerPriceCache, setContainerPriceCache] = useState({});
+  const [expandedDecklists, setExpandedDecklists] = useState({});
+  const [editingDecklistCard, setEditingDecklistCard] = useState(null);
+  const [editCardSet, setEditCardSet] = useState('');
+  const [editCardAvailableSets, setEditCardAvailableSets] = useState([]);
+  const [lastUsedSets, setLastUsedSets] = useState({});
+
+  // Price display component
+  const MarketPrices = ({ cardName, setCode }) => {
+    const [prices, setPrices] = useState(null);
+    
+    useEffect(() => {
+      const cacheKey = `${cardName}|${setCode}`;
+      if (priceCache[cacheKey]) {
+        setPrices(priceCache[cacheKey]);
+      } else {
+        const loadPrices = async () => {
+          const priceData = await fetchCardPrices(cardName, setCode);
+          setPrices(priceData);
+          setPriceCache(prev => ({...prev, [cacheKey]: priceData}));
+        };
+        loadPrices();
+      }
+    }, [cardName, setCode]);
+    
+    if (!prices) return <div className="text-xs text-gray-500">Loading...</div>;
+    return (
+      <div className="text-xs whitespace-nowrap">
+        <div className="text-purple-300">TCG: {prices.tcg}</div>
+        <div className="text-blue-300">CK: {prices.ck}</div>
+      </div>
+    );
+  };
+
+  // Individual card price component for decklist views
+  const DecklistCardPrice = ({ cardName, setCode }) => {
+    const [tcgPrice, setTcgPrice] = useState('N/A');
+    const [ckPrice, setCkPrice] = useState('N/A');
+    
+    useEffect(() => {
+      let isMounted = true;
+      const cacheKey = `${cardName}|${setCode}`;
+      const CACHE_DURATION_MS = 12 * 60 * 60 * 1000; // 12 hours
+      
+      // Check cache first
+      if (priceCache[cacheKey]) {
+        const cached = priceCache[cacheKey];
+        const now = Date.now();
+        // Check if cache is still valid
+        if (now - (cached.timestamp || 0) < CACHE_DURATION_MS) {
+          if (isMounted) {
+            setTcgPrice(cached.tcg);
+            setCkPrice(cached.ck);
+          }
+          return;
+        }
+      }
+      
+      const loadPrices = async () => {
+        const priceData = await fetchCardPrices(cardName, setCode);
+        if (isMounted) {
+          setPriceCache(prev => ({...prev, [cacheKey]: { ...priceData, timestamp: Date.now() }}));
+          setTcgPrice(priceData.tcg);
+          setCkPrice(priceData.ck);
+        }
+      };
+      
+      loadPrices();
+      return () => { isMounted = false; };
+    }, [cardName, setCode]);
+    
+    return (
+      <div className="text-xs flex gap-4 mt-2">
+        <div className="text-purple-300">TCG: {tcgPrice}</div>
+        <div className="text-blue-300">CK: {ckPrice}</div>
+      </div>
+    );
+  };
+
+  const calculateDecklistPrices = async (decklist) => {
+    try {
+      const lines = decklist.split('\n');
+      let tcgTotal = 0, ckTotal = 0;
+      
+      for (const line of lines) {
+        const match = line.match(/^(\d+)\s+(.+?)(?:\s+\(([A-Z0-9]+)\))?$/);
+        if (!match) continue;
+        
+        const quantity = parseInt(match[1]);
+        const cardName = match[2].trim();
+        const setFromDecklist = match[3];
+        
+        try {
+          let tcgPrice = 0, ckPrice = 0;
+          let setToUse = setFromDecklist;
+          
+          // If no set in decklist, try to find from inventory
+          if (!setToUse) {
+            const inventoryCard = inventory.find(card => card.name.toLowerCase() === cardName.toLowerCase());
+            if (inventoryCard) {
+              setToUse = inventoryCard.set;
+            }
+          }
+          
+          if (setToUse) {
+            // Use the set code we found
+            const response = await fetch(`${API_BASE}/prices/${encodeURIComponent(cardName)}/${setToUse}`);
+            if (response.ok) {
+              const priceData = await response.json();
+              // Strip $ sign and parse the price
+              tcgPrice = parseFloat(String(priceData.tcg).replace('$', '')) || 0;
+              const ckRaw = String(priceData.ck).replace('$', '');
+              ckPrice = parseFloat(ckRaw) || 0;
+              
+              // If CK price is N/A or 0, use fallback
+              if (ckPrice === 0 && tcgPrice > 0) {
+                ckPrice = tcgPrice * 1.15;
+              }
+            }
+          } else {
+            // Card not in inventory - find set from Scryfall and use backend API for CK widget
+            try {
+              const scryfallUrl = `https://api.scryfall.com/cards/search?q=!"${cardName}"&unique=prints&order=released`;
+              const scryfallResponse = await fetch(scryfallUrl);
+              if (scryfallResponse.ok) {
+                const scryfallData = await scryfallResponse.json();
+                if (scryfallData.data && scryfallData.data.length > 0) {
+                  // Try to find a set with good CK data
+                  let foundPrice = false;
+                  let bestTcgPrice = 0;
+                  
+                  for (const card of scryfallData.data.slice(0, 10)) {
+                    // Get TCG price from Scryfall
+                    const currentTcgPrice = parseFloat(card.prices?.usd) || 0;
+                    if (currentTcgPrice > 0) {
+                      bestTcgPrice = currentTcgPrice;
+                      tcgPrice = currentTcgPrice;
+                    }
+                    
+                    if (card.set) {
+                      // Try backend API to get CK widget price
+                      try {
+                        const backendResponse = await fetch(`${API_BASE}/prices/${encodeURIComponent(cardName)}/${card.set}`);
+                        if (backendResponse.ok) {
+                          const backendData = await backendResponse.json();
+                          const ckRaw = String(backendData.ck).replace('$', '');
+                          const potentialCkPrice = parseFloat(ckRaw) || 0;
+                          // Only consider this a success if we got a real CK price (not 0 or N/A)
+                          if (potentialCkPrice > 0) {
+                            ckPrice = potentialCkPrice;
+                            foundPrice = true;
+                            break;
+                          }
+                        }
+                      } catch (err) {
+                        // Continue to next set
+                      }
+                    }
+                  }
+                  
+                  // Fallback if CK widget price not found - use TCG * 1.15
+                  if (!foundPrice && tcgPrice > 0) {
+                    ckPrice = tcgPrice * 1.15;
+                  }
+                }
+              }
+            } catch (err) {
+
+            }
+          }
+          
+          tcgTotal += tcgPrice * quantity;
+          ckTotal += ckPrice * quantity;
+        } catch (err) {
+
+        }
+      }
+      
+      return { tcg: tcgTotal, ck: ckTotal };
+    } catch (err) {
+
+      return { tcg: 0, ck: 0 };
+    }
+  };
+
+  const calculateContainerMarketPrices = async (containerId) => {
+    const items = containerItems[containerId] || [];
+    let tcgTotal = 0, ckTotal = 0;
+    
+    for (const item of items) {
+      try {
+        // Use the backend API which has proper pricing with CK data
+        const response = await fetch(`${API_BASE}/prices/${encodeURIComponent(item.name)}/${item.set}`);
+        if (response.ok) {
+          const priceData = await response.json();
+          // Strip $ sign and parse the price
+          const tcgPrice = parseFloat(String(priceData.tcg).replace('$', '')) || 0;
+          const ckRaw = String(priceData.ck).replace('$', '');
+          let ckPrice = parseFloat(ckRaw) || 0;
+          
+          // If CK price is N/A or 0, use fallback
+          if (ckPrice === 0 && tcgPrice > 0) {
+            ckPrice = tcgPrice * 1.15;
+          }
+          
+          const quantity = parseInt(item.quantity_used) || 0;
+          tcgTotal += tcgPrice * quantity;
+          ckTotal += ckPrice * quantity;
+        }
+      } catch (err) {
+
+      }
+    }
+    
+    return { tcg: tcgTotal, ck: ckTotal };
+  };
+
+  useEffect(() => {
+    loadAllData();
+    loadAllSets();
+    const saved = localStorage.getItem('defaultSearchSet');
+    if (saved) setDefaultSearchSet(saved);
+  }, []);
+
+  useEffect(() => {
+    const calculateAllDecklistPrices = async () => {
+      const prices = {};
+      for (const deck of decklists) {
+        prices[deck.id] = await calculateDecklistPrices(deck.decklist);
+      }
+      setDecklistPrices(prices);
+    };
+    if (decklists.length > 0) {
+      calculateAllDecklistPrices();
+    }
+  }, [decklists, inventory]);
+
+  useEffect(() => {
+    const calculateAllContainerPrices = async () => {
+      const prices = {};
+      for (const containerId of Object.keys(containerItems)) {
+        prices[containerId] = await calculateContainerMarketPrices(parseInt(containerId));
+      }
+      setContainerPriceCache(prices);
+    };
+    if (Object.keys(containerItems).length > 0) {
+      calculateAllContainerPrices();
+    }
+  }, [containerItems]);
+
+  const loadAllSets = async () => {
+    try {
+      const response = await fetch('https://api.scryfall.com/sets');
+      if (response.ok) {
+        const data = await response.json();
+        const sets = data.data
+          .map(set => ({
+            code: set.code.toUpperCase(),
+            name: set.name
+          }))
+          .sort((a, b) => a.code.localeCompare(b.code));
+        setAllSets(sets);
+      }
+    } catch (error) {
+
+    }
+  };
+
+  const loadAllData = async () => {
+    setIsLoading(true);
+    await Promise.all([
+      loadInventory(),
+      loadDecklists(),
+      loadContainers(),
+      loadSales(),
+      loadReorderSettings(),
+      loadUsageHistory()
+    ]);
+    setIsLoading(false);
+  };
+
+  const loadInventory = async () => {
+    try {
+
+      const response = await fetch(`${API_BASE}/inventory`);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      const data = await response.json();
+      setInventory(data || []);
+    } catch (error) {
+
+    }
+  };
+
+  const addInventoryItem = async (item) => {
+    try {
+
+      const response = await fetch(`${API_BASE}/inventory`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(item)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      }
+      await loadInventory();
+      setSuccessMessage('Card added successfully!');
+      setTimeout(() => setSuccessMessage(''), 3000);
+      return true;
+    } catch (error) {
+
+      setSuccessMessage('Error adding card: ' + error.message);
+      setTimeout(() => setSuccessMessage(''), 3000);
+      return false;
+    }
+  };
+
+  const startEditingItem = (item) => {
+    setEditingId(item.id);
+    setEditForm({
+      quantity: item.quantity,
+      purchase_price: item.purchase_price || '',
+      purchase_date: item.purchase_date || '',
+      reorder_type: item.reorder_type || 'normal'
+    });
+  };
+
+  const updateInventoryItem = async (id) => {
+    try {
+      const response = await fetch(`${API_BASE}/inventory/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          quantity: parseInt(editForm.quantity),
+          purchase_price: editForm.purchase_price ? parseFloat(editForm.purchase_price) : null,
+          purchase_date: editForm.purchase_date,
+          reorder_type: editForm.reorder_type
+        })
+      });
+      if (!response.ok) throw new Error('Failed to update card');
+      await loadInventory();
+      setEditingId(null);
+      alert('Card updated successfully!');
+    } catch (error) {
+
+      alert('Error updating card: ' + error.message);
+    }
+  };
+
+  const deleteInventoryItem = async (id) => {
+    try {
+      await fetch(`${API_BASE}/inventory/${id}`, { method: 'DELETE' });
+      await loadInventory();
+    } catch (error) {
+
+    }
+  };
+
+  const fetchCardPrices = async (cardName, setCode) => {
+    const cacheKey = `${cardName}|${setCode}`;
+    if (priceCache[cacheKey]) {
+      return priceCache[cacheKey];
+    }
+    try {
+      const response = await fetch(`https://api.scryfall.com/cards/search?q=!"${cardName}"+set:${setCode}&unique=prints`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.data && data.data.length > 0) {
+          const card = data.data[0];
+          const prices = {
+            tcgplayer: card.prices?.usd ? `$${parseFloat(card.prices.usd).toFixed(2)}` : 'N/A',
+            cardkingdom: card.prices?.usd_foil ? `$${parseFloat(card.prices.usd_foil).toFixed(2)}` : 'N/A'
+          };
+          setPriceCache(prev => ({...prev, [cacheKey]: prices}));
+          return prices;
+        }
+      }
+    } catch (error) {
+
+    }
+    const fallback = { tcgplayer: 'N/A', cardkingdom: 'N/A' };
+    setPriceCache(prev => ({...prev, [cacheKey]: fallback}));
+    return fallback;
+  };
+
+  const searchScryfall = async (query) => {
+    if (!query.trim()) {
+      setSearchResults([]);
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      const response = await fetch(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(query)}&unique=prints&order=released`);
+      if (!response.ok) throw new Error('Search failed');
+      
+      const data = await response.json();
+      const cards = data.data.map(card => ({
+        id: card.id,
+        name: card.name,
+        set: card.set.toUpperCase(),
+        setName: card.set_name,
+        type: card.type_line,
+        imageUrl: card.image_uris?.normal || null
+      }));
+      
+      const prioritized = [];
+      const seen = new Set();
+      
+      const inventoryByName = {};
+      inventory.forEach(item => {
+        if (!inventoryByName[item.name]) {
+          inventoryByName[item.name] = [];
+        }
+        inventoryByName[item.name].push({
+          set: item.set,
+          setName: item.set_name,
+          purchaseDate: item.purchase_date
+        });
+      });
+      
+      Object.keys(inventoryByName).forEach(cardName => {
+        inventoryByName[cardName].sort((a, b) => new Date(b.purchaseDate) - new Date(a.purchaseDate));
+      });
+      
+      // First, if default set is selected, show matches from that set
+      if (defaultSearchSet) {
+        cards.forEach(card => {
+          if (!seen.has(`${card.name}|${card.set}`) && card.set === defaultSearchSet) {
+            prioritized.push(card);
+            seen.add(`${card.name}|${card.set}`);
+          }
+        });
+      }
+      
+      // Then add prioritized inventory cards (most recent 2 sets)
+      cards.forEach(card => {
+        if (!seen.has(`${card.name}|${card.set}`) && inventoryByName[card.name]) {
+          const inventoryVariants = inventoryByName[card.name].slice(0, 2);
+          if (inventoryVariants.some(v => v.set === card.set)) {
+            prioritized.push(card);
+            seen.add(`${card.name}|${card.set}`);
+          }
+        }
+      });
+      
+      // Then add remaining cards
+      cards.forEach(card => {
+        if (!seen.has(`${card.name}|${card.set}`)) {
+          prioritized.push(card);
+          seen.add(`${card.name}|${card.set}`);
+        }
+      });
+      
+      setSearchResults(prioritized.slice(0, 10));
+    } catch (error) {
+
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const debouncedQuery = useDebounce(searchQuery, 300);
+
+  useEffect(() => {
+    if (debouncedQuery.length > 2) {
+      searchScryfall(debouncedQuery);
+    } else {
+      setSearchResults([]);
+    }
+  }, [debouncedQuery]);
+
+  const handleSearch = (e) => {
+    const value = e.target.value;
+    setSearchQuery(value);
+  };
+
+  const selectCard = async (card) => {
+    // Fetch ALL printings of this card from Scryfall
+    try {
+
+      const response = await fetch(`https://api.scryfall.com/cards/search?q=!"${card.name}"&unique=prints&order=released`);
+      if (response.ok) {
+        const data = await response.json();
+        const allVersions = data.data.map(c => ({
+          id: c.id,
+          name: c.name,
+          set: c.set.toUpperCase(),
+          setName: c.set_name,
+          type: c.type_line,
+          imageUrl: c.image_uris?.normal || null
+        }));
+
+        setSelectedCardSets(allVersions);
+      } else {
+        // Fallback to search results if API call fails
+        const cardVersions = searchResults.filter(c => c.name === card.name);
+        setSelectedCardSets(cardVersions.length > 0 ? cardVersions : [card]);
+      }
+    } catch (error) {
+
+      const cardVersions = searchResults.filter(c => c.name === card.name);
+      setSelectedCardSets(cardVersions.length > 0 ? cardVersions : [card]);
+    }
+    
+    setNewEntry({
+      ...newEntry,
+      selectedSet: {
+        id: card.id,
+        name: card.name,
+        set: card.set,
+        setName: card.setName,
+        imageUrl: card.imageUrl
+      }
+    });
+    setSearchQuery('');
+    setSearchResults([]);
+    setShowDropdown(false);
+  };
+
+  const addCard = async () => {
+    if (!newEntry.selectedSet) {
+      alert('Please select a card');
+      return;
+    }
+
+    const item = {
+      name: newEntry.selectedSet.name,
+      set: newEntry.selectedSet.set,
+      set_name: newEntry.selectedSet.setName,
+      quantity: newEntry.quantity,
+      purchase_date: newEntry.purchaseDate,
+      purchase_price: newEntry.purchasePrice ? parseFloat(newEntry.purchasePrice) : null,
+      reorder_type: newEntry.reorderType,
+      image_url: newEntry.selectedSet.imageUrl
+    };
+
+    if (await addInventoryItem(item)) {
+      setNewEntry({
+        quantity: 1,
+        purchaseDate: new Date().toISOString().split('T')[0],
+        purchasePrice: '',
+        reorderType: 'normal',
+        selectedSet: null
+      });
+    }
+  };
+
+  const loadDecklists = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/decklists`);
+      const data = await response.json();
+      setDecklists(data || []);
+    } catch (error) {
+
+    }
+  };
+
+  const parseAndPreviewDecklist = async () => {
+    if (!decklistName || !decklistPaste) {
+      alert('Please fill in all fields');
+      return;
+    }
+
+    setDeckPreviewLoading(true);
+    try {
+      const lines = decklistPaste.split('\n').filter(line => line.trim());
+      const cardsToFind = [];
+
+      // Parse decklist lines (format: "3 Card Name")
+      lines.forEach(line => {
+        const match = line.match(/^(\d+)\s+(.+)$/);
+        if (match) {
+          const quantity = parseInt(match[1]);
+          const cardName = match[2].trim();
+          cardsToFind.push({ name: cardName, quantity });
+        }
+      });
+
+      if (cardsToFind.length === 0) {
+        alert('No cards found. Please use format: "3 Card Name"');
+        setDeckPreviewLoading(false);
+        return;
+      }
+
+      // Fetch from Scryfall for each card
+      const previewCards = await Promise.all(cardsToFind.map(async (card) => {
+        try {
+          const query = `!"${card.name}"`;
+          const scryfallRes = await fetch(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(query)}&unique=prints`);
+          
+          if (!scryfallRes.ok) {
+            return {
+              cardName: card.name,
+              quantity: card.quantity,
+              found: false,
+              error: `Card not found`
+            };
+          }
+
+          const scryfallData = await scryfallRes.json();
+          const cards = scryfallData.data || [];
+
+          return {
+            cardName: card.name,
+            quantity: card.quantity,
+            found: cards.length > 0,
+            sets: cards.map(c => ({
+              set: c.set.toUpperCase(),
+              setName: c.set_name,
+              rarity: c.rarity,
+              price: c.prices?.usd || 'N/A'
+            }))
+          };
+        } catch (err) {
+          return {
+            cardName: card.name,
+            quantity: card.quantity,
+            found: false,
+            error: err.message
+          };
+        }
+      }));
+
+      setDeckPreview(previewCards);
+    } catch (error) {
+
+      alert('Error parsing decklist: ' + error.message);
+    } finally {
+      setDeckPreviewLoading(false);
+    }
+  };
+
+  const validateDecklistCards = (preview) => {
+    const missingCards = [];
+    
+    preview.forEach(card => {
+      if (!card.found) {
+        missingCards.push(card.cardName);
+      }
+    });
+    
+    if (missingCards.length > 0) {
+      alert(`These cards were not found in Scryfall:\n${missingCards.join('\n')}`);
+      return false;
+    }
+    
+    return true;
+  };
+
+  const confirmAndAddDecklist = async () => {
+    if (!deckPreview || !validateDecklistCards(deckPreview)) {
+      return;
+    }
+    
+    try {
+      const response = await fetch(`${API_BASE}/decklists`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: decklistName, decklist: decklistPaste })
+      });
+      if (!response.ok) throw new Error('Failed to add decklist');
+      setDecklistName('');
+      setDecklistPaste('');
+      setShowDecklistForm(false);
+      setDeckPreview(null);
+      await loadDecklists();
+    } catch (error) {
+
+      alert('Error adding decklist: ' + error.message);
+    }
+  };
+
+  const deleteDecklist = async (id) => {
+    try {
+      await fetch(`${API_BASE}/decklists/${id}`, { method: 'DELETE' });
+      await loadDecklists();
+    } catch (error) {
+
+    }
+  };
+
+  const loadContainers = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/containers`);
+      const data = await response.json();
+      setContainers(data || []);
+      
+      // Preload all container items in the background
+      if (data && data.length > 0) {
+        const itemsMap = {};
+        for (const container of data) {
+          try {
+            const itemResponse = await fetch(`${API_BASE}/containers/${container.id}/items`);
+            const itemsData = await itemResponse.json();
+            itemsMap[container.id] = itemsData || [];
+          } catch (err) {
+
+            itemsMap[container.id] = [];
+          }
+        }
+        setContainerItems(itemsMap);
+      }
+    } catch (error) {
+
+    }
+  };
+
+  const toggleContainerExpand = async (containerId) => {
+    // Load items if not already loaded
+    if (!containerItems[containerId]) {
+      try {
+        const response = await fetch(`${API_BASE}/containers/${containerId}/items`);
+        const data = await response.json();
+        setContainerItems(prev => ({
+          ...prev,
+          [containerId]: data || []
+        }));
+      } catch (error) {
+
+      }
+    }
+
+    setExpandedContainers(prev => ({
+      ...prev,
+      [containerId]: !prev[containerId]
+    }));
+  };
+
+  const addContainer = async () => {
+    if (!containerName || !selectedDecklist) {
+      alert('Please fill in all fields');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE}/containers`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: containerName, decklist_id: parseInt(selectedDecklist) })
+      });
+      if (!response.ok) throw new Error('Failed to add container');
+      setContainerName('');
+      setSelectedDecklist(null);
+      setShowContainerForm(false);
+      await loadContainers();
+    } catch (error) {
+
+    }
+  };
+
+  const deleteContainer = async (id) => {
+    try {
+      await fetch(`${API_BASE}/containers/${id}`, { method: 'DELETE' });
+      await loadContainers();
+    } catch (error) {
+
+    }
+  };
+
+  const loadSales = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/sales`);
+      const data = await response.json();
+      setSales(data || []);
+    } catch (error) {
+
+      setSales([]);
+    }
+  };
+
+  const calculateDeckCOGS = (decklistId) => {
+    // Parse decklist to find card names and quantities
+    const deck = decklists.find(d => d.id === decklistId);
+    if (!deck || !deck.decklist) return 0;
+
+    let totalCost = 0;
+    const lines = deck.decklist.split('\n');
+    
+    lines.forEach(line => {
+      const match = line.match(/^(\d+)\s+(.+)$/);
+      if (match) {
+        const quantity = parseInt(match[1]);
+        const cardName = match[2].trim();
+        
+        // Find matching card in inventory
+        const inventoryCard = inventory.find(card => 
+          card.name.toLowerCase() === cardName.toLowerCase()
+        );
+        
+        if (inventoryCard && inventoryCard.purchase_price) {
+          totalCost += quantity * (parseFloat(inventoryCard.purchase_price) || 0);
+        }
+      }
+    });
+    
+    return totalCost;
+  };
+
+  const sellContainer = async () => {
+    if (!selectedContainerForSale || !salePrice) {
+      alert('Please enter a sale price');
+      return;
+    }
+
+    try {
+      const container = containers.find(c => c.id === selectedContainerForSale);
+      
+      const response = await fetch(`${API_BASE}/sales`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          container_id: selectedContainerForSale,
+          decklist_id: container.decklist_id,
+          sale_price: parseFloat(salePrice)
+        })
+      });
+      
+      if (!response.ok) throw new Error('Failed to record sale');
+      
+      await loadSales();
+      setShowSellModal(false);
+      setSelectedContainerForSale(null);
+      setSalePrice('');
+      alert('Container sold! Sale recorded.');
+    } catch (error) {
+
+      alert('Error recording sale: ' + error.message);
+    }
+  };
+
+  const loadReorderSettings = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/settings/reorder_thresholds`);
+      const data = await response.json();
+      if (data) {
+        setReorderSettings(data);
+      }
+    } catch (error) {
+
+    }
+  };
+
+  const saveReorderSettings = async () => {
+    try {
+      await fetch(`${API_BASE}/settings/reorder_thresholds`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ value: reorderSettings })
+      });
+      setShowSettings(false);
+    } catch (error) {
+
+    }
+  };
+
+  const loadUsageHistory = async () => {
+    // Usage history is not critical, skip for now
+  };
+
+  const recordUsage = async (action, details) => {
+    // Usage history is not critical, skip for now
+  };
+
+  const getReorderAlerts = () => {
+    return inventory.filter(item => {
+      const threshold = reorderSettings[item.reorder_type] || 5;
+      return item.quantity <= threshold;
+    });
+  };
+
+  const calculateContainerPrices = (containerId) => {
+    return containerPriceCache[containerId] || { tcg: 0, ck: 0 };
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-purple-900 to-black text-white">
+      {/* Navigation */}
+      <nav className="bg-black bg-opacity-50 border-b border-purple-500 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-purple-300">MTG Card Manager</h1>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setActiveTab('inventory')}
+              className={`px-4 py-2 rounded transition ${activeTab === 'inventory' ? 'bg-purple-600' : 'hover:bg-purple-700'}`}
+            >
+              <Layers className="w-5 h-5 inline mr-2" />
+              Inventory
+            </button>
+            <button
+              onClick={() => setActiveTab('decklists')}
+              className={`px-4 py-2 rounded transition ${activeTab === 'decklists' ? 'bg-purple-600' : 'hover:bg-purple-700'}`}
+            >
+              <FileText className="w-5 h-5 inline mr-2" />
+              Decklists
+            </button>
+            <button
+              onClick={() => setActiveTab('containers')}
+              className={`px-4 py-2 rounded transition ${activeTab === 'containers' ? 'bg-purple-600' : 'hover:bg-purple-700'}`}
+            >
+              <Package className="w-5 h-5 inline mr-2" />
+              Containers
+            </button>
+            <button
+              onClick={() => setActiveTab('analytics')}
+              className={`px-4 py-2 rounded transition ${activeTab === 'analytics' ? 'bg-purple-600' : 'hover:bg-purple-700'}`}
+            >
+              <TrendingUp className="w-5 h-5 inline mr-2" />
+              Analytics
+            </button>
+            <button
+              onClick={() => setActiveTab('sales')}
+              className={`px-4 py-2 rounded transition ${activeTab === 'sales' ? 'bg-purple-600' : 'hover:bg-purple-700'}`}
+            >
+              <DollarSign className="w-5 h-5 inline mr-2" />
+              Sales
+            </button>
+            <button
+              onClick={() => setShowSettings(!showSettings)}
+              className="px-4 py-2 rounded hover:bg-purple-700 transition"
+            >
+              <Settings className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      </nav>
+
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 py-8">
+        {isLoading && (
+          <div className="text-center py-8">
+            <RefreshCw className="w-8 h-8 animate-spin mx-auto text-purple-400" />
+          </div>
+        )}
+
+        {/* Inventory Tab */}
+        {activeTab === 'inventory' && !isLoading && (
+          <InventoryTab
+            inventory={inventory}
+            successMessage={successMessage}
+            setSuccessMessage={setSuccessMessage}
+            newEntry={newEntry}
+            setNewEntry={setNewEntry}
+            selectedCardSets={selectedCardSets}
+            allSets={allSets}
+            defaultSearchSet={defaultSearchSet}
+            setDefaultSearchSet={setDefaultSearchSet}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            searchResults={searchResults}
+            showDropdown={showDropdown}
+            setShowDropdown={setShowDropdown}
+            selectCard={selectCard}
+            addCard={addCard}
+            expandedCards={expandedCards}
+            setExpandedCards={setExpandedCards}
+            editingId={editingId}
+            editForm={editForm}
+            setEditForm={setEditForm}
+            startEditingItem={startEditingItem}
+            updateInventoryItem={updateInventoryItem}
+            deleteInventoryItem={deleteInventoryItem}
+            MarketPrices={MarketPrices}
+            handleSearch={handleSearch}
+          />
+        )}
+
+        {/* OLD INVENTORY CODE - REPLACED BY COMPONENT */}
+        {false && (
+          <div className="space-y-6">
+            <div className="bg-purple-900 bg-opacity-30 rounded-lg p-6 border border-purple-500">
+              <h2 className="text-xl font-bold mb-4">Add Card to Inventory</h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold mb-2">Preferred Set (optional):</label>
+                  <select
+                    value={defaultSearchSet}
+                    onChange={(e) => {
+                      setDefaultSearchSet(e.target.value);
+                      localStorage.setItem('defaultSearchSet', e.target.value);
+                    }}
+                    className="w-full bg-black bg-opacity-50 border border-purple-400 rounded px-4 py-2 text-white mb-4"
+                  >
+                    <option value="">Show most recent from inventory</option>
+                    {allSets.map(set => (
+                      <option key={set.code} value={set.code}>{set.code} - {set.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Search for a card..."
+                    value={searchQuery}
+                    onChange={handleSearch}
+                    onFocus={() => setShowDropdown(true)}
+                    className="w-full bg-black bg-opacity-50 border border-purple-400 rounded px-4 py-2 text-white placeholder-gray-400"
+                  />
+                  <Search className="w-5 h-5 absolute right-3 top-2.5 text-gray-400" />
+                  
+                  {showDropdown && searchResults.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-black border border-purple-400 rounded shadow-lg max-h-64 overflow-y-auto z-10">
+                      {searchResults.map((card) => (
+                        <div
+                          key={card.id}
+                          onClick={() => selectCard(card)}
+                          className="px-4 py-2 hover:bg-purple-700 cursor-pointer border-b border-purple-400"
+                        >
+                          <div className="font-semibold">{card.name}</div>
+                          <div className="text-sm text-gray-300">{card.setName} ({card.set})</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {newEntry.selectedSet && (
+                  <div className="space-y-2">
+                    <div className="bg-black bg-opacity-50 border border-purple-400 rounded p-3">
+                      <div className="font-semibold">{newEntry.selectedSet.name}</div>
+                      <div className="text-sm text-gray-300">{newEntry.selectedSet.setName} ({newEntry.selectedSet.set})</div>
+                    </div>
+                    {selectedCardSets.length > 1 && (
+                      <div>
+                        <label className="block text-sm font-semibold mb-2">Change Set (if available):</label>
+                        <select
+                          value={`${newEntry.selectedSet.set}|${newEntry.selectedSet.name}`}
+                          onChange={(e) => {
+                            const selectedCard = selectedCardSets.find(c => `${c.set}|${c.name}` === e.target.value);
+                            if (selectedCard) selectCard(selectedCard);
+                          }}
+                          className="w-full bg-black bg-opacity-50 border border-purple-400 rounded px-4 py-2 text-white"
+                        >
+                          {selectedCardSets.map((card) => (
+                            <option key={`${card.id}`} value={`${card.set}|${card.name}`}>
+                              {card.setName} ({card.set})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-4">
+                  <input
+                    type="number"
+                    min="1"
+                    value={newEntry.quantity}
+                    onChange={(e) => setNewEntry({...newEntry, quantity: parseInt(e.target.value)})}
+                    placeholder="Quantity"
+                    className="bg-black bg-opacity-50 border border-purple-400 rounded px-4 py-2 text-white"
+                  />
+                  <input
+                    type="date"
+                    value={newEntry.purchaseDate}
+                    onChange={(e) => setNewEntry({...newEntry, purchaseDate: e.target.value})}
+                    className="bg-black bg-opacity-50 border border-purple-400 rounded px-4 py-2 text-white"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={newEntry.purchasePrice}
+                    onChange={(e) => setNewEntry({...newEntry, purchasePrice: e.target.value})}
+                    placeholder="Purchase Price ($)"
+                    className="bg-black bg-opacity-50 border border-purple-400 rounded px-4 py-2 text-white"
+                  />
+                  <select
+                    value={newEntry.reorderType}
+                    onChange={(e) => setNewEntry({...newEntry, reorderType: e.target.value})}
+                    className="bg-black bg-opacity-50 border border-purple-400 rounded px-4 py-2 text-white"
+                  >
+                    <option value="normal">Normal</option>
+                    <option value="land">Land</option>
+                    <option value="bulk">Bulk</option>
+                  </select>
+                </div>
+
+                <button
+                  onClick={addCard}
+                  disabled={!newEntry.selectedSet}
+                  className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 rounded px-4 py-2 font-semibold transition"
+                >
+                  <Plus className="w-5 h-5 inline mr-2" />
+                  Add Card
+                </button>
+              </div>
+            </div>
+
+            {/* Inventory List */}
+            <div className="bg-purple-900 bg-opacity-30 rounded-lg p-6 border border-purple-500">
+              <h2 className="text-xl font-bold mb-4">Card Inventory</h2>
+              <div className="grid gap-4">
+                {Object.entries(
+                  inventory.reduce((acc, item) => {
+                    if (!acc[item.name]) {
+                      acc[item.name] = [];
+                    }
+                    acc[item.name].push(item);
+                    return acc;
+                  }, {})
+                ).map(([cardName, items]) => {
+                  const available = items.reduce((sum, item) => sum + item.quantity, 0);
+                  const totalInContainers = items.reduce((sum, item) => sum + (parseInt(item.in_containers_qty) || 0), 0);
+                  const totalQty = available + totalInContainers;
+                  
+                  // Calculate avg price for items from last 60 days
+                  const sixtyDaysAgo = new Date();
+                  sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+                  const recentItems = items.filter(item => new Date(item.purchase_date) >= sixtyDaysAgo);
+                  const itemsForAvg = recentItems.length > 0 ? recentItems : items;
+                  let avgPrice = 0;
+                  if (itemsForAvg.length > 0) {
+                    const totalPrice = itemsForAvg.reduce((sum, item) => sum + (parseFloat(item.purchase_price) || 0), 0);
+                    avgPrice = totalPrice / itemsForAvg.length;
+                  }
+                  
+                  const isExpanded = expandedCards[cardName];
+                  
+                  return (
+                    <div key={cardName} className="bg-black bg-opacity-50 border border-purple-400 rounded p-4">
+                      <div className="flex justify-between items-start mb-3 cursor-pointer" onClick={() => setExpandedCards({...expandedCards, [cardName]: !isExpanded})}>
+                        <div>
+                          <h3 className="text-lg font-bold text-purple-200">{cardName}</h3>
+                        </div>
+                        <div className="text-purple-400">
+                          {isExpanded ? '▼' : '▶'}
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-4 gap-3 mb-3">
+                        <div className="bg-purple-900 bg-opacity-50 rounded p-2 border border-purple-500">
+                          <div className="text-xs text-gray-400">Total Copies</div>
+                          <div className="text-xl font-bold text-purple-300">{totalQty}</div>
+                        </div>
+                        <div className="bg-purple-900 bg-opacity-50 rounded p-2 border border-purple-500">
+                          <div className="text-xs text-gray-400">Available</div>
+                          <div className="text-xl font-bold text-green-300">{available}</div>
+                        </div>
+                        <div className="bg-purple-900 bg-opacity-50 rounded p-2 border border-purple-500">
+                          <div className="text-xs text-gray-400">In Containers</div>
+                          <div className="text-xl font-bold text-pink-300">{totalInContainers}</div>
+                        </div>
+                        <div className="bg-purple-900 bg-opacity-50 rounded p-2 border border-purple-500">
+                          <div className="text-xs text-gray-400">Avg Price (60d)</div>
+                          <div className="text-xl font-bold text-blue-300">${avgPrice.toFixed(2)}</div>
+                        </div>
+                      </div>
+                      
+                      {isExpanded && (
+                        <div className="border-t border-purple-600 pt-4 space-y-2">
+                          {items.map((item) => {
+                            const isEditing = editingId === item.id;
+                            return (
+                              <div key={item.id} className="bg-purple-900 bg-opacity-30 border border-purple-400 rounded p-3">
+                                {isEditing ? (
+                                  <div className="space-y-2">
+                                    <div className="text-sm font-semibold text-purple-200">{item.set_name} ({item.set})</div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                      <div>
+                                        <label className="text-xs text-gray-400">Qty</label>
+                                        <input
+                                          type="number"
+                                          min="1"
+                                          value={editForm.quantity}
+                                          onChange={(e) => setEditForm({...editForm, quantity: e.target.value})}
+                                          className="w-full bg-black bg-opacity-50 border border-purple-400 rounded px-2 py-1 text-white text-sm"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="text-xs text-gray-400">Price</label>
+                                        <input
+                                          type="number"
+                                          step="0.01"
+                                          value={editForm.purchase_price}
+                                          onChange={(e) => setEditForm({...editForm, purchase_price: e.target.value})}
+                                          className="w-full bg-black bg-opacity-50 border border-purple-400 rounded px-2 py-1 text-white text-sm"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="text-xs text-gray-400">Date</label>
+                                        <input
+                                          type="date"
+                                          value={editForm.purchase_date}
+                                          onChange={(e) => setEditForm({...editForm, purchase_date: e.target.value})}
+                                          className="w-full bg-black bg-opacity-50 border border-purple-400 rounded px-2 py-1 text-white text-sm"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="text-xs text-gray-400">Type</label>
+                                        <select
+                                          value={editForm.reorder_type}
+                                          onChange={(e) => setEditForm({...editForm, reorder_type: e.target.value})}
+                                          className="w-full bg-black bg-opacity-50 border border-purple-400 rounded px-2 py-1 text-white text-sm"
+                                        >
+                                          <option value="normal">Normal</option>
+                                          <option value="land">Land</option>
+                                          <option value="bulk">Bulk</option>
+                                        </select>
+                                      </div>
+                                    </div>
+                                    <div className="flex gap-2 pt-2">
+                                      <button
+                                        onClick={() => updateInventoryItem(item.id)}
+                                        className="flex-1 bg-green-600 hover:bg-green-700 rounded px-3 py-1 text-sm font-semibold"
+                                      >
+                                        Save
+                                      </button>
+                                      <button
+                                        onClick={() => setEditingId(null)}
+                                        className="flex-1 bg-gray-600 hover:bg-gray-700 rounded px-3 py-1 text-sm"
+                                      >
+                                        Cancel
+                                      </button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="flex justify-between items-center">
+                                    <div className="flex-1">
+                                      <div className="text-sm font-semibold text-purple-200">{item.set_name}</div>
+                                      <div className="grid grid-cols-3 gap-3 mt-1 text-xs">
+                                        <div><span className="text-gray-400">Qty:</span> <span className="text-white font-semibold">{item.quantity}</span></div>
+                                        <div><span className="text-gray-400">In Containers:</span> <span className="text-white font-semibold">{item.in_containers_qty || 0}</span></div>
+                                        <div><span className="text-gray-400">Set:</span> <span className="text-white font-semibold">{item.set}</span></div>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-3 ml-4">
+                                      <div className="flex flex-col items-center gap-2">
+                                        <MarketPrices cardName={item.name} setCode={item.set} priceCache={priceCache} setPriceCache={setPriceCache} />
                                         <div className="bg-purple-900 bg-opacity-50 border border-purple-400 rounded px-2 py-1 text-xs">
                                           <div className="text-gray-400">Avg Cost</div>
                                           <div className="font-bold text-green-300">${avgPrice.toFixed(2)}</div>
