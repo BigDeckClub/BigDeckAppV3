@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
 import pkg from 'pg';
+import { load } from 'cheerio';
 
 const { Pool } = pkg;
 const app = express();
@@ -212,6 +213,58 @@ app.post('/api/settings/:key', async (req, res) => {
 const priceCache = {};
 const CACHE_DURATION = 1000 * 60 * 60; // 1 hour
 
+// Helper function to scrape MTGGoldfish for Card Kingdom pricing
+async function fetchCardKingdomPriceFromGoldfish(cardName, setName) {
+  try {
+    // Format names for URL
+    const cardSlug = cardName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    const setSlug = setName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    
+    // MTGGoldfish URL format: /price/set-name/card-name
+    const mtggoldfishUrl = `https://www.mtggoldfish.com/price/${setSlug}/${cardSlug}`;
+    
+    console.log('🔍 Fetching from MTGGoldfish:', mtggoldfishUrl);
+    
+    const response = await fetch(mtggoldfishUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+      }
+    });
+    
+    if (!response.ok) {
+      console.log('⚠️ MTGGoldfish returned status:', response.status);
+      return 'N/A';
+    }
+    
+    const html = await response.text();
+    const $ = load(html);
+    
+    // MTGGoldfish displays prices in a pricing table
+    // Look for Card Kingdom price specifically
+    let ckPrice = 'N/A';
+    
+    // Common selectors for pricing data
+    const priceRows = $('tr');
+    priceRows.each((i, row) => {
+      const rowText = $(row).text();
+      if (rowText.includes('Card Kingdom')) {
+        // Extract price from the row
+        const priceMatch = rowText.match(/\$[\d.]+/);
+        if (priceMatch) {
+          ckPrice = priceMatch[0];
+          console.log('✅ Found Card Kingdom price:', ckPrice);
+          return false; // break
+        }
+      }
+    });
+    
+    return ckPrice;
+  } catch (error) {
+    console.log('❌ MTGGoldfish scrape failed:', error.message);
+    return 'N/A';
+  }
+}
+
 app.get('/api/prices/:cardName/:setCode', async (req, res) => {
   const { cardName, setCode } = req.params;
   
@@ -230,6 +283,7 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
     console.log('Scryfall Status:', scryfallResponse.status);
     
     let tcgPrice = 'N/A';
+    let ckPrice = 'N/A';
     let setName = '';
     
     if (scryfallResponse.ok) {
@@ -243,16 +297,23 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
         setName = card.set_name || '';
         console.log('TCGPlayer Price:', tcgPrice);
         console.log('Set Name from Scryfall:', setName);
+        
+        // Now try to fetch Card Kingdom price from MTGGoldfish
+        if (setName) {
+          console.log('\n=== FETCHING CARD KINGDOM PRICE FROM MTGGOLDFISH ===');
+          ckPrice = await fetchCardKingdomPriceFromGoldfish(cardName, setName);
+        }
       }
     } else {
       console.log('❌ Scryfall fetch failed');
     }
     
     console.log('\n=== FINAL RESULT ===');
+    console.log('Card Kingdom Price (via MTGGoldfish):', ckPrice);
     console.log('TCGPlayer Price:', tcgPrice);
     console.log('=== REQUEST COMPLETE ===\n');
     
-    res.json({ tcg: tcgPrice });
+    res.json({ ck: ckPrice, tcg: tcgPrice });
     
   } catch (error) {
     console.error('💥 ERROR IN PRICE ENDPOINT:');
