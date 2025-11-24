@@ -3,6 +3,7 @@ import cors from 'cors';
 import bodyParser from 'body-parser';
 import pkg from 'pg';
 import { load } from 'cheerio';
+import puppeteer from 'puppeteer';
 
 const { Pool } = pkg;
 const app = express();
@@ -255,38 +256,26 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
     const ckUrl = `https://www.cardkingdom.com/mtg/${setSlug}/${cardSlug}`;
     
     console.log('Card Kingdom URL:', ckUrl);
-    console.log('Attempting fetch...');
+    console.log('Attempting Puppeteer browser render...');
     
-    // Fetch Card Kingdom page
-    const ckResponse = await fetch(ckUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.5',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'Connection': 'keep-alive',
-        'Upgrade-Insecure-Requests': '1',
-        'Sec-Fetch-Dest': 'document',
-        'Sec-Fetch-Mode': 'navigate',
-        'Sec-Fetch-Site': 'none',
-        'Cache-Control': 'max-age=0'
-      },
-      redirect: 'follow'
-    });
-    
-    console.log('Fetch completed!');
-    console.log('Status Code:', ckResponse.status);
-    console.log('Status Text:', ckResponse.statusText);
-    console.log('Content-Type:', ckResponse.headers.get('content-type'));
-    console.log('Response OK?:', ckResponse.ok);
-    
-    if (!ckResponse.ok) {
-      console.log('❌ CK Response NOT OK - Status:', ckResponse.status);
+    // Use Puppeteer to render page like a real browser (bypasses bot detection)
+    let html = '';
+    try {
+      const browser = await puppeteer.launch({ headless: 'new', args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+      const page = await browser.newPage();
+      
+      await page.goto(ckUrl, { waitUntil: 'networkidle2', timeout: 30000 });
+      
+      html = await page.content();
+      console.log('✅ Puppeteer render completed!');
+      console.log('HTML length:', html.length, 'characters');
+      
+      await browser.close();
+    } catch (puppeteerErr) {
+      console.error('❌ Puppeteer render failed:', puppeteerErr.message);
       // Return with tcgPrice we already fetched from Scryfall
       return res.json({ ck: 'N/A', tcg: tcgPrice });
     }
-    
-    const html = await ckResponse.text();
     console.log('HTML received, length:', html.length, 'characters');
     console.log('First 500 chars of HTML:', html.substring(0, 500));
     console.log('Does HTML contain "Add to Cart"?', html.includes('Add to Cart'));
