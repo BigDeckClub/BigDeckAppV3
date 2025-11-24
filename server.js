@@ -3,7 +3,6 @@ import cors from 'cors';
 import bodyParser from 'body-parser';
 import pkg from 'pg';
 import { load } from 'cheerio';
-import fetch from 'node-fetch';
 
 const { Pool } = pkg;
 const app = express();
