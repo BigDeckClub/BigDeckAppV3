@@ -1490,7 +1490,6 @@ export default function MTGInventoryTracker() {
               ) : (
                 <p className="text-slate-400">No sales recorded yet. Sell containers to see analytics here.</p>
               )}
-            </div>
         )}
 
         {/* Analytics Tab */}
@@ -1548,8 +1547,6 @@ export default function MTGInventoryTracker() {
                   <p className="text-slate-400">No activity yet.</p>
                 )}
               </div>
-            </div>
-          </div>
         )}
 
         {/* Sell Modal */}
@@ -1628,8 +1625,6 @@ export default function MTGInventoryTracker() {
                   </button>
                 </div>
               </div>
-            </div>
-          </div>
         )}
 
         {/* Settings */}
@@ -1697,6 +1692,7 @@ export default function MTGInventoryTracker() {
                 </div>
               </div>
             </div>
+          </div>
         )}
       </main>
     </div>
