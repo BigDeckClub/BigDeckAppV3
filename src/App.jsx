@@ -744,6 +744,17 @@ export default function MTGInventoryTracker() {
         {/* Inventory Tab */}
         {activeTab === 'inventory' && !isLoading && (
           <div className="space-y-6">
+            {successMessage && (
+              <div className={`rounded-lg p-4 border flex items-center justify-between ${successMessage.includes('Error') ? 'bg-red-900 bg-opacity-30 border-red-500 text-red-200' : 'bg-green-900 bg-opacity-30 border-green-500 text-green-200'}`}>
+                <span>{successMessage}</span>
+                <button
+                  onClick={() => setSuccessMessage('')}
+                  className="ml-4 text-current hover:opacity-70"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            )}
             <div className="bg-purple-900 bg-opacity-30 rounded-lg p-6 border border-purple-500">
               <h2 className="text-xl font-bold mb-4">Add Card to Inventory</h2>
               <div className="space-y-4">
