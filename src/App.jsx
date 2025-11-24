@@ -693,28 +693,15 @@ export default function MTGInventoryTracker() {
 
   const validateDecklistCards = (preview) => {
     const missingCards = [];
-    const unverifiedCards = [];
     
     preview.forEach(card => {
       if (!card.found) {
         missingCards.push(card.cardName);
-      } else {
-        // Check if card exists in inventory
-        const inInventory = inventory.some(inv => inv.name.toLowerCase() === card.cardName.toLowerCase());
-        if (!inInventory) {
-          unverifiedCards.push(card.cardName);
-        }
       }
     });
     
     if (missingCards.length > 0) {
       alert(`These cards were not found in Scryfall:\n${missingCards.join('\n')}`);
-      return false;
-    }
-    
-    if (unverifiedCards.length > 0) {
-      const msg = `These cards are not in your inventory (no matching set available):\n${unverifiedCards.join('\n')}\n\nPlease add these cards to your inventory first.`;
-      alert(msg);
       return false;
     }
     
