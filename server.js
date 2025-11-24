@@ -2,8 +2,6 @@ import express from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
 import pkg from 'pg';
-import { load } from 'cheerio';
-import puppeteer from 'puppeteer';
 
 const { Pool } = pkg;
 const app = express();
@@ -250,76 +248,11 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
       console.log('❌ Scryfall fetch failed');
     }
     
-    // Construct Card Kingdom URL with set name
-    const cardSlug = cardName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-    const setSlug = setName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-    const ckUrl = `https://www.cardkingdom.com/mtg/${setSlug}/${cardSlug}`;
-    
-    console.log('\n=== FETCHING CARD KINGDOM PRICE FROM MTGJSON ===');
-    
-    // Get Card Kingdom price from MTGJSON (official, aggregated data source)
-    let ckPrice = 'N/A';
-    try {
-      const mtgjsonUrl = `https://mtgjson.com/api/v5/cards.json`;
-      console.log('Fetching MTGJSON master data...');
-      
-      const mtgjsonRes = await fetch(mtgjsonUrl);
-      if (mtgjsonRes.ok) {
-        const allCards = await mtgjsonRes.json();
-        
-        // Search for this specific card in this set
-        for (const [setCode, setData] of Object.entries(allCards)) {
-          if (setData.cards) {
-            const foundCard = setData.cards.find(c => 
-              c.name.toLowerCase() === cardName.toLowerCase() && c.prices?.cardkingdom
-            );
-            
-            if (foundCard && foundCard.prices?.cardkingdom) {
-              const ckPriceValue = foundCard.prices.cardkingdom;
-              if (ckPriceValue && ckPriceValue > 0) {
-                ckPrice = `$${ckPriceValue.toFixed(2)}`;
-                console.log('✅ Found CK price from MTGJSON:', ckPrice);
-                break;
-              }
-            }
-          }
-        }
-      }
-    } catch (err) {
-      console.log('⚠️ Could not fetch from MTGJSON:', err.message);
-    }
-    
-    // If MTGJSON didn't work, try searching individual set files
-    if (ckPrice === 'N/A') {
-      try {
-        console.log('Trying MTGJSON set-specific endpoint...');
-        const mtgjsonSetUrl = `https://mtgjson.com/api/v5/${setCode.toUpperCase()}.json`;
-        const setRes = await fetch(mtgjsonSetUrl);
-        
-        if (setRes.ok) {
-          const setData = await setRes.json();
-          if (setData.data && setData.data.cards) {
-            const card = setData.data.cards.find(c => 
-              c.name.toLowerCase() === cardName.toLowerCase()
-            );
-            
-            if (card && card.prices?.cardkingdom) {
-              ckPrice = `$${card.prices.cardkingdom.toFixed(2)}`;
-              console.log('✅ Found CK price from set endpoint:', ckPrice);
-            }
-          }
-        }
-      } catch (err) {
-        console.log('⚠️ Set-specific endpoint failed:', err.message);
-      }
-    }
-    
     console.log('\n=== FINAL RESULT ===');
-    console.log('Card Kingdom Price:', ckPrice);
     console.log('TCGPlayer Price:', tcgPrice);
     console.log('=== REQUEST COMPLETE ===\n');
     
-    res.json({ ck: ckPrice, tcg: tcgPrice });
+    res.json({ tcg: tcgPrice });
     
   } catch (error) {
     console.error('💥 ERROR IN PRICE ENDPOINT:');
@@ -330,37 +263,6 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
   }
 });
 
-// DEBUG ENDPOINT - Remove after testing
-app.get('/api/debug/ck/:cardName', async (req, res) => {
-  const { cardName } = req.params;
-  
-  try {
-    const ckSlug = cardName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-    const ckUrl = `https://www.cardkingdom.com/mtg/${ckSlug}`;
-    
-    console.log('DEBUG: Testing URL:', ckUrl);
-    
-    const response = await fetch(ckUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-      }
-    });
-    
-    const html = await response.text();
-    
-    res.json({
-      url: ckUrl,
-      status: response.status,
-      htmlLength: html.length,
-      htmlPreview: html.substring(0, 1000),
-      containsDollar: html.includes('$'),
-      containsAddToCart: html.includes('Add to Cart')
-    });
-    
-  } catch (error) {
-    res.json({ error: error.message });
-  }
-});
 
 const PORT = 3000;
 app.listen(PORT, () => {
