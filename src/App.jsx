@@ -115,11 +115,17 @@ export default function MTGInventoryTracker() {
         .from('inventory')
         .insert([item]);
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error adding inventory item:', error);
+        alert('Error adding card. Check that Supabase tables exist and schema cache is refreshed.');
+        return false;
+      }
       await loadInventory();
+      alert('Card added successfully!');
       return true;
     } catch (error) {
       console.error('Error adding inventory item:', error);
+      alert('Error adding card: ' + error.message);
       return false;
     }
   };
@@ -207,8 +213,7 @@ export default function MTGInventoryTracker() {
       purchase_date: newEntry.purchaseDate,
       purchase_price: newEntry.purchasePrice ? parseFloat(newEntry.purchasePrice) : null,
       reorder_type: newEntry.reorderType,
-      image_url: newEntry.selectedSet.imageUrl,
-      scryfall_id: newEntry.selectedSet.id
+      image_url: newEntry.selectedSet.imageUrl
     };
 
     if (await addInventoryItem(item)) {
@@ -249,8 +254,7 @@ export default function MTGInventoryTracker() {
         .from('decklists')
         .insert([{
           name: decklistName,
-          decklist: decklistPaste,
-          created_at: new Date().toISOString()
+          decklist: decklistPaste
         }]);
       
       if (error) throw error;
@@ -260,6 +264,7 @@ export default function MTGInventoryTracker() {
       await loadDecklists();
     } catch (error) {
       console.error('Error adding decklist:', error);
+      alert('Error adding decklist. Check browser console for details.');
     }
   };
 
