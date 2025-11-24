@@ -143,7 +143,15 @@ export default function MTGInventoryTracker() {
           
           if (cardWithPrice) {
             const tcgPrice = parseFloat(cardWithPrice.prices?.usd) || 0;
-            const ckPrice = parseFloat(cardWithPrice.prices?.usd_foil) || 0;
+            // Try usd_foil first, fall back to eur_foil, then fall back to usd with 15% markup for CK
+            let ckPrice = parseFloat(cardWithPrice.prices?.usd_foil) || 0;
+            if (ckPrice === 0) {
+              ckPrice = parseFloat(cardWithPrice.prices?.eur_foil) || 0;
+            }
+            if (ckPrice === 0 && tcgPrice > 0) {
+              // Use TCG price with 15% markup as fallback for CK
+              ckPrice = tcgPrice * 1.15;
+            }
             tcgTotal += tcgPrice * quantity;
             ckTotal += ckPrice * quantity;
           }
@@ -165,17 +173,49 @@ export default function MTGInventoryTracker() {
     
     for (const item of items) {
       try {
-        const response = await fetch(`https://api.scryfall.com/cards/search?q=!"${item.name}"+set:${item.set}&unique=prints`);
-        if (response.ok) {
-          const data = await response.json();
-          if (data.data && data.data.length > 0) {
-            const card = data.data[0];
-            const quantity = parseInt(item.quantity_used) || 0;
-            const tcgPrice = parseFloat(card.prices?.usd) || 0;
-            const ckPrice = parseFloat(card.prices?.usd_foil) || 0;
-            tcgTotal += tcgPrice * quantity;
-            ckTotal += ckPrice * quantity;
+        let cardWithPrice = null;
+        
+        // First try with set code
+        const url1 = `https://api.scryfall.com/cards/search?q=!"${item.name}"+set:${item.set}&unique=prints`;
+        const response1 = await fetch(url1);
+        if (response1.ok) {
+          const data1 = await response1.json();
+          if (data1.data && data1.data.length > 0) {
+            cardWithPrice = data1.data.find(card => card.prices?.usd !== null || card.prices?.usd_foil !== null);
+            if (!cardWithPrice) {
+              cardWithPrice = data1.data[0];
+            }
           }
+        }
+        
+        // If not found, try without set code
+        if (!cardWithPrice) {
+          const url2 = `https://api.scryfall.com/cards/search?q=!"${item.name}"&unique=prints`;
+          const response2 = await fetch(url2);
+          if (response2.ok) {
+            const data2 = await response2.json();
+            if (data2.data && data2.data.length > 0) {
+              cardWithPrice = data2.data.find(card => card.prices?.usd !== null || card.prices?.usd_foil !== null);
+              if (!cardWithPrice) {
+                cardWithPrice = data2.data[0];
+              }
+            }
+          }
+        }
+        
+        if (cardWithPrice) {
+          const quantity = parseInt(item.quantity_used) || 0;
+          const tcgPrice = parseFloat(cardWithPrice.prices?.usd) || 0;
+          // Try usd_foil first, fall back to eur_foil, then use TCG price with 15% markup
+          let ckPrice = parseFloat(cardWithPrice.prices?.usd_foil) || 0;
+          if (ckPrice === 0) {
+            ckPrice = parseFloat(cardWithPrice.prices?.eur_foil) || 0;
+          }
+          if (ckPrice === 0 && tcgPrice > 0) {
+            ckPrice = tcgPrice * 1.15;
+          }
+          tcgTotal += tcgPrice * quantity;
+          ckTotal += ckPrice * quantity;
         }
       } catch (err) {
         console.error('Error fetching price for', item.name, err);
