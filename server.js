@@ -392,6 +392,26 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
       }
     }
     
+    console.log('\n=== FETCHING FROM MTGJSON ===');
+    
+    // Try to get Card Kingdom price from MTGJSON (legitimate data source)
+    try {
+      const mtgjsonUrl = `https://api.scryfall.com/cards/search?q=!"${cardName}"+set:${setCode.toLowerCase()}&unique=prints`;
+      const mtgjsonRes = await fetch(mtgjsonUrl);
+      if (mtgjsonRes.ok) {
+        const mtgjsonData = await mtgjsonRes.json();
+        if (mtgjsonData.data && mtgjsonData.data.length > 0) {
+          const card = mtgjsonData.data[0];
+          // Check if Scryfall has related_uris pointing to other price sources
+          if (card.related_uris) {
+            console.log('Related URIs:', Object.keys(card.related_uris));
+          }
+        }
+      }
+    } catch (err) {
+      console.log('Could not fetch from MTGJSON:', err.message);
+    }
+    
     console.log('\n=== FINAL RESULT ===');
     console.log('Card Kingdom Price:', ckPrice);
     console.log('TCGPlayer Price:', tcgPrice);
