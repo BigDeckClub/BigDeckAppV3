@@ -114,7 +114,7 @@ export default function MTGInventoryTracker() {
 
     setIsSearching(true);
     try {
-      const response = await fetch(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(query)}&unique=cards`);
+      const response = await fetch(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(query)}&unique=prints&order=released`);
       if (!response.ok) throw new Error('Search failed');
       
       const data = await response.json();
