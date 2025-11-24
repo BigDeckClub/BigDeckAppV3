@@ -444,6 +444,14 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
       
       // Fetch Card Kingdom price from MTGGoldfish widget
       ckPrice = await fetchCardKingdomPriceFromWidget(cardName, setCode);
+      
+      // If CK price is N/A but we have TCG, estimate CK
+      if (ckPrice === 'N/A' && tcgPrice !== 'N/A') {
+        const tcgNum = parseFloat(tcgPrice.replace('$', ''));
+        const estimatedCk = (tcgNum * 1.15).toFixed(2);
+        ckPrice = `$${estimatedCk}`;
+        console.log(`📊 Estimated CK price from TCG: ${ckPrice}`);
+      }
     } else {
       // Primary set failed, try alternative set codes
       console.log(`⚠️ Set ${setCode} not found for ${cardName}, trying alternative sets...`);
@@ -472,9 +480,15 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
             }
           }
           
-          // If no CK pricing found, just use first printing's TCG price
-          if (ckPrice === 'N/A' && printingsData.data[0].prices?.usd) {
-            tcgPrice = `$${printingsData.data[0].prices.usd}`;
+          // If no CK pricing found, estimate from TCG or use first printing's TCG price
+          if (ckPrice === 'N/A') {
+            if (printingsData.data[0].prices?.usd) {
+              tcgPrice = `$${printingsData.data[0].prices.usd}`;
+              const tcgNum = parseFloat(tcgPrice.replace('$', ''));
+              const estimatedCk = (tcgNum * 1.15).toFixed(2);
+              ckPrice = `$${estimatedCk}`;
+              console.log(`📊 Estimated CK price from TCG: ${ckPrice}`);
+            }
           }
         }
       }
