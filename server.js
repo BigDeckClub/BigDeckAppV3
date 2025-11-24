@@ -255,150 +255,63 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
     const setSlug = setName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
     const ckUrl = `https://www.cardkingdom.com/mtg/${setSlug}/${cardSlug}`;
     
-    console.log('Card Kingdom URL:', ckUrl);
-    console.log('Attempting Puppeteer browser render...');
+    console.log('\n=== FETCHING CARD KINGDOM PRICE FROM MTGJSON ===');
     
-    // Use Puppeteer to render page like a real browser (bypasses bot detection)
-    let html = '';
-    try {
-      const browser = await puppeteer.launch({ headless: 'new', args: ['--no-sandbox', '--disable-setuid-sandbox'] });
-      const page = await browser.newPage();
-      
-      await page.goto(ckUrl, { waitUntil: 'networkidle2', timeout: 30000 });
-      
-      html = await page.content();
-      console.log('✅ Puppeteer render completed!');
-      console.log('HTML length:', html.length, 'characters');
-      
-      await browser.close();
-    } catch (puppeteerErr) {
-      console.error('❌ Puppeteer render failed:', puppeteerErr.message);
-      // Return with tcgPrice we already fetched from Scryfall
-      return res.json({ ck: 'N/A', tcg: tcgPrice });
-    }
-    console.log('HTML received, length:', html.length, 'characters');
-    console.log('First 500 chars of HTML:', html.substring(0, 500));
-    console.log('Does HTML contain "Add to Cart"?', html.includes('Add to Cart'));
-    console.log('Does HTML contain "$"?', html.includes('$'));
-    console.log('Does HTML contain "price"?', html.toLowerCase().includes('price'));
-    
-    // Parse with Cheerio
-    const $ = load(html);
-    console.log('Cheerio loaded successfully');
-    
-    // Try multiple selectors
-    console.log('\n=== SEARCHING FOR PRICES ===');
-    
-    // Method 1: Look for common price containers
-    const priceSelectors = [
-      '.itemAddToCart .stylePrice',
-      '.productDetailPrice',
-      '[class*="price"]',
-      '[id*="price"]',
-      'span.price',
-      'div.price',
-      '.itemAddToCart span',
-      '.product-price',
-      '[data-price]'
-    ];
-    
-    let foundPrices = [];
-    
-    priceSelectors.forEach(selector => {
-      const elements = $(selector);
-      console.log(`Selector "${selector}": found ${elements.length} elements`);
-      
-      elements.each((i, elem) => {
-        const text = $(elem).text().trim();
-        if (text) {
-          console.log(`  [${i}] Text: "${text}"`);
-          foundPrices.push(text);
-        }
-      });
-    });
-    
-    // Method 2: Search all text nodes for $ signs
-    console.log('\n=== SEARCHING FOR $ PATTERNS ===');
-    const allText = $('body').text();
-    const dollarMatches = allText.match(/\$\d+\.\d{2}/g);
-    console.log('Found $ patterns:', dollarMatches?.slice(0, 10) || 'none');
-    
-    // Method 3: Look for specific Card Kingdom price structure
-    console.log('\n=== CHECKING SPECIFIC CK STRUCTURES ===');
-    
-    // CK often uses this structure
-    const ckPriceElements = $('.itemAddToCart');
-    console.log('Found .itemAddToCart elements:', ckPriceElements.length);
-    
-    ckPriceElements.each((i, elem) => {
-      const html = $(elem).html();
-      const text = $(elem).text();
-      console.log(`\nAddToCart [${i}]:`);
-      console.log('HTML:', html?.substring(0, 200));
-      console.log('Text:', text?.substring(0, 100));
-    });
-    
-    // Method 4: Check for JavaScript-rendered prices
-    console.log('\n=== CHECKING FOR DATA ATTRIBUTES ===');
-    $('[data-price], [data-amount], [data-value]').each((i, elem) => {
-      console.log(`Element [${i}]:`, {
-        tag: elem.name,
-        price: $(elem).attr('data-price'),
-        amount: $(elem).attr('data-amount'),
-        value: $(elem).attr('data-value'),
-        text: $(elem).text().substring(0, 50)
-      });
-    });
-    
-    // Try to parse any found price
+    // Get Card Kingdom price from MTGJSON (official, aggregated data source)
     let ckPrice = 'N/A';
-    
-    // Parse from foundPrices array
-    for (const priceText of foundPrices) {
-      const match = priceText.match(/\$?(\d+\.\d{2})/);
-      if (match) {
-        const price = parseFloat(match[1]);
-        console.log(`Attempting to parse: "${priceText}" -> $${price}`);
-        if (price > 0.50) {
-          ckPrice = price.toFixed(2);
-          console.log('✅ Valid CK price found:', ckPrice);
-          break;
-        } else {
-          console.log('❌ Price too low:', price);
-        }
-      }
-    }
-    
-    // If still N/A, try direct text search
-    if (ckPrice === 'N/A' && dollarMatches && dollarMatches.length > 0) {
-      for (const match of dollarMatches) {
-        const price = parseFloat(match.replace('$', ''));
-        if (price > 0.50 && price < 10000) {
-          ckPrice = price.toFixed(2);
-          console.log('✅ Found price from pattern matching:', ckPrice);
-          break;
-        }
-      }
-    }
-    
-    console.log('\n=== FETCHING FROM MTGJSON ===');
-    
-    // Try to get Card Kingdom price from MTGJSON (legitimate data source)
     try {
-      const mtgjsonUrl = `https://api.scryfall.com/cards/search?q=!"${cardName}"+set:${setCode.toLowerCase()}&unique=prints`;
+      const mtgjsonUrl = `https://mtgjson.com/api/v5/cards.json`;
+      console.log('Fetching MTGJSON master data...');
+      
       const mtgjsonRes = await fetch(mtgjsonUrl);
       if (mtgjsonRes.ok) {
-        const mtgjsonData = await mtgjsonRes.json();
-        if (mtgjsonData.data && mtgjsonData.data.length > 0) {
-          const card = mtgjsonData.data[0];
-          // Check if Scryfall has related_uris pointing to other price sources
-          if (card.related_uris) {
-            console.log('Related URIs:', Object.keys(card.related_uris));
+        const allCards = await mtgjsonRes.json();
+        
+        // Search for this specific card in this set
+        for (const [setCode, setData] of Object.entries(allCards)) {
+          if (setData.cards) {
+            const foundCard = setData.cards.find(c => 
+              c.name.toLowerCase() === cardName.toLowerCase() && c.prices?.cardkingdom
+            );
+            
+            if (foundCard && foundCard.prices?.cardkingdom) {
+              const ckPriceValue = foundCard.prices.cardkingdom;
+              if (ckPriceValue && ckPriceValue > 0) {
+                ckPrice = `$${ckPriceValue.toFixed(2)}`;
+                console.log('✅ Found CK price from MTGJSON:', ckPrice);
+                break;
+              }
+            }
           }
         }
       }
     } catch (err) {
-      console.log('Could not fetch from MTGJSON:', err.message);
+      console.log('⚠️ Could not fetch from MTGJSON:', err.message);
+    }
+    
+    // If MTGJSON didn't work, try searching individual set files
+    if (ckPrice === 'N/A') {
+      try {
+        console.log('Trying MTGJSON set-specific endpoint...');
+        const mtgjsonSetUrl = `https://mtgjson.com/api/v5/${setCode.toUpperCase()}.json`;
+        const setRes = await fetch(mtgjsonSetUrl);
+        
+        if (setRes.ok) {
+          const setData = await setRes.json();
+          if (setData.data && setData.data.cards) {
+            const card = setData.data.cards.find(c => 
+              c.name.toLowerCase() === cardName.toLowerCase()
+            );
+            
+            if (card && card.prices?.cardkingdom) {
+              ckPrice = `$${card.prices.cardkingdom.toFixed(2)}`;
+              console.log('✅ Found CK price from set endpoint:', ckPrice);
+            }
+          }
+        }
+      } catch (err) {
+        console.log('⚠️ Set-specific endpoint failed:', err.message);
+      }
     }
     
     console.log('\n=== FINAL RESULT ===');
