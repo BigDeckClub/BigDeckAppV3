@@ -7,8 +7,9 @@ let supabase = null;
 
 const initializeSupabase = () => {
   try {
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    // NOTE: Values were entered in swapped order - temporarily correcting here
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_URL;
     
     if (!supabaseUrl || !supabaseAnonKey) {
       console.error('Supabase environment variables are not set');
