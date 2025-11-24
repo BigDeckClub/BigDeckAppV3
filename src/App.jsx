@@ -153,21 +153,28 @@ export default function MTGInventoryTracker() {
       let tcgTotal = 0, ckTotal = 0;
       
       for (const line of lines) {
-        const match = line.match(/^(\d+)\s+(.+)$/);
+        const match = line.match(/^(\d+)\s+(.+?)(?:\s+\(([A-Z0-9]+)\))?$/);
         if (!match) continue;
         
         const quantity = parseInt(match[1]);
         const cardName = match[2].trim();
+        const setFromDecklist = match[3];
         
         try {
           let tcgPrice = 0, ckPrice = 0;
+          let setToUse = setFromDecklist;
           
-          // Try to find the card in inventory to get a set code
-          const inventoryCard = inventory.find(card => card.name.toLowerCase() === cardName.toLowerCase());
+          // If no set in decklist, try to find from inventory
+          if (!setToUse) {
+            const inventoryCard = inventory.find(card => card.name.toLowerCase() === cardName.toLowerCase());
+            if (inventoryCard) {
+              setToUse = inventoryCard.set;
+            }
+          }
           
-          if (inventoryCard) {
-            // Use the set code from inventory
-            const response = await fetch(`${API_BASE}/prices/${encodeURIComponent(cardName)}/${inventoryCard.set}`);
+          if (setToUse) {
+            // Use the set code we found
+            const response = await fetch(`${API_BASE}/prices/${encodeURIComponent(cardName)}/${setToUse}`);
             if (response.ok) {
               const priceData = await response.json();
               // Strip $ sign and parse the price
