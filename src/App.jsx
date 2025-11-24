@@ -1381,11 +1381,12 @@ export default function MTGInventoryTracker() {
                   const prices = decklistPrices[deck.id] || { tcg: 0, ck: 0 };
                   const isExpanded = expandedDecklists[deck.id];
                   const deckCards = deck.decklist.split('\n').filter(line => line.trim()).flatMap(line => {
-                    const match = line.match(/^(\d+)\s+(.+)$/);
+                    const match = line.match(/^(\d+)\s+(.+?)(?:\s+\(([A-Z0-9]+)\))?$/);
                     if (!match) return [];
                     const quantity = parseInt(match[1]);
                     const name = match[2].trim();
-                    return Array.from({ length: quantity }, () => ({ name }));
+                    const setCode = match[3] || null;
+                    return Array.from({ length: quantity }, () => ({ name, setCode }));
                   }).filter(Boolean);
                   
                   return (
@@ -1419,9 +1420,12 @@ export default function MTGInventoryTracker() {
                         <div className="mt-4 border-t border-purple-500 pt-4">
                           <div className="space-y-3">
                             {deckCards.map((card, idx) => {
-                              // Find card in inventory to get set
-                              const inventoryCard = inventory.find(inv => inv.name.toLowerCase() === card.name.toLowerCase());
-                              const cardSet = inventoryCard?.set || defaultSearchSet || 'UNK';
+                              // Use set from decklist, fallback to inventory, then default
+                              let cardSet = card.setCode;
+                              if (!cardSet) {
+                                const inventoryCard = inventory.find(inv => inv.name.toLowerCase() === card.name.toLowerCase());
+                                cardSet = inventoryCard?.set || defaultSearchSet || 'UNK';
+                              }
                               const isEditingThisCard = editingDecklistCard?.idx === idx && editingDecklistCard?.deckId === deck.id;
                               
                               return (
@@ -1451,22 +1455,25 @@ export default function MTGInventoryTracker() {
                                             // Get the original lines (with quantities)
                                             const lines = deck.decklist.split('\n').filter(line => line.trim());
                                             
-                                            // Find the line with this card and replace its set code
+                                            // Find the line with this card and update its set code
                                             let found = false;
+                                            let cardInstanceCount = 0;
                                             const newLines = lines.map(line => {
-                                              if (!found) {
-                                                const match = line.match(/^(\d+x?)\s+(.+?)(?:\s+\(([A-Z0-9]+)\))?(.*)$/);
-                                                if (match) {
-                                                  const qty = match[1];
-                                                  const cardNamePart = match[2].trim();
-                                                  const existingSet = match[3];
-                                                  const rest = match[4];
-                                                  
-                                                  if (cardNamePart.toLowerCase() === card.name.toLowerCase()) {
+                                              const match = line.match(/^(\d+)\s+(.+?)(?:\s+\(([A-Z0-9]+)\))?$/);
+                                              if (match) {
+                                                const qty = match[1];
+                                                const cardNamePart = match[2].trim();
+                                                const existingSet = match[3];
+                                                
+                                                if (cardNamePart.toLowerCase() === card.name.toLowerCase()) {
+                                                  // This is the card we're looking for
+                                                  // Check if this is the instance we want to edit (idx is the individual card position)
+                                                  if (cardInstanceCount + parseInt(qty) > idx && cardInstanceCount <= idx) {
                                                     found = true;
-                                                    // Replace with new set code
-                                                    return `${qty} ${cardNamePart} (${editCardSet.toUpperCase()})${rest}`;
+                                                    // Replace the entire line with updated set code
+                                                    return `${qty} ${cardNamePart} (${editCardSet.toUpperCase()})`;
                                                   }
+                                                  cardInstanceCount += parseInt(qty);
                                                 }
                                               }
                                               return line;
@@ -1484,6 +1491,9 @@ export default function MTGInventoryTracker() {
                                                 setLastUsedSets(prev => ({...prev, [card.name.toLowerCase()]: editCardSet}));
                                                 loadDecklists();
                                                 setEditingDecklistCard(null);
+                                              }).catch(err => {
+                                                console.error('Error updating decklist:', err);
+                                                alert('Failed to update decklist');
                                               });
                                             } else {
                                               alert('Could not find card in decklist');
