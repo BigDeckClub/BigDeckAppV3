@@ -980,7 +980,7 @@ export default function MTGInventoryTracker() {
             </button>
             <button
               onClick={() => setShowSettings(!showSettings)}
-              className="px-4 py-2 rounded hover:shadow-lg transition"
+              className="px-4 py-2 hover:shadow-lg transition"
             >
               <Settings className="w-5 h-5" />
             </button>
@@ -1036,7 +1036,7 @@ export default function MTGInventoryTracker() {
             {!showDecklistForm ? (
               <button
                 onClick={() => setShowDecklistForm(true)}
-                className="btn-primary hover:shadow-lg rounded px-6 py-3 font-semibold transition"
+                className="btn-primary px-6 py-3 font-semibold"
               >
                 <Plus className="w-5 h-5 inline mr-2" />
                 New Decklist
@@ -1049,19 +1049,19 @@ export default function MTGInventoryTracker() {
                   placeholder="Decklist Name"
                   value={decklistName}
                   onChange={(e) => setDecklistName(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-600 rounded px-4 py-2 text-white mb-4"
+                  className="w-full bg-slate-800 border border-slate-600 px-4 py-2 text-white mb-4"
                 />
                 <textarea
                   placeholder="Paste decklist here (e.g., '2 Lightning Bolt')"
                   value={decklistPaste}
                   onChange={(e) => setDecklistPaste(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-600 rounded px-4 py-2 text-white mb-4 h-48"
+                  className="w-full bg-slate-800 border border-slate-600 px-4 py-2 text-white mb-4 h-48"
                 />
                 <div className="flex gap-2">
                   <button
                     onClick={parseAndPreviewDecklist}
                     disabled={deckPreviewLoading}
-                    className="flex-1 btn-primary disabled:opacity-50 rounded px-4 py-2 font-semibold"
+                    className="flex-1 btn-primary disabled:opacity-50 px-4 py-2 font-semibold"
                   >
                     {deckPreviewLoading ? 'Checking...' : 'Check Inventory'}
                   </button>
@@ -1079,9 +1079,9 @@ export default function MTGInventoryTracker() {
                 {deckPreview && (
                   <div className="mt-6 border-t border-slate-700 hover:border-teal-500 pt-4">
                     <h3 className="font-semibold mb-3">Decklist Preview</h3>
-                    <div className="bg-slate-800 rounded p-4 max-h-96 overflow-y-auto space-y-2">
+                    <div className="bg-slate-800 p-4 max-h-96 overflow-y-auto space-y-2">
                       {deckPreview.map((card, idx) => (
-                        <div key={idx} className={`p-2 rounded border-l-4 flex justify-between items-center ${card.found ? 'border-green-500 bg-emerald-900 bg-opacity-20' : 'border-red-600 bg-red-950 bg-opacity-20'}`}>
+                        <div key={idx} className={`p-2 border-l-4 flex justify-between items-center ${card.found ? 'border-green-500 bg-emerald-900 bg-opacity-20' : 'border-red-600 bg-red-950 bg-opacity-20'}`}>
                           <span className="text-sm font-semibold">{card.quantity}x {card.cardName}</span>
                           <span className="text-xs">{card.found ? '✓ Found' : card.error || '✗ Not found'}</span>
                         </div>
@@ -1089,7 +1089,7 @@ export default function MTGInventoryTracker() {
                     </div>
                     <button
                       onClick={confirmAndAddDecklist}
-                      className="w-full mt-4 bg-green-600 hover:bg-green-700 rounded px-4 py-2 font-semibold"
+                      className="w-full mt-4 bg-green-600 hover:bg-green-700 px-4 py-2 font-semibold"
                     >
                       Confirm & Create Decklist
                     </button>
@@ -1114,7 +1114,7 @@ export default function MTGInventoryTracker() {
                   }).filter(Boolean);
                   
                   return (
-                    <div key={deck.id} className="bg-slate-800 border border-slate-600 rounded p-4">
+                    <div key={deck.id} className="bg-slate-800 border border-slate-600 p-4">
                       <div className="flex justify-between items-start mb-3">
                         <div className="flex-1">
                           <div className="font-semibold">{deck.name}</div>
@@ -1154,13 +1154,13 @@ export default function MTGInventoryTracker() {
                               
                               return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
-                                <div key={idx} className="card p-6 border rounded p-3">
+                                <div key={idx} className="card p-6 border p-3">
                                   {isEditingThisCard ? (
                                     <div className="space-y-2">
                                       <select
                                         value={editCardSet}
                                         onChange={(e) => setEditCardSet(e.target.value)}
-                                        className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-white text-xs"
+                                        className="w-full bg-slate-800 border border-slate-600 px-3 py-2 text-white text-xs"
                                       >
                                         <option value="">Select a set...</option>
                                         {editCardAvailableSets.map((set) => (
@@ -1302,7 +1302,7 @@ export default function MTGInventoryTracker() {
             {!showContainerForm ? (
               <button
                 onClick={() => setShowContainerForm(true)}
-                className="btn-primary hover:shadow-lg rounded px-6 py-3 font-semibold transition"
+                className="btn-primary px-6 py-3 font-semibold"
               >
                 <Plus className="w-5 h-5 inline mr-2" />
                 New Container
@@ -1315,12 +1315,12 @@ export default function MTGInventoryTracker() {
                   placeholder="Container Name"
                   value={containerName}
                   onChange={(e) => setContainerName(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-600 rounded px-4 py-2 text-white mb-4"
+                  className="w-full bg-slate-800 border border-slate-600 px-4 py-2 text-white mb-4"
                 />
                 <select
                   value={selectedDecklist || ''}
                   onChange={(e) => setSelectedDecklist(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-600 rounded px-4 py-2 text-white mb-4"
+                  className="w-full bg-slate-800 border border-slate-600 px-4 py-2 text-white mb-4"
                 >
                   <option value="">Select a Decklist</option>
                   {decklists.map((deck) => (
@@ -1351,7 +1351,7 @@ export default function MTGInventoryTracker() {
                   const containerPrices = calculateContainerPrices(container.id);
                   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
-                    <div key={container.id} className="bg-slate-800 border border-slate-600 rounded p-4">
+                    <div key={container.id} className="bg-slate-800 border border-slate-600 p-4">
                       <div className="flex justify-between items-start mb-3">
                         <div className="flex-1">
                           <div className="font-semibold">{container.name}</div>
@@ -1373,7 +1373,7 @@ export default function MTGInventoryTracker() {
                               setSelectedContainerForSale(container.id);
                               setShowSellModal(true);
                             }}
-                            className="bg-green-600 hover:bg-green-700 rounded px-4 py-2 font-semibold flex items-center gap-2"
+                            className="bg-green-600 hover:bg-green-700 px-4 py-2 font-semibold flex items-center gap-2"
                           >
                             <DollarSign className="w-5 h-5" />
                             Sell
@@ -1393,7 +1393,7 @@ export default function MTGInventoryTracker() {
                         {containerItems[container.id] && containerItems[container.id].length > 0 ? (
                           <div className="space-y-2 max-h-64 overflow-y-auto">
                             {containerItems[container.id].map((item, idx) => (
-                              <div key={idx} className="bg-slate-800 bg-opacity-50 border border-slate-600 rounded p-3 text-sm">
+                              <div key={idx} className="bg-slate-800 bg-opacity-50 border border-slate-600 p-3 text-sm">
                                 <div className="flex justify-between">
                                   <div>
                                     <div className="font-semibold">{item.name}</div>
@@ -1440,8 +1440,7 @@ export default function MTGInventoryTracker() {
                     const container = containers.find(c => c.id === sale.container_id);
                     
                     return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
-                      <div key={sale.id} className="bg-slate-800 border border-slate-600 rounded p-4">
+                      <div key={sale.id} className="bg-slate-800 border border-slate-600 p-4">
                         <div className="flex justify-between items-start mb-3">
                           <div>
                             <div className="font-semibold text-lg">{container?.name || 'Unknown Container'}</div>
@@ -1453,15 +1452,15 @@ export default function MTGInventoryTracker() {
                         </div>
                         
                         <div className="grid grid-cols-3 gap-4 text-sm">
-                          <div className="bg-slate-800 bg-opacity-50 border border-slate-600 rounded p-3">
+                          <div className="bg-slate-800 bg-opacity-50 border border-slate-600 p-3">
                             <div className="text-slate-400 text-xs">COGS</div>
                             <div className="font-semibold text-teal-300">${deckCOGS.toFixed(2)}</div>
                           </div>
-                          <div className="bg-slate-800 bg-opacity-50 border border-slate-600 rounded p-3">
+                          <div className="bg-slate-800 bg-opacity-50 border border-slate-600 p-3">
                             <div className="text-slate-400 text-xs">Sale Price</div>
                             <div className="font-semibold text-cyan-300">${salePrice.toFixed(2)}</div>
                           </div>
-                          <div className="bg-slate-800 bg-opacity-50 border border-slate-600 rounded p-3">
+                          <div className="bg-slate-800 bg-opacity-50 border border-slate-600 p-3">
                             <div className="text-slate-400 text-xs">Profit %</div>
                             <div className={`font-semibold ${profit >= 0 ? 'text-emerald-300' : 'text-red-300'}`}>{profitPercentage}%</div>
                           </div>
@@ -1469,18 +1468,19 @@ export default function MTGInventoryTracker() {
                       </div>
                     );
                   })}
-                  
+                </div>
+                
                   <div className="mt-6 pt-6 border-t border-slate-700 hover:border-teal-500">
                     <div className="grid grid-cols-3 gap-4">
-                      <div className="bg-slate-800 bg-opacity-50 rounded p-4 border border-slate-600">
+                      <div className="bg-slate-800 bg-opacity-50 p-4 border border-slate-600">
                         <div className="text-slate-400 text-sm">Total Sales</div>
                         <div className="text-2xl font-bold text-teal-300">{sales.length}</div>
                       </div>
-                      <div className="bg-slate-800 bg-opacity-50 rounded p-4 border border-slate-600">
+                      <div className="bg-slate-800 bg-opacity-50 p-4 border border-slate-600">
                         <div className="text-slate-400 text-sm">Total Revenue</div>
                         <div className="text-2xl font-bold text-cyan-300">${sales.reduce((sum, s) => sum + (parseFloat(s.sale_price) || 0), 0).toFixed(2)}</div>
                       </div>
-                      <div className="bg-slate-800 bg-opacity-50 rounded p-4 border border-slate-600">
+                      <div className="bg-slate-800 bg-opacity-50 p-4 border border-slate-600">
                         <div className="text-slate-400 text-sm">Total Profit</div>
                         <div className="text-2xl font-bold text-emerald-300">${sales.reduce((sum, s) => sum + ((parseFloat(s.sale_price) || 0) - calculateDeckCOGS(s.decklist_id)), 0).toFixed(2)}</div>
                       </div>
@@ -1505,7 +1505,7 @@ export default function MTGInventoryTracker() {
               <div className="grid gap-4">
                 {getReorderAlerts().length > 0 ? (
                   getReorderAlerts().map((item) => (
-                    <div key={item.id} className="bg-slate-800 border border-red-400 rounded p-4">
+                    <div key={item.id} className="bg-slate-800 border border-red-400 p-4">
                       <div className="font-semibold text-red-300">{item.name}</div>
                       <div className="text-sm text-slate-300">Quantity: {item.quantity} (Type: {item.reorder_type})</div>
                       <div className="text-sm text-slate-300">Set: {item.set_name}</div>
@@ -1520,15 +1520,15 @@ export default function MTGInventoryTracker() {
             <div className="card p-6">
               <h2 className="text-xl font-bold mb-4">Inventory Statistics</h2>
               <div className="grid grid-cols-3 gap-4">
-                <div className="bg-slate-800 border border-slate-600 rounded p-4">
+                <div className="bg-slate-800 border border-slate-600 p-4">
                   <div className="text-slate-400 text-sm">Total Cards</div>
                   <div className="text-2xl font-bold text-teal-300">{inventory.length}</div>
                 </div>
-                <div className="bg-slate-800 border border-slate-600 rounded p-4">
+                <div className="bg-slate-800 border border-slate-600 p-4">
                   <div className="text-slate-400 text-sm">Total Quantity</div>
                   <div className="text-2xl font-bold text-teal-300">{inventory.reduce((sum, card) => sum + (card.quantity || 0), 0)}</div>
                 </div>
-                <div className="bg-slate-800 border border-slate-600 rounded p-4">
+                <div className="bg-slate-800 border border-slate-600 p-4">
                   <div className="text-slate-400 text-sm">Total Value</div>
                   <div className="text-2xl font-bold text-teal-300">${inventory.reduce((sum, card) => sum + (parseFloat(card.purchase_price) || 0), 0).toFixed(2)}</div>
                 </div>
@@ -1540,7 +1540,7 @@ export default function MTGInventoryTracker() {
               <div className="grid gap-2">
                 {usageHistory.length > 0 ? (
                   usageHistory.map((entry, idx) => (
-                    <div key={idx} className="bg-slate-800 border border-slate-600 rounded p-3 text-sm">
+                    <div key={idx} className="bg-slate-800 border border-slate-600 p-3 text-sm">
                       <span className="font-semibold text-teal-300">{entry.action}</span>
                       <span className="text-slate-400"> - {new Date(entry.created_at).toLocaleString()}</span>
                     </div>
@@ -1573,12 +1573,12 @@ export default function MTGInventoryTracker() {
               
               {selectedContainerForSale && (
                 <div className="mb-4">
-                  <div className="bg-slate-800 border border-slate-600 rounded p-3 mb-4">
+                  <div className="bg-slate-800 border border-slate-600 p-3 mb-4">
                     <div className="text-sm text-slate-400">Container</div>
                     <div className="font-semibold">{containers.find(c => c.id === selectedContainerForSale)?.name}</div>
                   </div>
                   
-                  <div className="bg-slate-800 border border-slate-600 rounded p-3 mb-4">
+                  <div className="bg-slate-800 border border-slate-600 p-3 mb-4">
                     <div className="text-sm text-slate-400">Estimated COGS</div>
                     <div className="font-semibold text-teal-300">
                       ${calculateDeckCOGS(containers.find(c => c.id === selectedContainerForSale)?.decklist_id).toFixed(2)}
@@ -1597,12 +1597,12 @@ export default function MTGInventoryTracker() {
                     value={salePrice}
                     onChange={(e) => setSalePrice(e.target.value)}
                     placeholder="Enter sale price"
-                    className="w-full bg-slate-800 border border-slate-600 rounded px-4 py-2 text-white text-base"
+                    className="w-full bg-slate-800 border border-slate-600 px-4 py-2 text-white"
                   />
                 </div>
                 
                 {salePrice && (
-                  <div className="bg-emerald-900 bg-opacity-30 border border-green-500 rounded p-3">
+                  <div className="bg-emerald-900 bg-opacity-30 border border-green-500 p-3">
                     <div className="text-sm text-slate-400">Estimated Profit</div>
                     <div className={`font-semibold text-lg ${(salePrice - calculateDeckCOGS(containers.find(c => c.id === selectedContainerForSale)?.decklist_id)) >= 0 ? 'text-emerald-400' : 'text-red-300'}`}>
                       ${(salePrice - calculateDeckCOGS(containers.find(c => c.id === selectedContainerForSale)?.decklist_id)).toFixed(2)}
@@ -1646,7 +1646,7 @@ export default function MTGInventoryTracker() {
                     min="0"
                     value={reorderSettings.normal}
                     onChange={(e) => setReorderSettings({...reorderSettings, normal: parseInt(e.target.value)})}
-                    className="w-full bg-slate-800 border border-slate-600 rounded px-4 py-2 text-white text-base"
+                    className="w-full bg-slate-800 border border-slate-600 px-4 py-2 text-white"
                   />
                 </div>
                 <div>
@@ -1656,7 +1656,7 @@ export default function MTGInventoryTracker() {
                     min="0"
                     value={reorderSettings.land}
                     onChange={(e) => setReorderSettings({...reorderSettings, land: parseInt(e.target.value)})}
-                    className="w-full bg-slate-800 border border-slate-600 rounded px-4 py-2 text-white text-base"
+                    className="w-full bg-slate-800 border border-slate-600 px-4 py-2 text-white"
                   />
                 </div>
                 <div>
@@ -1666,7 +1666,7 @@ export default function MTGInventoryTracker() {
                     min="0"
                     value={reorderSettings.bulk}
                     onChange={(e) => setReorderSettings({...reorderSettings, bulk: parseInt(e.target.value)})}
-                    className="w-full bg-slate-800 border border-slate-600 rounded px-4 py-2 text-white text-base"
+                    className="w-full bg-slate-800 border border-slate-600 px-4 py-2 text-white"
                   />
                 </div>
                 <div className="border-t border-slate-700 hover:border-teal-500 pt-4 mt-4">
