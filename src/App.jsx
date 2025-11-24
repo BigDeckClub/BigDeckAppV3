@@ -1416,7 +1416,7 @@ export default function MTGInventoryTracker() {
                 })}
               </div>
             {containers.length === 0 && <p className="text-slate-400">No containers yet.</p>}
-          </div>
+            </div>
           </div>
         )}
 
@@ -1491,7 +1491,6 @@ export default function MTGInventoryTracker() {
                 <p className="text-slate-400">No sales recorded yet. Sell containers to see analytics here.</p>
               )}
             </div>
-          </div>
         )}
 
         {/* Analytics Tab */}
@@ -1698,7 +1697,6 @@ export default function MTGInventoryTracker() {
                 </div>
               </div>
             </div>
-          </div>
         )}
       </main>
     </div>
