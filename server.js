@@ -212,11 +212,8 @@ app.post('/api/settings/:key', async (req, res) => {
 // Helper function to fetch Card Kingdom price from MTGGoldfish widget
 async function fetchCardKingdomPriceFromWidget(cardName, setCode) {
   try {
-    // Build the card_id parameter that MTGGoldfish widget expects
-    // Format: "Card Name [SET_CODE]"
     const cardId = `${cardName} [${setCode.toUpperCase()}]`;
-    
-    console.log('🔍 Fetching CK price from MTGGoldfish widget, card_id:', cardId);
+    console.log('🔍 Fetching CK price from widget, card_id:', cardId);
     
     const widgetUrl = `https://www.mtggoldfish.com/cardkingdom/price_widget?card_id=${encodeURIComponent(cardId)}`;
     
@@ -227,37 +224,55 @@ async function fetchCardKingdomPriceFromWidget(cardName, setCode) {
     });
     
     if (!response.ok) {
-      console.log('⚠️ Widget returned status:', response.status);
+      console.log('⚠️ Widget status:', response.status);
       return 'N/A';
     }
     
     const html = await response.text();
     const $ = load(html);
     
-    // Parse the price widget HTML table
-    // Look for the first price in the table (usually lowest condition at top)
+    // Try multiple parsing strategies to find the price
     let price = 'N/A';
     
-    $('table.cardkingdomPriceWidget-table tr').each((i, row) => {
-      if (i === 0) return; // skip header row
+    // Strategy 1: Look for price in table cells
+    const tables = $('table');
+    tables.each((tableIdx, table) => {
+      if (price !== 'N/A') return false;
       
-      const cells = $(row).find('td');
-      if (cells.length >= 4) {
-        // Last cell usually contains the price
-        const priceCell = $(cells[cells.length - 1]).text().trim();
-        const priceMatch = priceCell.match(/\$[\d.]+/);
+      $(table).find('tr').each((rowIdx, row) => {
+        if (price !== 'N/A') return false;
+        const cells = $(row).find('td');
         
-        if (priceMatch) {
-          price = priceMatch[0];
-          console.log('✅ Found CK price:', price, 'Condition:', $(cells[1]).text().trim());
-          return false; // break
+        // Look through all cells for a price pattern
+        cells.each((cellIdx, cell) => {
+          const text = $(cell).text().trim();
+          const match = text.match(/^\$[\d.]+/);
+          if (match) {
+            price = match[0];
+            console.log('✅ Found CK price:', price);
+            return false;
+          }
+        });
+      });
+    });
+    
+    // Strategy 2: Look for price anywhere in the HTML with regex
+    if (price === 'N/A') {
+      const priceRegex = /\$[\d.]+/g;
+      const matches = html.match(priceRegex);
+      if (matches && matches.length > 0) {
+        // Filter out common false positives and get the smallest price
+        const prices = matches.map(p => parseFloat(p.replace('$', ''))).sort((a, b) => a - b);
+        if (prices.length > 0) {
+          price = `$${prices[0].toFixed(2)}`;
+          console.log('✅ Found CK price (regex):', price);
         }
       }
-    });
+    }
     
     return price;
   } catch (error) {
-    console.log('❌ Widget scrape failed:', error.message);
+    console.log('❌ Widget parse failed:', error.message);
     return 'N/A';
   }
 }
