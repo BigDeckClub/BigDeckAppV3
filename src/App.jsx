@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Plus, Trash2, FileText, Package, Copy, Layers, AlertCircle, TrendingUp, Settings, RefreshCw, DollarSign, X } from 'lucide-react';
 
-const API_BASE = 'http://localhost:3000/api';
+// Use current hostname with port 3000 for API
+const API_BASE = `http://${window.location.hostname}:3000/api`;
 
 export default function MTGInventoryTracker() {
   const [activeTab, setActiveTab] = useState('inventory');
