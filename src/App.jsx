@@ -1450,39 +1450,25 @@ export default function MTGInventoryTracker() {
                                             
                                             // Get the original lines (with quantities)
                                             const lines = deck.decklist.split('\n').filter(line => line.trim());
-                                            let cardCount = 0;
-                                            let lineToUpdate = -1;
                                             
-                                            // Find which line this card corresponds to
-                                            for (let i = 0; i < lines.length; i++) {
-                                              const match = lines[i].match(/^(\d+)\s+(.+)$/);
-                                              if (match) {
-                                                const cardName = match[2].trim();
-                                                const quantity = parseInt(match[1]);
-                                                
-                                                if (cardName.toLowerCase() === card.name.toLowerCase()) {
-                                                  if (cardCount === idx) {
-                                                    lineToUpdate = i;
-                                                    break;
+                                            // Find the line with this card and replace its set code
+                                            let found = false;
+                                            const newLines = lines.map(line => {
+                                              if (!found) {
+                                                const match = line.match(/^(\d+)\s+(.+)$/);
+                                                if (match) {
+                                                  const cardName = match[2].trim();
+                                                  if (cardName.toLowerCase() === card.name.toLowerCase()) {
+                                                    found = true;
+                                                    // Replace the old set code with the new one
+                                                    return line.replace(new RegExp(`\\[${cardSet}\\]`, 'i'), `[${editCardSet.toUpperCase()}]`);
                                                   }
-                                                  cardCount += quantity - 1;
-                                                  if (cardCount >= idx) {
-                                                    lineToUpdate = i;
-                                                    break;
-                                                  }
-                                                  cardCount++;
                                                 }
                                               }
-                                            }
+                                              return line;
+                                            });
                                             
-                                            if (lineToUpdate !== -1) {
-                                              const newLines = lines.map((line, i) => {
-                                                if (i === lineToUpdate) {
-                                                  return line.replace(cardSet, editCardSet);
-                                                }
-                                                return line;
-                                              });
-                                              
+                                            if (found) {
                                               const newDecklistText = newLines.join('\n');
                                               
                                               fetch(`${API_BASE}/decklists/${deck.id}`, {
@@ -1495,6 +1481,8 @@ export default function MTGInventoryTracker() {
                                                 loadDecklists();
                                                 setEditingDecklistCard(null);
                                               });
+                                            } else {
+                                              alert('Could not find card in decklist');
                                             }
                                           }}
                                           className="flex-1 bg-green-600 hover:bg-green-700 rounded px-2 py-1 text-xs font-semibold"
