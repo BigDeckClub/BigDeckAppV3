@@ -98,47 +98,60 @@ export default function MTGInventoryTracker() {
     try {
       const lines = decklist.split('\n');
       let tcgTotal = 0, ckTotal = 0;
-      console.log('DEBUG: Starting price calculation for decklist with', lines.length, 'lines');
       
       for (const line of lines) {
         const match = line.match(/^(\d+)\s+(.+)$/);
-        if (!match) {
-          console.log('DEBUG: Line does not match pattern:', line);
-          continue;
-        }
+        if (!match) continue;
         
         const quantity = parseInt(match[1]);
         const cardName = match[2].trim();
-        console.log(`DEBUG: Processing card "${cardName}" with quantity ${quantity}`);
         
         try {
-          const url = `https://api.scryfall.com/cards/search?q=!"${cardName}"&unique=prints&order=released`;
-          console.log('DEBUG: Fetching from:', url);
-          const response = await fetch(url);
-          if (response.ok) {
-            const data = await response.json();
-            console.log(`DEBUG: Scryfall response for "${cardName}":`, data);
-            if (data.data && data.data.length > 0) {
-              const card = data.data[0];
-              console.log(`DEBUG: Card object prices field:`, card.prices);
-              const tcgPrice = parseFloat(card.prices?.usd) || 0;
-              const ckPrice = parseFloat(card.prices?.usd_foil) || 0;
-              console.log(`DEBUG: Parsed prices - TCG: ${tcgPrice}, CK: ${ckPrice}`);
-              console.log(`DEBUG: card.prices.usd =`, card.prices?.usd, `| card.prices.usd_foil =`, card.prices?.usd_foil);
-              tcgTotal += tcgPrice * quantity;
-              ckTotal += ckPrice * quantity;
-            } else {
-              console.log(`DEBUG: No cards found for "${cardName}"`);
+          // First try to find a printing with prices
+          let cardWithPrice = null;
+          
+          // Try search without order parameter to get more results
+          const url1 = `https://api.scryfall.com/cards/search?q=!"${cardName}"&unique=prints`;
+          const response1 = await fetch(url1);
+          if (response1.ok) {
+            const data1 = await response1.json();
+            if (data1.data && data1.data.length > 0) {
+              // Find first card with non-null prices
+              cardWithPrice = data1.data.find(card => card.prices?.usd !== null || card.prices?.usd_foil !== null);
+              
+              // If no card with prices found, try just the card name without exact match
+              if (!cardWithPrice && data1.data.length > 0) {
+                cardWithPrice = data1.data[0];
+              }
             }
-          } else {
-            console.log(`DEBUG: Scryfall API error for "${cardName}": ${response.status}`);
+          }
+          
+          // If first search didn't work, try a simpler search with just the card name
+          if (!cardWithPrice) {
+            const url2 = `https://api.scryfall.com/cards/search?q=${cardName}&unique=prints`;
+            const response2 = await fetch(url2);
+            if (response2.ok) {
+              const data2 = await response2.json();
+              if (data2.data && data2.data.length > 0) {
+                cardWithPrice = data2.data.find(card => card.prices?.usd !== null || card.prices?.usd_foil !== null);
+                if (!cardWithPrice) {
+                  cardWithPrice = data2.data[0];
+                }
+              }
+            }
+          }
+          
+          if (cardWithPrice) {
+            const tcgPrice = parseFloat(cardWithPrice.prices?.usd) || 0;
+            const ckPrice = parseFloat(cardWithPrice.prices?.usd_foil) || 0;
+            tcgTotal += tcgPrice * quantity;
+            ckTotal += ckPrice * quantity;
           }
         } catch (err) {
           console.error('Error fetching price for', cardName, err);
         }
       }
       
-      console.log(`DEBUG: Final totals - TCG: ${tcgTotal}, CK: ${ckTotal}`);
       return { tcg: tcgTotal, ck: ckTotal };
     } catch (err) {
       console.error('Error calculating decklist prices:', err);
