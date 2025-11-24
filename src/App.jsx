@@ -78,8 +78,9 @@ export default function MTGInventoryTracker() {
     
     if (!prices) return <div className="text-xs text-gray-500">Loading...</div>;
     return (
-      <div className="text-xs whitespace-nowrap text-purple-300">
-        TCGPlayer: {prices.tcg}
+      <div className="text-xs whitespace-nowrap">
+        <div className="text-purple-300">TCG: {prices.tcg}</div>
+        <div className="text-blue-300">CK: {prices.ck}</div>
       </div>
     );
   };

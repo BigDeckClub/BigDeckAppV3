@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
 import pkg from 'pg';
+import { load } from 'cheerio';
+import fetch from 'node-fetch';
 
 const { Pool } = pkg;
 const app = express();
@@ -240,7 +242,42 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
       console.error('Error fetching Scryfall prices:', err);
     }
     
-    const priceData = { tcg: tcgPrice, updated: new Date().toISOString() };
+    // Fetch Card Kingdom price by scraping their website
+    let ckPrice = 'N/A';
+    try {
+      // Try to find the card on Card Kingdom
+      const ckSearchUrl = `https://www.cardkingdom.com/mtg/search?q=${encodeURIComponent(cardName)}+${encodeURIComponent(setCode)}`;
+      const ckRes = await fetch(ckSearchUrl, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
+      });
+      
+      if (ckRes.ok) {
+        const html = await ckRes.text();
+        const $ = load(html);
+        
+        // Look for price in the search results or product page
+        // Card Kingdom uses data-product-price or price classes
+        let priceText = $('[data-product-price]').first().attr('data-product-price');
+        if (!priceText) {
+          priceText = $('.productPrice').first().text();
+        }
+        if (!priceText) {
+          priceText = $('[class*="price"]').first().text();
+        }
+        
+        if (priceText) {
+          // Extract price number from text
+          const match = priceText.match(/\$?([\d.]+)/);
+          if (match && match[1]) {
+            ckPrice = `$${parseFloat(match[1]).toFixed(2)}`;
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching Card Kingdom prices:', err.message);
+    }
+    
+    const priceData = { tcg: tcgPrice, ck: ckPrice, updated: new Date().toISOString() };
     
     // Cache the result
     priceCache[cacheKey] = { data: priceData, timestamp: now };
