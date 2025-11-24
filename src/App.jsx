@@ -55,6 +55,7 @@ export default function MTGInventoryTracker() {
   const [successMessage, setSuccessMessage] = useState('');
   const [decklistPrices, setDecklistPrices] = useState({});
   const [containerPriceCache, setContainerPriceCache] = useState({});
+  const [expandedDecklists, setExpandedDecklists] = useState({});
 
   // Price display component
   const MarketPrices = ({ cardName, setCode }) => {
@@ -1298,24 +1299,51 @@ export default function MTGInventoryTracker() {
               <div className="grid gap-4">
                 {decklists.map((deck) => {
                   const prices = decklistPrices[deck.id] || { tcg: 0, ck: 0 };
+                  const isExpanded = expandedDecklists[deck.id];
+                  const deckCards = deck.decklist.split('\n').filter(line => line.trim()).map(line => {
+                    const match = line.match(/^(\d+)\s+(.+)$/);
+                    return match ? { quantity: parseInt(match[1]), name: match[2].trim() } : null;
+                  }).filter(Boolean);
+                  
                   return (
                     <div key={deck.id} className="bg-black bg-opacity-50 border border-purple-400 rounded p-4">
                       <div className="flex justify-between items-start mb-3">
                         <div className="flex-1">
                           <div className="font-semibold">{deck.name}</div>
-                          <div className="text-sm text-gray-300 mt-2 line-clamp-2">{deck.decklist}</div>
+                          <div className="text-sm text-gray-300 mt-2">{deckCards.length} unique cards</div>
                         </div>
-                        <button
-                          onClick={() => deleteDecklist(deck.id)}
-                          className="bg-red-600 hover:bg-red-700 rounded px-3 py-2 ml-4"
-                        >
-                          <Trash2 className="w-5 h-5" />
-                        </button>
+                        <div className="flex gap-2 ml-4">
+                          <button
+                            onClick={() => setExpandedDecklists(prev => ({...prev, [deck.id]: !prev[deck.id]}))}
+                            className="bg-blue-600 hover:bg-blue-700 rounded px-4 py-2 font-semibold"
+                          >
+                            {isExpanded ? 'Hide' : 'View'} Cards
+                          </button>
+                          <button
+                            onClick={() => deleteDecklist(deck.id)}
+                            className="bg-red-600 hover:bg-red-700 rounded px-3 py-2"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        </div>
                       </div>
                       <div className="grid grid-cols-2 gap-2 text-xs border-t border-purple-500 pt-2 mt-2">
                         <div className="text-purple-300">TCG: ${prices.tcg.toFixed(2)}</div>
                         <div className="text-blue-300">CK: ${prices.ck.toFixed(2)}</div>
                       </div>
+                      
+                      {isExpanded && (
+                        <div className="mt-4 border-t border-purple-500 pt-4">
+                          <div className="space-y-2">
+                            {deckCards.map((card, idx) => (
+                              <div key={idx} className="bg-purple-900 bg-opacity-30 rounded p-2 flex justify-between items-center text-sm">
+                                <span>{card.quantity}x {card.name}</span>
+                                <span className="text-xs text-gray-400">{card.quantity}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
