@@ -120,9 +120,11 @@ export default function MTGInventoryTracker() {
             console.log(`DEBUG: Scryfall response for "${cardName}":`, data);
             if (data.data && data.data.length > 0) {
               const card = data.data[0];
+              console.log(`DEBUG: Card object prices field:`, card.prices);
               const tcgPrice = parseFloat(card.prices?.usd) || 0;
               const ckPrice = parseFloat(card.prices?.usd_foil) || 0;
-              console.log(`DEBUG: Card prices - TCG: ${tcgPrice}, CK: ${ckPrice}`);
+              console.log(`DEBUG: Parsed prices - TCG: ${tcgPrice}, CK: ${ckPrice}`);
+              console.log(`DEBUG: card.prices.usd =`, card.prices?.usd, `| card.prices.usd_foil =`, card.prices?.usd_foil);
               tcgTotal += tcgPrice * quantity;
               ckTotal += ckPrice * quantity;
             } else {
