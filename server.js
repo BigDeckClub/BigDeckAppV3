@@ -222,9 +222,37 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
   console.log('Timestamp:', new Date().toISOString());
   
   try {
-    // Construct Card Kingdom URL
-    const ckSlug = cardName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-    const ckUrl = `https://www.cardkingdom.com/mtg/${ckSlug}`;
+    // First fetch from Scryfall to get set name and card price
+    console.log('\n=== FETCHING SCRYFALL DATA ===');
+    const scryfallUrl = `https://api.scryfall.com/cards/search?q=!"${cardName}"+set:${setCode.toLowerCase()}&unique=prints`;
+    console.log('Scryfall URL:', scryfallUrl);
+    
+    const scryfallResponse = await fetch(scryfallUrl);
+    console.log('Scryfall Status:', scryfallResponse.status);
+    
+    let tcgPrice = 'N/A';
+    let setName = '';
+    
+    if (scryfallResponse.ok) {
+      const scryfallData = await scryfallResponse.json();
+      if (scryfallData.data && scryfallData.data.length > 0) {
+        const card = scryfallData.data[0];
+        tcgPrice = card.prices?.usd || 'N/A';
+        if (tcgPrice !== 'N/A') {
+          tcgPrice = `$${tcgPrice}`;
+        }
+        setName = card.set_name || '';
+        console.log('TCGPlayer Price:', tcgPrice);
+        console.log('Set Name from Scryfall:', setName);
+      }
+    } else {
+      console.log('❌ Scryfall fetch failed');
+    }
+    
+    // Construct Card Kingdom URL with set name
+    const cardSlug = cardName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    const setSlug = setName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    const ckUrl = `https://www.cardkingdom.com/mtg/${setSlug}/${cardSlug}`;
     
     console.log('Card Kingdom URL:', ckUrl);
     console.log('Attempting fetch...');
