@@ -14,7 +14,6 @@ export const InventoryTab = ({
   searchQuery,
   setSearchQuery,
   searchResults,
-  isSearching,
   showDropdown,
   setShowDropdown,
   selectCard,
