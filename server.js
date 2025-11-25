@@ -346,6 +346,15 @@ async function fetchCardKingdomPriceFromWidget(cardName, setCode) {
     
     const html = await response.text();
     
+    // DEBUG: Log the HTML for Swamp to diagnose the issue
+    if (cardName === 'Swamp') {
+      console.log(`\n=== SWAMP WIDGET HTML (first 3000 chars) ===`);
+      console.log(html.substring(0, 3000));
+      console.log(`\n=== ALL PRICES FOUND IN SWAMP WIDGET ===`);
+      const allPrices = html.match(/\$[\d.]+/g);
+      console.log('Prices array:', allPrices);
+    }
+    
     // Extract all dollar amounts from the widget
     const priceMatches = html.match(/\$[\d.]+/g);
     
@@ -361,6 +370,7 @@ async function fetchCardKingdomPriceFromWidget(cardName, setCode) {
     
     return 'N/A';
   } catch (error) {
+    console.error('Error fetching CK price:', error);
     return 'N/A';
   }
 }
