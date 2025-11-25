@@ -766,6 +766,21 @@ app.get('/api/containers/:id/items', async (req, res) => {
   }
 });
 
+// Delete container
+app.delete('/api/containers/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await pool.query('DELETE FROM containers WHERE id = $1 RETURNING id', [id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Container not found' });
+    }
+    res.json({ success: true, id: result.rows[0].id });
+  } catch (err) {
+    console.error('Container delete error:', err);
+    res.status(500).json({ error: 'Failed to delete container' });
+  }
+});
+
 // ========== SELL CONTAINER (WITH TRANSACTION) ==========
 app.post('/api/containers/:id/sell', async (req, res) => {
   const client = await pool.connect();
