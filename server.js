@@ -55,9 +55,14 @@ app.use(bodyParser.json());
 
 // ========== RATE LIMITING ==========
 const priceLimiter = rateLimit({
-  windowMs: 30 * 1000,
-  max: 10,
-  message: 'Rate limit exceeded for price lookups.'
+  windowMs: 60 * 1000,  // 60 second window instead of 30
+  max: 100,             // Increased from 10 to 100 requests
+  message: 'Rate limit exceeded for price lookups.',
+  skip: (req, res) => {
+    // Log when rate limit is hit
+    console.log(`[RATE LIMIT] Request for ${req.params.cardName}/${req.params.setCode}`);
+    return false;
+  }
 });
 
 app.use('/api/prices', priceLimiter);

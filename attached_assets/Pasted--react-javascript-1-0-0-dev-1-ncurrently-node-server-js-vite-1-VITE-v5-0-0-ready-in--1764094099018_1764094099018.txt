@@ -1,0 +1,100 @@
+
+> react-javascript@1.0.0 dev
+[1] ncurrently "node server.js" "vite"
+[1]   VITE v5.0.0  ready in 737 ms
+[1] 
+[1]   ➜  Local:   http://localhost:5000/
+[1]   ➜  Network: http://172.31.72.162:5000/
+[0] Server running on port 3000
+[0] 
+[0] === PRICE REQUEST: sol ring (EOC) ===
+[0] ✓ Scryfall TCG price: $1.25
+[0] [CK] Starting fetch for: sol ring
+[0] 
+[0] === PRICE REQUEST: sol ring (SLD) ===
+[0] 
+[0] === PRICE REQUEST: sol ring (PIP) ===
+[0] [CK] Starting fetch for: sol ring
+[0] ✓ Scryfall TCG price: $1.06
+[0] [CK] Starting fetch for: sol ring
+[0] [CK][DEBUG] HTML received: 513785 bytes
+[0] [CK][DEBUG] Found 101 product elements for sol ring
+[0] [CK][DEBUG] Extracted 23 matching products
+[0]    [EDITION DEBUG] Found editions: clear
+[0]                 form: bloomburrow commander decks, sol ring: bloomburrow commander decks, bloomburrow commander decks
+[0]                                     (u): bloomburrow commander decks, sol ring (0410 - human): the lord of the rings tales of middle earth commander decks variants, the lord of the rings: tales of middle-earth commander decks variants
+[0]                                     (m): the lord of the rings tales of middle earth commander decks variants
+[0]    [DEBUG] products without edition: 0/23
+[0] [CK][SUCCESS] Best match: sol ring = $2.29
+[0] Final result: TCG=$1.25, CK=$2.29
+[0] 
+[0] [DEBUG] About to send response...
+[0] [DEBUG] Response object: { tcg: '$1.25', ck: '$2.29' }
+[0] [DEBUG] Response sent successfully
+[0] 
+[0] === PRICE REQUEST: swiftfoot boots (PIP) ===
+[0] [CK][DEBUG] HTML received: 513785 bytes
+[0] [CK][DEBUG] Found 101 product elements for sol ring
+[0] [CK][DEBUG] Extracted 23 matching products
+[0]    [EDITION DEBUG] Found editions: clear
+[0]                 form: bloomburrow commander decks, sol ring: bloomburrow commander decks, bloomburrow commander decks
+[0]                                     (u): bloomburrow commander decks, sol ring (0410 - human): the lord of the rings tales of middle earth commander decks variants, the lord of the rings: tales of middle-earth commander decks variants
+[0]                                     (m): the lord of the rings tales of middle earth commander decks variants
+[0]    [DEBUG] products without edition: 0/23
+[0] [CK][SUCCESS] Best match: sol ring = $2.29
+[0] Final result: TCG=N/A, CK=$2.29
+[0] 
+[0] [DEBUG] About to send response...
+[0] [DEBUG] Response object: { tcg: 'N/A', ck: '$2.29' }
+[0] [DEBUG] Response sent successfully
+[0] [CK][DEBUG] HTML received: 513785 bytes
+[0] [CK][DEBUG] Found 101 product elements for sol ring
+[0] [CK][DEBUG] Extracted 23 matching products
+[0]    [EDITION DEBUG] Found editions: clear
+[0]                 form: bloomburrow commander decks, sol ring: bloomburrow commander decks, bloomburrow commander decks
+[0]                                     (u): bloomburrow commander decks, sol ring (0410 - human): the lord of the rings tales of middle earth commander decks variants, the lord of the rings: tales of middle-earth commander decks variants
+[0]                                     (m): the lord of the rings tales of middle earth commander decks variants
+[0]    [DEBUG] products without edition: 0/23
+[0] [CK][SUCCESS] Best match: sol ring = $2.29
+[0] Final result: TCG=$1.06, CK=$2.29
+[0] 
+[0] [DEBUG] About to send response...
+[0] [DEBUG] Response object: { tcg: '$1.06', ck: '$2.29' }
+[0] [DEBUG] Response sent successfully
+[0] 
+[0] === PRICE REQUEST: swiftfoot boots (TLE) ===
+[0] ✓ Scryfall TCG price: $1.38
+[0] [CK] Starting fetch for: swiftfoot boots
+[0] ✓ Scryfall TCG price: $1.36
+[0] [CK] Starting fetch for: swiftfoot boots
+[0] [CK][DEBUG] HTML received: 522867 bytes
+[0] [CK][DEBUG] Found 101 product elements for swiftfoot boots
+[0] [CK][DEBUG] Extracted 25 matching products
+[0]    [EDITION DEBUG] Found editions: clear
+[0]                 form: the lost caverns of ixalan commander decks, swiftfoot boots: the lost caverns of ixalan commander decks, the lost caverns of ixalan commander decks
+[0]                                     (u): the lost caverns of ixalan commander decks, swiftfoot boots: foundations, foundations
+[0]                                     (u): foundations
+[0]    [DEBUG] products without edition: 0/25
+[0] [CK][SUCCESS] Best match: swiftfoot boots = $2.79
+[0] Final result: TCG=$1.36, CK=$2.79
+[0] 
+[0] [DEBUG] About to send response...
+[0] [DEBUG] Response object: { tcg: '$1.36', ck: '$2.79' }
+[0] [DEBUG] Response sent successfully
+[0] [CK][DEBUG] HTML received: 522867 bytes
+[0] [CK][DEBUG] Found 101 product elements for swiftfoot boots
+[0] [CK][DEBUG] Extracted 25 matching products
+[0]    [EDITION DEBUG] Found editions: clear
+[0]                 form: the lost caverns of ixalan commander decks, swiftfoot boots: the lost caverns of ixalan commander decks, the lost caverns of ixalan commander decks
+[0]                                     (u): the lost caverns of ixalan commander decks, swiftfoot boots: foundations, foundations
+[0]                                     (u): foundations
+[0]    [DEBUG] products without edition: 0/25
+[0] [CK][SUCCESS] Best match: swiftfoot boots = $2.79
+[0] Final result: TCG=$1.38, CK=$2.79
+[0] 
+[0] [DEBUG] About to send response...
+[0] [DEBUG] Response object: { tcg: '$1.38', ck: '$2.79' }
+[0] [DEBUG] Response sent successfully
+^A^A^C[0] Received SIGINT, shutting down...
+[0] node server.js exited with code SIGINT
+[1] vite exited with code SIGINT
