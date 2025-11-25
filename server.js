@@ -1006,8 +1006,7 @@ app.post('/api/containers/:id/sell', async (req, res) => {
       if (card.inventoryId && card.quantity_used > 0) {
         const updateResult = await client.query(
           `UPDATE inventory 
-           SET quantity = GREATEST(0, quantity - $1),
-               quantity_in_containers = GREATEST(0, COALESCE(quantity_in_containers, 0) - $1)
+           SET quantity = GREATEST(0, quantity - $1)
            WHERE id = $2
            RETURNING id, quantity`,
           [card.quantity_used, card.inventoryId]
