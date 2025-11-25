@@ -904,6 +904,13 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
               console.log(`   [EDITION DEBUG] Found editions: ${debugEditions.slice(0, 5).join(', ')}`);
             }
             
+            // Debug: Check for null editions
+            const nullEditionProducts = rawProducts.filter(p => !p.edition);
+            console.log(`   [DEBUG] products without edition: ${nullEditionProducts.length}/${rawProducts.length}`);
+            if (nullEditionProducts.length > 0) {
+              console.log(nullEditionProducts.slice(0,5).map(p => ({ name: p.name, url: p.url || 'N/A', price: p.price })));
+            }
+            
             // PASS 2: Determine baseline price from "set" edition types only
             let baselinePrice = null;
             const setCandidates = [];
@@ -936,6 +943,7 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
               if (fallbackCandidates.length > 0) {
                 const mid = Math.floor((fallbackCandidates.length - 1) / 2);
                 baselinePrice = fallbackCandidates[mid];
+                console.log(`   [FALLBACK BASELINE] using median fallback price: ${baselinePrice}`);
               } else {
                 baselinePrice = null;
               }
