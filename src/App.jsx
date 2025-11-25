@@ -930,6 +930,8 @@ export default function MTGInventoryTracker() {
   const getReorderAlerts = () => {
     // Group items by name and set combination
     const grouped = {};
+    
+    // Add inventory items
     inventory.forEach(item => {
       const key = `${item.name}|${item.set}`;
       if (!grouped[key]) {
@@ -941,11 +943,30 @@ export default function MTGInventoryTracker() {
           quantity: 0,
           purchase_price: item.purchase_price,
           id: item.id,
-          groupName: item.name // For grouping in display
+          groupName: item.name
         };
       }
       grouped[key].quantity += parseInt(item.quantity) || 0;
     });
+    
+    // Add cards from containers (active and sold) that aren't in inventory
+    if (containerItems) {
+      Object.values(containerItems).flat().forEach(ci => {
+        const key = `${ci.name}|${ci.set}`;
+        if (!grouped[key]) {
+          grouped[key] = {
+            name: ci.name,
+            reorder_type: ci.reorder_type || 'normal',
+            set_code: ci.set,
+            set_name: ci.set_name,
+            quantity: 0,
+            purchase_price: ci.purchase_price,
+            id: ci.id,
+            groupName: ci.name
+          };
+        }
+      });
+    }
 
     // Calculate container usage + sold cards for each card+set combo
     const withUsage = Object.values(grouped).map(item => {
@@ -967,7 +988,7 @@ export default function MTGInventoryTracker() {
     // Filter to only items below threshold
     return withUsage.filter(item => {
       const threshold = reorderSettings[item.reorder_type] || 5;
-      return item.quantity <= threshold;
+      return item.quantity + (item.cardsInContainers || 0) <= threshold;
     });
   };
 
