@@ -1,0 +1,84 @@
+Root Cause Analysis
+The issue is that the /api/containers/:id/items endpoint likely doesn't exist or isn't returning the correct data structure. Looking at your code, I can see two different approaches being used:
+
+Line 707: toggleContainerExpand() tries to fetch from /api/containers/${containerId}/items
+Line 561: loadContainers() also tries to preload items from the same endpoint
+However, based on how containers are created in your backend, the cards are probably stored directly in the containers table as a JSONB cards column, not as a separate endpoint.
+
+The Problem
+When you create a container (via addContainer() on line 687), you send:
+
+JavaScript
+{
+  name: containerName,
+  decklist_id: parseInt(selectedDecklist)
+}
+The backend likely processes the decklist, pulls cards from inventory, and stores them in a cards JSONB column. But your frontend is trying to fetch from /api/containers/:id/items which probably:
+
+Doesn't exist as an endpoint, OR
+Returns an empty array because items aren't stored separately
+The Fix
+You have two options:
+
+Option 1: Return cards directly in the container object (Recommended)
+Modify your backend so that when you fetch containers via GET /api/containers, it includes the cards array:
+
+JavaScript
+// Backend should return:
+{
+  id: 1,
+  name: "Modern Deck",
+  decklist_id: 5,
+  cards: [
+    { name: "Swamp", set: "UNF", quantity_used: 5, purchase_price: 0.10, inventoryId: 123 },
+    { name: "Lightning Bolt", set: "2X2", quantity_used: 4, purchase_price: 2.50, inventoryId: 456 }
+  ]
+}
+Then update your frontend loadContainers():
+
+JavaScript
+const loadContainers = async () => {
+  try {
+    const response = await fetch(`${API_BASE}/containers`);
+    const data = await response.json();
+    setContainers(data || []);
+
+    // Store cards directly from container response
+    if (data && data.length > 0) {
+      const itemsMap = {};
+      data.forEach(container => {
+        itemsMap[container.id] = container.cards || [];
+      });
+      setContainerItems(itemsMap);
+    }
+  } catch (error) {
+    console.error('Load containers error:', error);
+  }
+};
+And simplify toggleContainerExpand():
+
+JavaScript
+const toggleContainerExpand = (containerId) => {
+  setExpandedContainers((prev) => ({
+    ...prev,
+    [containerId]: !prev[containerId],
+  }));
+};
+Option 2: Create the /items endpoint
+If you want to keep the separate endpoint approach, create it in your backend:
+
+JavaScript
+// Backend route
+app.get('/api/containers/:id/items', async (req, res) => {
+  const { id } = req.params;
+  const result = await db.query(
+    'SELECT cards FROM containers WHERE id = $1',
+    [id]
+  );
+  
+  if (result.rows.length === 0) {
+    return res.status(404).json({ error: 'Container not found' });
+  }
+  
+  res.json(result.rows[0].cards || []);
+});

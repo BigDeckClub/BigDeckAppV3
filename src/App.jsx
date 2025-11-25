@@ -685,40 +685,18 @@ function MTGInventoryTrackerContent() {
       const data = await response.json();
       setContainers(data || []);
 
-      // Preload all container items in the background
+      // Extract cards from container response
       if (data && data.length > 0) {
         const itemsMap = {};
-        for (const container of data) {
-          try {
-            const itemResponse = await fetch(
-              `${API_BASE}/containers/${container.id}/items`,
-            );
-            const itemsData = await itemResponse.json();
-            itemsMap[container.id] = itemsData || [];
-          } catch (err) {
-            itemsMap[container.id] = [];
-          }
-        }
+        data.forEach(container => {
+          itemsMap[container.id] = container.cards || [];
+        });
         setContainerItems(itemsMap);
       }
     } catch (error) {}
   };
 
-  const toggleContainerExpand = async (containerId) => {
-    // Load items if not already loaded
-    if (!containerItems[containerId]) {
-      try {
-        const response = await fetch(
-          `${API_BASE}/containers/${containerId}/items`,
-        );
-        const data = await response.json();
-        setContainerItems((prev) => ({
-          ...prev,
-          [containerId]: data || [],
-        }));
-      } catch (error) {}
-    }
-
+  const toggleContainerExpand = (containerId) => {
     setExpandedContainers((prev) => ({
       ...prev,
       [containerId]: !prev[containerId],
