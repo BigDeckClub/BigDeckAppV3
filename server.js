@@ -126,6 +126,45 @@ function normalizeName(name) {
     .trim();
 }
 
+// ============== CORRECTED EDITION CLASSIFIER ==============
+// This is the primary classifier - determines if edition is "special" or "set"
+function classifyEdition(ed) {
+  if (!ed) return "special"; // no metadata → likely variant
+
+  const e = ed.toLowerCase();
+
+  // SPECIAL VARIANT EDITIONS (never "set")
+  if (
+    e.includes("commander") ||
+    e.includes("secret lair") ||
+    e.includes("showcase") ||
+    e.includes("retro") ||
+    e.includes("extended") ||
+    e.includes("premium") ||
+    e.includes("variant") ||
+    e.includes("collector")
+  ) {
+    return "special";
+  }
+
+  // STANDARD SET PRINTINGS
+  if (
+    e.includes("core set") ||
+    /^m[0-9]{2}\b/.test(e) ||        // M10, M11, M12, etc.
+    /^[0-9]{4}\b/.test(e) ||        // 2011, 2012, etc.
+    /alpha|beta|unlimited|revised/.test(e) ||
+    /arabian|legends|antiquities/.test(e) ||
+    /tempest|mirage|ice age|invasion|urza/.test(e) ||
+    /onslaught|lorwyn|shadowmoor|zendikar/.test(e) ||
+    /modern masters|eternal masters/.test(e)
+  ) {
+    return "set";
+  }
+
+  // DEFAULT: TREAT AS A NORMAL SET
+  return "set";
+}
+
 // List of variant/special edition names in Card Kingdom's data
 const SPECIAL_EDITIONS = [
   'showcase', 'secret lair', 'special edition', 'extended art', 'borderless',
@@ -637,81 +676,49 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
           console.log(`   [EDITION DEBUG] No editions extracted from any products`);
         }
         
-        // PASS 2: Determine lowest *normal* price from raw products
-        // Now uses edition metadata to correctly identify standard vs variant editions
-        let lowestNormalPrice = Infinity;
+        // PASS 2: Determine baseline price from "set" edition types only
+        // Filter for: (1) "set" type editions, (2) NM or LP condition, (3) take cheapest
+        let baselinePrice = null;
+        const setCandidates = [];
+        
         for (const p of rawProducts) {
-          const variant = classifyVariantWithEdition(p.name, cardName, p.edition);
-          if ((variant === "normal" || variant === "set") && p.price < lowestNormalPrice) {
-            lowestNormalPrice = p.price;
-          }
+          const editionType = classifyEdition(p.edition);
+          const cond = (p.condition || "unknown").toUpperCase();
+          
+          // Only include "set" editions, skip HP/MP condition
+          if (editionType !== "set") continue;
+          if (cond === "HP" || cond === "MP") continue;
+          
+          setCandidates.push(p.price);
         }
         
-        // FALLBACK: no normals → use median price among non-premium/non-foil candidates
-        if (lowestNormalPrice === Infinity) {
-          // First pass: try to find median among non-special items
-          let candidates = [];
-          for (const p of rawProducts) {
-            const variant = classifyVariant(p.name, cardName);
-            if (
-              variant !== "foil" &&
-              variant !== "etched" &&
-              variant !== "promo" &&
-              variant !== "premium" &&
-              variant !== "special"
-            ) {
-              candidates.push(p.price);
-            }
-          }
-
-          // If no non-special candidates, broaden to include all non-foil/etched/promo/premium
-          if (candidates.length === 0) {
-            for (const p of rawProducts) {
-              const variant = classifyVariant(p.name, cardName);
-              if (
-                variant !== "foil" &&
-                variant !== "etched" &&
-                variant !== "promo" &&
-                variant !== "premium"
-              ) {
-                candidates.push(p.price);
-              }
-            }
-          }
-
-          // Pick the median price from candidates (avoids both cheap variants and expensive promos)
-          if (candidates.length > 0) {
-            candidates.sort((a, b) => a - b);
-            const midIndex = Math.floor(candidates.length / 2);
-            lowestNormalPrice = candidates[midIndex];
-          } else {
-            lowestNormalPrice = null;
-          }
-        } else {
-          lowestNormalPrice = lowestNormalPrice === Infinity ? null : lowestNormalPrice;
+        if (setCandidates.length > 0) {
+          setCandidates.sort((a, b) => a - b);
+          baselinePrice = setCandidates[0];
         }
         
-        const globalPriceContext = { lowestNormalPrice };
+        const globalPriceContext = { lowestNormalPrice: baselinePrice };
         
         // Condition rank for sorting (higher = better)
         const conditionRank = { 'NM': 0, 'LP': 1, 'MP': 2, 'HP': 3, 'unknown': 4 };
         
-        // PASS 3: Re-classify all products with context (promotion works!)
+        // PASS 3: Final classification using corrected logic
         const productPrices = [];
-        let firstNormalIndex = null;
         
-        for (let i = 0; i < rawProducts.length; i++) {
-          const p = rawProducts[i];
-          const variant = classifyVariantEnhanced(
-            { name: p.name, price: p.price },
-            i,
-            firstNormalIndex,
-            cardName,
-            globalPriceContext
-          );
+        for (const p of rawProducts) {
+          const editionType = classifyEdition(p.edition);
+          const cond = (p.condition || "unknown").toUpperCase();
           
-          if (variant === "normal" && firstNormalIndex === null) {
-            firstNormalIndex = i;
+          // Skip poor condition
+          if (cond === "HP" || cond === "MP") continue;
+          
+          // Determine final variant type
+          let variant;
+          if (editionType === "special") {
+            variant = "special";
+          } else {
+            // "set" edition
+            variant = "normal";
           }
           
           const rank = getVariantRank(variant);
@@ -728,9 +735,9 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
         
         if (productPrices.length > 0) {
           const best = productPrices.sort((a, b) => {
-            // 1. Primary: Sort by rank (variant type)
+            // 1. Primary: Sort by rank (variant type - normal before special)
             if (a.rank !== b.rank) return a.rank - b.rank;
-            // 2. Secondary: Higher quantity first (prefer well-stocked items)
+            // 2. Secondary: Higher quantity first
             if (a.quantity !== b.quantity) return b.quantity - a.quantity;
             // 3. Tertiary: Better condition first (NM > LP > MP > HP)
             const aCondRank = conditionRank[a.condition] ?? 99;
