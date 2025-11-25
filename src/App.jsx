@@ -461,27 +461,23 @@ export default function MTGInventoryTracker() {
     } catch (error) {}
   };
 
-  const fetchCardPrices = async (cardName, cardSet) => {
+  const fetchCardPrices = async (cardName, setCode) => {
     try {
-      const normalizedSet = (cardSet || "")
-        .trim()
-        .toUpperCase();
-
+      const normalizedSet = (setCode || "").trim().toUpperCase();
       const response = await fetch(
-        `/api/price?name=${encodeURIComponent(cardName)}&set=${encodeURIComponent(normalizedSet)}`
+        `${API_BASE}/price?name=${encodeURIComponent(cardName)}&set=${encodeURIComponent(normalizedSet)}`,
       );
-
-      if (!response.ok) return { tcg: "N/A", ck: "N/A" };
-
-      const data = await response.json();
-
-      return {
-        tcg: data.tcg || "N/A",
-        ck: data.ck || "N/A"
-      };
-    } catch (err) {
-      return { tcg: "N/A", ck: "N/A" };
+      if (response.ok) {
+        const priceData = await response.json();
+        return {
+          tcg: priceData.tcg || "N/A",
+          ck: priceData.ck || "N/A",
+        };
+      }
+    } catch (error) {
+      // Silently handle errors
     }
+    return { tcg: "N/A", ck: "N/A" };
   };
 
   const searchScryfall = async (query) => {
