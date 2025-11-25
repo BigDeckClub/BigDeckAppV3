@@ -101,14 +101,29 @@ export default function MTGInventoryTracker() {
     useEffect(() => {
       let isMounted = true;
       const cacheKey = `${cardName}|${setCode}`;
-      const CACHE_DURATION_MS = 12 * 60 * 60 * 1000; // 12 hours
+      const CACHE_DURATION_MS = 2 * 60 * 60 * 1000; // 2 hours (shorter to avoid stale N/A)
       
-      // Check cache first
+      const loadPrices = async () => {
+        const priceData = await fetchCardPrices(cardName, setCode);
+        if (isMounted) {
+          // Don't cache N/A values - always refetch if we get N/A
+          if (priceData.tcg === 'N/A' || priceData.ck === 'N/A') {
+            setTcgPrice(priceData.tcg);
+            setCkPrice(priceData.ck);
+          } else {
+            // Only cache valid prices
+            setPriceCache(prev => ({...prev, [cacheKey]: { ...priceData, timestamp: Date.now() }}));
+            setTcgPrice(priceData.tcg);
+            setCkPrice(priceData.ck);
+          }
+        }
+      };
+      
+      // Check cache only if we have valid (non-N/A) cached data
       if (priceCache[cacheKey]) {
         const cached = priceCache[cacheKey];
         const now = Date.now();
-        // Check if cache is still valid
-        if (now - (cached.timestamp || 0) < CACHE_DURATION_MS) {
+        if (cached.tcg !== 'N/A' && cached.ck !== 'N/A' && now - (cached.timestamp || 0) < CACHE_DURATION_MS) {
           if (isMounted) {
             setTcgPrice(cached.tcg);
             setCkPrice(cached.ck);
@@ -116,15 +131,6 @@ export default function MTGInventoryTracker() {
           return;
         }
       }
-      
-      const loadPrices = async () => {
-        const priceData = await fetchCardPrices(cardName, setCode);
-        if (isMounted) {
-          setPriceCache(prev => ({...prev, [cacheKey]: { ...priceData, timestamp: Date.now() }}));
-          setTcgPrice(priceData.tcg);
-          setCkPrice(priceData.ck);
-        }
-      };
       
       loadPrices();
       return () => { isMounted = false; };
@@ -164,12 +170,13 @@ export default function MTGInventoryTracker() {
           }
           
           if (setToUse) {
-            // Use the set code we found
-            const response = await fetch(`${API_BASE}/prices/${encodeURIComponent(cardName)}/${setToUse}`);
+            // Use the set code we found - backend normalizes set codes automatically
+            const response = await fetch(`${API_BASE}/prices/${encodeURIComponent(cardName)}/${setToUse.toUpperCase()}`);
             if (response.ok) {
               const priceData = await response.json();
-              // Strip $ sign and parse the price
-              tcgPrice = parseFloat(String(priceData.tcg).replace('$', '')) || 0;
+              // Strip $ sign and parse the price - handle 'N/A' strings
+              const tcgRaw = String(priceData.tcg).replace('$', '');
+              tcgPrice = parseFloat(tcgRaw) || 0;
               const ckRaw = String(priceData.ck).replace('$', '');
               ckPrice = parseFloat(ckRaw) || 0;
               
@@ -201,7 +208,7 @@ export default function MTGInventoryTracker() {
                     if (card.set) {
                       // Try backend API to get CK widget price
                       try {
-                        const backendResponse = await fetch(`${API_BASE}/prices/${encodeURIComponent(cardName)}/${card.set}`);
+                        const backendResponse = await fetch(`${API_BASE}/prices/${encodeURIComponent(cardName)}/${card.set.toUpperCase()}`);
                         if (backendResponse.ok) {
                           const backendData = await backendResponse.json();
                           const ckRaw = String(backendData.ck).replace('$', '');
