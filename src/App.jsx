@@ -946,12 +946,21 @@ export default function MTGInventoryTracker() {
       grouped[key].quantity += item.quantity;
     });
 
-    // Calculate container usage for each card+set combo
+    // Calculate container usage + sold cards for each card+set combo
     const withUsage = Object.values(grouped).map(item => {
       const cardsInContainers = containerItems && Object.values(containerItems).flat().filter(ci => 
         ci.name === item.name && ci.set === item.set_code
       ).reduce((sum, ci) => sum + (ci.quantity_used || 0), 0) || 0;
-      return { ...item, cardsInContainers };
+      
+      // Calculate sold cards by finding all sales and checking their container items
+      const soldCards = sales.reduce((sum, sale) => {
+        const soldContainerItems = containerItems && containerItems[sale.container_id] ? containerItems[sale.container_id].filter(ci =>
+          ci.name === item.name && ci.set === item.set_code
+        ).reduce((s, ci) => s + (ci.quantity_used || 0), 0) : 0;
+        return sum + soldContainerItems;
+      }, 0);
+      
+      return { ...item, cardsInContainers: cardsInContainers + soldCards };
     });
 
     // Filter to only items below threshold
@@ -1598,7 +1607,7 @@ export default function MTGInventoryTracker() {
                                 ))}
                                 <div className="border-t border-slate-600 pt-2 mt-2 space-y-1">
                                   <div className="flex justify-between text-slate-300">
-                                    <span>Cards Used/In Containers:</span>
+                                    <span>Used/Sold:</span>
                                     <span className="text-orange-300 font-semibold">{cardAlerts.reduce((sum, a) => sum + (a.cardsInContainers || 0), 0)}</span>
                                   </div>
                                   <div className="flex justify-between font-semibold text-slate-300">
