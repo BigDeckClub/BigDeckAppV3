@@ -771,11 +771,11 @@ app.get('/api/decklists', async (req, res) => {
 });
 
 app.post('/api/decklists', async (req, res) => {
-  const { name, deckData } = req.body;
+  const { name, decklist } = req.body;
   try {
     const result = await pool.query(
       'INSERT INTO decklists (name, decklist) VALUES ($1, $2) RETURNING *',
-      [name, typeof deckData === 'string' ? deckData : JSON.stringify(deckData)]
+      [name, decklist]
     );
     res.json(result.rows[0]);
   } catch (err) {
