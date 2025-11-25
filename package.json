@@ -29,6 +29,7 @@
     "express": "^5.1.0",
     "express-rate-limit": "^8.2.1",
     "helmet": "^8.1.0",
+    "joi": "^18.0.2",
     "lucide-react": "^0.554.0",
     "pg": "^8.16.3",
     "puppeteer": "^24.31.0"
