@@ -579,6 +579,28 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
             edition = extractEditionFromHtml(el, $);
           }
           
+          // Extract quantity and condition (NM preferred)
+          let quantity = 0;
+          let condition = 'unknown';
+          
+          // Look for "In Stock: X" or quantity text
+          const stockText = $(el).text();
+          const qtyMatch = stockText.match(/(?:in\s+stock|qty|quantity)[\s:]*(\d+)/i);
+          if (qtyMatch) {
+            quantity = parseInt(qtyMatch[1]) || 0;
+          }
+          
+          // Look for condition indicators (NM > LP > MP)
+          if (stockText.match(/\bNM\b|\bnear\s+mint\b/i)) {
+            condition = 'NM';
+          } else if (stockText.match(/\bLP\b|\blight\s+play\b/i)) {
+            condition = 'LP';
+          } else if (stockText.match(/\bMP\b|\bmoderate\s+play\b/i)) {
+            condition = 'MP';
+          } else if (stockText.match(/\bHP\b|\bheavy\s+play\b/i)) {
+            condition = 'HP';
+          }
+          
           if (edition) {
             debugEditions.push(`${name}: ${edition}`);
           }
@@ -597,7 +619,14 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
           if (name && name.includes(target)) {
             const numericPrice = rawPrice ? extractNumericPrice(rawPrice) : 0;
             if (isValidPrice(numericPrice)) {
-              rawProducts.push({ name, price: numericPrice, edition, index: rawProducts.length });
+              rawProducts.push({ 
+                name, 
+                price: numericPrice, 
+                edition, 
+                quantity,
+                condition,
+                index: rawProducts.length 
+              });
             }
           }
         });
@@ -664,6 +693,9 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
         
         const globalPriceContext = { lowestNormalPrice };
         
+        // Condition rank for sorting (higher = better)
+        const conditionRank = { 'NM': 0, 'LP': 1, 'MP': 2, 'HP': 3, 'unknown': 4 };
+        
         // PASS 3: Re-classify all products with context (promotion works!)
         const productPrices = [];
         let firstNormalIndex = null;
@@ -683,19 +715,34 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
           }
           
           const rank = getVariantRank(variant);
-          productPrices.push({ price: p.price, variant, rank, name: p.name });
-          console.log(`      ✓ Valid match found: $${p.price.toFixed(2)} [${variant}]`);
+          productPrices.push({ 
+            price: p.price, 
+            variant, 
+            rank, 
+            name: p.name,
+            quantity: p.quantity,
+            condition: p.condition
+          });
+          console.log(`      ✓ Valid match found: $${p.price.toFixed(2)} [${variant}] (${p.condition}, qty: ${p.quantity})`);
         }
         
         if (productPrices.length > 0) {
           const best = productPrices.sort((a, b) => {
+            // 1. Primary: Sort by rank (variant type)
             if (a.rank !== b.rank) return a.rank - b.rank;
+            // 2. Secondary: Higher quantity first (prefer well-stocked items)
+            if (a.quantity !== b.quantity) return b.quantity - a.quantity;
+            // 3. Tertiary: Better condition first (NM > LP > MP > HP)
+            const aCondRank = conditionRank[a.condition] ?? 99;
+            const bCondRank = conditionRank[b.condition] ?? 99;
+            if (aCondRank !== bCondRank) return aCondRank - bCondRank;
+            // 4. Final: Lowest price
             return a.price - b.price;
           })[0];
           
           ckPrice = `$${best.price.toFixed(2)}`;
           console.log(`  [DEBUG] Found ${productPrices.length} matching products`);
-          console.log(`  ✓ Best match: ${best.name} [${best.variant}] = ${ckPrice}`);
+          console.log(`  ✓ Best match: ${best.name} [${best.variant}] ${best.condition} (qty: ${best.quantity}) = ${ckPrice}`);
         }
       }
     } catch (ckError) {
