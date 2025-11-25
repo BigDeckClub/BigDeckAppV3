@@ -19,11 +19,13 @@ import { useDebounce } from "./utils/useDebounce";
 import { InventoryTab } from "./components/InventoryTab";
 import { PriceCacheProvider, usePriceCache } from "./context/PriceCacheContext";
 import DecklistCardPrice from "./components/DecklistCardPrice";
+import { normalizeCardName, normalizeSetCode } from "./lib/fetchCardPrices";
 
 // Use relative path - Vite dev server will proxy to backend
 const API_BASE = "/api";
 
 function MTGInventoryTrackerContent() {
+  const { getPrice } = usePriceCache();
   const [activeTab, setActiveTab] = useState("inventory");
   const [inventory, setInventory] = useState([]);
   const [decklists, setDecklists] = useState([]);
@@ -116,60 +118,47 @@ function MTGInventoryTrackerContent() {
           }
 
           if (setToUse) {
-            // Use the set code we found - normalize set codes before sending
-            const normalizedSet = (setToUse || "").trim().toUpperCase();
-            const response = await fetch(
-              `${API_BASE}/price?name=${encodeURIComponent(cardName)}&set=${encodeURIComponent(normalizedSet)}`,
-            );
-            if (response.ok) {
-              const priceData = await response.json();
-              // Strip $ sign and parse the price - handle 'N/A' strings
-              const tcgRaw = String(priceData.tcg).replace("$", "");
-              tcgPrice = parseFloat(tcgRaw) || 0;
-              const ckRaw = String(priceData.ck).replace("$", "");
-              ckPrice = parseFloat(ckRaw) || 0;
-
+            // Use unified pricing via PriceCacheContext
+            const normalizedName = normalizeCardName(cardName);
+            const normalizedSet = normalizeSetCode(setToUse);
+            const priceData = await getPrice(normalizedName, normalizedSet);
+            
+            if (priceData && priceData.tcg !== "N/A") {
+              tcgPrice = parseFloat(String(priceData.tcg).replace("$", "")) || 0;
+              ckPrice = parseFloat(String(priceData.ck).replace("$", "")) || 0;
+              
               // If CK price is N/A or 0, use fallback
               if (ckPrice === 0 && tcgPrice > 0) {
                 ckPrice = tcgPrice * 1.15;
               }
             }
           } else {
-            // Card not in inventory - find set from Scryfall and use backend API for CK widget
+            // Card not in inventory - find set from Scryfall and use unified pricing
             try {
               const scryfallUrl = `https://api.scryfall.com/cards/search?q=!"${cardName}"&unique=prints&order=released`;
               const scryfallResponse = await fetch(scryfallUrl);
               if (scryfallResponse.ok) {
                 const scryfallData = await scryfallResponse.json();
                 if (scryfallData.data && scryfallData.data.length > 0) {
-                  // Try to find a set with good CK data
                   let foundPrice = false;
-                  let bestTcgPrice = 0;
 
                   for (const card of scryfallData.data.slice(0, 10)) {
                     // Get TCG price from Scryfall
                     const currentTcgPrice = parseFloat(card.prices?.usd) || 0;
                     if (currentTcgPrice > 0) {
-                      bestTcgPrice = currentTcgPrice;
                       tcgPrice = currentTcgPrice;
                     }
 
                     if (card.set) {
-                      // Try backend API to get CK widget price
+                      // Use unified pricing via PriceCacheContext
                       try {
-                        const normalizedSet = (card.set || "")
-                          .trim()
-                          .toUpperCase();
-                        const backendResponse = await fetch(
-                          `${API_BASE}/price?name=${encodeURIComponent(cardName)}&set=${encodeURIComponent(normalizedSet)}`,
-                        );
-                        if (backendResponse.ok) {
-                          const backendData = await backendResponse.json();
-                          const ckRaw = String(backendData.ck).replace("$", "");
-                          const potentialCkPrice = parseFloat(ckRaw) || 0;
-                          // Only consider this a success if we got a real CK price (not 0 or N/A)
-                          if (potentialCkPrice > 0) {
-                            ckPrice = potentialCkPrice;
+                        const normalizedName = normalizeCardName(cardName);
+                        const normalizedSet = normalizeSetCode(card.set);
+                        const priceData = await getPrice(normalizedName, normalizedSet);
+                        
+                        if (priceData && priceData.ck && priceData.ck !== "N/A") {
+                          ckPrice = parseFloat(String(priceData.ck).replace("$", "")) || 0;
+                          if (ckPrice > 0) {
                             foundPrice = true;
                             break;
                           }

@@ -1,0 +1,88 @@
+Great — thanks for the file list and the discovery. The root cause is clear: the Decklists tab bypasses the unified PriceCacheContext and calls the backend directly, so it misses the normalized/deduped cache behavior that the Inventory tab already uses.
+
+Below are two safe, actionable options (preferred and alternative) plus exact code you can apply. Pick the one that fits your current App.jsx structure.
+
+Summary of fixes
+
+Preferred: Make calculateDecklistPrices use the same getPrice() from PriceCacheContext (recommended). This ensures normalization, inflight dedupe, and consistent cache behavior for decklist pricing.
+Alternative: If calculateDecklistPrices is outside React component scope or hard to refactor, change its callers to pass the getPrice function into it so it uses the context-provided getPrice.
+After applying, remove any direct /api/price fetches in calculateDecklistPrices to avoid duplicated logic and timing bugs.
+Important: All code assumes your normalization helpers match the ones used by PriceCacheContext. I use normalizeCardName and normalizeSetCode from src/lib/fetchCardPrices.js.
+
+Option A — Preferred: Use usePriceCache inside App.jsx
+
+Ensure calculateDecklistPrices is defined inside your App functional component so it can call hooks.
+Replace direct fetch calls with getPrice, awaiting the resolved final prices.
+
+src/App.jsx
+// Only the relevant excerpt to replace your existing calculateDecklistPrices implementation.
+// Place this inside your App functional component where hooks are allowed.
+
+import { usePriceCache } from "./context/PriceCacheContext";
+import { normalizeCardName, normalizeSetCode } from "./lib/fetchCardPrices";
+
+Notes for Option A:
+
+Make sure callers of calculateDecklistPrices await the promise and update state. Example: const { items, totals } = await calculateDecklistPrices(deckCards); setDecklistPrices(items); setDecklistTotals(totals);
+Option B — Alternative: Pass getPrice into a pure calculate function
+
+If calculateDecklistPrices is currently declared outside the React component:
+jsx
+// src/App.jsx — top-level or external function
+import { normalizeCardName, normalizeSetCode } from "./lib/fetchCardPrices";
+
+// Make the function accept getPrice as an argument
+export async function calculateDecklistPricesWithGetPrice(decklist, getPrice) {
+  const results = await Promise.all(
+    decklist.map(async (card) => {
+      const nameNorm = normalizeCardName(card.name);
+      const setNorm = normalizeSetCode(card.set);
+      try {
+        const price = await getPrice(nameNorm, setNorm);
+        return { ...card, price };
+      } catch (err) {
+        console.error("[Decklist] price fetch failed for", card, err);
+        return { ...card, price: { tcg: "N/A", ck: "N/A" } };
+      }
+    })
+  );
+
+  const totals = results.reduce(
+    (acc, it) => {
+      const tcgNum = parseFloat((it.price?.tcg || "N/A").replace(/[^0-9.-]+/g, "")) || 0;
+      const ckNum = parseFloat((it.price?.ck || "N/A").replace(/[^0-9.-]+/g, "")) || 0;
+      acc.tcg += tcgNum * (it.qty || 1);
+      acc.ck += ckNum * (it.qty || 1);
+      return acc;
+    },
+    { tcg: 0, ck: 0 }
+  );
+
+  return { items: results, totals };
+}
+Then inside App component (or wherever you call it), pass getPrice:
+
+jsx
+import { usePriceCache } from "./context/PriceCacheContext";
+import { calculateDecklistPricesWithGetPrice } from "./App"; // path as needed
+
+function App() {
+  const { getPrice } = usePriceCache();
+  // ...
+  async function refreshDecklist() {
+    const deckCards = /* your deck card array */;
+    const { items, totals } = await calculateDecklistPricesWithGetPrice(deckCards, getPrice);
+    setDecklistPrices(items);
+    setDecklistTotals(totals);
+  }
+}
+Additional checks and validations
+
+Make sure all decklist UI components use DecklistCardPrice for per-card inline prices (pass name and set).
+Ensure the prop names match (name, set) and normalization in DecklistCardPrice aligns with PriceCacheContext normalization.
+If you still see occasional N/A:
+Verify getPrice's inflight map and cache are working in context (you already added logs).
+Check that callers await calculateDecklistPrices and that you don’t render totals until prices resolved.
+Add temporary logs in decklist flow:
+Before requesting price: console.log("[DECKLIST] requesting", key)
+After getPrice resolves: console.log("[DECKLIST] resolved", key, price)
