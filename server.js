@@ -698,8 +698,26 @@ function handleDbError(err, res) {
 // ============== ROUTES ==============
 app.get('/api/inventory', async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM inventory ORDER BY name');
-    res.json(result.rows);
+    // Fetch all inventory items
+    const invResult = await pool.query('SELECT * FROM inventory ORDER BY name');
+    
+    // For each inventory item, calculate how many cards are in active containers
+    const enriched = await Promise.all(invResult.rows.map(async (item) => {
+      const containerResult = await pool.query(
+        `SELECT COALESCE(SUM(card->>'quantity_used'), 0)::int as in_containers 
+         FROM containers, jsonb_array_elements(cards) as card 
+         WHERE card->>'inventoryId' = $1`,
+        [String(item.id)]
+      );
+      const quantity_in_containers = parseInt(containerResult.rows?.[0]?.in_containers || 0, 10);
+      return {
+        ...item,
+        quantity_in_containers,
+        quantity_available: Math.max(0, item.quantity - quantity_in_containers)
+      };
+    }));
+    
+    res.json(enriched);
   } catch (err) {
     console.error('Inventory query error:', err.message);
     res.json([]);
@@ -770,7 +788,10 @@ app.get('/api/containers', async (req, res) => {
 });
 
 app.post('/api/containers', async (req, res) => {
+  const client = await pool.connect();
   try {
+    await client.query('BEGIN');
+    
     const { name, decklist_id, cards } = req.body;
 
     // If client provided explicit cards array, use it
@@ -778,24 +799,39 @@ app.post('/api/containers', async (req, res) => {
 
     // Otherwise, if decklist_id provided, fetch decklist text, parse it, and enrich with inventory
     if (!cardsArray && decklist_id) {
-      const { rows } = await pool.query('SELECT decklist FROM decklists WHERE id = $1', [decklist_id]);
+      const { rows } = await client.query('SELECT decklist FROM decklists WHERE id = $1', [decklist_id]);
       const deckText = rows?.[0]?.decklist || "";
       const parsedCards = parseDecklistTextToCards(deckText);
-      cardsArray = await enrichCardsWithInventory(parsedCards, pool);
+      cardsArray = await enrichCardsWithInventory(parsedCards, client);
     }
 
     // Fallback to empty array
     if (!Array.isArray(cardsArray)) cardsArray = [];
 
+    // Decrement inventory for each card allocated to container
+    for (const card of cardsArray) {
+      if (card.inventoryId && card.quantity_used > 0) {
+        await client.query(
+          'UPDATE inventory SET quantity = quantity - $1 WHERE id = $2',
+          [card.quantity_used, card.inventoryId]
+        );
+      }
+    }
+
     // Insert container with enriched cards as JSONB
-    const { rows } = await pool.query(
+    const { rows } = await client.query(
       'INSERT INTO containers (name, decklist_id, cards) VALUES ($1, $2, $3::jsonb) RETURNING id',
       [name, decklist_id, JSON.stringify(cardsArray)]
     );
+    
+    await client.query('COMMIT');
     res.status(201).json({ id: rows[0].id });
   } catch (err) {
+    await client.query('ROLLBACK');
     console.error('Container creation error:', err);
     res.status(500).json({ error: 'Failed to create container' });
+  } finally {
+    client.release();
   }
 });
 
