@@ -926,9 +926,28 @@ export default function MTGInventoryTracker() {
   };
 
   const getReorderAlerts = () => {
-    return inventory.filter(item => {
+    // Group items by name and aggregate quantities
+    const grouped = {};
+    inventory.forEach(item => {
+      if (!grouped[item.name]) {
+        grouped[item.name] = {
+          name: item.name,
+          reorder_type: item.reorder_type,
+          totalQuantity: 0,
+          sets: [],
+          id: item.id // Use first item's ID as key
+        };
+      }
+      grouped[item.name].totalQuantity += item.quantity;
+      if (!grouped[item.name].sets.find(s => s.code === item.set)) {
+        grouped[item.name].sets.push({ code: item.set, name: item.set_name });
+      }
+    });
+
+    // Filter to only items below threshold
+    return Object.values(grouped).filter(item => {
       const threshold = reorderSettings[item.reorder_type] || 5;
-      return item.quantity <= threshold;
+      return item.totalQuantity <= threshold;
     });
   };
 
@@ -1514,19 +1533,21 @@ export default function MTGInventoryTracker() {
                   <div className="grid grid-cols-1 gap-2 max-h-72 overflow-y-auto">
                     {getReorderAlerts().map((item) => {
                       const threshold = reorderSettings[item.reorder_type] || 5;
-                      const percentOfThreshold = (item.quantity / threshold) * 100;
+                      const percentOfThreshold = (item.totalQuantity / threshold) * 100;
                       const severity = percentOfThreshold < 25 ? 'critical' : percentOfThreshold < 75 ? 'warning' : 'low';
                       const severityColor = severity === 'critical' ? 'bg-red-950 border-red-500' : severity === 'warning' ? 'bg-orange-950 border-orange-500' : 'bg-yellow-950 border-yellow-500';
                       const textColor = severity === 'critical' ? 'text-red-300' : severity === 'warning' ? 'text-orange-300' : 'text-yellow-300';
                       
                       return (
-                        <div key={item.id} className={`${severityColor} border p-3 rounded flex justify-between items-center text-sm hover:border-opacity-100 transition`}>
+                        <div key={item.name} className={`${severityColor} border p-3 rounded flex justify-between items-center text-sm hover:border-opacity-100 transition`}>
                           <div className="flex-1 min-w-0">
                             <div className="font-semibold truncate">{item.name}</div>
-                            <div className="text-xs text-slate-400">{item.set_name} • {item.reorder_type}</div>
+                            <div className="text-xs text-slate-400">
+                              {item.sets.length === 1 ? item.sets[0].name : `${item.sets.length} sets`} • {item.reorder_type}
+                            </div>
                           </div>
                           <div className={`ml-3 flex-shrink-0 text-right`}>
-                            <div className={`font-bold text-lg ${textColor}`}>{item.quantity}</div>
+                            <div className={`font-bold text-lg ${textColor}`}>{item.totalQuantity}</div>
                             <div className="text-xs text-slate-400">of {threshold}</div>
                           </div>
                         </div>
