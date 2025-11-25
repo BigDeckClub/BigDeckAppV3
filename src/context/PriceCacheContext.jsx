@@ -41,32 +41,29 @@ export function PriceCacheProvider({ children }) {
     const key = `${name}|${setCode}`;
     const now = Date.now();
 
-    console.log("[PriceCacheContext] getPrice called for:", { name, setCode, key });
+    console.log("[DEBUG] getPrice called:", { name, setCode, key });
 
     // Check cache with TTL logic
     if (cache[key]) {
       const { tcg, ck, fetchedAt } = cache[key];
       const age = now - (fetchedAt || 0);
 
-      console.log("[PriceCacheContext] Cache hit for", key, "age:", age, "data:", { tcg, ck });
+      console.log("[DEBUG] Cache HIT:", { key, tcg, ck, age });
 
       // Soft TTL: return cached, refresh in background if stale
       if (age < SOFT_TTL_MS) {
-        setMetrics(m => ({ ...m, hits: m.hits + 1 }));
-        console.log("[PriceCacheContext] Returning cached (fresh):", { tcg, ck });
+        console.log("[DEBUG] Returning FRESH cached data");
         return Promise.resolve({ tcg, ck });
       }
 
       // Between soft and hard TTL: return cached but trigger background refresh
       if (age < HARD_TTL_MS) {
-        setMetrics(m => ({ ...m, hits: m.hits + 1 }));
-        console.log("[PriceCacheContext] Returning cached (stale, bg refresh):", { tcg, ck });
-        // Trigger background refresh if not already scheduled
+        console.log("[DEBUG] Returning STALE cached data, triggering bg refresh");
         if (!backgroundRefreshRef.current.has(key)) {
           backgroundRefreshRef.current.add(key);
           fetchCardPrices(name, setCode)
             .then(result => {
-              console.log("[PriceCacheContext] Background refresh result:", result);
+              console.log("[DEBUG] Background refresh completed:", result);
               setCache(prev => ({
                 ...prev,
                 [key]: { ...result, fetchedAt: Date.now() },
@@ -81,28 +78,26 @@ export function PriceCacheProvider({ children }) {
     }
 
     // Hard expired or cache miss: fetch from backend
-    console.log("[PriceCacheContext] Cache miss or expired for", key, "fetching from backend");
-    setMetrics(m => ({ ...m, misses: m.misses + 1 }));
+    console.log("[DEBUG] Cache MISS, fetching from backend");
 
     // Check if already fetching (dedupe concurrent requests)
     if (inflightRef.current[key]) {
-      console.log("[PriceCacheContext] Request already in flight for", key);
-      setMetrics(m => ({ ...m, inflightHits: m.inflightHits + 1 }));
+      console.log("[DEBUG] Request already in flight, returning existing promise");
       return inflightRef.current[key];
     }
 
     // Start new fetch
-    console.log("[PriceCacheContext] Starting new fetch for", key);
+    console.log("[DEBUG] Starting NEW fetch via fetchCardPrices");
     const promise = fetchCardPrices(name, setCode)
       .then(result => {
-        console.log("[PriceCacheContext] Fetch succeeded for", key, "result:", result);
+        console.log("[DEBUG] Fetch succeeded, storing in cache:", { key, result });
         const entry = { ...result, fetchedAt: Date.now() };
         setCache(prev => ({ ...prev, [key]: entry }));
         delete inflightRef.current[key];
         return result;
       })
       .catch(err => {
-        console.error(`[PriceCacheContext] Fetch failed for ${key}:`, err);
+        console.error("[DEBUG] Fetch FAILED:", err);
         const fallback = { tcg: "N/A", ck: "N/A", fetchedAt: Date.now() };
         setCache(prev => ({ ...prev, [key]: fallback }));
         delete inflightRef.current[key];

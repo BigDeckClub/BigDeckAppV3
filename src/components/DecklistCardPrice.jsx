@@ -8,49 +8,60 @@ export default function DecklistCardPrice({ name, set, priceType, className }) {
   const [price, setPrice] = useState("N/A");
   const [loading, setLoading] = useState(true);
 
+  // Mount log
+  useEffect(() => {
+    console.log("[DEBUG] DecklistCardPrice mounted with props:", { name, set, priceType });
+  }, []);
+
+  // Props change log
+  useEffect(() => {
+    console.log("[DEBUG] DecklistCardPrice props updated:", { name, set, priceType });
+  }, [name, set, priceType]);
+
+  // Main fetch effect
   useEffect(() => {
     if (!name || !set) {
-      console.warn("[DecklistCardPrice] Missing name or set:", { name, set });
+      console.log("[DEBUG] Missing name or set, setting N/A");
       setPrice("N/A");
       setLoading(false);
       return;
     }
 
+    console.log("[DEBUG] DecklistCardPrice starting fetch for:", { name, set, priceType });
     setLoading(true);
+    
     const cardName = normalizeCardName(name);
     const setCode = normalizeSetCode(set);
     
-    console.log("[DecklistCardPrice] Fetching price for:", { cardName, setCode, priceType });
-    
     getPrice(cardName, setCode)
       .then(result => {
-        console.log("[DecklistCardPrice] Price result received:", { result, priceType });
+        console.log("[DEBUG] Price data fetched:", result);
         
         if (!result) {
-          console.warn("[DecklistCardPrice] Result is falsy:", result);
+          console.log("[DEBUG] Result is falsy");
           setPrice("N/A");
+          setLoading(false);
           return;
         }
         
         const priceValue = result[priceType];
-        console.log("[DecklistCardPrice] Extracted price value:", { priceType, priceValue });
+        console.log("[DEBUG] Extracted priceValue from result[" + priceType + "]:", priceValue);
         
         if (priceValue) {
+          console.log("[DEBUG] Setting price to:", priceValue);
           setPrice(priceValue);
         } else {
-          console.warn("[DecklistCardPrice] Price not found for type:", priceType, "available keys:", Object.keys(result));
+          console.log("[DEBUG] priceValue is falsy, setting N/A. Available keys:", Object.keys(result));
           setPrice("N/A");
         }
+        setLoading(false);
       })
       .catch(err => {
-        console.error(`[DecklistCardPrice] Price fetch error for ${name}|${set}:`, err);
+        console.error("[DEBUG] getPrice error:", err);
         setPrice("N/A");
-      })
-      .finally(() => {
-        console.log("[DecklistCardPrice] Clearing loading state");
         setLoading(false);
       });
-  }, [name, set, getPrice, priceType]);
+  }, [name, set, priceType, getPrice]);
 
   return (
     <span className={className}>
