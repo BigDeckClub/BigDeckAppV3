@@ -34,10 +34,10 @@ app.use(cors({
       return callback(null, true);
     }
 
-    // Allow ALL Replit proxy deployments
+    // Allow ALL Replit proxy deployments (multi-level subdomains)
     if (
-      /^https:\/\/[^.]+\.replit\.dev$/.test(origin) ||
-      /^https:\/\/[^.]+\.id\.repl\.co$/.test(origin)
+      /^https:\/\/.*\.replit\.dev$/.test(origin) ||
+      /^https:\/\/.*\.repl\.co$/.test(origin)
     ) {
       return callback(null, true);
     }
