@@ -338,6 +338,59 @@ function extractNumericPrice(priceStr) {
   return parseFloat(priceStr.replace('$', ''));
 }
 
+// Edition priority ranking (lower number = higher priority)
+const EDITION_PRIORITY = [
+  "normal",      // pure name match, no variants
+  "set",         // set name only
+  "promo",       // promos
+  "special",     // showcase, retro, alternate art, borderless
+  "foil",        // foil
+  "etched",      // etched foil
+  "premium"      // supers, masterpieces, limited promos
+];
+
+// Classify product variant type
+function classifyProductVariant(name) {
+  const n = name.toLowerCase();
+  
+  // Standard printing (no special markers)
+  if (!n.includes("foil") && !n.includes("promo") && !n.includes("showcase") && 
+      !n.includes("etched") && !n.includes("alternate") && !n.includes("alt-art") &&
+      !n.includes("borderless") && !n.includes("retro")) {
+    return "normal";
+  }
+  
+  // Promos (but not showcase/alt variants)
+  if (n.includes("promo") && !n.includes("showcase")) {
+    return "promo";
+  }
+  
+  // Showcase, retro, alt-art, borderless
+  if (n.includes("showcase") || n.includes("retro") || n.includes("borderless") || 
+      n.includes("alternate") || n.includes("alt-art")) {
+    return "special";
+  }
+  
+  // Foils (but not etched)
+  if (n.includes("foil") && !n.includes("etched")) {
+    return "foil";
+  }
+  
+  // Etched foil
+  if (n.includes("etched")) {
+    return "etched";
+  }
+  
+  // Everything else (super premium, masterpiece, etc)
+  return "premium";
+}
+
+// Get variant rank (lower = higher priority)
+function getVariantRank(variant) {
+  const idx = EDITION_PRIORITY.indexOf(variant);
+  return idx >= 0 ? idx : EDITION_PRIORITY.length;
+}
+
 // Helper: Resolve Card Kingdom price from multiple extraction methods
 function resolveCKPrice(selectorPrice, regexPrices, html) {
   // Test 1: Check if selector worked
@@ -485,8 +538,10 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
             const numericPrice = rawPrice ? extractNumericPrice(rawPrice) : 0;
             
             if (isValidPrice(numericPrice)) {
-              productPrices.push(numericPrice);
-              console.log(`      ✓ Valid match found: $${numericPrice.toFixed(2)}`);
+              const variant = classifyProductVariant(name);
+              const rank = getVariantRank(variant);
+              productPrices.push({ price: numericPrice, variant, rank, name });
+              console.log(`      ✓ Valid match found: $${numericPrice.toFixed(2)} [${variant}]`);
             } else if (numericPrice > 0) {
               console.log(`      ✗ Price outside valid range: $${numericPrice.toFixed(2)}`);
             } else if (rawPrice) {
@@ -498,9 +553,15 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
         });
         
         if (productPrices.length > 0) {
-          const lowestPrice = Math.min(...productPrices);
-          ckPrice = `$${lowestPrice.toFixed(2)}`;
-          console.log(`  [DEBUG] Found ${productPrices.length} matching products, lowest: ${ckPrice}`);
+          // Sort by variant priority first, then by price (ascending)
+          const best = productPrices.sort((a, b) => {
+            if (a.rank !== b.rank) return a.rank - b.rank;
+            return a.price - b.price;
+          })[0];
+          
+          ckPrice = `$${best.price.toFixed(2)}`;
+          console.log(`  [DEBUG] Found ${productPrices.length} matching products`);
+          console.log(`  ✓ Best match: ${best.name} [${best.variant}] = ${ckPrice}`);
         } else {
           console.log(`  [DEBUG] No matching products found with valid prices`);
           // Fallback: Check for status indicators
