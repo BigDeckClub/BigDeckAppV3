@@ -346,12 +346,18 @@ async function fetchCardKingdomPriceFromWidget(cardName, setCode) {
     
     const html = await response.text();
     
-    // More flexible regex to match prices anywhere in the widget
-    // Look for any dollar amount that appears to be a price
+    // Look for prices in the widget HTML
+    // Card Kingdom widget typically shows multiple prices, we want the retail price (not bid)
+    // Extract all prices and get the middle/higher one which is typically the retail asking price
     const priceMatches = html.match(/\$[\d.]+/g);
     
     if (priceMatches && priceMatches.length > 0) {
-      // Return the first (lowest) price found, which is typically the best price
+      // If there are multiple prices, return the second or third one
+      // (first is often bid, later ones are asking prices)
+      if (priceMatches.length >= 2) {
+        // Try the second price (often the retail asking price)
+        return priceMatches[1];
+      }
       return priceMatches[0];
     }
     
