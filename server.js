@@ -356,55 +356,63 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
     let ckPrice = 'N/A';
     
     try {
-      // Add set name to search to get more specific results
-      const searchTerm = setName ? `${cardName} ${setName}` : cardName;
-      const ckSearchUrl = `https://www.cardkingdom.com/catalog/search?search=header&filter%5Bname%5D=${encodeURIComponent(searchTerm)}`;
+      // Try searching with set name first, then fall back to just card name
+      const searchTerms = [
+        setName ? `${cardName} ${setName}` : cardName, // Try with set first
+        cardName // Fallback to just card name
+      ];
       
-      console.log(`Fetching CK: ${ckSearchUrl}`);
-      
-      const ckRes = await fetch(ckSearchUrl, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-          'Accept': 'text/html'
-        }
-      });
-      
-      if (ckRes.ok) {
-        const html = await ckRes.text();
-        const $ = load(html);
+      for (const searchTerm of searchTerms) {
+        if (ckPrice !== 'N/A') break; // Stop if we found a price
         
-        // Find the first product card's price
-        // Card Kingdom uses structure: <div class="productGrid"> with price in a specific element
-        const firstProduct = $('div.productGrid').first();
+        const ckSearchUrl = `https://www.cardkingdom.com/catalog/search?search=header&filter%5Bname%5D=${encodeURIComponent(searchTerm)}`;
         
-        if (firstProduct.length > 0) {
-          // Look for price within the first product
-          // Card Kingdom typically shows prices like: <span class="stylePrice">$0.35</span>
-          const priceElement = firstProduct.find('span.stylePrice, .stylePrice, [data-price]').first();
+        console.log(`Fetching CK: ${ckSearchUrl}`);
+        
+        const ckRes = await fetch(ckSearchUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Accept': 'text/html'
+          }
+        });
+        
+        if (ckRes.ok) {
+          const html = await ckRes.text();
+          const $ = load(html);
           
-          if (priceElement.length > 0) {
-            const priceText = priceElement.text().trim();
-            const priceMatch = priceText.match(/\$?([0-9]+\.[0-9]{2})/);
+          // Find the first product card's price
+          // Card Kingdom uses structure: <div class="productGrid"> with price in a specific element
+          const firstProduct = $('div.productGrid').first();
+          
+          if (firstProduct.length > 0) {
+            // Look for price within the first product
+            // Card Kingdom typically shows prices like: <span class="stylePrice">$0.35</span>
+            const priceElement = firstProduct.find('span.stylePrice, .stylePrice, [data-price]').first();
             
-            if (priceMatch) {
-              ckPrice = `$${parseFloat(priceMatch[1]).toFixed(2)}`;
-              console.log(`✓ Found CK price from first product: ${ckPrice}`);
+            if (priceElement.length > 0) {
+              const priceText = priceElement.text().trim();
+              const priceMatch = priceText.match(/\$?([0-9]+\.[0-9]{2})/);
+              
+              if (priceMatch) {
+                ckPrice = `$${parseFloat(priceMatch[1]).toFixed(2)}`;
+                console.log(`✓ Found CK price from first product: ${ckPrice}`);
+              }
             }
           }
-        }
-        
-        // If still not found, look for any price on the page (fallback)
-        if (ckPrice === 'N/A') {
-          const allPrices = html.match(/\$([0-9]+\.[0-9]{2})/g);
-          if (allPrices && allPrices.length > 0) {
-            // Extract the first price that appears to be a product price (not from UI elements)
-            // Skip very large prices (likely errors or high-end cards)
-            for (const priceStr of allPrices) {
-              const price = parseFloat(priceStr.replace('$', ''));
-              if (price > 0 && price < 100) {
-                ckPrice = priceStr;
-                console.log(`✓ Found CK price from first reasonable match: ${ckPrice}`);
-                break;
+          
+          // If still not found, look for any price on the page (fallback)
+          if (ckPrice === 'N/A') {
+            const allPrices = html.match(/\$([0-9]+\.[0-9]{2})/g);
+            if (allPrices && allPrices.length > 0) {
+              // Extract the first price that appears to be a product price (not from UI elements)
+              // Skip very large prices (likely errors or high-end cards)
+              for (const priceStr of allPrices) {
+                const price = parseFloat(priceStr.replace('$', ''));
+                if (price > 0 && price < 100) {
+                  ckPrice = priceStr;
+                  console.log(`✓ Found CK price from first reasonable match: ${ckPrice}`);
+                  break;
+                }
               }
             }
           }
