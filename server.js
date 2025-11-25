@@ -55,17 +55,14 @@ app.use(bodyParser.json());
 
 // ========== RATE LIMITING ==========
 const priceLimiter = rateLimit({
-  windowMs: 60 * 1000,  // 60 second window instead of 30
-  max: 100,             // Increased from 10 to 100 requests
+  windowMs: 60 * 1000,  // 60 second window
+  max: 100,             // Requests per window
   message: 'Rate limit exceeded for price lookups.',
-  skip: (req, res) => {
-    // Log when rate limit is hit
-    console.log(`[RATE LIMIT] Request for ${req.params.cardName}/${req.params.setCode}`);
-    return false;
+  keyGenerator: (req, res) => {
+    // Use IP address as key instead of req.params (which is undefined at middleware level)
+    return req.ip;
   }
 });
-
-app.use('/api/prices', priceLimiter);
 
 // PostgreSQL connection
 const pool = new Pool({
@@ -1000,7 +997,7 @@ app.get('/api/price', async (req, res) => {
   }
 });
 
-app.get('/api/prices/:cardName/:setCode', async (req, res) => {
+app.get('/api/prices/:cardName/:setCode', priceLimiter, async (req, res) => {
   const { cardName, setCode } = req.params;
   
   console.log(`\n=== PRICE REQUEST: ${cardName} (${setCode}) ===`);

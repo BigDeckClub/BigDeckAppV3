@@ -1,0 +1,131 @@
+Step 1: Debug Rate Limiter and Middleware Order
+Confirm the Middleware Order
+
+Check where app.use('/api/prices', priceLimiter) is defined and ensure it's applied after the route handlers have access to req.params.
+Fix the Middleware Order:
+
+Move priceLimiter logic inside the specific /api/prices/:cardName/:setCode route, instead of applying it globally.
+
+JavaScript
+app.get('/api/prices/:cardName/:setCode', priceLimiter, async (req, res) => {
+  // Your route logic here
+});
+Alternatively, pass a custom key to the rate limiter that doesn’t depend on req.params, such as a combination of req.ip or other headers.
+
+Log Inside the Rate Limiter
+
+Add logging to the rate limiter to confirm whether it is causing the block:
+JavaScript
+const priceLimiter = (req, res, next) => {
+  console.log("[RATE LIMIT DEBUG] URL:", req.url);
+  console.log("[RATE LIMIT DEBUG] Params:", req.params);
+  next(); // or call res.status(429) if needed
+};
+Step 2: Flush Responses Properly from /api/prices
+Ensure the response is always sent, even during edge cases. For example:
+
+Wrap Endpoint in try/catch:
+
+JavaScript
+app.get('/api/prices/:cardName/:setCode', async (req, res) => {
+  try {
+    const { cardName, setCode } = req.params;
+    console.log("[DEBUG] Received request for:", { cardName, setCode });
+
+    const priceData = await fetchPrices(cardName, setCode);
+    console.log("[DEBUG] Sending price data:", priceData);
+
+    res.json(priceData); // Send response
+  } catch (error) {
+    console.error("[DEBUG] Error in /api/prices:", error);
+    res.status(500).json({ error: "Failed to fetch prices" });
+  }
+});
+Ensure Response Completes (Edge Case Handling): Add a fallback to ensure a response is sent:
+
+JavaScript
+app.use((req, res, next) => {
+  if (!res.headersSent) {
+    console.error("[DEBUG] No response sent for:", req.url);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+  next();
+});
+Step 3: Investigate Missing Headers or Proxies
+Check CORS Configuration:
+
+Ensure CORS headers aren't blocking frontend requests.
+Add the following CORS middleware early in your app (e.g., before app.use('/api/prices')):
+JavaScript
+const cors = require('cors');
+app.use(cors());
+Inspect Response Transmission:
+
+Use the browser's Network tab to inspect if HTTP response headers are ever received.
+Check if you see problematic headers like:
+transfer-encoding: chunked without completing
+Missing content-type: application/json
+Example:
+
+JavaScript
+res.setHeader('Content-Type', 'application/json');
+res.json({ tcg: "$1.25", ck: "$2.29" });
+Disable Reverse Proxy Layers (If Any): If using Replit, its proxy layer might time out requests or alter headers. Test locally without proxies or hosting.
+
+Step 4: Test Frontend-Backend Chain in Isolation
+Following the previous problem breakdown, perform the following tests:
+
+Use Postman or curl to send requests through the browser’s /api/prices/:cardName/:setCode, not directly. This ensures the frontend-port middleware (Vite/proxy) is tested.
+
+Example:
+
+bash
+curl -X GET "http://localhost:5000/api/prices/sol%20ring/EOC"
+Compare browser fetch behavior:
+
+Does the request hang in the Network tab?
+Copy as cURL from the browser DevTools and run it directly—does the result differ?
+Final Adjusted Middleware Code Example
+Here’s an example of reorganized middleware and rate limiter:
+
+JavaScript
+const express = require('express');
+const app = express();
+
+// Only use JSON parser on specific routes, avoid conflicts with global middleware
+app.use(express.json());
+
+// Correct middleware order
+const priceLimiter = (req, res, next) => {
+  console.log("[RATE LIMIT DEBUG] URL:", req.url);
+  console.log("[RATE LIMIT DEBUG] Params:", req.params);
+  if (!req.params.cardName || !req.params.setCode) {
+    console.warn("[RATE LIMIT] Undefined params, skipping...");
+    return next(); // Skip rate limiting for mismatched routes
+  }
+  next(); // Apply rate limiting logic here
+};
+
+// Rate limiter bound to specific route
+app.get('/api/prices/:cardName/:setCode', priceLimiter, async (req, res) => {
+  try {
+    const { cardName, setCode } = req.params;
+    console.log("[DEBUG] Received request for:", { cardName, setCode });
+
+    const priceData = await fetchPrices(cardName, setCode);
+    console.log("[DEBUG] Sending price data:", priceData);
+
+    res.json(priceData);
+  } catch (error) {
+    console.error("[DEBUG] Error fetching prices:", error);
+    res.status(500).json({ error: "Failed to fetch prices" });
+  }
+});
+
+// Catch-all error handler
+app.use((req, res) => {
+  console.error("[DEBUG] No route matched:", req.url);
+  res.status(404).send("Route not found");
+});
+
+app.listen(3000, () => console.log("Server running on port 3000"));
