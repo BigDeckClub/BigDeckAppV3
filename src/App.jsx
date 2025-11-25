@@ -1357,6 +1357,7 @@ function MTGInventoryTrackerContent() {
                                         key={card.name + cardSet}
                                         name={card.name}
                                         set={cardSet}
+                                        priceType="tcg"
                                       />
                                     </>
                                   )}

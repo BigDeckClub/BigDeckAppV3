@@ -36,7 +36,7 @@ describe("DecklistCardPrice Component", () => {
   it("renders pricing from cache context", async () => {
     render(
       <PriceCacheProvider>
-        <DecklistCardPrice name="Lightning Bolt" set="M11" />
+        <DecklistCardPrice name="Lightning Bolt" set="M11" priceType="tcg" />
       </PriceCacheProvider>
     );
 
@@ -47,7 +47,7 @@ describe("DecklistCardPrice Component", () => {
   it("displays different prices for different cards", async () => {
     const { rerender } = render(
       <PriceCacheProvider>
-        <DecklistCardPrice name="Sol Ring" set="EOC" />
+        <DecklistCardPrice name="Sol Ring" set="EOC" priceType="tcg" />
       </PriceCacheProvider>
     );
 
@@ -56,7 +56,7 @@ describe("DecklistCardPrice Component", () => {
 
     rerender(
       <PriceCacheProvider>
-        <DecklistCardPrice name="Swamp" set="SPM" />
+        <DecklistCardPrice name="Swamp" set="SPM" priceType="tcg" />
       </PriceCacheProvider>
     );
 
@@ -67,7 +67,7 @@ describe("DecklistCardPrice Component", () => {
   it("applies custom className prop", async () => {
     const { container } = render(
       <PriceCacheProvider>
-        <DecklistCardPrice name="Sol Ring" set="EOC" className="custom-price" />
+        <DecklistCardPrice name="Sol Ring" set="EOC" priceType="tcg" className="custom-price" />
       </PriceCacheProvider>
     );
 
