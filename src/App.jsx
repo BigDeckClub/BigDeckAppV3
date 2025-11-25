@@ -928,10 +928,8 @@ export default function MTGInventoryTracker() {
   };
 
   const getReorderAlerts = () => {
-    // Group items by name and set combination
+    // Group items by name and set combination from inventory only
     const grouped = {};
-    
-    // Add inventory items
     inventory.forEach(item => {
       const key = `${item.name}|${item.set}`;
       if (!grouped[key]) {
@@ -948,47 +946,20 @@ export default function MTGInventoryTracker() {
       }
       grouped[key].quantity += parseInt(item.quantity) || 0;
     });
-    
-    // Add cards from containers (active and sold) that aren't in inventory
-    if (containerItems) {
-      Object.values(containerItems).flat().forEach(ci => {
-        const key = `${ci.name}|${ci.set}`;
-        if (!grouped[key]) {
-          grouped[key] = {
-            name: ci.name,
-            reorder_type: ci.reorder_type || 'normal',
-            set_code: ci.set,
-            set_name: ci.set_name,
-            quantity: 0,
-            purchase_price: ci.purchase_price,
-            id: ci.id,
-            groupName: ci.name
-          };
-        }
-      });
-    }
 
-    // Calculate container usage + sold cards for each card+set combo
+    // Calculate container usage (active containers only) for each card+set combo
     const withUsage = Object.values(grouped).map(item => {
       const cardsInContainers = containerItems && Object.values(containerItems).flat().filter(ci => 
         ci.name === item.name && ci.set === item.set_code
       ).reduce((sum, ci) => sum + (ci.quantity_used || 0), 0) || 0;
       
-      // Calculate sold cards by finding all sales and checking their container items
-      const soldCards = sales.reduce((sum, sale) => {
-        const soldContainerItems = containerItems && containerItems[sale.container_id] ? containerItems[sale.container_id].filter(ci =>
-          ci.name === item.name && ci.set === item.set_code
-        ).reduce((s, ci) => s + (ci.quantity_used || 0), 0) : 0;
-        return sum + soldContainerItems;
-      }, 0);
-      
-      return { ...item, cardsInContainers: cardsInContainers + soldCards };
+      return { ...item, cardsInContainers };
     });
 
     // Filter to only items below threshold
     return withUsage.filter(item => {
       const threshold = reorderSettings[item.reorder_type] || 5;
-      return item.quantity + (item.cardsInContainers || 0) <= threshold;
+      return item.quantity <= threshold;
     });
   };
 
