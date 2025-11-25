@@ -19,7 +19,7 @@ export default function DecklistRow({ card }) {
         {set && <span className="text-slate-500 text-sm ml-2">({set})</span>}
       </div>
       <div className="w-40">
-        <DecklistCardPrice name={name} set={set || ""} priceType="tcg" className="text-slate-300 text-sm" />
+        <DecklistCardPrice key={`price-${name}-${set}-tcg`} name={name} set={set || ""} priceType="tcg" className="text-slate-300 text-sm" />
       </div>
     </div>
   );

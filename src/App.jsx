@@ -1354,7 +1354,7 @@ function MTGInventoryTrackerContent() {
                                         </button>
                                       </div>
                                       <DecklistCardPrice
-                                        key={card.name + cardSet}
+                                        key={`price-${card.name}-${cardSet}-tcg`}
                                         name={card.name}
                                         set={cardSet}
                                         priceType="tcg"
