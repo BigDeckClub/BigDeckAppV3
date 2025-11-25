@@ -1,0 +1,112 @@
+Yes! We can use MTGGoldfish's data, but we need to use their API instead of trying to scrape the widget. Let me show you how.
+MTGGoldfish Price API
+MTGGoldfish has an undocumented but functional API endpoint for card prices:
+https://www.mtggoldfish.com/price/[SET_CODE]/[CARD_NAME]#paper
+This returns JSON data with pricing information!
+Implementation
+Update your backend price endpoint to use MTGGoldfish's API:
+javascriptapp.get('/api/prices/:cardName/:setCode', async (req, res) => {
+  const { cardName, setCode } = req.params;
+  
+  try {
+    // Format card name for URL (replace spaces with +)
+    const formattedName = cardName.replace(/\s+/g, '+');
+    
+    // MTGGoldfish API endpoint
+    const mtgGoldfishUrl = `https://www.mtggoldfish.com/price/${setCode}/${formattedName}#paper`;
+    
+    console.log(`Fetching from MTGGoldfish: ${mtgGoldfishUrl}`);
+    
+    const response = await fetch(mtgGoldfishUrl, {
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'Mozilla/5.0'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`MTGGoldfish returned ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    // MTGGoldfish returns price data with retailer information
+    // Structure: { paper: { mtgo_foil: {}, mtgo: {}, cardkingdom: {}, tcgplayer: {} } }
+    
+    const tcgPrice = data?.paper?.tcgplayer?.price || 0;
+    const ckPrice = data?.paper?.cardkingdom?.price || 0;
+    
+    res.json({
+      tcg: tcgPrice > 0 ? `$${parseFloat(tcgPrice).toFixed(2)}` : 'N/A',
+      ck: ckPrice > 0 ? `$${parseFloat(ckPrice).toFixed(2)}` : 'N/A'
+    });
+    
+  } catch (error) {
+    console.error('Error fetching MTGGoldfish prices:', error);
+    
+    // Fallback to Scryfall if MTGGoldfish fails
+    try {
+      const scryfallUrl = `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(cardName)}&set=${setCode.toLowerCase()}`;
+      const scryfallResponse = await fetch(scryfallUrl);
+      const scryfallData = await scryfallResponse.json();
+      
+      const tcgPrice = parseFloat(scryfallData.prices?.usd) || 0;
+      
+      res.json({
+        tcg: tcgPrice > 0 ? `$${tcgPrice.toFixed(2)}` : 'N/A',
+        ck: tcgPrice > 0 ? `$${(tcgPrice * 1.15).toFixed(2)}` : 'N/A'
+      });
+    } catch (fallbackError) {
+      res.status(500).json({ tcg: 'N/A', ck: 'N/A' });
+    }
+  }
+});
+Alternative: MTGGoldfish Search API
+If the direct price endpoint doesn't work, you can use their search API:
+javascriptapp.get('/api/prices/:cardName/:setCode', async (req, res) => {
+  const { cardName, setCode } = req.params;
+  
+  try {
+    // Search for the card
+    const searchUrl = `https://www.mtggoldfish.com/widgets/autocard/${encodeURIComponent(cardName)}`;
+    
+    const response = await fetch(searchUrl, {
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'Mozilla/5.0'
+      }
+    });
+    
+    const data = await response.json();
+    
+    // Look for the specific set in the results
+    const cardData = data.find(card => 
+      card.set?.toUpperCase() === setCode.toUpperCase()
+    );
+    
+    if (cardData) {
+      res.json({
+        tcg: cardData.tcgplayer_price ? `$${cardData.tcgplayer_price}` : 'N/A',
+        ck: cardData.cardkingdom_price ? `$${cardData.cardkingdom_price}` : 'N/A'
+      });
+    } else {
+      throw new Error('Card/set combination not found');
+    }
+    
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ tcg: 'N/A', ck: 'N/A' });
+  }
+});
+Testing the Endpoint
+Once you implement this, test it directly:
+bash# Test from command line
+curl "http://localhost:5000/api/prices/Swamp/LEA"
+
+# Or from browser console
+fetch('/api/prices/Swamp/LEA').then(r => r.json()).then(console.log)
+If MTGGoldfish Blocks Requests
+If MTGGoldfish blocks your requests, you might need to:
+
+Add rate limiting to avoid too many requests
+Cache results for 12-24 hours

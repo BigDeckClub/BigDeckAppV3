@@ -328,130 +328,60 @@ app.post('/api/settings/:key', async (req, res) => {
   }
 });
 
-// Helper function to fetch Card Kingdom price from MTGGoldfish widget
-async function fetchCardKingdomPriceFromWidget(cardName, setCode) {
-  try {
-    const cardId = `${cardName} [${setCode.toUpperCase()}]`;
-    const widgetUrl = `https://www.mtggoldfish.com/cardkingdom/price_widget?card_id=${encodeURIComponent(cardId)}`;
-    
-    const response = await fetch(widgetUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-      }
-    });
-    
-    if (!response.ok) {
-      return 'N/A';
-    }
-    
-    const html = await response.text();
-    
-    // DEBUG: Log the HTML for Swamp to diagnose the issue
-    if (cardName === 'Swamp') {
-      console.log(`\n=== SWAMP WIDGET HTML (first 3000 chars) ===`);
-      console.log(html.substring(0, 3000));
-      console.log(`\n=== ALL PRICES FOUND IN SWAMP WIDGET ===`);
-      const allPrices = html.match(/\$[\d.]+/g);
-      console.log('Prices array:', allPrices);
-    }
-    
-    // Extract all dollar amounts from the widget
-    const priceMatches = html.match(/\$[\d.]+/g);
-    
-    if (priceMatches && priceMatches.length > 0) {
-      // Parse prices to numbers
-      const prices = priceMatches.map(p => parseFloat(p.replace('$', '')));
-      
-      // Card Kingdom widget typically shows [buy price, sell price]
-      // We want the higher price (sell/asking price)
-      const maxPrice = Math.max(...prices);
-      return `$${maxPrice.toFixed(2)}`;
-    }
-    
-    return 'N/A';
-  } catch (error) {
-    console.error('Error fetching CK price:', error);
-    return 'N/A';
-  }
-}
-
-// Card prices endpoint with both TCG and Card Kingdom
+// Card prices endpoint using MTGGoldfish search API
 app.get('/api/prices/:cardName/:setCode', async (req, res) => {
   const { cardName, setCode } = req.params;
   
   try {
-    let tcgPrice = 'N/A';
-    let ckPrice = 'N/A';
+    // Use MTGGoldfish search API to find pricing data
+    const searchUrl = `https://www.mtggoldfish.com/widgets/autocard/${encodeURIComponent(cardName)}`;
     
-    // Try to fetch with the primary set code first
+    const response = await fetch(searchUrl, {
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'Mozilla/5.0'
+      }
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      
+      // Look for the specific set in the results
+      const cardData = data.find(card => 
+        card.set?.toUpperCase() === setCode.toUpperCase()
+      );
+      
+      if (cardData) {
+        const tcgPrice = cardData.tcgplayer_price ? `$${parseFloat(cardData.tcgplayer_price).toFixed(2)}` : 'N/A';
+        const ckPrice = cardData.cardkingdom_price ? `$${parseFloat(cardData.cardkingdom_price).toFixed(2)}` : 'N/A';
+        
+        res.json({ tcg: tcgPrice, ck: ckPrice });
+        return;
+      }
+    }
+    
+    // Fallback: Use Scryfall for basic pricing
     const scryfallUrl = `https://api.scryfall.com/cards/search?q=!"${cardName}"+set:${setCode.toLowerCase()}&unique=prints`;
     const scryfallResponse = await fetch(scryfallUrl);
-    let scryfallData = null;
     
     if (scryfallResponse.ok) {
-      scryfallData = await scryfallResponse.json();
-    }
-    
-    // If primary set was found, use it
-    if (scryfallData && scryfallData.data && scryfallData.data.length > 0) {
-      const card = scryfallData.data[0];
-      tcgPrice = card.prices?.usd || 'N/A';
-      if (tcgPrice !== 'N/A') {
-        tcgPrice = `$${tcgPrice}`;
-      }
+      const scryfallData = await scryfallResponse.json();
       
-      // Fetch Card Kingdom price from MTGGoldfish widget
-      ckPrice = await fetchCardKingdomPriceFromWidget(cardName, setCode);
-      
-      // If CK price is N/A but we have TCG, estimate CK
-      if (ckPrice === 'N/A' && tcgPrice !== 'N/A') {
-        const tcgNum = parseFloat(tcgPrice.replace('$', ''));
-        const estimatedCk = (tcgNum * 1.15).toFixed(2);
-        ckPrice = `$${estimatedCk}`;
-      }
-    } else {
-      // Primary set failed, try alternative set codes
-      
-      // Try to find a printing with CK pricing available
-      const printingsUrl = `https://api.scryfall.com/cards/search?q=!"${cardName}"&unique=prints&order=released`;
-      const printingsResponse = await fetch(printingsUrl);
-      
-      if (printingsResponse.ok) {
-        const printingsData = await printingsResponse.json();
+      if (scryfallData.data && scryfallData.data.length > 0) {
+        const card = scryfallData.data[0];
+        const tcgPrice = card.prices?.usd ? `$${card.prices.usd}` : 'N/A';
+        const ckPrice = card.prices?.usd ? `$${(parseFloat(card.prices.usd) * 1.15).toFixed(2)}` : 'N/A';
         
-        if (printingsData.data && printingsData.data.length > 0) {
-          // Try each printing to find one with CK pricing (limit to 5 attempts)
-          for (const card of printingsData.data.slice(0, 5)) {
-            const altSetCode = card.set.toUpperCase();
-            const altCkPrice = await fetchCardKingdomPriceFromWidget(cardName, altSetCode);
-            
-            if (altCkPrice !== 'N/A') {
-              ckPrice = altCkPrice;
-              // Get TCG price for this set
-              if (card.prices?.usd) {
-                tcgPrice = `$${card.prices.usd}`;
-              }
-              break;
-            }
-          }
-          
-          // If no CK pricing found, estimate from TCG or use first printing's TCG price
-          if (ckPrice === 'N/A') {
-            if (printingsData.data[0].prices?.usd) {
-              tcgPrice = `$${printingsData.data[0].prices.usd}`;
-              const tcgNum = parseFloat(tcgPrice.replace('$', ''));
-              const estimatedCk = (tcgNum * 1.15).toFixed(2);
-              ckPrice = `$${estimatedCk}`;
-            }
-          }
-        }
+        res.json({ tcg: tcgPrice, ck: ckPrice });
+        return;
       }
     }
     
-    res.json({ tcg: tcgPrice, ck: ckPrice });
+    res.json({ tcg: 'N/A', ck: 'N/A' });
     
   } catch (error) {
-    res.json({ tcg: 'N/A', ck: 'N/A', error: error.message });
+    console.error('Error fetching prices:', error);
+    res.json({ tcg: 'N/A', ck: 'N/A' });
   }
 });
 
