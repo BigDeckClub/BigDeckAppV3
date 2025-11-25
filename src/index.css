@@ -169,8 +169,10 @@ select {
 
 .mobile-nav-item {
   @apply flex flex-col items-center justify-center rounded-xl transition-all duration-200;
-  padding: 8px 12px;
-  min-width: 64px;
+  padding: 6px 8px;
+  min-width: 52px;
+  flex: 1;
+  max-width: 70px;
 }
 
 .mobile-nav-item.active {

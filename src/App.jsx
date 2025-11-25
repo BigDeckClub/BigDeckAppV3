@@ -970,8 +970,8 @@ function MTGInventoryTrackerContent() {
   const navItems = [
     { id: "inventory", icon: Layers, label: "Inventory" },
     { id: "decklists", icon: FileText, label: "Decks" },
-    { id: "containers", icon: Package, label: "Containers" },
-    { id: "analytics", icon: TrendingUp, label: "Analytics" },
+    { id: "containers", icon: Package, label: "Boxes" },
+    { id: "analytics", icon: TrendingUp, label: "Stats" },
     { id: "sales", icon: DollarSign, label: "Sales" },
   ];
 
@@ -1049,11 +1049,18 @@ function MTGInventoryTrackerContent() {
                 onClick={() => setActiveTab(item.id)}
                 className={`mobile-nav-item ${activeTab === item.id ? "active" : "inactive"}`}
               >
-                <Icon className="w-5 h-5" />
+                <Icon className="w-5 h-5 mobile-nav-icon" />
                 <span className="mobile-nav-label">{item.label}</span>
               </button>
             );
           })}
+          <button
+            onClick={() => setShowSettings(!showSettings)}
+            className={`mobile-nav-item ${showSettings ? "active" : "inactive"}`}
+          >
+            <Settings className="w-5 h-5 mobile-nav-icon" />
+            <span className="mobile-nav-label">Settings</span>
+          </button>
         </div>
       </nav>
 
