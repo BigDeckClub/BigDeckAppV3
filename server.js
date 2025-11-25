@@ -187,17 +187,38 @@ function classifyProduct(name, edition) {
   // Case 1 — any parentheses always indicate variant/special
   if (/\(.+\)/.test(normalized)) return "special";
 
-  // Case 2 — if edition exists and is NOT in the safelist → special
-  if (
-    edition &&
-    !NORMAL_EDITIONS.some(e =>
-      edition.toLowerCase().includes(e.toLowerCase())
-    )
-  ) {
+  // Case 2 — if edition exists, check more carefully
+  if (edition) {
+    const edLower = edition.toLowerCase();
+    
+    // Exclude anything with "variant", "foil", "etched", "secret lair", "bloomburrow", etc
+    if (
+      edLower.includes("variant") ||
+      edLower.includes("foil") ||
+      edLower.includes("etched") ||
+      edLower.includes("secret lair") ||
+      edLower.includes("bloomburrow") ||
+      edLower.includes("showcase") ||
+      edLower.includes("borderless")
+    ) {
+      return "special";
+    }
+    
+    // Whitelist specific standard editions
+    if (
+      NORMAL_EDITIONS.some(e =>
+        edLower === e.toLowerCase() || // Exact match preferred
+        edLower.startsWith(e.toLowerCase() + " ") // Or prefix match like "commander 2022 xyz"
+      )
+    ) {
+      return "normal";
+    }
+    
+    // If edition exists but doesn't match whitelist → special
     return "special";
   }
 
-  // Case 3 — only plain name + safelisted edition = normal
+  // Case 3 — no edition provided, plain name defaults to normal
   return "normal";
 }
 
