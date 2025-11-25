@@ -1028,13 +1028,6 @@ function MTGInventoryTrackerContent() {
               <Settings className="w-5 h-5" />
             </button>
           </div>
-          {/* Mobile Settings Button */}
-          <button
-            onClick={() => setShowSettings(!showSettings)}
-            className="md:hidden px-3 py-2 hover:bg-slate-700 rounded-lg transition"
-          >
-            <Settings className="w-5 h-5" />
-          </button>
         </div>
       </nav>
 
