@@ -91,19 +91,22 @@ function MTGInventoryTrackerContent() {
   // Price display component - now using global cache context
   const MarketPrices = ({ cardName, setCode }) => {
     const { getPrice } = usePriceCache();
-    const [price, setPrice] = useState({ tcg: "Loading...", ck: "Loading..." });
+    const [price, setPrice] = React.useState({ tcg: "Loading...", ck: "Loading..." });
 
-    useEffect(() => {
+    React.useEffect(() => {
       const normalizedName = normalizeCardName(cardName);
       const normalizedSet = normalizeSetCode(setCode);
 
-      getPrice(normalizedName, normalizedSet).then(setPrice);
+      getPrice(normalizedName, normalizedSet).then((p) => {
+        if (p) setPrice(p);
+        else setPrice({ tcg: "N/A", ck: "N/A" });
+      });
     }, [cardName, setCode, getPrice]);
 
     return (
-      <div className="text-xs whitespace-nowrap">
-        <div className="text-teal-300">TCG: {price.tcg}</div>
-        <div className="text-cyan-300">CK: {price.ck}</div>
+      <div style={{ fontSize: "0.9rem" }}>
+        <div>TCG: {price.tcg}</div>
+        <div>CK: {price.ck}</div>
       </div>
     );
   };
