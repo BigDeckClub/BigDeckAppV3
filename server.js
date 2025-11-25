@@ -48,17 +48,115 @@ const pool = new Pool({
   connectionTimeoutMillis: 5000
 });
 
-// Initialize purchase_history table if it doesn't exist
-pool.query(`
-  CREATE TABLE IF NOT EXISTS purchase_history (
-    id SERIAL PRIMARY KEY,
-    inventory_id INTEGER REFERENCES inventory(id) ON DELETE RESTRICT,
-    purchase_date TEXT NOT NULL,
-    purchase_price REAL NOT NULL,
-    quantity INTEGER DEFAULT 1,
-    created_at TIMESTAMP DEFAULT NOW()
-  )
-`).catch(err => console.error('Failed to create purchase_history table:', err));
+// ========== DATABASE SCHEMA INITIALIZATION ==========
+// Create all required tables if they don't exist
+async function initializeDatabase() {
+  try {
+    // Inventory table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS inventory (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        set VARCHAR(20),
+        set_name VARCHAR(255),
+        quantity INTEGER DEFAULT 1,
+        purchase_price REAL,
+        purchase_date TEXT,
+        reorder_type VARCHAR(20) DEFAULT 'Normal',
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    console.log('[DB] ✓ inventory table ready');
+
+    // Decklists table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS decklists (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        decklist TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    console.log('[DB] ✓ decklists table ready');
+
+    // Containers table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS containers (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        decklist_id INTEGER REFERENCES decklists(id) ON DELETE SET NULL,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    console.log('[DB] ✓ containers table ready');
+
+    // Container items table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS container_items (
+        id SERIAL PRIMARY KEY,
+        container_id INTEGER REFERENCES containers(id) ON DELETE CASCADE,
+        inventory_id INTEGER REFERENCES inventory(id) ON DELETE CASCADE,
+        quantity INTEGER DEFAULT 1
+      )
+    `);
+    console.log('[DB] ✓ container_items table ready');
+
+    // Sales table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS sales (
+        id SERIAL PRIMARY KEY,
+        container_id INTEGER,
+        decklist_id INTEGER,
+        decklist_name VARCHAR(255),
+        sale_price DECIMAL(10,2),
+        cost_basis DECIMAL(10,2),
+        sold_date TIMESTAMP DEFAULT NOW(),
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    console.log('[DB] ✓ sales table ready');
+
+    // Settings table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS settings (
+        key VARCHAR(255) PRIMARY KEY,
+        value TEXT
+      )
+    `);
+    console.log('[DB] ✓ settings table ready');
+
+    // Usage history table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS usage_history (
+        id SERIAL PRIMARY KEY,
+        action VARCHAR(255) NOT NULL,
+        details TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    console.log('[DB] ✓ usage_history table ready');
+
+    // Purchase history table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS purchase_history (
+        id SERIAL PRIMARY KEY,
+        inventory_id INTEGER REFERENCES inventory(id) ON DELETE RESTRICT,
+        purchase_date TEXT NOT NULL,
+        purchase_price REAL NOT NULL,
+        quantity INTEGER DEFAULT 1,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    console.log('[DB] ✓ purchase_history table ready');
+
+    console.log('[DB] ✓ All database tables initialized successfully');
+  } catch (err) {
+    console.error('[DB] ✗ Failed to initialize database:', err);
+  }
+}
+
+// Initialize database on startup
+initializeDatabase();
 
 // ========== PARSER: Plain-text decklist to card objects ==========
 /**
