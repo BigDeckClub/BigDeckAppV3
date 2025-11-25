@@ -170,8 +170,9 @@ export default function MTGInventoryTracker() {
           }
           
           if (setToUse) {
-            // Use the set code we found - backend normalizes set codes automatically
-            const response = await fetch(`${API_BASE}/prices/${encodeURIComponent(cardName)}/${setToUse.toUpperCase()}`);
+            // Use the set code we found - normalize set codes before sending
+            const normalizedSet = (setToUse || '').trim().toUpperCase();
+            const response = await fetch(`${API_BASE}/price?name=${encodeURIComponent(cardName)}&set=${encodeURIComponent(normalizedSet)}`);
             if (response.ok) {
               const priceData = await response.json();
               // Strip $ sign and parse the price - handle 'N/A' strings
@@ -208,7 +209,8 @@ export default function MTGInventoryTracker() {
                     if (card.set) {
                       // Try backend API to get CK widget price
                       try {
-                        const backendResponse = await fetch(`${API_BASE}/prices/${encodeURIComponent(cardName)}/${card.set.toUpperCase()}`);
+                        const normalizedSet = (card.set || '').trim().toUpperCase();
+                        const backendResponse = await fetch(`${API_BASE}/price?name=${encodeURIComponent(cardName)}&set=${encodeURIComponent(normalizedSet)}`);
                         if (backendResponse.ok) {
                           const backendData = await backendResponse.json();
                           const ckRaw = String(backendData.ck).replace('$', '');
@@ -258,7 +260,8 @@ export default function MTGInventoryTracker() {
     for (const item of items) {
       try {
         // Use the backend API which has proper pricing with CK data
-        const response = await fetch(`${API_BASE}/prices/${encodeURIComponent(item.name)}/${item.set}`);
+        const normalizedSet = (item.set || '').trim().toUpperCase();
+        const response = await fetch(`${API_BASE}/price?name=${encodeURIComponent(item.name)}&set=${encodeURIComponent(normalizedSet)}`);
         if (response.ok) {
           const priceData = await response.json();
           // Strip $ sign and parse the price
@@ -429,7 +432,8 @@ export default function MTGInventoryTracker() {
 
   const fetchCardPrices = async (cardName, setCode) => {
     try {
-      const response = await fetch(`${API_BASE}/prices/${encodeURIComponent(cardName)}/${setCode}`);
+      const normalizedSet = (setCode || '').trim().toUpperCase();
+      const response = await fetch(`${API_BASE}/price?name=${encodeURIComponent(cardName)}&set=${encodeURIComponent(normalizedSet)}`);
       if (response.ok) {
         const priceData = await response.json();
         return {
@@ -1309,7 +1313,7 @@ export default function MTGInventoryTracker() {
                                           Edit Set
                                         </button>
                                       </div>
-                                      <DecklistCardPrice cardName={card.name} setCode={cardSet} />
+                                      <DecklistCardPrice key={card.name + cardSet} cardName={card.name} setCode={cardSet} />
                                     </>
                                   )}
                                 </div>
