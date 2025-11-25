@@ -449,14 +449,14 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
 });
 
 // Debug endpoint to test MTGGoldfish responses
-app.get('/api/debug/mtggoldfish/:cardName/:setCode?', async (req, res) => {
+app.get('/api/debug/mtggoldfish/:cardName/:setCode', async (req, res) => {
   const { cardName, setCode } = req.params;
   const results = {};
   
   // Test MTGGoldfish direct price endpoint
   try {
     const formattedName = cardName.replace(/\s+/g, '_');
-    const mtgGoldfishUrl = `https://www.mtggoldfish.com/price/${setCode || 'LEA'}/${formattedName}`;
+    const mtgGoldfishUrl = `https://www.mtggoldfish.com/price/${setCode}/${formattedName}`;
     console.log('Testing MTGGoldfish URL:', mtgGoldfishUrl);
     
     const response = await fetch(mtgGoldfishUrl);
