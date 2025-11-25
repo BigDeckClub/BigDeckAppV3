@@ -120,11 +120,20 @@ export default function MTGInventoryTracker() {
 
     useEffect(() => {
       let isMounted = true;
-      const cacheKey = `${cardName}|${setCode}`;
+      
+      // Normalize card name to proper case and set code to uppercase
+      const normalizedName = (cardName || "")
+        .trim()
+        .toLowerCase()
+        .replace(/\b\w/g, c => c.toUpperCase());
+      
+      const normalizedSet = (setCode || "").trim().toUpperCase();
+      
+      const cacheKey = `${normalizedName}|${normalizedSet}`;
       const CACHE_DURATION_MS = 2 * 60 * 60 * 1000; // 2 hours (shorter to avoid stale N/A)
 
       const loadPrices = async () => {
-        const priceData = await fetchCardPrices(cardName, setCode);
+        const priceData = await fetchCardPrices(normalizedName, normalizedSet);
         if (isMounted) {
           // Don't cache N/A values - always refetch if we get N/A
           if (priceData.tcg === "N/A" || priceData.ck === "N/A") {
