@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Trash2, FileText, Package, Copy, Layers, AlertCircle, TrendingUp, Settings, RefreshCw, DollarSign, X } from 'lucide-react';
+import { Search, Plus, Trash2, FileText, Package, Copy, Layers, AlertCircle, TrendingUp, Settings, RefreshCw, DollarSign, X, ChevronDown } from 'lucide-react';
 import { fetchCardPrices } from './utils/priceUtils';
 import { useDebounce } from './utils/useDebounce';
 import { InventoryTab } from './components/InventoryTab';
@@ -63,6 +63,7 @@ export default function MTGInventoryTracker() {
   const [editCardSet, setEditCardSet] = useState('');
   const [editCardAvailableSets, setEditCardAvailableSets] = useState([]);
   const [lastUsedSets, setLastUsedSets] = useState({});
+  const [expandedAlerts, setExpandedAlerts] = useState({});
 
   // Price display component
   const MarketPrices = ({ cardName, setCode }) => {
@@ -1530,26 +1531,58 @@ export default function MTGInventoryTracker() {
               </div>
               {getReorderAlerts().length > 0 ? (
                 <div className="space-y-2">
-                  <div className="grid grid-cols-1 gap-2 max-h-72 overflow-y-auto">
+                  <div className="grid grid-cols-1 gap-2 max-h-96 overflow-y-auto">
                     {getReorderAlerts().map((item) => {
                       const threshold = reorderSettings[item.reorder_type] || 5;
                       const percentOfThreshold = (item.totalQuantity / threshold) * 100;
                       const severity = percentOfThreshold < 25 ? 'critical' : percentOfThreshold < 75 ? 'warning' : 'low';
                       const severityColor = severity === 'critical' ? 'bg-red-950 border-red-500' : severity === 'warning' ? 'bg-orange-950 border-orange-500' : 'bg-yellow-950 border-yellow-500';
                       const textColor = severity === 'critical' ? 'text-red-300' : severity === 'warning' ? 'text-orange-300' : 'text-yellow-300';
+                      const isExpanded = expandedAlerts[item.name];
+                      const itemsForCard = inventory.filter(i => i.name === item.name);
                       
                       return (
-                        <div key={item.name} className={`${severityColor} border p-3 rounded flex justify-between items-center text-sm hover:border-opacity-100 transition`}>
-                          <div className="flex-1 min-w-0">
-                            <div className="font-semibold truncate">{item.name}</div>
-                            <div className="text-xs text-slate-400">
-                              {item.sets.length === 1 ? item.sets[0].name : `${item.sets.length} sets`} • {item.reorder_type}
+                        <div key={item.name}>
+                          <button
+                            onClick={() => setExpandedAlerts(prev => ({...prev, [item.name]: !prev[item.name]}))}
+                            className={`${severityColor} border p-3 rounded flex justify-between items-center text-sm w-full hover:border-opacity-100 transition text-left`}
+                          >
+                            <div className="flex-1 min-w-0">
+                              <div className="font-semibold truncate">{item.name}</div>
+                              <div className="text-xs text-slate-400">
+                                {item.sets.length === 1 ? item.sets[0].name : `${item.sets.length} sets`} • {item.reorder_type}
+                              </div>
                             </div>
-                          </div>
-                          <div className={`ml-3 flex-shrink-0 text-right`}>
-                            <div className={`font-bold text-lg ${textColor}`}>{item.totalQuantity}</div>
-                            <div className="text-xs text-slate-400">of {threshold}</div>
-                          </div>
+                            <div className="flex items-center gap-2 ml-3 flex-shrink-0">
+                              <div className="text-right">
+                                <div className={`font-bold text-lg ${textColor}`}>{item.totalQuantity}</div>
+                                <div className="text-xs text-slate-400">of {threshold}</div>
+                              </div>
+                              <ChevronDown className={`w-4 h-4 transition ${isExpanded ? 'rotate-180' : ''}`} />
+                            </div>
+                          </button>
+                          {isExpanded && (
+                            <div className="bg-slate-800 border border-slate-700 border-t-0 p-3 rounded-b space-y-2 text-xs">
+                              {itemsForCard.map(invItem => (
+                                <div key={invItem.id} className="bg-slate-700 bg-opacity-40 p-2 rounded flex justify-between">
+                                  <div>
+                                    <div className="text-slate-200">{invItem.set_name}</div>
+                                    <div className="text-slate-500">{invItem.set}</div>
+                                  </div>
+                                  <div className="text-right">
+                                    <div className="text-teal-300 font-semibold">{invItem.quantity}x</div>
+                                    <div className="text-slate-400">${parseFloat(invItem.purchase_price || 0).toFixed(2)}</div>
+                                  </div>
+                                </div>
+                              ))}
+                              <div className="border-t border-slate-600 pt-2 mt-2">
+                                <div className="flex justify-between font-semibold text-slate-300">
+                                  <span>Total Value:</span>
+                                  <span className="text-teal-300">${itemsForCard.reduce((sum, i) => sum + (parseFloat(i.purchase_price || 0) * i.quantity), 0).toFixed(2)}</span>
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       );
                     })}
