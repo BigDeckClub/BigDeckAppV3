@@ -12,7 +12,7 @@ language = "nodejs"
 [deployment]
 deploymentTarget = "autoscale"
 build = ["npm", "run", "build"]
-run = ["node", "server.js"]
+run = ["npm", "run", "prod"]
 
 [[ports]]
 localPort = 3000
