@@ -131,39 +131,18 @@ function shouldPromoteSetOverNormal(setPrice, normalPrice) {
   return ratio >= 3;
 }
 
-function classifyVariantEnhanced(product, index, firstNormalIndex, baseCardName, globalPriceContext) {
-  const { name, price } = product;
-  const result = classifyVariant(name, baseCardName);
-  const normalized = normalizeName(name);
+function classifyVariantEnhanced(product, index, firstNormalIndex, baseCardName, ctx) {
+  // 1. Base classification using your original logic
+  let variant = classifyVariant(product.name, baseCardName);
 
-  if (result !== "normal") {
-    // Special logic: if it's a set edition and massively cheaper than normal editions,
-    // promote it to normal (handles bulk basics like Swamp)
-    if (result === "set" && globalPriceContext) {
-      const { lowestNormalPrice } = globalPriceContext;
-      if (shouldPromoteSetOverNormal(price, lowestNormalPrice)) {
-        return "normal";
-      }
+  // 2. Promotion logic: set → normal if very cheap compared to baseline normal
+  if (variant === "set" && ctx && ctx.lowestNormalPrice != null) {
+    if (shouldPromoteSetOverNormal(product.price, ctx.lowestNormalPrice)) {
+      variant = "normal";
     }
-    return result;
   }
 
-  // Check for suspiciously HIGH prices first (premium/graded editions)
-  if (isSuspiciouslyExpensive(baseCardName, price)) {
-    return "special";
-  }
-
-  // Check for suspiciously LOW prices (showcase/alternate editions)
-  if (isSuspiciouslyCheap(baseCardName, normalized, price)) {
-    return "special";
-  }
-
-  // Check if it appears after the first normal edition
-  if (isSuspiciousByOrdering(index, firstNormalIndex)) {
-    return "special";
-  }
-
-  return "normal";
+  return variant;
 }
 
 // ============== PRICE PARSING ==============
