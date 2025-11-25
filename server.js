@@ -194,7 +194,7 @@ app.delete('/api/decklists/:id', async (req, res) => {
 
 app.get('/api/containers', async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM containers WHERE is_active = TRUE ORDER BY created_at DESC');
+    const result = await pool.query('SELECT * FROM containers ORDER BY created_at DESC');
     res.json(result.rows);
   } catch (err) {
     console.error('Containers query error:', err.message);
