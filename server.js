@@ -377,6 +377,13 @@ const STANDARD_EDITIONS = [
   'core set', 'magic', 'edition', 'alpha', 'beta', 'unlimited', 'revised'
 ];
 
+// Basic lands - always pick lowest non-foil price
+const BASIC_LANDS = ['plains', 'island', 'swamp', 'mountain', 'forest'];
+
+function isBasicLand(cardName) {
+  return BASIC_LANDS.includes(cardName.toLowerCase().trim());
+}
+
 function isSpecialEdition(editionName) {
   if (!editionName) return false;
   const lower = editionName.toLowerCase();
@@ -957,6 +964,7 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
         // For Sol Ring/Lightning Bolt: log full product names for debugging
         const isSolRing = cardName.toLowerCase().includes('sol ring');
         const isLightningBolt = cardName.toLowerCase().includes('lightning bolt');
+        const isBasicLandCard = isBasicLand(cardName);
         
         for (const p of rawProducts) {
           const cond = (p.condition || "unknown").toUpperCase();
@@ -964,9 +972,18 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
           // Skip poor condition
           if (cond === "HP" || cond === "MP") continue;
           
-          // NEW: Edition-based classification using safelist
-          // This correctly handles ambiguous plain names (like "sol ring") by checking edition metadata
-          const variant = classifyProduct(p.name, p.edition);
+          let variant;
+          
+          // SPECIAL RULE: Basic lands always pick lowest non-foil price
+          if (isBasicLandCard) {
+            const nameLower = (p.name || '').toLowerCase();
+            const isFoil = nameLower.includes('foil');
+            variant = isFoil ? 'basicland-foil' : 'basicland-normal';
+          } else {
+            // NEW: Edition-based classification using safelist
+            // This correctly handles ambiguous plain names (like "sol ring") by checking edition metadata
+            variant = classifyProduct(p.name, p.edition);
+          }
           
           const rank = getVariantRank(variant);
           productPrices.push({ 
@@ -982,6 +999,8 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
           // Debug logging for Sol Ring/Lightning Bolt to see full product names AND edition metadata
           if (isSolRing || isLightningBolt) {
             console.log(`      ✓ $${p.price.toFixed(2)} [${variant}] | "${p.name}" | Edition: "${p.edition}"`);
+          } else if (isBasicLandCard) {
+            console.log(`      ✓ Basic land: $${p.price.toFixed(2)} [${variant}] (${p.condition}, qty: ${p.quantity})`);
           } else {
             console.log(`      ✓ Valid match found: $${p.price.toFixed(2)} [${variant}] (${p.condition}, qty: ${p.quantity})`);
           }

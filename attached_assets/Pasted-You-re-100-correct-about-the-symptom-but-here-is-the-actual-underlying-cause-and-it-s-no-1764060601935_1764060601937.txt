@@ -1,0 +1,144 @@
+You're **100% correct about the symptom**, but here is the **actual underlying cause**, and it’s *not* capitalization, and it’s *not* CK being inconsistent.
+
+---
+
+# ✅ **Root Cause of Swamp CK = N/A (Even When 101 Products Are Found)**
+
+### **The Card Kingdom matching logic *filters out every single Swamp printing***
+
+Why?
+
+Because your classification logic requires:
+
+* The product must match the *card name* AND
+* The edition must match a *whitelisted baseline edition* so it gets labeled `[normal]`
+* Only `[normal]` items count for CK prices
+
+But **basic lands do NOT match any of the normal patterns**.
+
+---
+
+# 🔍 **What the logs tell us**
+
+You already saw this pattern:
+
+```
+[DEBUG] Scraping products for: swamp
+✓ Found 101 elements
+[EDITION DEBUG] Found editions: clear,
+   form: foundations jumpstart, swamp (0089) : foundations jumpstart
+```
+
+Notice:
+
+* None of these match your `[normal]` whitelist (commander decks, core sets, etc.)
+* Basic lands from CK use weird edition strings like:
+
+  * “Foundations Jumpstart”
+  * “Land Station”
+  * “Commander Masters (Foil)”
+  * “Secret Lair: Lands”
+  * “Swamp (0089): Foundations Jumpstart”
+* Their product names often include:
+
+  * Parentheses
+  * Set codes instead of set names
+  * Collector numbers
+
+Basic lands are **too variant-heavy**, and your rules classify **ALL of them as `[special]`** → which get filtered out → leaving **zero valid CK products** → CK=N/A
+
+---
+
+# 🎯 **Why It Happens Intermittently**
+
+This explains your other observation:
+
+> Sometimes it returns CK=$0.35
+> Sometimes CK=N/A
+
+Because:
+
+* Some sets include a *“baseline-looking”* Swamp (very rare)
+* Most do not
+* On any given refresh CK may or may not have the simple one in stock
+
+So when a "normal" Swamp *is* in inventory → CK works
+When it isn't → CK=N/A
+
+Nothing intermittent about the code — the **inventory availability is intermittent**.
+
+---
+
+# ⭐ **The Real Fix**
+
+### You must implement a **special rule for basic lands**:
+
+---
+
+## 🔧 **Fix Option A — Treat basic lands as always `[normal]`**
+
+If cardName in ['Plains', 'Island', 'Swamp', 'Mountain', 'Forest']:
+
+→ **Ignore special variant logic entirely**
+→ Always pick the lowest-priced printing on CK that isn’t foil
+
+This is what Scryfall and TCGPlayer do.
+
+---
+
+## 🔧 **Fix Option B — Add a special edition whitelist for lands**
+
+Whitelist land editions:
+
+* Any edition containing:
+
+  * `"Jumpstart"`
+  * `"Foundations"`
+  * `"Basic Land"`
+  * `"Commander Masters"` (non-foil)
+  * `"Secret Lair"` lands
+  * `"Land Station"`
+  * Anything with pattern: `"Swamp (xxxx): <set>"`
+* Anything with no variant tags like:
+
+  * Borderless
+  * Retro
+  * Full-Art
+  * Showcase
+  * Etched
+  * Foil
+
+But this requires maintaining a large list.
+Option A is more robust and simpler.
+
+---
+
+# 💡 **I strongly recommend Option A**
+
+It aligns with:
+
+* TCGPlayer low
+* Scryfall pricing philosophy
+* Commander deckbuilders
+* Every pricing app in the MTG ecosystem
+
+And eliminates:
+
+* Edition-name guessing
+* Regex misclassification
+* Edition mismatch issues
+* Inventory variation issues
+
+---
+
+# 👉 If you want, I can generate the exact patch for:
+
+### ✔ Updated normal-classification logic
+
+### ✔ Basic land override
+
+### ✔ Full code block ready to paste
+
+### ✔ With logging included
+
+Just say **“Patch it”** and tell me **A or B**.
