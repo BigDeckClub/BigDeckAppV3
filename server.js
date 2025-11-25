@@ -422,39 +422,85 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
         const html = await ckRes.text();
         const $ = load(html);
         
-        console.log(`  [DEBUG] Scraping all product cards for: ${cardName}`);
+        console.log(`  [DEBUG] Scraping products for: ${cardName}`);
         
-        // Extract ALL product cards with name + price
+        // Try multiple possible product card selectors
+        const productSelectors = [
+          'div.productCard',
+          'li.productCard',
+          'div.product',
+          'div.card-listing',
+          '.catalog-item',
+          'a[data-product-id]',
+          'div[class*="product"]'
+        ];
+        
+        let products = [];
+        let selectedSelector = null;
+        
+        for (const sel of productSelectors) {
+          const els = $(sel);
+          if (els.length > 0) {
+            console.log(`    ✓ Found ${els.length} elements for selector "${sel}"`);
+            products = els;
+            selectedSelector = sel;
+            break;
+          }
+        }
+        
+        if (products.length === 0) {
+          console.log(`  [DEBUG] No product elements found with any selector`);
+          console.log(`  [DEBUG] HTML preview (first 3000 chars):`);
+          console.log(html.slice(0, 3000));
+        }
+        
         const productPrices = [];
         
-        $('div.productCard').each((i, el) => {
-          const nameEl = $(el).find('a').first();
-          const priceEl = $(el).find('span.stylePrice').first();
+        products.each((i, el) => {
+          // Try multiple ways to get product name
+          let nameEl = $(el).find('a').first();
+          if (nameEl.length === 0) nameEl = $(el).find('.product-name, .item-title, [class*="name"]').first();
           
-          if (nameEl.length === 0 || priceEl.length === 0) return;
+          // Try multiple ways to get price
+          let priceEl = $(el).find('span.stylePrice').first();
+          if (priceEl.length === 0) priceEl = $(el).find('span.price, div.price, [class*="price"]').first();
           
-          const name = nameEl.text().trim().toLowerCase();
-          const rawPrice = priceEl.text().trim();
-          const numericPrice = extractNumericPrice(rawPrice);
+          let name = nameEl.length > 0 ? nameEl.text().trim().toLowerCase() : '';
+          let rawPrice = priceEl.length > 0 ? priceEl.text().trim() : '';
           
-          console.log(`    Product #${i + 1}: "${name}" = ${rawPrice}`);
+          // Fallback: regex inside this product node's HTML if price not found
+          if (!rawPrice) {
+            const productHtml = $(el).html();
+            const priceMatch = productHtml.match(/\$([0-9]+\.[0-9]{2})/);
+            if (priceMatch) {
+              rawPrice = priceMatch[0];
+            }
+          }
           
-          // Only match products that include the target card name
-          if (name.includes(cardName.toLowerCase())) {
+          console.log(`    Product #${i + 1}: name="${name}", price="${rawPrice}"`);
+          
+          // Only match products that include the target card name (case-insensitive, partial match)
+          const target = cardName.toLowerCase();
+          if (name && name.includes(target)) {
+            const numericPrice = rawPrice ? extractNumericPrice(rawPrice) : 0;
+            
             if (isValidPrice(numericPrice)) {
               productPrices.push(numericPrice);
               console.log(`      ✓ Valid match found: $${numericPrice.toFixed(2)}`);
-            } else {
+            } else if (numericPrice > 0) {
               console.log(`      ✗ Price outside valid range: $${numericPrice.toFixed(2)}`);
+            } else if (rawPrice) {
+              console.log(`      ✗ Could not parse price: "${rawPrice}"`);
             }
+          } else if (name) {
+            console.log(`      ✗ Name mismatch: "${name}" does not include "${target}"`);
           }
         });
         
         if (productPrices.length > 0) {
           const lowestPrice = Math.min(...productPrices);
           ckPrice = `$${lowestPrice.toFixed(2)}`;
-          console.log(`  [DEBUG] Found ${productPrices.length} matching products`);
-          console.log(`  ✓ Returning lowest price: ${ckPrice}`);
+          console.log(`  [DEBUG] Found ${productPrices.length} matching products, lowest: ${ckPrice}`);
         } else {
           console.log(`  [DEBUG] No matching products found with valid prices`);
           // Fallback: Check for status indicators
