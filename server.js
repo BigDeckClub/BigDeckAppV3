@@ -736,6 +736,18 @@ app.post('/api/inventory', async (req, res) => {
   const { name, set, set_name, quantity, purchase_price, purchase_date, image_url, reorder_type } = req.body;
   
   try {
+    // VALIDATION: Parse and validate quantity as positive integer
+    const parsedQuantity = parseInt(quantity, 10);
+    if (isNaN(parsedQuantity) || parsedQuantity <= 0) {
+      console.warn(`[INVENTORY] Invalid quantity received: ${quantity}. Rejecting request.`);
+      return res.status(400).json({ 
+        error: 'Quantity must be a positive integer',
+        received: quantity 
+      });
+    }
+    
+    console.log(`[INVENTORY] Inserting card: name="${name}", quantity=${parsedQuantity}, price=${purchase_price}, date=${purchase_date}`);
+    
     const result = await pool.query(
       `INSERT INTO inventory 
        (name, set, set_name, quantity, purchase_price, purchase_date, image_url, reorder_type, created_at) 
@@ -745,7 +757,7 @@ app.post('/api/inventory', async (req, res) => {
         name, 
         set, 
         set_name || null,
-        quantity || 1, 
+        parsedQuantity, 
         purchase_price || null, 
         purchase_date || new Date().toISOString().split('T')[0],
         image_url || null,
@@ -754,16 +766,19 @@ app.post('/api/inventory', async (req, res) => {
     );
     
     const inventoryId = result.rows[0].id;
-    const qty = quantity || 1;
     const price = purchase_price || 0;
     const pDate = purchase_date || new Date().toISOString().split('T')[0];
+    
+    console.log(`[INVENTORY] Database insert successful: id=${inventoryId}, saved_quantity=${result.rows[0].quantity}`);
     
     // Log purchase in purchase_history
     await pool.query(
       `INSERT INTO purchase_history (inventory_id, purchase_date, purchase_price, quantity)
        VALUES ($1, $2, $3, $4)`,
-      [inventoryId, pDate, price, qty]
+      [inventoryId, pDate, price, parsedQuantity]
     );
+    
+    console.log(`[INVENTORY] Purchase history recorded: inventory_id=${inventoryId}, quantity=${parsedQuantity}`);
     
     res.json(result.rows[0]);
   } catch (err) {
