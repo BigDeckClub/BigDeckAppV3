@@ -1,0 +1,92 @@
+Lightning Bolt has regressed because the new edition-based classifier is now too aggressive and is marking a cheap $1.99 variant as [normal], similar to what was happening with Sol Ring before.
+
+I checked the code in server.js (latest commit from the GitHub link).
+The issue is caused by this line in the classification logic:
+
+if (!SPECIAL_EDITION_BLOCKLIST.some(term => edition.includes(term))) {
+    return "normal";
+}
+
+
+This means:
+
+If the edition does not contain any blocked keywords, the card is marked normal
+
+But Lightning Bolt has many variant reprints where the edition name is extremely generic (e.g., "Magic 2011", "Magic 2012", "Secret Lair Drop", "Promo Pack", etc.)
+
+Many of these variants do not contain any of the blacklist terms, so they are incorrectly marked normal
+
+The algorithm then selects the cheapest one → $1.99
+
+This is the exact same pattern Sol Ring had earlier.
+
+✅ Required Fix
+
+We need to flip the logic back to safe-listing only true standard printings and treating everything else as special by default.
+
+The correct strategy should be:
+
+1. Product name contains parentheses → always special
+
+Lightning Bolt variants use parenthetical forms:
+
+"lightning bolt (thrum of the vestige)"
+
+"lightning bolt (promo pack)"
+
+"lightning bolt (foil etched)"
+
+So:
+
+if (/\(.+\)/.test(normalizedName)) return "special";
+
+2. Edition MUST be in the safelist
+
+If not safelisted → special
+
+if (!NORMAL_EDITIONS.includes(editionNormalized)) {
+    return "special";
+}
+
+3. Only "plain-name + safelisted edition" counts as normal
+
+No edition match → special
+No parentheses → still special
+Edition ambiguous → special
+Anything not explicitly known → special
+Normal is the exception, not the default.
+
+⚠ Why the regression happened
+
+The new code currently does:
+
+blacklist → special
+
+everything else → normal
+
+But MTG card editions are way too diverse for blacklist matching to work — there will always be random edition names that look normal but actually represent variants.
+
+This is exactly why Lightning Bolt now incorrectly shows $1.99 again.
+
+✔ What you need to implement next
+
+Replace the current “not in blacklist = normal” logic with:
+
+function classifyProduct(name, edition) {
+    const normalized = name.toLowerCase();
+    const ed = edition.toLowerCase();
+
+    // Case 1 — parentheses always indicate special
+    if (/\(.+\)/.test(normalized)) return "special";
+
+    // Case 2 — edition MUST be in safelist
+    if (!NORMAL_EDITIONS.some(e => ed.includes(e.toLowerCase()))) {
+        return "special";
+    }
+
+    // Case 3 — only plain name + safelisted edition = normal
+    return "normal";
+}
+
+
+This restores Lightning Bolt back to $2.29 reliably, the same way it fixed Sol Ring.
