@@ -159,6 +159,42 @@ function normalizeName(name) {
 }
 
 // ============== CORRECTED EDITION CLASSIFIER ==============
+// Check product NAME FIRST for variant keywords (these override edition slug)
+function classifyProductName(name) {
+  if (!name) return null;
+  const lower = name.toLowerCase();
+
+  const specialKeywords = [
+    "showcase",
+    "borderless",
+    "extended art",
+    "full art",
+    "foil etched",
+    "etched foil",
+    "retro frame",
+    "textured",
+    "surge foil",
+    "serialized",
+    "promo pack",
+    "alternate art",
+    "alt art",
+    "variant",
+    "human",               // Sol Ring variants
+    "thrum of the vestige",
+    "secret lair",
+    "collector",
+    "premium deck",
+    "special edition",
+    "limited edition"
+  ];
+
+  for (const kw of specialKeywords) {
+    if (lower.includes(kw)) return "special";
+  }
+
+  return null; // no classification found here
+}
+
 // This is the primary classifier - determines if edition is "special" or "set"
 function classifyEdition(ed) {
   if (!ed) return "special"; // no metadata → likely variant
@@ -769,20 +805,21 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
         const productPrices = [];
         
         for (const p of rawProducts) {
-          const editionType = classifyEdition(p.edition);
           const cond = (p.condition || "unknown").toUpperCase();
           
           // Skip poor condition
           if (cond === "HP" || cond === "MP") continue;
           
-          // Determine final variant type
-          let variant;
-          if (editionType === "special") {
-            variant = "special";
-          } else {
-            // "set" edition
-            variant = "normal";
+          // CRITICAL: Check product name FIRST for variant keywords
+          // This overrides edition-based classification
+          let type = classifyProductName(p.name);
+          if (!type) {
+            // Fall back to edition classification only if no name match
+            type = classifyEdition(p.edition);
           }
+          
+          // Determine final variant type based on name/edition classification
+          const variant = (type === "special") ? "special" : "normal";
           
           const rank = getVariantRank(variant);
           productPrices.push({ 

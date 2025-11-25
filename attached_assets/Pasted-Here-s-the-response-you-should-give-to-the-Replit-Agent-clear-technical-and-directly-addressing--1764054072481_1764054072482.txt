@@ -1,0 +1,78 @@
+Here’s the response you should give to the Replit Agent — clear, technical, and directly addressing the bug and fix:
+
+---
+
+The problem isn’t the sorting logic — it’s the **classification step**, because the system is only checking the extracted edition slug, not the *full product name*, which contains the actual variation identifiers.
+
+Right now:
+
+* `extractEditionSlug(productName)` → grabs “thrum of the vestige”
+* `classifyEdition("thrum of the vestige")` → doesn’t match any showcase/special patterns
+* It defaults to `set` → becomes `[normal]`
+* Since it’s `[normal]` and cheaper → it wins, incorrectly
+
+But the true logic should be:
+
+**Product name ALWAYS overrides the edition slug.**
+
+Because the product name contains the *real* variant flags:
+
+Examples:
+
+* “lightning bolt (0040 - thrum of the vestige)” → showcase variant → should be `[special]`
+* “sol ring (0410 - human)” → special variant → `[special]`
+* “foil etched” / “textured foil” / “borderless” → all should immediately become `[special]`
+
+### ✔ Correct fix
+
+Modify `classifyEditionFromProductName(name)` so that **before** looking at the edition slug, you check the *product title itself*:
+
+```js
+function classifyProductName(name) {
+  const lower = name.toLowerCase();
+
+  const specialKeywords = [
+    "showcase",
+    "borderless",
+    "extended art",
+    "full art",
+    "foil etched",
+    "etched foil",
+    "retro frame",
+    "textured",
+    "surge foil",
+    "serialized",
+    "promo pack",
+    "alternate art",
+    "alt art",
+    "variant",
+    "human",               // Sol Ring variants
+    "thrum of the vestige"
+  ];
+
+  for (const kw of specialKeywords) {
+    if (lower.includes(kw)) return "special";
+  }
+
+  return null; // no classification found here
+}
+```
+
+Then integrate:
+
+```js
+let type = classifyProductName(product.name);
+if (!type) {
+  type = classifyEdition(editionSlug);
+}
+```
+
+### ✔ Result
+
+* Any variant detected from the product title becomes `[special]` immediately.
+* Only if **no variant keywords match** do we fall back to edition-based classification.
+* This prevents “variant editions disguised as normal” from being incorrectly chosen as the lowest-price normal card.
+
+---
+
+If you'd like, I can write the exact patch for your `server.js` including the updated classification, ranking, and integration points.
