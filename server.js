@@ -166,6 +166,12 @@ const NORMAL_EDITIONS = [
   "Magic Origins",
   "Secret Lair Drop Series",
   "Judge Gift Cards",
+  "2010 core set",
+  "2011 core set",
+  "2012 core set",
+  "2013 core set",
+  "2014 core set",
+  "2015 core set",
 ];
 
 const SET_CODE_CANDIDATE = /^[A-Z0-9]{2,5}$/;
