@@ -2070,7 +2070,7 @@ function MTGInventoryTrackerContent() {
 
             <div className="card p-6">
               <h2 className="text-xl font-bold mb-4">Inventory Statistics</h2>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-4 gap-4">
                 <div className="bg-slate-800 border border-slate-600 p-4">
                   <div className="text-slate-400 text-sm">Total Unique Cards</div>
                   <div className="text-2xl font-bold text-teal-300">
@@ -2097,13 +2097,37 @@ function MTGInventoryTrackerContent() {
                   <div className="text-slate-400 text-sm">Total Value</div>
                   <div className="text-2xl font-bold text-teal-300">
                     $
-                    {inventory
-                      .reduce(
+                    {(() => {
+                      const inventoryValue = inventory.reduce(
                         (sum, card) =>
                           sum + ((parseFloat(card.purchase_price) || 0) * (card.quantity || 0)),
                         0,
-                      )
-                      .toFixed(2)}
+                      );
+                      const containerValue = Object.values(containerItems).flat().reduce(
+                        (sum, item) =>
+                          sum + ((parseFloat(item.purchase_price) || 0) * (parseInt(item.quantity_used) || 0)),
+                        0,
+                      );
+                      return (inventoryValue + containerValue).toFixed(2);
+                    })()}
+                  </div>
+                </div>
+                <div className="bg-slate-800 border border-slate-600 p-4">
+                  <div className="text-slate-400 text-sm">Total Purchased (60 days)</div>
+                  <div className="text-2xl font-bold text-emerald-300">
+                    $
+                    {(() => {
+                      const sixtyDaysAgo = new Date();
+                      sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+                      return inventory
+                        .filter((card) => new Date(card.purchase_date) >= sixtyDaysAgo)
+                        .reduce(
+                          (sum, card) =>
+                            sum + ((parseFloat(card.purchase_price) || 0) * (card.quantity || 0)),
+                          0,
+                        )
+                        .toFixed(2);
+                    })()}
                   </div>
                 </div>
               </div>
