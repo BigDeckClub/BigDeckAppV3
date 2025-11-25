@@ -56,9 +56,7 @@ app.use(bodyParser.json());
 // ========== RATE LIMITING ==========
 const priceLimiter = rateLimit({
   windowMs: 60 * 1000,  // 60 second window
-  max: 100,             // Requests per window
-  message: 'Rate limit exceeded for price lookups.'
-  // Use default key generator which handles IPv6 properly
+  max: 100              // Requests per window
 });
 
 // PostgreSQL connection
