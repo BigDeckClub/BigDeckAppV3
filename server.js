@@ -904,8 +904,9 @@ app.post('/api/containers/:id/sell', async (req, res) => {
       [req.params.id, salePrice]
     );
 
+    // Delete container after recording sale
     await client.query(
-      `UPDATE containers SET is_active = FALSE WHERE id = $1`,
+      `DELETE FROM containers WHERE id = $1`,
       [req.params.id]
     );
 
