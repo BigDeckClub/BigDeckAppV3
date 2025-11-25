@@ -465,28 +465,25 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
           }
         }
         
-        // FALLBACK: no normals → use lowest non-premium AND non-special price
+        // FALLBACK: no normals → use median price among non-premium/non-foil candidates
         if (lowestNormalPrice === Infinity) {
-          let fallback = null;
+          // First pass: try to find median among non-special items
+          let candidates = [];
           for (const p of rawProducts) {
             const variant = classifyVariant(p.name, cardName);
-            // Exclude ALL variants, only allow plain non-special items
             if (
               variant !== "foil" &&
               variant !== "etched" &&
               variant !== "promo" &&
               variant !== "premium" &&
-              variant !== "special" // Exclude showcase/variant editions
+              variant !== "special"
             ) {
-              if (fallback === null || p.price < fallback) {
-                fallback = p.price;
-              }
+              candidates.push(p.price);
             }
           }
 
-          // If STILL nothing found (all were variants),
-          // fallback to cheapest non-foil as last resort
-          if (fallback === null) {
+          // If no non-special candidates, broaden to include all non-foil/etched/promo/premium
+          if (candidates.length === 0) {
             for (const p of rawProducts) {
               const variant = classifyVariant(p.name, cardName);
               if (
@@ -495,14 +492,19 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
                 variant !== "promo" &&
                 variant !== "premium"
               ) {
-                if (fallback === null || p.price < fallback) {
-                  fallback = p.price;
-                }
+                candidates.push(p.price);
               }
             }
           }
 
-          lowestNormalPrice = fallback;
+          // Pick the median price from candidates (avoids both cheap variants and expensive promos)
+          if (candidates.length > 0) {
+            candidates.sort((a, b) => a - b);
+            const midIndex = Math.floor(candidates.length / 2);
+            lowestNormalPrice = candidates[midIndex];
+          } else {
+            lowestNormalPrice = null;
+          }
         } else {
           lowestNormalPrice = lowestNormalPrice === Infinity ? null : lowestNormalPrice;
         }

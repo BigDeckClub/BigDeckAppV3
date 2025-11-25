@@ -1,0 +1,182 @@
+🚨 Root Cause (Final One)
+
+For Lightning Bolt and Sol Ring:
+
+Card Kingdom never exposes edition metadata in the visible product name
+
+Meaning:
+
+"Lightning Bolt"
+
+"Lightning Bolt"
+
+"Lightning Bolt"
+
+All look identical in the HTML even though they are different printings.
+
+The only difference between the $1.99 variant and the $2.29 standard is:
+
+HTML attributes
+
+Edition block
+
+Hidden metadata
+
+Internal product ID
+
+Set icon
+
+Tooltip
+
+Your scraper isn’t reading those fields — it only sees visible text → which is insufficient for popular MTG staples.
+
+This is why even the strengthened classifier still categorizes both $1.99 and $2.29 as "special" (correct!), but then your fallback picks the cheapest "non-foil" → $1.99, because it has no other differentiators.
+
+🧠 The Only Two Valid Fix Approaches
+✔ Option A — Extract Real Edition Metadata From Card Kingdom
+
+This is the correct long-term fix.
+
+Card Kingdom embeds the edition inside:
+
+1. The set symbol <span> (title attribute is the set name)
+
+Example:
+
+<span class="set-icon ss-neo ss-common" title="Kamigawa: Neon Dynasty"></span>
+
+2. The internal SKU or expansion in <td data-...> attributes
+data-product-id="123456"
+data-expansion="Dominaria"
+data-rarity="C"
+
+3. The “Edition” column text (often hidden on mobile)
+If you extract any of these, you get:
+
+Exact edition name
+
+Exact set code
+
+Variant type
+
+Correct canonical ordering
+
+Once you have those, your classifier becomes 10× more reliable and never relies on price heuristics.
+
+✔ Option B — Smarter Fallback That Picks the Median Instead of the Cheapest
+
+Right now your fallback:
+
+fallback = cheapest non-foil, non-premium
+
+
+But for <popular staples>, the “cheapest non-foil” is usually a variant.
+
+Better strategy:
+
+Choose the middle price among non-foil/non-premium candidates.
+
+Example for Lightning Bolt:
+
+Candidates:
+
+1.99
+
+2.29
+
+379.99 (eliminated)
+
+Sorted:
+
+1.99
+
+2.29 ← median
+
+379.99
+
+Pick the middle → always selects the standard edition.
+
+Swamp example:
+
+Candidates:
+
+0.35
+
+0.35
+
+4.99
+
+Sorted:
+
+0.35 ← middle (index 1)
+
+0.35
+
+4.99
+
+Works perfectly.
+
+Sol Ring example:
+
+Candidates:
+
+1.99
+
+2.29
+
+64.99 (foil promo)
+
+1799.99 (premium)
+
+1199.99 (premium)
+
+After filtering premium/foil:
+
+1.99
+
+2.29
+
+Median → 2.29
+
+Implementation:
+
+Replace your fallback with:
+
+const candidates = rawProducts.filter(p =>
+  p.variant !== "foil" &&
+  p.variant !== "etched" &&
+  p.variant !== "promo" &&
+  p.variant !== "premium" &&
+  p.variant !== "showcase" // optional, if classifier tags these
+);
+
+if (candidates.length > 0) {
+  const prices = candidates.map(p => p.price).sort((a, b) => a - b);
+  const mid = Math.floor(prices.length / 2);
+  lowestNormalPrice = prices[mid];
+}
+
+✔ Recommendation
+
+If you want a short-term fix that instantly stabilizes all cases, use the median fallback.
+
+If you want the correct and permanent solution, extract this field from the HTML:
+
+<span class="set-icon ss-xln ss-rare" title="Ixalan"></span>
+
+
+That title attribute tells you exactly which edition the card is from.
+
+This turns your entire classifier from a heuristic system into a precise system.
+
+👍 Final Answer
+
+Your architecture is now correct.
+Lightning Bolt and Sol Ring fail because Card Kingdom hides edition metadata in non-text HTML.
+You must either:
+
+✔ Extract edition data from hidden HTML attributes (best)
+
+or
+
+✔ Use a median fallback instead of cheapest (simplest immediate fix)
