@@ -2080,10 +2080,17 @@ function MTGInventoryTrackerContent() {
                 <div className="bg-slate-800 border border-slate-600 p-4">
                   <div className="text-slate-400 text-sm">Total Quantity</div>
                   <div className="text-2xl font-bold text-teal-300">
-                    {inventory.reduce(
-                      (sum, card) => sum + (card.quantity || 0),
-                      0,
-                    )}
+                    {(() => {
+                      const inventoryTotal = inventory.reduce(
+                        (sum, card) => sum + (card.quantity || 0),
+                        0,
+                      );
+                      const containerTotal = Object.values(containerItems).flat().reduce(
+                        (sum, item) => sum + (parseInt(item.quantity_used) || 0),
+                        0,
+                      );
+                      return inventoryTotal + containerTotal;
+                    })()}
                   </div>
                 </div>
                 <div className="bg-slate-800 border border-slate-600 p-4">
