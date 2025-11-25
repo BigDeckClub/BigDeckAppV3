@@ -927,28 +927,37 @@ export default function MTGInventoryTracker() {
   };
 
   const getReorderAlerts = () => {
-    // Group items by name and aggregate quantities
+    // Group items by name and set combination
     const grouped = {};
     inventory.forEach(item => {
-      if (!grouped[item.name]) {
-        grouped[item.name] = {
+      const key = `${item.name}|${item.set}`;
+      if (!grouped[key]) {
+        grouped[key] = {
           name: item.name,
           reorder_type: item.reorder_type,
-          totalQuantity: 0,
-          sets: [],
-          id: item.id // Use first item's ID as key
+          set_code: item.set,
+          set_name: item.set_name,
+          quantity: 0,
+          purchase_price: item.purchase_price,
+          id: item.id,
+          groupName: item.name // For grouping in display
         };
       }
-      grouped[item.name].totalQuantity += item.quantity;
-      if (!grouped[item.name].sets.find(s => s.code === item.set)) {
-        grouped[item.name].sets.push({ code: item.set, name: item.set_name });
-      }
+      grouped[key].quantity += item.quantity;
+    });
+
+    // Calculate container usage for each card+set combo
+    const withUsage = Object.values(grouped).map(item => {
+      const cardsInContainers = containerItems && Object.values(containerItems).flat().filter(ci => 
+        ci.name === item.name && ci.set === item.set_code
+      ).reduce((sum, ci) => sum + (ci.quantity_used || 0), 0) || 0;
+      return { ...item, cardsInContainers };
     });
 
     // Filter to only items below threshold
-    return Object.values(grouped).filter(item => {
+    return withUsage.filter(item => {
       const threshold = reorderSettings[item.reorder_type] || 5;
-      return item.totalQuantity <= threshold;
+      return item.quantity <= threshold;
     });
   };
 
@@ -1532,60 +1541,84 @@ export default function MTGInventoryTracker() {
               {getReorderAlerts().length > 0 ? (
                 <div className="space-y-2">
                   <div className="grid grid-cols-1 gap-2 max-h-96 overflow-y-auto">
-                    {getReorderAlerts().map((item) => {
-                      const threshold = reorderSettings[item.reorder_type] || 5;
-                      const percentOfThreshold = (item.totalQuantity / threshold) * 100;
-                      const severity = percentOfThreshold < 25 ? 'critical' : percentOfThreshold < 75 ? 'warning' : 'low';
-                      const severityColor = severity === 'critical' ? 'bg-red-950 border-red-500' : severity === 'warning' ? 'bg-orange-950 border-orange-500' : 'bg-yellow-950 border-yellow-500';
-                      const textColor = severity === 'critical' ? 'text-red-300' : severity === 'warning' ? 'text-orange-300' : 'text-yellow-300';
-                      const isExpanded = expandedAlerts[item.name];
-                      const itemsForCard = inventory.filter(i => i.name === item.name);
+                    {(() => {
+                      const alerts = getReorderAlerts();
+                      const groupedByName = {};
+                      alerts.forEach(alert => {
+                        if (!groupedByName[alert.name]) {
+                          groupedByName[alert.name] = [];
+                        }
+                        groupedByName[alert.name].push(alert);
+                      });
                       
-                      return (
-                        <div key={item.name}>
-                          <button
-                            onClick={() => setExpandedAlerts(prev => ({...prev, [item.name]: !prev[item.name]}))}
-                            className={`${severityColor} border p-3 rounded flex justify-between items-center text-sm w-full hover:border-opacity-100 transition text-left`}
-                          >
-                            <div className="flex-1 min-w-0">
-                              <div className="font-semibold truncate">{item.name}</div>
-                              <div className="text-xs text-slate-400">
-                                {item.sets.length === 1 ? item.sets[0].name : `${item.sets.length} sets`} • {item.reorder_type}
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2 ml-3 flex-shrink-0">
-                              <div className="text-right">
-                                <div className={`font-bold text-lg ${textColor}`}>{item.totalQuantity}</div>
-                                <div className="text-xs text-slate-400">of {threshold}</div>
-                              </div>
-                              <ChevronDown className={`w-4 h-4 transition ${isExpanded ? 'rotate-180' : ''}`} />
-                            </div>
-                          </button>
-                          {isExpanded && (
-                            <div className="bg-slate-800 border border-slate-700 border-t-0 p-3 rounded-b space-y-2 text-xs">
-                              {itemsForCard.map(invItem => (
-                                <div key={invItem.id} className="bg-slate-700 bg-opacity-40 p-2 rounded flex justify-between">
-                                  <div>
-                                    <div className="text-slate-200">{invItem.set_name}</div>
-                                    <div className="text-slate-500">{invItem.set}</div>
-                                  </div>
-                                  <div className="text-right">
-                                    <div className="text-teal-300 font-semibold">{invItem.quantity}x</div>
-                                    <div className="text-slate-400">${parseFloat(invItem.purchase_price || 0).toFixed(2)}</div>
-                                  </div>
-                                </div>
-                              ))}
-                              <div className="border-t border-slate-600 pt-2 mt-2">
-                                <div className="flex justify-between font-semibold text-slate-300">
-                                  <span>Total Value:</span>
-                                  <span className="text-teal-300">${itemsForCard.reduce((sum, i) => sum + (parseFloat(i.purchase_price || 0) * i.quantity), 0).toFixed(2)}</span>
+                      return Object.entries(groupedByName).map(([cardName, cardAlerts]) => {
+                        const totalQty = cardAlerts.reduce((sum, a) => sum + a.quantity, 0);
+                        const threshold = reorderSettings[cardAlerts[0].reorder_type] || 5;
+                        const percentOfThreshold = (totalQty / threshold) * 100;
+                        const severity = percentOfThreshold < 25 ? 'critical' : percentOfThreshold < 75 ? 'warning' : 'low';
+                        const severityColor = severity === 'critical' ? 'bg-red-950 border-red-500' : severity === 'warning' ? 'bg-orange-950 border-orange-500' : 'bg-yellow-950 border-yellow-500';
+                        const textColor = severity === 'critical' ? 'text-red-300' : severity === 'warning' ? 'text-orange-300' : 'text-yellow-300';
+                        const isExpanded = expandedAlerts[cardName];
+                        
+                        return (
+                          <div key={cardName}>
+                            <button
+                              onClick={() => setExpandedAlerts(prev => ({...prev, [cardName]: !prev[cardName]}))}
+                              className={`${severityColor} border p-3 rounded flex justify-between items-center text-sm w-full hover:border-opacity-100 transition text-left`}
+                            >
+                              <div className="flex-1 min-w-0">
+                                <div className="font-semibold truncate">{cardName}</div>
+                                <div className="text-xs text-slate-400">
+                                  {cardAlerts.length === 1 ? cardAlerts[0].set_name : `${cardAlerts.length} sets`} • {cardAlerts[0].reorder_type}
                                 </div>
                               </div>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
+                              <div className="flex items-center gap-2 ml-3 flex-shrink-0">
+                                <div className="text-right">
+                                  <div className={`font-bold text-lg ${textColor}`}>{totalQty}</div>
+                                  <div className="text-xs text-slate-400">of {threshold}</div>
+                                </div>
+                                <ChevronDown className={`w-4 h-4 transition ${isExpanded ? 'rotate-180' : ''}`} />
+                              </div>
+                            </button>
+                            {isExpanded && (
+                              <div className="bg-slate-800 border border-slate-700 border-t-0 p-3 rounded-b space-y-2 text-xs">
+                                {cardAlerts.map(setItem => (
+                                  <div key={`${setItem.name}|${setItem.set_code}`} className="bg-slate-700 bg-opacity-40 p-2 rounded space-y-1">
+                                    <div className="flex justify-between">
+                                      <div>
+                                        <div className="text-slate-200">{setItem.set_name}</div>
+                                        <div className="text-slate-500">{setItem.set_code}</div>
+                                      </div>
+                                      <div className="text-right">
+                                        <div className="text-teal-300 font-semibold">{setItem.quantity}x</div>
+                                        <div className="text-slate-400">@${parseFloat(setItem.purchase_price || 0).toFixed(2)}</div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                                <div className="border-t border-slate-600 pt-2 mt-2 space-y-1">
+                                  <div className="flex justify-between text-slate-300">
+                                    <span>Cards Used/In Containers:</span>
+                                    <span className="text-orange-300 font-semibold">{cardAlerts.reduce((sum, a) => sum + (a.cardsInContainers || 0), 0)}</span>
+                                  </div>
+                                  <div className="flex justify-between font-semibold text-slate-300">
+                                    <span>Approx Reorder Total:</span>
+                                    <span className="text-emerald-300">
+                                      ${(
+                                        cardAlerts.reduce((sum, a) => {
+                                          const needed = Math.max(0, threshold - a.quantity);
+                                          return sum + (needed * parseFloat(a.purchase_price || 0));
+                                        }, 0)
+                                      ).toFixed(2)}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      });
+                    })()}
                   </div>
                 </div>
               ) : (
