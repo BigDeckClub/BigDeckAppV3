@@ -974,7 +974,7 @@ app.post('/api/containers/:id/sell', async (req, res) => {
     await client.query('BEGIN');
 
     const containerResult = await client.query(
-      'SELECT id, cards FROM containers WHERE id = $1 FOR UPDATE',
+      'SELECT id, name, cards FROM containers WHERE id = $1 FOR UPDATE',
       [req.params.id]
     );
     if (containerResult.rows.length === 0) {
@@ -982,7 +982,10 @@ app.post('/api/containers/:id/sell', async (req, res) => {
       return res.status(404).json({ error: 'Container not found' });
     }
 
-    const cards = containerResult.rows[0].cards;
+    const container = containerResult.rows[0];
+    const cards = container.cards;
+
+    console.log(`[SELL] Starting sale process for container id=${container.id}, name="${container.name}", sale_price=${salePrice}`);
 
     for (const card of cards) {
       // Ensure proper integer types for card data
@@ -1009,9 +1012,13 @@ app.post('/api/containers/:id/sell', async (req, res) => {
     }
 
     const sale = await client.query(
-      `INSERT INTO sales (container_id, sale_price) VALUES ($1, $2) RETURNING *`,
-      [req.params.id, salePrice]
+      `INSERT INTO sales (container_id, container_name, sale_price, sale_date) 
+       VALUES ($1, $2, $3, NOW()) 
+       RETURNING *`,
+      [req.params.id, container.name, salePrice]
     );
+
+    console.log(`[SELL] ✅ Sale recorded: id=${sale.rows[0].id}, container_id=${container.id}, price=${salePrice}`);
 
     // Delete container after recording sale
     await client.query(
@@ -1019,13 +1026,15 @@ app.post('/api/containers/:id/sell', async (req, res) => {
       [req.params.id]
     );
 
+    console.log(`[SELL] ✅ Container deleted: id=${req.params.id}`);
+
     await client.query('COMMIT');
     res.json(sale.rows[0]);
 
   } catch (err) {
     await client.query('ROLLBACK');
-    console.error('Sell error:', err);
-    res.status(500).json({ error: 'Failed to sell container' });
+    console.error('[SELL] ❌ Sell error:', err.message);
+    res.status(500).json({ error: 'Failed to sell container', details: err.message });
   } finally {
     client.release();
   }
