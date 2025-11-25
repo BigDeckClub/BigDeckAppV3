@@ -1241,12 +1241,19 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
     }
     
     console.log(`Final result: TCG=${tcgPrice}, CK=${ckPrice}\n`);
+    console.log("[DEBUG] About to send response...");
     
-    res.json({ tcg: tcgPrice, ck: ckPrice });
+    const response = { tcg: tcgPrice, ck: ckPrice };
+    console.log("[DEBUG] Response object:", response);
+    
+    res.json(response);
+    console.log("[DEBUG] Response sent successfully");
     
   } catch (error) {
     console.error('Price fetch error:', error);
-    res.json({ tcg: 'N/A', ck: 'N/A' });
+    const fallbackResponse = { tcg: 'N/A', ck: 'N/A' };
+    console.error("[DEBUG] Sending fallback response:", fallbackResponse);
+    res.json(fallbackResponse);
   }
 });
 
