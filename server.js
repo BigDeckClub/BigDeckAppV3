@@ -859,15 +859,12 @@ app.post('/api/containers', async (req, res) => {
     // Fallback to empty array
     if (!Array.isArray(cardsArray)) cardsArray = [];
 
-    // Decrement inventory for each card allocated to container
-    for (const card of cardsArray) {
-      if (card.inventoryId && card.quantity_used > 0) {
-        await client.query(
-          'UPDATE inventory SET quantity = quantity - $1 WHERE id = $2',
-          [card.quantity_used, card.inventoryId]
-        );
-      }
-    }
+    // NOTE: Do NOT decrement inventory when creating containers
+    // The inventory.quantity represents total copies purchased and should only change when:
+    // 1. A container is sold (then inventory decrements)
+    // 2. The item is directly edited
+    // Cards in containers are tracked via containers.cards JSONB field
+    // The frontend calculates available = total - sum(cards in active containers)
 
     // Insert container with enriched cards as JSONB
     const { rows } = await client.query(
