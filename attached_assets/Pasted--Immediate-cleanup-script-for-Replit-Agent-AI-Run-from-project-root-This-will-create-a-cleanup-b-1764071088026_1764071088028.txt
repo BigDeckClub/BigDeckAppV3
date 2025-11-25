@@ -1,0 +1,71 @@
+# Immediate cleanup script for Replit Agent AI
+# Run from project root. This will create a cleanup branch, comment out temporary debug console.logs
+# and debug-marked lines, run a quick smoke check, commit, push, and print verification steps.
+
+# 1) Create a cleanup branch
+git fetch origin
+git checkout -b cleanup/remove-debug-logs
+
+# 2) Find files containing debug patterns (show for review)
+echo "=== Files with debug console.log or debug tags ==="
+grep -R --line-number -E "console\.log\(|\[CACHE READ\]|\[CACHE WRITE\]|\[INFLIGHT|DECKLIST\]|APP BOOT|\[FETCH\]|\[PRICE DEBUG\]" src || true
+
+# 3) Comment out plain console.log(...) lines in src files (safe, reversible)
+# This comments any line starting with optional whitespace followed by console.log(
+# NOTE: This will modify files in-place. Review changes before committing.
+grep -rl --line-number "console\.log(" src | while read -r file; do
+  sed -i -E 's/^([[:space:]]*)console\.log\((.*)\);?/\1\/\/ console.log(\2); \/\/ DEBUG REMOVED/' "$file"
+done
+
+# 4) Also comment explicit debug-tagged logs (if they are not standard console.log usage).
+# For lines that include the debug markers, comment the entire line.
+for pattern in "\[CACHE READ\]" "\[CACHE WRITE\]" "\[INFLIGHT" "\[DECKLIST\]" "\[APP BOOT\]" "\[FETCH\]" "\[PRICE DEBUG\]"; do
+  grep -rl --line-number "$pattern" src 2>/dev/null | while read -r file; do
+    sed -i -E "s/^(.*$pattern.*)$/\/\/ DEBUG REMOVED: \1/" "$file"
+  done
+done
+
+# 5) Show a quick diff for review
+echo "=== Git status / diff of changes to review ==="
+git add -A
+git --no-pager diff --staged --name-only
+git --no-pager diff --staged | sed -n '1,200p'
+
+# 6) Run linters/tests (if available). If none, run the dev build to smoke test.
+if [ -f package.json ]; then
+  # Prefer lint if available
+  if npm run -s lint >/dev/null 2>&1; then
+    npm run lint
+  fi
+
+  # Run unit tests if present
+  if npm test --silent >/dev/null 2>&1; then
+    echo "Running tests..."
+    npm test
+  else
+    echo "No tests configured or 'npm test' failed/absent. Proceeding to smoke run."
+  fi
+
+  # Smoke-run dev server for quick local check (will block until terminated).
+  # Optionally use a build command instead:
+  if npm run -s build >/dev/null 2>&1; then
+    echo "Build succeeded."
+  else
+    echo "Build command failed or not present; you can run 'npm run dev' to manually verify."
+  fi
+fi
+
+# 7) Commit and push the cleanup branch
+git commit -m "chore: remove temporary debug logs and instrumentation (cleanup)" || echo "Nothing to commit"
+git push -u origin HEAD
+
+# 8) Post-cleanup verification (manual steps for the agent)
+echo
+echo "CLEANUP COMPLETE. Next manual verification steps:"
+echo "1) Open the app in the browser (npm run dev / vite local URL) and check console for leftover debug logs."
+echo "2) Verify Decklists and Inventory show real prices (Lightning Bolt, Sol Ring, Swamp)."
+echo "3) Run a grep to ensure no remaining debug markers:"
+echo "   grep -R -n -E \"console\\.log\\(|\\[CACHE READ\\]|\\[CACHE WRITE\\]|\\[INFLIGHT|\\[DECKLIST\\]|APP BOOT|\\[FETCH\\]|\\[PRICE DEBUG\\]\" src || echo 'No debug logs found'"
+echo "4) Open a PR from cleanup/remove-debug-logs -> main with description: 'chore: remove temporary debug logs used during decklist pricing debugging'"
+echo
+echo "If any debug logs still appear in files you want preserved (e.g., for permanent telemetry), manually review the staged changes before committing and adjust as needed."

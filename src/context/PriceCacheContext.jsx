@@ -8,26 +8,26 @@ export function PriceCacheProvider({ children }) {
   const inflightRef = useRef({}); // Track in-flight requests to dedupe
 
   function getPrice(name, setCode) {
-    console.log(`[CONTEXT] getPrice called with name="${name}" setCode="${setCode}"`);
+    // DEBUG: console.log(`[CONTEXT] getPrice called with name="${name}" setCode="${setCode}"`);
     const key = `${name}|${setCode}`;
 
     // Check cache first
     if (cache[key]) {
-      console.log(`[CACHE READ] ${key}:`, cache[key]);
+      // DEBUG: console.log(`[CACHE READ] ${key}:`, cache[key]);
       return Promise.resolve(cache[key]);
     }
 
     // Check if already fetching this card (dedupe concurrent requests)
     if (inflightRef.current[key]) {
-      console.log(`[CACHE DEDUPE] ${key} - request already in flight`);
+      // DEBUG: console.log(`[CACHE DEDUPE] ${key} - request already in flight`);
       return inflightRef.current[key];
     }
 
     // Start new fetch
-    console.log(`[CACHE MISS] ${key} - fetching from backend...`);
+    // DEBUG: console.log(`[CACHE MISS] ${key} - fetching from backend...`);
     const promise = fetchCardPrices(name, setCode)
       .then(result => {
-        console.log(`[CACHE WRITE] ${key}:`, result);
+        // DEBUG: console.log(`[CACHE WRITE] ${key}:`, result);
         // Only write to cache after backend responds
         setCache(prev => ({ ...prev, [key]: result }));
         // Clean up inflight tracker
@@ -35,7 +35,7 @@ export function PriceCacheProvider({ children }) {
         return result;
       })
       .catch(err => {
-        console.error(`[CACHE ERROR] ${key}:`, err);
+        // DEBUG: console.error(`[CACHE ERROR] ${key}:`, err);
         const fallback = { tcg: "N/A", ck: "N/A" };
         setCache(prev => ({ ...prev, [key]: fallback }));
         delete inflightRef.current[key];

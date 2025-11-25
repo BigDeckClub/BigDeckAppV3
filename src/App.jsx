@@ -200,9 +200,9 @@ function MTGInventoryTrackerContent() {
         // Use unified pricing via PriceCacheContext
         const normalizedName = normalizeCardName(item.name);
         const normalizedSet = normalizeSetCode(item.set);
-        console.log(`[CONTAINER] requesting ${normalizedName}|${normalizedSet}`);
+        // DEBUG: // DEBUG: console.log(`[CONTAINER] requesting ${normalizedName}|${normalizedSet}`);
         const priceData = await getPrice(normalizedName, normalizedSet);
-        console.log(`[CONTAINER] resolved ${normalizedName}|${normalizedSet}:`, priceData);
+        // DEBUG: // DEBUG: console.log(`[CONTAINER] resolved ${normalizedName}|${normalizedSet}:`, priceData);
         
         if (priceData && priceData.tcg !== "N/A") {
           const tcgPrice = parseFloat(String(priceData.tcg).replace("$", "")) || 0;
@@ -218,7 +218,7 @@ function MTGInventoryTrackerContent() {
           ckTotal += ckPrice * quantity;
         }
       } catch (err) {
-        console.error(`[CONTAINER] getPrice error for ${item.name}|${item.set}:`, err);
+        // DEBUG: // DEBUG: console.error(`[CONTAINER] getPrice error for ${item.name}|${item.set}:`, err);
       }
     }
 

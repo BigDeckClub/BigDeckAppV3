@@ -9,9 +9,9 @@ export default function DecklistCardPrice({ name, set }) {
   useEffect(() => {
     const cardName = normalizeCardName(name);
     const setCode = normalizeSetCode(set);
-    console.log(`[DECKLIST-COMPONENT] requesting ${cardName}|${setCode}`);
+    // DEBUG: console.log(`[DECKLIST-COMPONENT] requesting ${cardName}|${setCode}`);
     getPrice(cardName, setCode).then(price => {
-      console.log(`[DECKLIST-COMPONENT] resolved ${cardName}|${setCode}:`, price);
+      // DEBUG: console.log(`[DECKLIST-COMPONENT] resolved ${cardName}|${setCode}:`, price);
       setPrice(price);
     });
   }, [name, set, getPrice]);
