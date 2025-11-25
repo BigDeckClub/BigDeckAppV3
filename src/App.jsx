@@ -133,7 +133,10 @@ export default function MTGInventoryTracker() {
       const CACHE_DURATION_MS = 2 * 60 * 60 * 1000; // 2 hours (shorter to avoid stale N/A)
 
       const loadPrices = async () => {
-        const priceData = await fetchCardPrices(normalizedName, normalizedSet);
+        const priceData = await fetchCardPrices(
+          normalizedName || cardName,
+          normalizedSet || setCode
+        );
         if (isMounted) {
           // Don't cache N/A values - always refetch if we get N/A
           if (priceData.tcg === "N/A" || priceData.ck === "N/A") {
@@ -172,7 +175,7 @@ export default function MTGInventoryTracker() {
       return () => {
         isMounted = false;
       };
-    }, [cardName, setCode]);
+    }, [cardName, setCode, priceCache]);
 
     return (
       <div className="text-xs flex gap-4 mt-2">
