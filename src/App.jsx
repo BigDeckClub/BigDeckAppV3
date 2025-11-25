@@ -1526,6 +1526,7 @@ function MTGInventoryTrackerContent() {
                               {containerItems[container.id].map((item, idx) => {
                                 const isExpanded = expandedCardCopies[`${container.id}-${idx}`];
                                 const itemCost = parseFloat(item.purchase_price || 0) * (parseInt(item.quantity_used) || 0);
+                                const inventoryItem = inventory.find(inv => inv.id === String(item.inventoryId));
                                 
                                 return (
                                   <div key={idx} className="bg-slate-800 bg-opacity-50 border border-slate-600 rounded">
@@ -1541,6 +1542,11 @@ function MTGInventoryTrackerContent() {
                                         <div className="text-xs text-slate-400">
                                           {item.set_name} ({item.set})
                                         </div>
+                                        {inventoryItem && (
+                                          <div className="text-xs text-slate-500 mt-1">
+                                            From Inventory • Purchased {new Date(inventoryItem.purchase_date).toLocaleDateString()}
+                                          </div>
+                                        )}
                                       </div>
                                       <div className="flex items-center gap-3">
                                         <div className="text-right text-xs">
