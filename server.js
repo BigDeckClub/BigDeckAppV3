@@ -41,9 +41,30 @@ function extractEditionFromUrl(url) {
 function extractEditionFromHtml(el, $) {
   // PRIMARY METHOD: Extract edition from product URL (most reliable, always in HTML)
   // URLs like: /mtg/magic-2011/lightning-bolt → "magic 2011"
-  const productLink = $(el).find('a').first();
+  
+  // Try to find product link in various ways
+  let href = null;
+  
+  // First try: look for link with /mtg/ in href (most reliable)
+  const productLink = $(el).find('a[href*="/mtg/"]').first();
   if (productLink.length > 0) {
-    const href = productLink.attr('href');
+    href = productLink.attr('href');
+  }
+  
+  // Second try: check data attributes that might contain URL
+  if (!href) {
+    href = $(el).attr('data-product-url') || $(el).attr('href');
+  }
+  
+  // Third try: get any href from first link
+  if (!href) {
+    const anyLink = $(el).find('a').first();
+    if (anyLink.length > 0) {
+      href = anyLink.attr('href');
+    }
+  }
+  
+  if (href) {
     const editionFromUrl = extractEditionFromUrl(href);
     if (editionFromUrl) {
       return editionFromUrl;
