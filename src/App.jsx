@@ -464,31 +464,31 @@ export default function MTGInventoryTracker() {
     try {
       let normalizedSet = (setCode || "").trim().toUpperCase();
 
-      // Basic lands often have missing or invalid set codes in the inventory.
-      // If Swamp (or any basic land) has no valid setCode, fallback to SPM,
-      // which is correctly priced by the backend.
       if (
         !normalizedSet ||
-        normalizedSet === "BASIC LAND" ||
-        normalizedSet === "BASICLAND"
+        normalizedSet === "BASICLAND" ||
+        normalizedSet === "BASIC LAND"
       ) {
-        normalizedSet = "SPM";
+        normalizedSet = "SPM"; // fallback for basic lands
       }
 
       const response = await fetch(
-        `${API_BASE}/price?name=${encodeURIComponent(cardName)}&set=${encodeURIComponent(normalizedSet)}`,
+        `/api/price?name=${encodeURIComponent(cardName)}&set=${encodeURIComponent(normalizedSet)}`
       );
-      if (response.ok) {
-        const priceData = await response.json();
-        return {
-          tcg: priceData.tcg || "N/A",
-          ck: priceData.ck || "N/A",
-        };
+
+      if (!response.ok) {
+        return { tcg: "N/A", ck: "N/A" };
       }
-    } catch (error) {
-      // Silently handle errors
+
+      const priceData = await response.json();
+      return {
+        tcg: priceData.tcg || "N/A",
+        ck: priceData.ck || "N/A",
+      };
+    } catch (err) {
+      console.error("Price fetch error:", err);
+      return { tcg: "N/A", ck: "N/A" };
     }
-    return { tcg: "N/A", ck: "N/A" };
   };
 
   const searchScryfall = async (query) => {
