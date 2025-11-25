@@ -23,40 +23,15 @@ app.use(helmet({
   contentSecurityPolicy: false
 }));
 
-// Secure, dynamic CORS handler for Replit
-const allowedOrigins = [
-  'http://localhost:3000',
-  'http://localhost:5000',
-  'http://127.0.0.1:3000',
-  'http://127.0.0.1:5000'
-];
-
+// CORS handler - allow all origins in development/production
 app.use(cors({
-  origin: (origin, callback) => {
-    // Allow server-to-server, curl, mobile apps
-    if (!origin) return callback(null, true);
-
-    // Allow explicitly in the safelist
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-
-    // Allow ALL Replit proxy deployments (multi-level subdomains)
-    if (
-      /^https:\/\/.*\.replit\.dev$/.test(origin) ||
-      /^https:\/\/.*\.repl\.co$/.test(origin)
-    ) {
-      return callback(null, true);
-    }
-
-    // Otherwise block
-    return callback(new Error('CORS blocked for origin: ' + origin));
-  },
-
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  origin: '*',
+  credentials: false,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+console.log('[DEBUG] CORS enabled for all origins');
 
 app.use(bodyParser.json());
 
@@ -1761,19 +1736,42 @@ process.on('SIGINT', async () => {
   process.exit(0);
 });
 
+// ========== DEBUG LOGGING ==========
+console.log('[DEBUG] Environment Variables:');
+console.log('[DEBUG] DATABASE_URL:', process.env.DATABASE_URL ? '✓ SET' : '✗ NOT SET');
+console.log('[DEBUG] NODE_ENV:', process.env.NODE_ENV || 'not set');
+console.log('[DEBUG] PORT:', process.env.PORT || 'will default to 3000');
+
+// ========== REQUEST LOGGING ==========
+app.use((req, res, next) => {
+  console.log(`[ROUTE] ${req.method} ${req.path}`);
+  next();
+});
+
 // ========== STATIC FILES FOR PRODUCTION ==========
 const distPath = path.join(__dirname, 'dist');
-app.use(express.static(distPath));
+console.log('[DEBUG] Static files path:', distPath);
+app.use(express.static(distPath, { 
+  setHeaders: (res, path) => {
+    if (path.endsWith('.js') || path.endsWith('.css')) {
+      res.setHeader('Cache-Control', 'public, max-age=3600');
+    }
+  }
+}));
 
 // ========== SPA CATCH-ALL (must be last) ==========
-app.get('/{*splat}', (req, res) => {
+app.get('*', (req, res) => {
   if (req.path.startsWith('/api/')) {
-    return res.status(404).json({ error: 'Not found' });
+    return res.status(404).json({ error: 'API endpoint not found' });
   }
-  res.sendFile(path.join(distPath, 'index.html'));
+  console.log('[SPA] Serving index.html for:', req.path);
+  res.sendFile(path.join(distPath, 'index.html'), (err) => {
+    if (err) console.error('[SPA] Error serving index.html:', err);
+  });
 });
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`[SERVER] ✓ Running on port ${PORT}`);
+  console.log(`[SERVER] ✓ Static files served from ${distPath}`);
 });
