@@ -125,12 +125,28 @@ function isSuspiciousByOrdering(index, firstNormalIndex) {
   return index > firstNormalIndex;
 }
 
-function classifyVariantEnhanced(product, index, firstNormalIndex, baseCardName) {
+function shouldPromoteSetOverNormal(setPrice, normalPrice) {
+  if (setPrice == null || normalPrice == null) return false;
+  const ratio = normalPrice / setPrice;
+  return ratio >= 3;
+}
+
+function classifyVariantEnhanced(product, index, firstNormalIndex, baseCardName, globalPriceContext) {
   const { name, price } = product;
   const result = classifyVariant(name, baseCardName);
   const normalized = normalizeName(name);
 
-  if (result !== "normal") return result;
+  if (result !== "normal") {
+    // Special logic: if it's a set edition and massively cheaper than normal editions,
+    // promote it to normal (handles bulk basics like Swamp)
+    if (result === "set" && globalPriceContext) {
+      const { lowestNormalPrice } = globalPriceContext;
+      if (shouldPromoteSetOverNormal(price, lowestNormalPrice)) {
+        return "normal";
+      }
+    }
+    return result;
+  }
 
   // Check for suspiciously HIGH prices first (premium/graded editions)
   if (isSuspiciouslyExpensive(baseCardName, price)) {
@@ -399,7 +415,46 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
         
         const productPrices = [];
         let firstNormalIndex = null;
+        let lowestNormalPrice = Infinity;
         
+        // First pass: identify all products and find lowest "normal" price
+        products.each((i, el) => {
+          let nameEl = $(el).find('a').first();
+          if (nameEl.length === 0) nameEl = $(el).find('.product-name, .item-title, [class*="name"]').first();
+          
+          let priceEl = $(el).find('span.stylePrice').first();
+          if (priceEl.length === 0) priceEl = $(el).find('span.price, div.price, [class*="price"]').first();
+          
+          let name = nameEl.length > 0 ? nameEl.text().trim().toLowerCase() : '';
+          let rawPrice = priceEl.length > 0 ? priceEl.text().trim() : '';
+          
+          if (!rawPrice) {
+            const productHtml = $(el).html();
+            const prices = extractPricesFromText(productHtml);
+            if (prices.length > 0) {
+              const bestPrice = Math.min(...prices.filter(p => isValidPrice(p)));
+              if (bestPrice && Number.isFinite(bestPrice)) {
+                rawPrice = `$${bestPrice.toFixed(2)}`;
+              }
+            }
+          }
+          
+          const target = cardName.toLowerCase();
+          if (name && name.includes(target)) {
+            const numericPrice = rawPrice ? extractNumericPrice(rawPrice) : 0;
+            
+            if (isValidPrice(numericPrice)) {
+              const variant = classifyVariant(name, cardName);
+              if (variant === "normal" && numericPrice < lowestNormalPrice) {
+                lowestNormalPrice = numericPrice;
+              }
+            }
+          }
+        });
+        
+        const globalPriceContext = { lowestNormalPrice: lowestNormalPrice === Infinity ? null : lowestNormalPrice };
+        
+        // Second pass: classify with context
         products.each((i, el) => {
           let nameEl = $(el).find('a').first();
           if (nameEl.length === 0) nameEl = $(el).find('.product-name, .item-title, [class*="name"]').first();
@@ -430,7 +485,8 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
                 { name, price: numericPrice },
                 productPrices.length,
                 firstNormalIndex,
-                cardName
+                cardName,
+                globalPriceContext
               );
               
               if (variant === "normal" && firstNormalIndex === null) {

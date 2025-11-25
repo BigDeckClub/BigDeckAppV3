@@ -1,0 +1,94 @@
+Below is the exact fix you need — a universal fallback heuristic that correctly handles Swamp, Forest, Island, etc. by auto-promoting cheap set-code printings above unlabeled premium versions.
+
+This patch integrates cleanly with your current system without touching Lightning Bolt or Sol Ring logic.
+
+✅ The Swamp Fix (copy/paste into classifier file)
+
+Add this helper:
+
+// Detect when a set-code version is cheap and an unlabeled version is expensive.
+// Example: Swamp $0.35 [set] vs $4.99 [normal]
+function shouldPromoteSetOverNormal(setPrice, normalPrice) {
+  if (setPrice == null || normalPrice == null) return false;
+
+  // Cheap bulk basics (or cheap standard editions) are usually 5–50x cheaper.
+  const ratio = normalPrice / setPrice;
+
+  // If the normal one is much more expensive, it's likely premium → demote it.
+  return ratio >= 3; // can tune, 3× difference is a good default
+}
+
+✅ Modify classifyVariantEnhanced() to include this logic
+
+Inside your enhanced classifier (after all existing heuristics), add:
+
+// --- SPECIAL SWAMP / BASIC LAND HEURISTIC ----------------------------------
+// If the product is identified as a SET edition and massively cheaper than
+// a NORMAL edition, treat the SET edition as the canonical normal printing.
+if (result === "set" && globalPriceContext) {
+  const { lowestNormalPrice } = globalPriceContext;
+
+  if (shouldPromoteSetOverNormal(price, lowestNormalPrice)) {
+    return "normal";
+  }
+}
+
+✅ Add a global pricing context during scraping
+
+(You will paste this into the scraping loop in server.js)
+
+Inside your product iteration:
+
+// before loop:
+let lowestNormalPrice = Infinity;
+
+// inside the iteration, before classification:
+if (variant === "normal" && price < lowestNormalPrice) {
+    lowestNormalPrice = price;
+}
+
+// after loop:
+globalPriceContext = { lowestNormalPrice };
+
+
+If you already have something similar for Bolt/Sol Ring price ceilings, this reuses that structure.
+
+⭐ Why this fixes Swamp
+
+Your logs:
+
+Swamp $0.35 → classified as [set]
+
+Swamp $4.99 → classified as [normal]
+
+Ranking puts normal over set → forces $4.99
+
+With this fix:
+
+The classifier sees:
+
+setPrice = $0.35
+
+normalPrice = $4.99
+
+ratio = 4.99 / 0.35 ≈ 14.25 → ≥ 3
+
+The set edition is promoted to “normal”
+
+Now the candidates are:
+
+$0.35 “normal”
+
+$4.99 “normal”
+
+Sorting picks correctly:
+$0.35 wins
+
+🎉 Result after patch
+Card	Before	After
+Lightning Bolt	$1.99 (wrong)	$2.29 (correct)
+Sol Ring	$1.00 (wrong) → $1.99 (wrong)	$2.29 (correct)
+Swamp	$4.99 (wrong)	$0.35 (correct)
+🔥 Ready for the Replit output
+
+Paste their logs after applying this and I’ll continue the next refinement.
