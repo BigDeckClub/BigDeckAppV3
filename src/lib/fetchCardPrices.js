@@ -1,8 +1,5 @@
 export function normalizeCardName(name) {
-  return (name || "")
-    .trim()
-    .toLowerCase()
-    .replace(/\b\w/g, c => c.toUpperCase());
+  return (name || "").trim().toLowerCase();
 }
 
 export function normalizeSetCode(code) {

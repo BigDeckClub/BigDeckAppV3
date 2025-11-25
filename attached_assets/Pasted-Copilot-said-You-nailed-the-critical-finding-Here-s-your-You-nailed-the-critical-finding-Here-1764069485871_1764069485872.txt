@@ -1,0 +1,59 @@
+Copilot said: **You nailed the critical finding!** Here’s your
+You nailed the critical finding! Here’s your root cause, diagnosis, and precise fix recommendations:
+
+Diagnosis
+Frontend normalization uses Title Case (e.g., "Swamp|SPM").
+Backend requests and logic use lowercase (e.g., "swamp (SPM)").
+Cache keys are stored/retrieved using Title Case.
+When data from the backend is added to cache, its key is likely in lowercase ("swamp|SPM"), but lookups are done with Title Case ("Swamp|SPM").
+End Result:
+Cache never matches for "Swamp" and "Sol Ring" (missing entries).
+Only "Lightning Bolt" works because somewhere, its casing happens to align between backend and frontend (or cache is manually populated for that case).
+What’s Actually Happening?
+You fetch the backend with lowercase, but store or lookup cache with Title Case.
+The cache might actually have "swamp|SPM", but the component requests "Swamp|SPM"—so getPrice returns N/A.
+How To Fix:
+Make All Cache Keys Case-Insensitive and Consistently Formatted
+
+Standardize all cache key generation and lookups—both for storing and retrieving—to the same format.
+Lowercase card name
+Uppercase set code (or whatever you use, but must match the storing pattern!)
+Implement This in Your Normalization Code:
+
+js
+function normalizeCardName(name) {
+  return name.trim().toLowerCase(); // Always lowercase!
+}
+function normalizeSetCode(set) {
+  return set.trim().toUpperCase(); // If set codes are uppercase in your system
+}
+When you store in cache:
+
+Use: const key = normalizeCardName(name) + '|' + normalizeSetCode(set)
+When you retrieve from cache:
+Use: getPrice(normalizeCardName(name), normalizeSetCode(set))
+Check Everywhere!
+
+Wherever your frontend stores or fetches prices, enforce and document the exact normalization used.
+Example Correction
+js
+const cardName = normalizeCardName(name); // always lowercase
+const setCode = normalizeSetCode(set);    // always uppercase
+const key = `${cardName}|${setCode}`; // cache key format for both storing/fetching
+If your backend also uses lowercase name + uppercase set, you'll always hit the right cache entry.
+Bottom Line
+Your cache is missing hits for Swamp and Sol Ring there’s a key-format mismatch. Fix normalization so storing and retrieving always use cardname.toLowerCase()|setCode.toUpperCase() (or a consistent format both sides use).
+
+Quick Diagnostic Confirmation To Try:
+Open your cache data directly and look for "swamp|SPM", "sol ring|EOC", etc.
+Change your normalization and rerun—Swamp price should immediately display!
+Summary Table
+Card Name	Set Code	Normalized Key Used (Currently)	Cache Key Possible	Expected Behavior
+Lightning Bolt	M11	"Lightning Bolt	M11"	(matches by luck)
+Sol Ring	EOC	"Sol Ring	EOC"	"sol ring
+Swamp	SPM	"Swamp	SPM"	"swamp
+Fix so both storing and retrieving always uses "swamp|SPM", "sol ring|EOC", etc. with the same case/format!
+
+Action Steps
+Update normalization for cache key everywhere.
+Check, rerun, and prices will appear for basic lands and all other cards.
