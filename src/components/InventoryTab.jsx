@@ -153,6 +153,7 @@ export const InventoryTab = ({
             <input
               type="date"
               value={newEntry.purchaseDate}
+              max={new Date().toISOString().split("T")[0]}
               onChange={(e) => setNewEntry({...newEntry, purchaseDate: e.target.value})}
               className="bg-slate-800 border border-slate-600 rounded px-4 py-2 text-white"
             />
