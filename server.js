@@ -345,20 +345,27 @@ async function fetchCardKingdomPriceFromWidget(cardName, setCode) {
     }
     
     const html = await response.text();
+    const $ = load(html);
     
-    // Look for prices in the widget HTML
-    // Card Kingdom widget typically shows multiple prices, we want the retail price (not bid)
-    // Extract all prices and get the middle/higher one which is typically the retail asking price
-    const priceMatches = html.match(/\$[\d.]+/g);
-    
-    if (priceMatches && priceMatches.length > 0) {
-      // If there are multiple prices, return the second or third one
-      // (first is often bid, later ones are asking prices)
-      if (priceMatches.length >= 2) {
-        // Try the second price (often the retail asking price)
-        return priceMatches[1];
+    // Try to find the price in table rows
+    // Card Kingdom typically shows: Buy | Qty | Sell columns
+    // We want the Sell (retail asking) price, which is usually the higher price
+    let prices = [];
+    $('tr').each((idx, row) => {
+      const cells = $(row).find('td');
+      if (cells.length >= 3) {
+        const priceText = $(cells[2]).text().trim();
+        const match = priceText.match(/\$[\d.]+/);
+        if (match) {
+          prices.push(match[0]);
+        }
       }
-      return priceMatches[0];
+    });
+    
+    if (prices.length > 0) {
+      // Sort prices numerically and return the highest (retail asking price)
+      prices.sort((a, b) => parseFloat(b.replace('$', '')) - parseFloat(a.replace('$', '')));
+      return prices[0];
     }
     
     return 'N/A';
