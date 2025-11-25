@@ -2074,7 +2074,7 @@ function MTGInventoryTrackerContent() {
                 <div className="bg-slate-800 border border-slate-600 p-4">
                   <div className="text-slate-400 text-sm">Total Unique Cards</div>
                   <div className="text-2xl font-bold text-teal-300">
-                    {inventory.length}
+                    {inventory.filter(card => (card.quantity || 0) > 0).length}
                   </div>
                 </div>
                 <div className="bg-slate-800 border border-slate-600 p-4">
@@ -2123,7 +2123,7 @@ function MTGInventoryTrackerContent() {
                         .filter((card) => new Date(card.purchase_date) >= sixtyDaysAgo)
                         .reduce(
                           (sum, card) =>
-                            sum + ((parseFloat(card.purchase_price) || 0) * ((card.quantity || 0) + (card.quantity_in_containers || 0))),
+                            sum + (parseFloat(card.purchase_price) || 0),
                           0,
                         )
                         .toFixed(2);
