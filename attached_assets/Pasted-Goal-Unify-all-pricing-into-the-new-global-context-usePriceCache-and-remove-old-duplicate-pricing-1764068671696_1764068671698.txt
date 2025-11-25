@@ -1,0 +1,118 @@
+Goal:
+Unify all pricing into the new global context (usePriceCache) and remove old duplicate pricing logic that is causing “N/A” and inconsistent behavior.
+
+Follow the steps exactly in order.
+
+✅ 1. OPEN src/App.jsx AND DELETE THE OLD MarketPrices COMPONENT
+
+Search for a function that looks like this:
+
+function MarketPrices({ cardName, setCode }) {
+    ...
+}
+
+
+Delete the entire component, including its React.useEffect and return block.
+
+You should NOT leave any references to the old MarketPrices logic in App.jsx.
+
+✅ 2. ENSURE App.jsx IMPORTS THE NEW DECKLISTCARDPRICE COMPONENT
+
+At the top of App.jsx, add:
+
+import DecklistCardPrice from "./components/DecklistCardPrice";
+
+
+If it already exists, leave it.
+
+✅ 3. UPDATE THE PROPS PASSED TO InventoryTab
+
+Find where InventoryTab is rendered inside App.jsx.
+It will look like:
+
+<InventoryTab
+   ...
+   MarketPrices={MarketPrices}
+   ...
+/>
+
+
+Replace that line with:
+
+<InventoryTab
+   ...
+   MarketPrices={DecklistCardPrice}
+   ...
+/>
+
+
+This makes Inventory use the new pricing engine.
+
+✅ 4. OPEN src/components/InventoryTab.jsx AND ENSURE IT USES THE PASSED-IN MARKETPRICES COMPONENT
+
+Inside InventoryTab.jsx, there will be a render section that looks like:
+
+<MarketPrices cardName={item.name} setCode={item.set} />
+
+
+Do NOT change this.
+Just confirm this exact line exists.
+
+This ensures Inventory uses whichever MarketPrices we pass from App.jsx—now the correct one.
+
+✅ 5. REMOVE ALL OLD PRICING LOGIC INSIDE InventoryTab.jsx
+
+Search for and DELETE every occurrence of:
+
+fetchCardPrices(
+priceCache
+setPriceCache
+prev => ({ ...prev
+cachedPrice
+oldPrice
+
+
+These belonged to the old pricing pipeline and MUST be removed.
+
+Do NOT delete the MarketPrices JSX call—only delete internal legacy pricing logic.
+
+✅ 6. CONFIRM DECKLISTCARDPRICE IS USING THE GLOBAL CACHE
+
+Open src/components/DecklistCardPrice.jsx and confirm it contains:
+
+const { getPrice } = usePriceCache();
+
+
+Do not modify if it's correct.
+
+✅ 7. CONFIRM YOU ARE IMPORTING THE PRICECACHEPROVIDER IN APP.JSX
+
+At the top of App.jsx, ensure:
+
+import { PriceCacheProvider } from "./context/PriceCacheContext";
+
+
+Then confirm the root JSX is wrapped like:
+
+<PriceCacheProvider>
+   <App content here… />
+</PriceCacheProvider>
+
+
+If not, wrap it.
+
+✅ 8. DELETE ANY REMAINING DUPLICATED FETCH OR NORMALIZATION FUNCTIONS IN APP.JSX
+
+Search App.jsx for:
+
+fetchCardPrices(
+normalizeCardName(
+normalizeSetCode(
+
+
+Remove any function definitions for these inside App.jsx.
+Do NOT delete imports—only delete duplicate local versions.
+
+The ONLY valid versions must exist in:
+
+src/lib/fetchCardPrices.js

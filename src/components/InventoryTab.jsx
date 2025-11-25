@@ -321,7 +321,7 @@ export const InventoryTab = ({
                               </div>
                               <div className="flex items-center gap-3 ml-4">
                                 <div className="flex flex-col items-center gap-2">
-                                  <MarketPrices cardName={item.name} setCode={item.set} />
+                                  <MarketPrices name={item.name} set={item.set} />
                                   <div className="bg-slate-800 bg-opacity-50 border border-slate-600 rounded px-2 py-1 text-xs">
                                     <div className="text-slate-400">Avg Cost</div>
                                     <div className="font-bold text-green-300">${avgPrice.toFixed(2)}</div>

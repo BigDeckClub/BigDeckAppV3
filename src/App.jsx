@@ -19,7 +19,6 @@ import { useDebounce } from "./utils/useDebounce";
 import { InventoryTab } from "./components/InventoryTab";
 import { PriceCacheProvider, usePriceCache } from "./context/PriceCacheContext";
 import DecklistCardPrice from "./components/DecklistCardPrice";
-import { normalizeCardName, normalizeSetCode } from "./lib/fetchCardPrices";
 
 // Use relative path - Vite dev server will proxy to backend
 const API_BASE = "/api";
@@ -72,7 +71,6 @@ function MTGInventoryTrackerContent() {
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [expandedCards, setExpandedCards] = useState({});
-  const [priceCache, setPriceCache] = useState({});
   const [expandedContainers, setExpandedContainers] = useState({});
   const [containerItems, setContainerItems] = useState({});
   const [defaultSearchSet, setDefaultSearchSet] = useState("");
@@ -87,30 +85,6 @@ function MTGInventoryTrackerContent() {
   const [lastUsedSets, setLastUsedSets] = useState({});
   const [expandedAlerts, setExpandedAlerts] = useState({});
   const [expandedSoldContainers, setExpandedSoldContainers] = useState({});
-
-  // Price display component - now using global cache context
-  const MarketPrices = ({ cardName, setCode }) => {
-    const { getPrice } = usePriceCache();
-    const [price, setPrice] = React.useState({ tcg: "Loading...", ck: "Loading..." });
-
-    React.useEffect(() => {
-      const normalizedName = normalizeCardName(cardName);
-      const normalizedSet = normalizeSetCode(setCode);
-
-      getPrice(normalizedName, normalizedSet).then((p) => {
-        if (p) setPrice(p);
-        else setPrice({ tcg: "N/A", ck: "N/A" });
-      });
-    }, [cardName, setCode, getPrice]);
-
-    return (
-      <div style={{ fontSize: "0.9rem" }}>
-        <div>TCG: {price.tcg}</div>
-        <div>CK: {price.ck}</div>
-      </div>
-    );
-  };
-
 
   const calculateDecklistPrices = async (decklist) => {
     try {
@@ -1021,7 +995,7 @@ function MTGInventoryTrackerContent() {
             startEditingItem={startEditingItem}
             updateInventoryItem={updateInventoryItem}
             deleteInventoryItem={deleteInventoryItem}
-            MarketPrices={MarketPrices}
+            MarketPrices={DecklistCardPrice}
             handleSearch={handleSearch}
           />
         )}
