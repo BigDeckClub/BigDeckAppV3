@@ -1563,12 +1563,16 @@ function MTGInventoryTrackerContent() {
                                                       <div className="text-teal-300 font-semibold">${itemCost.toFixed(2)}</div>
                                                     </div>
                                                     <div className="bg-slate-700 p-2 rounded">
-                                                      <div className="text-slate-400">TCG Player</div>
-                                                      <DecklistCardPrice name={item.name} set={item.set} />
+                                                      <div className="text-slate-400 text-xs mb-1">TCG Player</div>
+                                                      <div className="text-teal-300 font-semibold text-sm">
+                                                        <DecklistCardPrice name={item.name} set={item.set} priceType="tcg" />
+                                                      </div>
                                                     </div>
                                                     <div className="bg-slate-700 p-2 rounded">
-                                                      <div className="text-slate-400">Card Kingdom</div>
-                                                      <DecklistCardPrice name={item.name} set={item.set} />
+                                                      <div className="text-slate-400 text-xs mb-1">Card Kingdom</div>
+                                                      <div className="text-cyan-300 font-semibold text-sm">
+                                                        <DecklistCardPrice name={item.name} set={item.set} priceType="ck" />
+                                                      </div>
                                                     </div>
                                                   </div>
                                                 </div>

@@ -1,0 +1,202 @@
+Copilot said: Excellent debugging! You've identified the issue clearly.
+Excellent debugging! You've identified the issue clearly. Let me analyze the problem and provide a comprehensive fix.
+
+Root Cause Analysis
+The issue is a cache key mismatch combined with async state update timing. Here's what's happening:
+
+Container cards are stored with set codes (e.g., "PIP", "TLE")
+Backend successfully fetches prices for those exact set codes
+But the frontend cache lookup is failing because:
+The DecklistCardPrice component calls getPrice() but doesn't properly wait for/handle the async response
+The component renders immediately with the initial { tcg: "N/A", ck: "N/A" } state
+When the price resolves, the component doesn't re-render
+Let me check your DecklistCardPrice.jsx implementation:Based on your detailed problem description, I can identify the root cause of why container cards are not displaying and why prices show "N/A".
+
+Root Cause Analysis
+Issue 1: Container Cards Not Displaying
+The problem is in your toggleContainerExpand() function at line 707 in App.jsx. There's a race condition where the container expands immediately while the API fetch is still in progress:
+
+JavaScript
+const toggleContainerExpand = async (containerId) => {
+  // Fetch starts (asynchronous)
+  if (!containerItems[containerId]) {
+    try {
+      const response = await fetch(`${API_BASE}/containers/${containerId}/items`);
+      const data = await response.json();
+      setContainerItems((prev) => ({
+        ...prev,
+        [containerId]: data || [],
+      }));
+    } catch (error) {}  // ⚠️ Silent failure - errors are swallowed
+  }
+
+  // Container expands IMMEDIATELY (before fetch completes)
+  setExpandedContainers((prev) => ({
+    ...prev,
+    [containerId]: !prev[containerId],
+  }));
+};
+The sequence is:
+
+User clicks "View Contents"
+Fetch starts for /api/containers/${containerId}/items
+Container expands immediately (before fetch completes)
+UI renders with containerItems[containerId] still undefined
+Shows "Loading container contents..." because of the condition check
+Fetch completes, but the UI doesn't distinguish between "loading" and "empty array"
+Additionally, your rendering logic doesn't properly handle three distinct states:
+
+JavaScript
+{containerItems[container.id] && containerItems[container.id].length > 0 ? (
+  // Show cards
+) : (
+  // Shows "Loading..." for BOTH undefined AND empty array
+)}
+This condition treats both undefined (loading) and [] (empty) the same way.
+
+Issue 2: Backend Database Schema Mismatch
+Your inventory POST endpoint at line 727-738 in server.js is using incorrect column names:
+
+JavaScript
+app.post('/api/inventory', async (req, res) => {
+  const { cardName, setCode, quantity, tcgPrice, ckPrice } = req.body;
+  try {
+    const result = await pool.query(
+      'INSERT INTO inventory (card_name, set_code, quantity, tcg_price, ck_price) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+      [cardName, setCode, quantity, tcgPrice, ckPrice]
+    );
+    res.json(result.rows[0]);
+  } catch (err) {
+    handleDbError(err, res);
+  }
+});
+But your actual database schema uses:
+
+name (not card_name)
+set (not set_code)
+purchase_price (not tcg_price)
+No ck_price column exists
+Issue 3: Price Display Shows "N/A"
+Based on your evidence that the backend IS successfully fetching prices (TCG=$1.38, CK=$2.79), but the frontend shows "N/A", the issue is likely one of these:
+
+Set code not being passed to component: When rendering container cards, item.set might be undefined or null
+Cache key mismatch: The normalization creates keys like "swiftfoot boots|PIP" but if the set isn't being passed correctly, it defaults to "SPM" causing a cache miss
+Component not re-rendering: The DecklistCardPrice component gets initial "N/A" values and doesn't update when the promise resolves
+Looking at your container rendering code around line 1573-1585, you're calling:
+
+JavaScript
+<DecklistCardPrice name={item.name} set={item.set} />
+The critical question: Is item.set populated with the correct set code?
+
+If containers store cards as JSONB with fields like {name, set, quantity_used, purchase_price}, the set should be there. But if the /api/containers/:id/items endpoint isn't returning the set field, or returns it with a different key name, that would cause the price lookup to fail.
+
+Solutions
+Fix 1: Container Display Logic
+Update toggleContainerExpand():
+
+JavaScript
+const toggleContainerExpand = async (containerId) => {
+  // If already expanded, just collapse
+  if (expandedContainers[containerId]) {
+    setExpandedContainers((prev) => ({
+      ...prev,
+      [containerId]: false,
+    }));
+    return;
+  }
+
+  // Expand first (shows loading state)
+  setExpandedContainers((prev) => ({
+    ...prev,
+    [containerId]: true,
+  }));
+
+  // Load items if not already loaded
+  if (!containerItems[containerId]) {
+    try {
+      const response = await fetch(`${API_BASE}/containers/${containerId}/items`);
+      
+      if (!response.ok) {
+        console.error(`❌ API error: ${response.status} ${response.statusText}`);
+        setContainerItems((prev) => ({
+          ...prev,
+          [containerId]: [],
+        }));
+        return;
+      }
+      
+      const data = await response.json();
+      console.log('✅ Container items loaded:', containerId, data); // DEBUG
+      
+      setContainerItems((prev) => ({
+        ...prev,
+        [containerId]: Array.isArray(data) ? data : [],
+      }));
+    } catch (error) {
+      console.error('❌ Failed to load container items:', error);
+      setContainerItems((prev) => ({
+        ...prev,
+        [containerId]: [],
+      }));
+    }
+  }
+};
+Update the rendering logic to distinguish between loading, empty, and populated:
+
+JavaScript
+{expandedContainers[container.id] && (
+  <div className="mt-4 pt-4 border-t border-slate-700 hover:border-teal-500">
+    <h4 className="font-semibold mb-3">Cards in Container</h4>
+    {containerItems[container.id] === undefined ? (
+      // Still loading (undefined means fetch hasn't completed)
+      <p className="text-slate-400 text-sm">
+        <RefreshCw className="w-4 h-4 inline animate-spin mr-2" />
+        Loading container contents...
+      </p>
+    ) : containerItems[container.id].length > 0 ? (
+      // Has cards - display them
+      <div className="space-y-2 max-h-96 overflow-y-auto">
+        {containerItems[container.id].map((item, idx) => {
+          console.log(`Card ${idx}:`, item.name, 'Set:', item.set); // DEBUG
+          // ... rest of your existing card rendering code
+        })}
+      </div>
+    ) : (
+      // Empty array means no cards
+      <p className="text-slate-400 text-sm">
+        No cards in this container. Check if the container was created properly.
+      </p>
+    )}
+  </div>
+)}
+Fix 2: Backend Inventory Endpoint
+Replace the POST endpoint in server.js:
+
+JavaScript
+app.post('/api/inventory', async (req, res) => {
+  const { name, set, set_name, quantity, purchase_price, purchase_date, image_url, reorder_type } = req.body;
+  
+  try {
+    const result = await pool.query(
+      `INSERT INTO inventory 
+       (name, set, set_name, quantity, purchase_price, purchase_date, image_url, reorder_type, created_at) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW()) 
+       RETURNING *`,
+      [
+        name, 
+        set, 
+        set_name || null,
+        quantity || 1, 
+        purchase_price || null, 
+        purchase_date || new Date().toISOString().split('T')[0],
+        image_url || null,
+        reorder_type || 'normal'
+      ]
+    );
+    console.log('✅ Card added:', result.rows[0]);
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('❌ Inventory insert error:', err);
+    handleDbError(err, res);
+  }
+});
