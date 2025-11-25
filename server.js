@@ -663,11 +663,11 @@ app.get('/api/containers', async (req, res) => {
 });
 
 app.post('/api/containers', async (req, res) => {
-  const { name, cards, containerCost } = req.body;
+  const { name, decklist_id } = req.body;
   try {
     const result = await pool.query(
-      'INSERT INTO containers (name, cards, container_cost, sold) VALUES ($1, $2, $3, FALSE) RETURNING *',
-      [name, JSON.stringify(cards), containerCost]
+      'INSERT INTO containers (name, decklist_id) VALUES ($1, $2) RETURNING *',
+      [name, decklist_id]
     );
     res.json(result.rows[0]);
   } catch (err) {
