@@ -675,27 +675,33 @@ app.post('/api/containers', async (req, res) => {
     const cards = Array.isArray(deckData) ? deckData : [];
     
     const result = await pool.query(
-      'INSERT INTO containers (name, decklist_id, cards) VALUES ($1, $2, $3) RETURNING *',
+      'INSERT INTO containers (name, decklist_id, cards) VALUES ($1, $2, $3::jsonb) RETURNING *',
       [name, decklist_id, JSON.stringify(cards)]
     );
     res.json(result.rows[0]);
   } catch (err) {
-    handleDbError(err, res);
+    console.error('Container creation error:', err);
+    res.status(500).json({ error: 'Failed to create container' });
   }
 });
 
 // Get container items/cards
 app.get('/api/containers/:id/items', async (req, res) => {
   try {
-    const result = await pool.query('SELECT cards FROM containers WHERE id = $1', [req.params.id]);
+    const result = await pool.query(
+      'SELECT COALESCE(cards, \'[]\'::jsonb) as cards FROM containers WHERE id = $1',
+      [req.params.id]
+    );
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Container not found' });
+      return res.json([]);
     }
     
     const cards = result.rows[0].cards;
-    res.json(Array.isArray(cards) ? cards : []);
+    const items = Array.isArray(cards) ? cards : [];
+    res.json(items);
   } catch (err) {
-    handleDbError(err, res);
+    console.error('Container items error:', err);
+    res.json([]);
   }
 });
 

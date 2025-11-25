@@ -192,6 +192,11 @@ function MTGInventoryTrackerContent() {
 
   const calculateContainerMarketPrices = async (containerId) => {
     const items = containerItems[containerId] || [];
+    // Defensive guard: ensure items is an array
+    if (!Array.isArray(items)) {
+      return { tcg: 0, ck: 0 };
+    }
+    
     let tcgTotal = 0,
       ckTotal = 0;
 
