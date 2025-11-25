@@ -1,0 +1,68 @@
+App.jsx:28 [APP] Component mounted
+App.jsx:28 [APP] Component mounted
+InventoryTab.jsx:325 [DEBUG] InventoryTab rendering MarketPrices with: {name: 'Sol Ring', set: 'PIP', priceType: 'tcg'}
+InventoryTab.jsx:325 [DEBUG] InventoryTab rendering MarketPrices with: {name: 'Sol Ring', set: 'EOC', priceType: 'tcg'}
+InventoryTab.jsx:325 [DEBUG] InventoryTab rendering MarketPrices with: {name: 'Sol Ring', set: 'PIP', priceType: 'tcg'}
+InventoryTab.jsx:325 [DEBUG] InventoryTab rendering MarketPrices with: {name: 'Sol Ring', set: 'EOC', priceType: 'tcg'}
+DecklistCardPrice.jsx:13 [DEBUG] DecklistCardPrice mounted with props: {name: 'Sol Ring', set: 'PIP', priceType: 'tcg'}
+DecklistCardPrice.jsx:18 [DEBUG] DecklistCardPrice props updated: {name: 'Sol Ring', set: 'PIP', priceType: 'tcg'}
+DecklistCardPrice.jsx:30 [DEBUG] DecklistCardPrice starting fetch for: {name: 'Sol Ring', set: 'PIP', priceType: 'tcg'}
+PriceCacheContext.jsx:44 [DEBUG] getPrice called: {name: 'sol ring', setCode: 'PIP', key: 'sol ring|PIP'}
+PriceCacheContext.jsx:51 [DEBUG] Cache HIT: {key: 'sol ring|PIP', tcg: '$1.06', ck: '$2.29', age: 12723}
+PriceCacheContext.jsx:55 [DEBUG] Returning FRESH cached data
+DecklistCardPrice.jsx:13 [DEBUG] DecklistCardPrice mounted with props: {name: 'Sol Ring', set: 'EOC', priceType: 'tcg'}
+DecklistCardPrice.jsx:18 [DEBUG] DecklistCardPrice props updated: {name: 'Sol Ring', set: 'EOC', priceType: 'tcg'}
+DecklistCardPrice.jsx:30 [DEBUG] DecklistCardPrice starting fetch for: {name: 'Sol Ring', set: 'EOC', priceType: 'tcg'}
+PriceCacheContext.jsx:44 [DEBUG] getPrice called: {name: 'sol ring', setCode: 'EOC', key: 'sol ring|EOC'}
+PriceCacheContext.jsx:51 [DEBUG] Cache HIT: {key: 'sol ring|EOC', tcg: '$1.25', ck: '$2.29', age: 12879}
+PriceCacheContext.jsx:55 [DEBUG] Returning FRESH cached data
+DecklistCardPrice.jsx:13 [DEBUG] DecklistCardPrice mounted with props: {name: 'Sol Ring', set: 'PIP', priceType: 'tcg'}
+DecklistCardPrice.jsx:18 [DEBUG] DecklistCardPrice props updated: {name: 'Sol Ring', set: 'PIP', priceType: 'tcg'}
+DecklistCardPrice.jsx:30 [DEBUG] DecklistCardPrice starting fetch for: {name: 'Sol Ring', set: 'PIP', priceType: 'tcg'}
+PriceCacheContext.jsx:44 [DEBUG] getPrice called: {name: 'sol ring', setCode: 'PIP', key: 'sol ring|PIP'}
+PriceCacheContext.jsx:51 [DEBUG] Cache HIT: {key: 'sol ring|PIP', tcg: '$1.06', ck: '$2.29', age: 12725}
+PriceCacheContext.jsx:55 [DEBUG] Returning FRESH cached data
+DecklistCardPrice.jsx:13 [DEBUG] DecklistCardPrice mounted with props: {name: 'Sol Ring', set: 'EOC', priceType: 'tcg'}
+DecklistCardPrice.jsx:18 [DEBUG] DecklistCardPrice props updated: {name: 'Sol Ring', set: 'EOC', priceType: 'tcg'}
+DecklistCardPrice.jsx:30 [DEBUG] DecklistCardPrice starting fetch for: {name: 'Sol Ring', set: 'EOC', priceType: 'tcg'}
+PriceCacheContext.jsx:44 [DEBUG] getPrice called: {name: 'sol ring', setCode: 'EOC', key: 'sol ring|EOC'}
+PriceCacheContext.jsx:51 [DEBUG] Cache HIT: {key: 'sol ring|EOC', tcg: '$1.25', ck: '$2.29', age: 12880}
+PriceCacheContext.jsx:55 [DEBUG] Returning FRESH cached data
+DecklistCardPrice.jsx:38 [DEBUG] Price data fetched: {tcg: '$1.06', ck: '$2.29'}
+DecklistCardPrice.jsx:48 [DEBUG] Extracted priceValue from result[tcg]: $1.06
+DecklistCardPrice.jsx:51 [DEBUG] Setting price to: $1.06
+DecklistCardPrice.jsx:38 [DEBUG] Price data fetched: {tcg: '$1.25', ck: '$2.29'}
+DecklistCardPrice.jsx:48 [DEBUG] Extracted priceValue from result[tcg]: $1.25
+DecklistCardPrice.jsx:51 [DEBUG] Setting price to: $1.25
+DecklistCardPrice.jsx:38 [DEBUG] Price data fetched: {tcg: '$1.06', ck: '$2.29'}
+DecklistCardPrice.jsx:48 [DEBUG] Extracted priceValue from result[tcg]: $1.06
+DecklistCardPrice.jsx:51 [DEBUG] Setting price to: $1.06
+DecklistCardPrice.jsx:38 [DEBUG] Price data fetched: {tcg: '$1.25', ck: '$2.29'}
+DecklistCardPrice.jsx:48 [DEBUG] Extracted priceValue from result[tcg]: $1.25
+DecklistCardPrice.jsx:51 [DEBUG] Setting price to: $1.25
+App.jsx:28 [APP] Component mounted
+App.jsx:28 [APP] Component mounted
+InventoryTab.jsx:325 [DEBUG] InventoryTab rendering MarketPrices with: {name: 'Sol Ring', set: 'PIP', priceType: 'tcg'}
+InventoryTab.jsx:325 [DEBUG] InventoryTab rendering MarketPrices with: {name: 'Sol Ring', set: 'EOC', priceType: 'tcg'}
+InventoryTab.jsx:325 [DEBUG] InventoryTab rendering MarketPrices with: {name: 'Swiftfoot Boots', set: 'PIP', priceType: 'tcg'}
+InventoryTab.jsx:325 [DEBUG] InventoryTab rendering MarketPrices with: {name: 'Sol Ring', set: 'PIP', priceType: 'tcg'}
+InventoryTab.jsx:325 [DEBUG] InventoryTab rendering MarketPrices with: {name: 'Sol Ring', set: 'EOC', priceType: 'tcg'}
+InventoryTab.jsx:325 [DEBUG] InventoryTab rendering MarketPrices with: {name: 'Swiftfoot Boots', set: 'PIP', priceType: 'tcg'}
+DecklistCardPrice.jsx:13 [DEBUG] DecklistCardPrice mounted with props: {name: 'Swiftfoot Boots', set: 'PIP', priceType: 'tcg'}
+DecklistCardPrice.jsx:18 [DEBUG] DecklistCardPrice props updated: {name: 'Swiftfoot Boots', set: 'PIP', priceType: 'tcg'}
+DecklistCardPrice.jsx:30 [DEBUG] DecklistCardPrice starting fetch for: {name: 'Swiftfoot Boots', set: 'PIP', priceType: 'tcg'}
+PriceCacheContext.jsx:44 [DEBUG] getPrice called: {name: 'swiftfoot boots', setCode: 'PIP', key: 'swiftfoot boots|PIP'}
+PriceCacheContext.jsx:51 [DEBUG] Cache HIT: {key: 'swiftfoot boots|PIP', tcg: '$1.38', ck: '$2.79', age: 17327}
+PriceCacheContext.jsx:55 [DEBUG] Returning FRESH cached data
+DecklistCardPrice.jsx:13 [DEBUG] DecklistCardPrice mounted with props: {name: 'Swiftfoot Boots', set: 'PIP', priceType: 'tcg'}
+DecklistCardPrice.jsx:18 [DEBUG] DecklistCardPrice props updated: {name: 'Swiftfoot Boots', set: 'PIP', priceType: 'tcg'}
+DecklistCardPrice.jsx:30 [DEBUG] DecklistCardPrice starting fetch for: {name: 'Swiftfoot Boots', set: 'PIP', priceType: 'tcg'}
+PriceCacheContext.jsx:44 [DEBUG] getPrice called: {name: 'swiftfoot boots', setCode: 'PIP', key: 'swiftfoot boots|PIP'}
+PriceCacheContext.jsx:51 [DEBUG] Cache HIT: {key: 'swiftfoot boots|PIP', tcg: '$1.38', ck: '$2.79', age: 17327}
+PriceCacheContext.jsx:55 [DEBUG] Returning FRESH cached data
+DecklistCardPrice.jsx:38 [DEBUG] Price data fetched: {tcg: '$1.38', ck: '$2.79'}
+DecklistCardPrice.jsx:48 [DEBUG] Extracted priceValue from result[tcg]: $1.38
+DecklistCardPrice.jsx:51 [DEBUG] Setting price to: $1.38
+DecklistCardPrice.jsx:38 [DEBUG] Price data fetched: {tcg: '$1.38', ck: '$2.79'}
+DecklistCardPrice.jsx:48 [DEBUG] Extracted priceValue from result[tcg]: $1.38
+DecklistCardPrice.jsx:51 [DEBUG] Setting price to: $1.38

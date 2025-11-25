@@ -320,14 +320,20 @@ export const InventoryTab = ({
                                   <div><span className="text-slate-400">Available:</span> <span className="text-white font-semibold">{item.quantity_available || 0}</span></div>
                                 </div>
                               </div>
-                              <div className="flex items-center gap-3 ml-4">
-                                <div className="flex flex-col items-center gap-2">
-                                  {console.log("[DEBUG] InventoryTab rendering MarketPrices with:", { name: item.name, set: item.set, priceType: "tcg" })}
-                                  <MarketPrices key={`price-${item.name}-${item.set}-tcg`} name={item.name} set={item.set} priceType="tcg" className="text-slate-300 text-sm" />
-                                  <div className="bg-slate-800 bg-opacity-50 border border-slate-600 rounded px-2 py-1 text-xs">
-                                    <div className="text-slate-400">Avg Cost</div>
-                                    <div className="font-bold text-green-300">${avgPrice.toFixed(2)}</div>
-                                  </div>
+                              <div className="flex items-center gap-4 ml-4">
+                                <div className="flex flex-col items-center gap-1">
+                                  <div className="text-xs text-slate-500">TCG Player</div>
+                                  {console.log("[DEBUG] InventoryTab rendering MarketPrices TCG with:", { name: item.name, set: item.set, priceType: "tcg" })}
+                                  <MarketPrices key={`price-${item.name}-${item.set}-tcg`} name={item.name} set={item.set} priceType="tcg" className="text-slate-300 text-sm font-semibold" />
+                                </div>
+                                <div className="flex flex-col items-center gap-1">
+                                  <div className="text-xs text-slate-500">Card Kingdom</div>
+                                  {console.log("[DEBUG] InventoryTab rendering MarketPrices CK with:", { name: item.name, set: item.set, priceType: "ck" })}
+                                  <MarketPrices key={`price-${item.name}-${item.set}-ck`} name={item.name} set={item.set} priceType="ck" className="text-slate-300 text-sm font-semibold" />
+                                </div>
+                                <div className="bg-slate-800 bg-opacity-50 border border-slate-600 rounded px-2 py-1 text-xs">
+                                  <div className="text-slate-400">Avg Cost</div>
+                                  <div className="font-bold text-green-300">${avgPrice.toFixed(2)}</div>
                                 </div>
                                 <div className="flex gap-1">
                                   <button
