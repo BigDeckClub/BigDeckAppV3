@@ -704,6 +704,20 @@ function handleDbError(err, res) {
   res.status(500).json({ error: 'Database error' });
 }
 
+// ========== ACTIVITY LOGGING HELPER ==========
+async function recordActivity(action, details = null) {
+  try {
+    await pool.query(
+      `INSERT INTO usage_history (action, created_at, details)
+       VALUES ($1, NOW(), $2)`,
+      [action, details ? JSON.stringify(details) : null]
+    );
+    console.log(`[ACTIVITY] ✅ Logged: ${action}`);
+  } catch (err) {
+    console.error(`[ACTIVITY] ❌ Error logging activity: ${err.message}`);
+  }
+}
+
 // ============== ROUTES ==============
 app.get('/api/inventory', async (req, res) => {
   try {
@@ -780,6 +794,12 @@ app.post('/api/inventory', async (req, res) => {
     );
     
     console.log(`[INVENTORY] Purchase history recorded: inventory_id=${inventoryId}, quantity=${parsedQuantity}`);
+    
+    // Log activity
+    await recordActivity(
+      `Added ${parsedQuantity}x ${name} (${set}) to inventory`,
+      { name, set, quantity: parsedQuantity, purchase_price, inventory_id: inventoryId }
+    );
     
     res.json(result.rows[0]);
   } catch (err) {
@@ -933,11 +953,62 @@ app.put('/api/inventory/:id', async (req, res) => {
     const updatedItem = result.rows[0];
     console.log(`[UPDATE] ✅ Inventory updated: id=${inventoryId}, new_quantity=${updatedItem.quantity}, new_price=${updatedItem.purchase_price}`);
     
+    // Log activity
+    await recordActivity(
+      `Updated inventory: ${updatedItem.name} (${updatedItem.set})`,
+      { id: inventoryId, quantity, purchase_price, purchase_date, reorder_type }
+    );
+    
     res.json(updatedItem);
   } catch (err) {
     console.error(`[UPDATE] Error updating inventory id=${inventoryId}:`, err.message);
     console.error(`[UPDATE] Error stack:`, err.stack);
     handleDbError(err, res);
+  }
+});
+
+// ========== USAGE HISTORY ROUTES ==========
+app.get('/api/usage-history', async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 50;
+    console.log(`[ACTIVITY] Fetching ${limit} recent activity records...`);
+    
+    const result = await pool.query(
+      `SELECT id, action, created_at, details
+       FROM usage_history
+       ORDER BY created_at DESC
+       LIMIT $1`,
+      [limit]
+    );
+    
+    console.log(`[ACTIVITY] ✅ Retrieved ${result.rows.length} activity records`);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('[ACTIVITY] ❌ Query error:', err.message);
+    res.status(500).json({ error: 'Failed to fetch activity history' });
+  }
+});
+
+app.post('/api/usage-history', async (req, res) => {
+  try {
+    const { action, details } = req.body;
+    
+    if (!action || typeof action !== 'string') {
+      return res.status(400).json({ error: 'Action is required and must be a string' });
+    }
+    
+    const result = await pool.query(
+      `INSERT INTO usage_history (action, created_at, details)
+       VALUES ($1, NOW(), $2)
+       RETURNING *`,
+      [action, details ? JSON.stringify(details) : null]
+    );
+    
+    console.log(`[ACTIVITY] ✅ Activity recorded: ${action}`);
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error('[ACTIVITY] ❌ Error:', err.message);
+    res.status(500).json({ error: 'Failed to record activity' });
   }
 });
 
@@ -957,6 +1028,11 @@ app.post('/api/decklists', async (req, res) => {
       'INSERT INTO decklists (name, decklist) VALUES ($1, $2) RETURNING *',
       [name, decklist]
     );
+    
+    // Log activity
+    const decklistId = result.rows[0].id;
+    await recordActivity(`Created decklist: ${name}`, { name, decklist_id: decklistId });
+    
     res.json(result.rows[0]);
   } catch (err) {
     handleDbError(err, res);
