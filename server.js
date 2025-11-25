@@ -345,47 +345,17 @@ async function fetchCardKingdomPriceFromWidget(cardName, setCode) {
     }
     
     const html = await response.text();
-    const $ = load(html);
     
-    // Parse Card Kingdom price from widget (prices listed by condition: G, VG, EX, NM)
-    let price = 'N/A';
+    // More flexible regex to match prices anywhere in the widget
+    // Look for any dollar amount that appears to be a price
+    const priceMatches = html.match(/\$[\d.]+/g);
     
-    // Look for NM (Near Mint) condition price - this is the standard retail price
-    const nmRegex = /NM<\/a><\/td>\s*<td[^>]*>\s*(\d+)<\/td>\s*<td[^>]*>\s*(\$[\d.]+)/;
-    const nmMatch = html.match(nmRegex);
-    
-    if (nmMatch && nmMatch[2]) {
-      price = nmMatch[2];
-    } else {
-      // Fallback: Look for any row with quantity > 0 and extract its price
-      const tables = $('table');
-      let bestPrice = 'N/A';
-      let bestQty = 0;
-      
-      tables.each((tableIdx, table) => {
-        $(table).find('tr').each((rowIdx, row) => {
-          const cells = $(row).find('td');
-          if (cells.length >= 3) {
-            // Cells are: condition, qty, price
-            const qtyText = $(cells[1]).text().trim();
-            const priceText = $(cells[2]).text().trim();
-            const qty = parseInt(qtyText);
-            const priceMatch = priceText.match(/\$[\d.]+/);
-            
-            if (priceMatch && qty > bestQty) {
-              bestPrice = priceMatch[0];
-              bestQty = qty;
-            }
-          }
-        });
-      });
-      
-      if (bestPrice !== 'N/A') {
-        price = bestPrice;
-      }
+    if (priceMatches && priceMatches.length > 0) {
+      // Return the first (lowest) price found, which is typically the best price
+      return priceMatches[0];
     }
     
-    return price;
+    return 'N/A';
   } catch (error) {
     return 'N/A';
   }
