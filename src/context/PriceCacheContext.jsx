@@ -1,42 +1,97 @@
-import { createContext, useState, useContext, useRef } from "react";
+import { createContext, useState, useContext, useRef, useEffect } from "react";
 import { fetchCardPrices } from "../lib/fetchCardPrices";
 
 const PriceCacheContext = createContext();
 
+// Cache TTL configuration
+const SOFT_TTL_MS = 1000 * 60 * 10; // 10 minutes - return cached, refresh in background
+const HARD_TTL_MS = 1000 * 60 * 60; // 1 hour - always fetch from backend
+const STORAGE_KEY = "mtg-card-price-cache";
+
 export function PriceCacheProvider({ children }) {
   const [cache, setCache] = useState({});
-  const inflightRef = useRef({}); // Track in-flight requests to dedupe
+  const [metrics, setMetrics] = useState({ hits: 0, misses: 0, inflightHits: 0 });
+  const inflightRef = useRef({});
+  const backgroundRefreshRef = useRef(new Set());
+
+  // Hydrate cache from localStorage on mount
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        setCache(parsed);
+      }
+    } catch (err) {
+      console.warn("Failed to hydrate cache from localStorage:", err);
+    }
+  }, []);
+
+  // Persist cache to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(cache));
+    } catch (err) {
+      console.warn("Failed to persist cache to localStorage:", err);
+    }
+  }, [cache]);
 
   function getPrice(name, setCode) {
-    // DEBUG: console.log(`[CONTEXT] getPrice called with name="${name}" setCode="${setCode}"`);
     const key = `${name}|${setCode}`;
+    const now = Date.now();
 
-    // Check cache first
+    // Check cache with TTL logic
     if (cache[key]) {
-      // DEBUG: console.log(`[CACHE READ] ${key}:`, cache[key]);
-      return Promise.resolve(cache[key]);
+      const { tcg, ck, fetchedAt } = cache[key];
+      const age = now - (fetchedAt || 0);
+
+      // Soft TTL: return cached, refresh in background if stale
+      if (age < SOFT_TTL_MS) {
+        setMetrics(m => ({ ...m, hits: m.hits + 1 }));
+        return Promise.resolve({ tcg, ck });
+      }
+
+      // Between soft and hard TTL: return cached but trigger background refresh
+      if (age < HARD_TTL_MS) {
+        setMetrics(m => ({ ...m, hits: m.hits + 1 }));
+        // Trigger background refresh if not already scheduled
+        if (!backgroundRefreshRef.current.has(key)) {
+          backgroundRefreshRef.current.add(key);
+          fetchCardPrices(name, setCode)
+            .then(result => {
+              setCache(prev => ({
+                ...prev,
+                [key]: { ...result, fetchedAt: Date.now() },
+              }));
+            })
+            .finally(() => {
+              backgroundRefreshRef.current.delete(key);
+            });
+        }
+        return Promise.resolve({ tcg, ck });
+      }
     }
 
-    // Check if already fetching this card (dedupe concurrent requests)
+    // Hard expired or cache miss: fetch from backend
+    setMetrics(m => ({ ...m, misses: m.misses + 1 }));
+
+    // Check if already fetching (dedupe concurrent requests)
     if (inflightRef.current[key]) {
-      // DEBUG: console.log(`[CACHE DEDUPE] ${key} - request already in flight`);
+      setMetrics(m => ({ ...m, inflightHits: m.inflightHits + 1 }));
       return inflightRef.current[key];
     }
 
     // Start new fetch
-    // DEBUG: console.log(`[CACHE MISS] ${key} - fetching from backend...`);
     const promise = fetchCardPrices(name, setCode)
       .then(result => {
-        // DEBUG: console.log(`[CACHE WRITE] ${key}:`, result);
-        // Only write to cache after backend responds
-        setCache(prev => ({ ...prev, [key]: result }));
-        // Clean up inflight tracker
+        const entry = { ...result, fetchedAt: Date.now() };
+        setCache(prev => ({ ...prev, [key]: entry }));
         delete inflightRef.current[key];
         return result;
       })
       .catch(err => {
-        // DEBUG: console.error(`[CACHE ERROR] ${key}:`, err);
-        const fallback = { tcg: "N/A", ck: "N/A" };
+        console.error(`Price fetch error for ${key}:`, err);
+        const fallback = { tcg: "N/A", ck: "N/A", fetchedAt: Date.now() };
         setCache(prev => ({ ...prev, [key]: fallback }));
         delete inflightRef.current[key];
         return fallback;
@@ -46,8 +101,17 @@ export function PriceCacheProvider({ children }) {
     return promise;
   }
 
+  function clearCache() {
+    setCache({});
+    localStorage.removeItem(STORAGE_KEY);
+  }
+
+  function getMetrics() {
+    return metrics;
+  }
+
   return (
-    <PriceCacheContext.Provider value={{ getPrice }}>
+    <PriceCacheContext.Provider value={{ getPrice, clearCache, getMetrics }}>
       {children}
     </PriceCacheContext.Provider>
   );

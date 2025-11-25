@@ -1,0 +1,146 @@
+Copilot said: Below are step-by-step instructions Replit Agent AI
+Below are step-by-step instructions Replit Agent AI can run to implement the recommended structural and optimization improvements. Run these from the project root in the Replit workspace. The instructions are broken into small tasks (one branch per task) so you can apply, test, and review each change safely. For code edits I include snippets to paste into files — run them manually or apply with your editor/patch tool.
+
+Important: run one task/branch at a time, verify, then merge before moving to the next.
+
+Run these commands (bash)
+
+bash
+# Basic repo setup
+git fetch origin
+git checkout main
+git pull origin main
+
+# Create a top-level work branch for a sequence of smaller task branches if you want
+git checkout -b work/price-improvements
+
+# 1) Task: add PropTypes to critical components (DecklistCardPrice, PriceCacheContext users)
+git checkout -b feat/add-proptypes
+
+# Install prop-types if not present
+npm ci
+npm install prop-types --save
+
+# Edit files: add PropTypes import and definitions in these components:
+# - src/components/DecklistCardPrice.jsx
+# - src/components/InventoryCardPrice.jsx (if exists)
+# Example snippet to add at bottom of DecklistCardPrice.jsx:
+# import PropTypes from 'prop-types';
+# DecklistCardPrice.propTypes = {
+#   name: PropTypes.string.isRequired,
+#   set: PropTypes.string.isRequired,
+# };
+
+# After editing, run lint/tests/build:
+git add -A
+git commit -m "chore: add PropTypes to price components" || echo "Nothing to commit"
+npm run -s lint || echo "Lint failed or not configured"
+npm test || echo "Tests failed or unavailable"
+
+# Push and open a PR (or push branch)
+git push -u origin feat/add-proptypes
+
+# 2) Task: add TTL + localStorage persistence to PriceCacheContext
+git checkout -b feat/price-cache-ttl-persist
+
+# Edit src/context/PriceCacheContext.jsx:
+# - Change cache entries to store { tcg, ck, fetchedAt }
+# - On write: set fetchedAt = Date.now()
+# - On read: if cached && Date.now() - fetchedAt < TTL -> return cached
+# - If cached && age < softTTL -> return cached and kick off background refresh
+# - Persist cache to localStorage on each write, and hydrate cache from localStorage on provider mount
+# TTL example values:
+# const SOFT_TTL_MS = 1000 * 60 * 10; // 10m
+# const HARD_TTL_MS = 1000 * 60 * 60; // 1h
+
+# After changes:
+git add src/context/PriceCacheContext.jsx
+git commit -m "feat: add TTL and localStorage persistence to price cache" || echo "Nothing to commit"
+npm run -s lint || echo "Lint failed or not configured"
+npm test || echo "Tests failed or unavailable"
+git push -u origin feat/price-cache-ttl-persist
+
+# 3) Task: add unit tests for PriceCacheContext getPrice/ inflight dedupe
+git checkout -b test/pricecache
+
+# Create test files (Jest + RTL):
+# - tests/PriceCacheContext.test.jsx
+# Use msw or jest.fn() to mock fetchPriceFromBackend and assert:
+#  - getPrice returns cached value when available
+#  - inflight dedupe prevents double backend calls
+#  - TTL causes background refresh
+# Run tests
+npm test
+
+# Commit and push tests
+git add tests/
+git commit -m "test: add unit tests for PriceCacheContext inflight and TTL" || echo "Nothing to commit"
+git push -u origin test/pricecache
+
+# 4) Task: implement soft stale-while-revalidate behavior and background refresh
+git checkout -b feat/soft-refresh
+
+# Edit PriceCacheContext so that:
+# - on cache hit but age > SOFT_TTL: return cached immediately, then trigger fetch in background
+# - on cache miss or hard-expired: await fetch and then return
+# Ensure inflight dedupe handles background refresh too
+git add src/context/PriceCacheContext.jsx
+git commit -m "feat: soft-ttl stale-while-revalidate for price cache" || echo "Nothing to commit"
+git push -u origin feat/soft-refresh
+
+# 5) Task: add lightweight metrics/observability (optional)
+git checkout -b feat/metrics
+
+# Add a minimal metrics module (server-side) or counters in PriceCacheContext:
+# - Expose counters: cache_hits, cache_misses, inflight_hits, fetch_failures
+# - Log them occasionally or expose an endpoint /metrics for debugging
+# Consider using prom-client or simple in-memory counters that can be printed in logs
+
+# Commit & push
+git add .
+git commit -m "feat: add basic cache metrics counters" || echo "Nothing to commit"
+git push -u origin feat/metrics
+
+# 6) Task: CI - add GitHub Actions workflow skeleton to run lint/tests/build
+git checkout -b ci/add-workflow
+
+# Create .github/workflows/ci.yml with steps to run npm ci, npm run lint, npm test, npm run build
+# Example minimal ci.yml:
+# name: CI
+# on: [push, pull_request]
+# jobs:
+#   build:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v4
+#       - uses: actions/setup-node@v4
+#         with: { node-version: '18' }
+#       - run: npm ci
+#       - run: npm run -s lint || true
+#       - run: npm test || true
+#       - run: npm run -s build || true
+
+git add .github/workflows/ci.yml
+git commit -m "ci: add basic GitHub Actions CI workflow" || echo "Nothing to commit"
+git push -u origin ci/add-workflow
+
+# 7) Finalize: merge selected branches into main (via PRs)
+# Create PRs for each branch and request review. After CI passes, merge to main.
+# Or merge locally:
+# git checkout main
+# git merge --no-ff feat/add-proptypes
+# git merge --no-ff feat/price-cache-ttl-persist
+# git merge --no-ff test/pricecache
+# git push origin main
+
+# 8) Cleanup: delete local and remote feature branches after merge
+git branch -d feat/add-proptypes feat/price-cache-ttl-persist test/pricecache feat/soft-refresh feat/metrics ci/add-workflow || true
+git push origin --delete feat/add-proptypes feat/price-cache-ttl-persist test/pricecache feat/soft-refresh feat/metrics ci/add-workflow || true
+
+# 9) Manual verification steps (agent should perform and report back):
+# - Start dev server: npm run dev
+# - Confirm Inventory, Decklists, Containers show expected prices for sample cards:
+#   Lightning Bolt (M11), Sol Ring (EOC), Swamp (SPM)
+# - Confirm cache behavior (via logs or test): CACHE MISS -> INFLIGHT -> CACHE WRITE real price -> CACHE READ hits
+# - Run tests and confirm green
+# - Open PRs with summary and link to tasks

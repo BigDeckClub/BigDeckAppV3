@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import PropTypes from "prop-types";
 import { usePriceCache } from "../context/PriceCacheContext";
 import { normalizeCardName, normalizeSetCode } from "../lib/fetchCardPrices";
 
@@ -9,9 +10,7 @@ export default function DecklistCardPrice({ name, set }) {
   useEffect(() => {
     const cardName = normalizeCardName(name);
     const setCode = normalizeSetCode(set);
-    // DEBUG: console.log(`[DECKLIST-COMPONENT] requesting ${cardName}|${setCode}`);
     getPrice(cardName, setCode).then(price => {
-      // DEBUG: console.log(`[DECKLIST-COMPONENT] resolved ${cardName}|${setCode}:`, price);
       setPrice(price);
     });
   }, [name, set, getPrice]);
@@ -22,3 +21,8 @@ export default function DecklistCardPrice({ name, set }) {
     </span>
   );
 }
+
+DecklistCardPrice.propTypes = {
+  name: PropTypes.string.isRequired,
+  set: PropTypes.string.isRequired,
+};
