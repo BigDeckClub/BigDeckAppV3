@@ -1,27 +1,43 @@
 import React from "react";
 import { render, waitFor } from "@testing-library/react";
 import { PriceCacheProvider, usePriceCache } from "../src/context/PriceCacheContext";
-import { describe, it, expect, beforeAll, afterEach } from "vitest";
+import { describe, it, expect, beforeAll, afterEach, vi } from "vitest";
 
-// Mock fetch globally
-const mockFetch = (url) => {
+// Mock fetch globally - handle both path-based and query-based URLs
+const mockFetch = vi.fn((url) => {
   const mockPrices = {
     'lightning bolt|m11': { tcg: '$1.07', ck: '$2.29' },
+    'lightning bolt|M11': { tcg: '$1.07', ck: '$2.29' },
     'sol ring|eoc': { tcg: '$1.25', ck: '$2.29' },
+    'sol ring|EOC': { tcg: '$1.25', ck: '$2.29' },
     'swamp|spm': { tcg: '$0.07', ck: '$0.35' },
+    'swamp|SPM': { tcg: '$0.07', ck: '$0.35' },
   };
   
-  const urlObj = new URL(url, 'http://localhost');
-  const name = urlObj.searchParams.get('name');
-  const set = urlObj.searchParams.get('set');
+  // Parse URL to extract card name and set
+  let name, set;
+  const urlStr = typeof url === 'string' ? url : url.toString();
+  
+  // Handle path-based URLs: /api/prices/cardname/setcode
+  const pathMatch = urlStr.match(/\/api\/prices\/([^/]+)\/([^?]+)/);
+  if (pathMatch) {
+    name = decodeURIComponent(pathMatch[1]);
+    set = decodeURIComponent(pathMatch[2]);
+  } else {
+    // Handle query-based URLs
+    const urlObj = new URL(urlStr, 'http://localhost');
+    name = urlObj.searchParams.get('name');
+    set = urlObj.searchParams.get('set');
+  }
+  
   const key = `${name}|${set}`.toLowerCase();
-  const price = mockPrices[key] || { tcg: 'N/A', ck: 'N/A' };
+  const price = mockPrices[key] || mockPrices[`${name}|${set}`] || { tcg: 'N/A', ck: 'N/A' };
   
   return Promise.resolve({
     ok: true,
     json: () => Promise.resolve(price)
   });
-};
+});
 
 beforeAll(() => {
   global.fetch = mockFetch;
@@ -29,6 +45,7 @@ beforeAll(() => {
 
 afterEach(() => {
   localStorage.clear();
+  mockFetch.mockClear();
 });
 
 // Test component
@@ -65,10 +82,10 @@ describe("PriceCacheContext", () => {
     let callCount = 0;
     const originalFetch = global.fetch;
     
-    global.fetch = (url) => {
+    global.fetch = vi.fn((url) => {
       callCount++;
       return originalFetch(url);
-    };
+    });
 
     const results = [];
     function ConcurrentCaller({ name, set, onDone }) {
@@ -102,7 +119,7 @@ describe("PriceCacheContext", () => {
   it("should cache prices in localStorage", async () => {
     const results = [];
     
-    const { unmount } = render(
+    render(
       <PriceCacheProvider>
         <TestComponent name="swamp" set="SPM" onDone={(p) => results.push(p)} />
       </PriceCacheProvider>

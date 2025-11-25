@@ -412,3 +412,33 @@ select {
 .ptr-element {
   @apply absolute top-0 left-0 right-0 flex items-center justify-center h-16 -mt-16;
 }
+
+/* Toast animations */
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.3s ease-out forwards;
+}
+
+/* Skeleton pulse animation (custom for better visibility) */
+@keyframes skeleton-pulse {
+  0%, 100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.animate-pulse {
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
