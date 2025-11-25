@@ -1984,7 +1984,7 @@ function MTGInventoryTrackerContent() {
               <h2 className="text-xl font-bold mb-4">Inventory Statistics</h2>
               <div className="grid grid-cols-3 gap-4">
                 <div className="bg-slate-800 border border-slate-600 p-4">
-                  <div className="text-slate-400 text-sm">Total Cards</div>
+                  <div className="text-slate-400 text-sm">Total Unique Cards</div>
                   <div className="text-2xl font-bold text-teal-300">
                     {inventory.length}
                   </div>
@@ -2005,7 +2005,7 @@ function MTGInventoryTrackerContent() {
                     {inventory
                       .reduce(
                         (sum, card) =>
-                          sum + (parseFloat(card.purchase_price) || 0),
+                          sum + ((parseFloat(card.purchase_price) || 0) * (card.quantity || 0)),
                         0,
                       )
                       .toFixed(2)}
