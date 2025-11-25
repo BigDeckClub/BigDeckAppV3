@@ -1515,64 +1515,79 @@ function MTGInventoryTrackerContent() {
                                     }
                                   });
                                   
-                                  return expandedItems.map((item, idx) => {
-                                    const isExpanded = expandedCardCopies[`${container.id}-${item.uniqueKey}`];
-                                    const itemCost = parseFloat(item.purchase_price || 0);
-                                    const inventoryItem = inventory.find(inv => inv.id === String(item.inventoryId));
-                                
-                                return (
-                                  <div key={idx} className="bg-slate-800 bg-opacity-50 border border-slate-600 rounded">
-                                    <button
-                                      onClick={() => setExpandedCardCopies(prev => ({
-                                        ...prev,
-                                        [`${container.id}-${item.uniqueKey}`]: !isExpanded
-                                      }))}
-                                      className="w-full p-3 text-sm flex justify-between items-center hover:bg-slate-700 transition"
-                                    >
-                                      <div className="text-left flex-1">
-                                        <div className="font-semibold">{item.name} (Card {item.copyNumber})</div>
-                                        <div className="text-xs text-slate-400">
-                                          {item.set_name} ({item.set})
-                                        </div>
-                                        {inventoryItem && (
-                                          <div className="text-xs text-slate-500 mt-1">
-                                            From Inventory • Purchased {new Date(inventoryItem.purchase_date).toLocaleDateString()}
+                                  // Group by card name
+                                  const groupedByName = {};
+                                  expandedItems.forEach(item => {
+                                    if (!groupedByName[item.name]) {
+                                      groupedByName[item.name] = [];
+                                    }
+                                    groupedByName[item.name].push(item);
+                                  });
+                                  
+                                  return Object.entries(groupedByName).map(([cardName, cards]) => {
+                                    const isGroupExpanded = expandedCardCopies[`${container.id}-group-${cardName}`];
+                                    const firstCard = cards[0];
+                                    
+                                    return (
+                                      <div key={cardName} className="bg-slate-800 border border-slate-600 rounded">
+                                        <button
+                                          onClick={() => setExpandedCardCopies(prev => ({
+                                            ...prev,
+                                            [`${container.id}-group-${cardName}`]: !isGroupExpanded
+                                          }))}
+                                          className="w-full p-3 text-sm flex justify-between items-center hover:bg-slate-700 transition"
+                                        >
+                                          <div className="text-left flex-1">
+                                            <div className="font-semibold">{cardName}</div>
+                                            <div className="text-xs text-slate-400">
+                                              {firstCard.set_name} ({firstCard.set})
+                                            </div>
+                                          </div>
+                                          <div className="flex items-center gap-3">
+                                            <div className="text-right text-xs">
+                                              <div className="text-teal-300 font-semibold">{cards.length}x</div>
+                                            </div>
+                                            <div className="text-slate-400">
+                                              {isGroupExpanded ? '▼' : '▶'}
+                                            </div>
+                                          </div>
+                                        </button>
+                                        
+                                        {isGroupExpanded && (
+                                          <div className="bg-slate-900 bg-opacity-50 border-t border-slate-600 p-3 space-y-2">
+                                            {cards.map((item, copyIdx) => {
+                                              const itemCost = parseFloat(item.purchase_price || 0);
+                                              const inventoryItem = inventory.find(inv => inv.id === String(item.inventoryId));
+                                              
+                                              return (
+                                                <div key={copyIdx} className="bg-slate-800 p-3 rounded border border-slate-600 text-xs space-y-2">
+                                                  <div className="font-semibold text-slate-200">Card {copyIdx + 1}</div>
+                                                  {inventoryItem && (
+                                                    <div className="text-xs text-slate-500">
+                                                      From Inventory • Purchased {new Date(inventoryItem.purchase_date).toLocaleDateString()}
+                                                    </div>
+                                                  )}
+                                                  <div className="grid grid-cols-3 gap-2">
+                                                    <div className="bg-slate-700 p-2 rounded">
+                                                      <div className="text-slate-400 text-xs mb-1">Purchase Price</div>
+                                                      <div className="text-teal-300 font-semibold">${itemCost.toFixed(2)}</div>
+                                                    </div>
+                                                    <div className="bg-slate-700 p-2 rounded">
+                                                      <div className="text-slate-400">TCG Player</div>
+                                                      <DecklistCardPrice name={item.name} set={item.set} />
+                                                    </div>
+                                                    <div className="bg-slate-700 p-2 rounded">
+                                                      <div className="text-slate-400">Card Kingdom</div>
+                                                      <DecklistCardPrice name={item.name} set={item.set} />
+                                                    </div>
+                                                  </div>
+                                                </div>
+                                              );
+                                            })}
                                           </div>
                                         )}
                                       </div>
-                                      <div className="flex items-center gap-3">
-                                        <div className="text-right text-xs">
-                                          <div className="text-teal-300 font-semibold">1x</div>
-                                          <div className="text-slate-400">${itemCost.toFixed(2)}</div>
-                                        </div>
-                                        <div className="text-slate-400">
-                                          {isExpanded ? '▼' : '▶'}
-                                        </div>
-                                      </div>
-                                    </button>
-                                    
-                                    {isExpanded && (
-                                      <div className="bg-slate-900 bg-opacity-50 border-t border-slate-600 p-3 space-y-2">
-                                        <div className="bg-slate-800 p-2 rounded border border-slate-600 text-xs space-y-2">
-                                          <div className="grid grid-cols-3 gap-2">
-                                            <div className="bg-slate-700 p-2 rounded">
-                                              <div className="text-slate-400 text-xs mb-1">Purchase Price</div>
-                                              <div className="text-teal-300 font-semibold">${item.purchase_price || "N/A"}</div>
-                                            </div>
-                                            <div className="bg-slate-700 p-2 rounded">
-                                              <div className="text-slate-400">TCG Player</div>
-                                              <DecklistCardPrice name={item.name} set={item.set} />
-                                            </div>
-                                            <div className="bg-slate-700 p-2 rounded">
-                                              <div className="text-slate-400">Card Kingdom</div>
-                                              <DecklistCardPrice name={item.name} set={item.set} />
-                                            </div>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    )}
-                                  </div>
-                                  );
+                                    );
                                   });
                                 })()}
                               </div>
