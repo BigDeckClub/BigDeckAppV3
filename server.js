@@ -389,33 +389,11 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
           }
         }
         
-        // If still not found, look for any price on the page (fallback)
-        if (ckPrice === 'N/A') {
-          const allPrices = html.match(/\$([0-9]+\.[0-9]{2})/g);
-          if (allPrices && allPrices.length > 0) {
-            // Extract the first price that appears to be a product price
-            // Skip very large prices (likely errors or high-end cards)
-            for (const priceStr of allPrices) {
-              const price = parseFloat(priceStr.replace('$', ''));
-              if (price > 0 && price < 100) {
-                ckPrice = priceStr;
-                console.log(`✓ Found CK price from first reasonable match: ${ckPrice}`);
-                break;
-              }
-            }
-          }
-        }
       }
     } catch (ckError) {
       console.log(`✗ CK fetch failed: ${ckError.message}`);
     }
     
-    // Fallback to estimate
-    if (ckPrice === 'N/A' && tcgPrice !== 'N/A') {
-      const tcgValue = parseFloat(tcgPrice.replace('$', ''));
-      ckPrice = `$${(tcgValue * 1.15).toFixed(2)}`;
-      console.log(`Using estimated CK price: ${ckPrice}`);
-    }
     
     console.log(`Final result: TCG=${tcgPrice}, CK=${ckPrice}\n`);
     
