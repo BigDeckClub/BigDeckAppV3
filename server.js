@@ -958,14 +958,10 @@ app.post('/api/containers/:id/sell', async (req, res) => {
         console.log(`[SELL] Inventory updated: id=${inventoryId}, new_quantity=${updateResult.rows[0].quantity}`);
       }
       
-      // Log sale in purchase_history
-      await client.query(
-        `INSERT INTO purchase_history (inventory_id, purchase_date, purchase_price, quantity)
-         VALUES ($1, $2, (SELECT purchase_price FROM inventory WHERE id = $3), $4)`,
-        [inventoryId, new Date().toISOString().split('T')[0], inventoryId, quantityUsed]
-      );
-      
-      console.log(`[SELL] Purchase history recorded for sale: inventory_id=${inventoryId}, quantity=${quantityUsed}`);
+      // NOTE: Do NOT record in purchase_history when selling
+      // purchase_history tracks only PURCHASES (money spent to acquire cards)
+      // Sales are tracked in the sales table, not purchase_history
+      console.log(`[SELL] Container sale for inventory_id=${inventoryId}, quantity=${quantityUsed}`);
     }
 
     const sale = await client.query(
