@@ -463,7 +463,14 @@ export default function MTGInventoryTracker() {
 
   const fetchCardPrices = async (cardName, setCode) => {
     try {
-      const normalizedSet = (setCode || "").trim().toUpperCase();
+      let normalizedSet = (setCode || "").trim().toUpperCase();
+
+      // Basic lands often have missing or incorrect set codes.
+      // If set code is empty or invalid, fallback to "SPM" which backend prices successfully.
+      if (!normalizedSet || normalizedSet === "BASIC LAND" || normalizedSet === "BASICLAND") {
+        normalizedSet = "SPM";
+      }
+
       const response = await fetch(
         `${API_BASE}/price?name=${encodeURIComponent(cardName)}&set=${encodeURIComponent(normalizedSet)}`,
       );
