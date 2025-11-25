@@ -147,7 +147,7 @@ const DEFAULT_BLACKLIST = [
 
 // ============== EDITION SAFELIST FOR NORMAL PRINTINGS ==============
 const NORMAL_EDITIONS = [
-  "Commander",
+  "Commander 2013",
   "Commander 2014",
   "Commander 2016",
   "Commander 2018",
@@ -166,7 +166,6 @@ const NORMAL_EDITIONS = [
   "Magic Origins",
   "Secret Lair Drop Series",
   "Judge Gift Cards",
-  "Starter Commander Deck",
 ];
 
 const SET_CODE_CANDIDATE = /^[A-Z0-9]{2,5}$/;
