@@ -465,22 +465,44 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
           }
         }
         
-        // FALLBACK: no normals found → use lowest non-premium baseline
+        // FALLBACK: no normals → use lowest non-premium AND non-special price
         if (lowestNormalPrice === Infinity) {
           let fallback = null;
           for (const p of rawProducts) {
             const variant = classifyVariant(p.name, cardName);
-            if (variant !== "foil" && 
-                variant !== "etched" &&
-                variant !== "promo" &&
-                variant !== "premium") 
-            {
+            // Exclude ALL variants, only allow plain non-special items
+            if (
+              variant !== "foil" &&
+              variant !== "etched" &&
+              variant !== "promo" &&
+              variant !== "premium" &&
+              variant !== "special" // Exclude showcase/variant editions
+            ) {
               if (fallback === null || p.price < fallback) {
                 fallback = p.price;
               }
             }
           }
-          lowestNormalPrice = fallback === null ? null : fallback;
+
+          // If STILL nothing found (all were variants),
+          // fallback to cheapest non-foil as last resort
+          if (fallback === null) {
+            for (const p of rawProducts) {
+              const variant = classifyVariant(p.name, cardName);
+              if (
+                variant !== "foil" &&
+                variant !== "etched" &&
+                variant !== "promo" &&
+                variant !== "premium"
+              ) {
+                if (fallback === null || p.price < fallback) {
+                  fallback = p.price;
+                }
+              }
+            }
+          }
+
+          lowestNormalPrice = fallback;
         } else {
           lowestNormalPrice = lowestNormalPrice === Infinity ? null : lowestNormalPrice;
         }

@@ -1,0 +1,104 @@
+✔ Classifier improvements = correct
+✔ Fallback logic = correct
+❌ Fallback baseline still includes $1.99 variants that should not be used as the baseline
+
+Because:
+
+All Lightning Bolt and Sol Ring products are classified as “special”
+
+The fallback selects the cheapest non-foil/etched/promo/premium product
+
+Showcase editions are “special”, but also cheap → included → $1.99 becomes baseline
+
+That baseline infects PASS 3 logic
+
+$2.29 never becomes “normal”
+
+So the cheaper variant suppresses the real standard edition again.
+
+🎯 The Final Missing Piece
+Your fallback must exclude variant editions like showcase/extended art, even when they aren’t foil, etched, promo, or premium.
+
+Because the $1.99 editions are absolutely variants, even though the name doesn’t say “showcase.”
+
+The classifier does correctly flag them as "special".
+
+So the fallback must exclude "special".
+
+✔ Corrected Fallback Baseline Logic
+
+Replace the fallback block with this:
+
+// FALLBACK: no normals → use lowest non-premium AND non-special price
+if (lowestNormalPrice === null) {
+  let fallback = null;
+  for (const p of rawProducts) {
+    // Exclude ALL variants, only allow plain non-special items
+    if (
+      p.variant !== "foil" &&
+      p.variant !== "etched" &&
+      p.variant !== "promo" &&
+      p.variant !== "premium" &&
+      p.variant !== "special" // <-- NEW LINE
+    ) {
+      if (fallback === null || p.price < fallback) {
+        fallback = p.price;
+      }
+    }
+  }
+
+  // If STILL nothing found (all were variants),
+  // fallback to cheapest non-foil as last resort
+  if (fallback === null) {
+    for (const p of rawProducts) {
+      if (
+        p.variant !== "foil" &&
+        p.variant !== "etched" &&
+        p.variant !== "promo" &&
+        p.variant !== "premium"
+      ) {
+        if (fallback === null || p.price < fallback) {
+          fallback = p.price;
+        }
+      }
+    }
+  }
+
+  lowestNormalPrice = fallback;
+}
+
+🧠 Why This Works
+This change ensures:
+
+$1.99 variant → "special" → ignored in fallback
+
+$2.29 → "set" or "normal", depending on classifier → eligible for fallback
+
+Swamp → still works correctly because its set-edition $0.35 is "set" not "special"
+
+Expected Behavior After Fix
+Lightning Bolt
+
+$1.99 showcase → special → excluded
+
+$2.29 standard → baseline
+→ final = $2.29
+
+Sol Ring
+
+Same behavior
+→ final = $2.29
+
+Swamp
+
+$0.35 → "set" → eligible
+
+$4.99 → "special" → excluded
+→ final = $0.35
+
+🎉 This is the final missing component
+
+No hacks.
+No demoting normals.
+No fragile price-based conditions.
+Just a correct semantic separation of variant vs. non-variant items.
