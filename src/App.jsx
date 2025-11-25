@@ -1505,22 +1505,32 @@ function MTGInventoryTrackerContent() {
                           {containerItems[container.id] !== undefined ? (
                             containerItems[container.id].length > 0 ? (
                               <div className="space-y-2 max-h-96 overflow-y-auto">
-                                {containerItems[container.id].map((item, idx) => {
-                                const isExpanded = expandedCardCopies[`${container.id}-${idx}`];
-                                const itemCost = parseFloat(item.purchase_price || 0) * (parseInt(item.quantity_used) || 0);
-                                const inventoryItem = inventory.find(inv => inv.id === String(item.inventoryId));
+                                {(() => {
+                                  // Expand each item by its quantity_used to show individual cards
+                                  const expandedItems = [];
+                                  containerItems[container.id].forEach((item, itemIdx) => {
+                                    const quantity = parseInt(item.quantity_used) || 1;
+                                    for (let i = 0; i < quantity; i++) {
+                                      expandedItems.push({ ...item, copyNumber: i + 1, originalIdx: itemIdx, uniqueKey: `${itemIdx}-${i}` });
+                                    }
+                                  });
+                                  
+                                  return expandedItems.map((item, idx) => {
+                                    const isExpanded = expandedCardCopies[`${container.id}-${item.uniqueKey}`];
+                                    const itemCost = parseFloat(item.purchase_price || 0);
+                                    const inventoryItem = inventory.find(inv => inv.id === String(item.inventoryId));
                                 
                                 return (
                                   <div key={idx} className="bg-slate-800 bg-opacity-50 border border-slate-600 rounded">
                                     <button
                                       onClick={() => setExpandedCardCopies(prev => ({
                                         ...prev,
-                                        [`${container.id}-${idx}`]: !isExpanded
+                                        [`${container.id}-${item.uniqueKey}`]: !isExpanded
                                       }))}
                                       className="w-full p-3 text-sm flex justify-between items-center hover:bg-slate-700 transition"
                                     >
                                       <div className="text-left flex-1">
-                                        <div className="font-semibold">{item.name}</div>
+                                        <div className="font-semibold">{item.name} (Card {item.copyNumber})</div>
                                         <div className="text-xs text-slate-400">
                                           {item.set_name} ({item.set})
                                         </div>
@@ -1532,8 +1542,8 @@ function MTGInventoryTrackerContent() {
                                       </div>
                                       <div className="flex items-center gap-3">
                                         <div className="text-right text-xs">
-                                          <div className="text-teal-300 font-semibold">{item.quantity_used}x</div>
-                                          <div className="text-slate-400">${itemCost.toFixed(2)} total</div>
+                                          <div className="text-teal-300 font-semibold">1x</div>
+                                          <div className="text-slate-400">${itemCost.toFixed(2)}</div>
                                         </div>
                                         <div className="text-slate-400">
                                           {isExpanded ? '▼' : '▶'}
@@ -1562,8 +1572,9 @@ function MTGInventoryTrackerContent() {
                                       </div>
                                     )}
                                   </div>
-                                );
-                                })}
+                                  );
+                                  });
+                                })()}
                               </div>
                             ) : (
                               <p className="text-slate-400 text-sm">
