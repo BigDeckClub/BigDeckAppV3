@@ -944,17 +944,31 @@ app.post('/api/containers/:id/sell', async (req, res) => {
     const cards = containerResult.rows[0].cards;
 
     for (const card of cards) {
-      await client.query(
-        `UPDATE inventory SET quantity = quantity - $1 WHERE id = $2 AND quantity >= $1`,
-        [card.quantity_used, card.inventoryId]
+      // Ensure proper integer types for card data
+      const inventoryId = parseInt(card.inventoryId, 10);
+      const quantityUsed = parseInt(card.quantity_used, 10);
+      
+      console.log(`[SELL] Processing card: inventoryId=${inventoryId}, quantity_used=${quantityUsed}`);
+      
+      const updateResult = await client.query(
+        `UPDATE inventory SET quantity = quantity - $1 WHERE id = $2 AND quantity >= $1 RETURNING id, quantity`,
+        [quantityUsed, inventoryId]
       );
+      
+      if (updateResult.rows.length === 0) {
+        console.warn(`[SELL] Warning: Unable to update inventory for id=${inventoryId}, qty=${quantityUsed}`);
+      } else {
+        console.log(`[SELL] Inventory updated: id=${inventoryId}, new_quantity=${updateResult.rows[0].quantity}`);
+      }
       
       // Log sale in purchase_history
       await client.query(
         `INSERT INTO purchase_history (inventory_id, purchase_date, purchase_price, quantity)
          VALUES ($1, $2, (SELECT purchase_price FROM inventory WHERE id = $1), $3)`,
-        [card.inventoryId, new Date().toISOString().split('T')[0], card.quantity_used]
+        [inventoryId, new Date().toISOString().split('T')[0], quantityUsed]
       );
+      
+      console.log(`[SELL] Purchase history recorded for sale: inventory_id=${inventoryId}, quantity=${quantityUsed}`);
     }
 
     const sale = await client.query(
