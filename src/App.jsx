@@ -1543,7 +1543,7 @@ function MTGInventoryTrackerContent() {
                                 return Object.entries(grouped).map(([groupKey, group]) => {
                                   const isExpanded = expandedCardCopies[`${container.id}-${groupKey}`];
                                   const totalQuantity = group.copies.reduce((sum, copy) => sum + (parseInt(copy.quantity_used) || 0), 0);
-                                  const totalCost = group.copies.length * parseFloat(group.purchase_price || 0);
+                                  const totalCost = group.copies.reduce((sum, copy) => sum + (parseFloat(copy.purchase_price || 0) * (parseInt(copy.quantity_used) || 0)), 0);
                                   
                                   return (
                                     <div key={groupKey} className="bg-slate-800 bg-opacity-50 border border-slate-600 rounded">
