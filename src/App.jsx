@@ -93,17 +93,6 @@ function MTGInventoryTrackerContent() {
   const [expandedSoldContainers, setExpandedSoldContainers] = useState({});
   const [expandedCardCopies, setExpandedCardCopies] = useState({});
   const [showSaleAnimation, setShowSaleAnimation] = useState(false);
-  
-  // Auto-refresh settings
-  const [autoRefresh, setAutoRefresh] = useState(() => {
-    const saved = localStorage.getItem('autoRefresh');
-    return saved === 'true';
-  });
-  const [refreshInterval, setRefreshInterval] = useState(() => {
-    const saved = localStorage.getItem('refreshInterval');
-    return saved ? parseInt(saved) : 30;
-  });
-  const [lastRefreshTime, setLastRefreshTime] = useState(null);
 
   const calculateDecklistPrices = async (decklist) => {
     try {
@@ -298,48 +287,6 @@ function MTGInventoryTrackerContent() {
       fetchTotalPurchases();
     }
   }, [activeTab]);
-
-  // Auto-refresh effect
-  useEffect(() => {
-    let intervalId = null;
-    
-    if (autoRefresh && refreshInterval > 0) {
-      console.log(`[AUTO-REFRESH] Enabled with ${refreshInterval}s interval`);
-      
-      intervalId = setInterval(async () => {
-        console.log('[AUTO-REFRESH] Refreshing data...');
-        try {
-          await Promise.allSettled([
-            loadInventory(),
-            loadDecklists(),
-            loadContainers(),
-            loadSales(),
-            loadUsageHistory(),
-          ]);
-          setLastRefreshTime(new Date());
-          console.log('[AUTO-REFRESH] Data refreshed successfully');
-        } catch (error) {
-          console.error('[AUTO-REFRESH] Error refreshing data:', error);
-        }
-      }, refreshInterval * 1000);
-    }
-    
-    return () => {
-      if (intervalId) {
-        console.log('[AUTO-REFRESH] Clearing interval');
-        clearInterval(intervalId);
-      }
-    };
-  }, [autoRefresh, refreshInterval]);
-
-  // Save auto-refresh settings to localStorage
-  useEffect(() => {
-    localStorage.setItem('autoRefresh', autoRefresh.toString());
-  }, [autoRefresh]);
-
-  useEffect(() => {
-    localStorage.setItem('refreshInterval', refreshInterval.toString());
-  }, [refreshInterval]);
 
   const loadAllSets = async () => {
     try {
@@ -819,7 +766,7 @@ function MTGInventoryTrackerContent() {
       setContainerName("");
       setSelectedDecklist(null);
       setShowContainerForm(false);
-      await loadContainers();
+      await Promise.all([loadContainers(), loadInventory()]);
       setSuccessMessage("Container created successfully!");
       setTimeout(() => setSuccessMessage(""), 3000);
     } catch (error) {
@@ -904,8 +851,7 @@ function MTGInventoryTrackerContent() {
 
       if (!response.ok) throw new Error("Failed to record sale");
 
-      await loadSales();
-      await loadContainers();
+      await Promise.all([loadSales(), loadContainers(), loadInventory()]);
       
       // Log the sale activity
       const cogs = calculateDeckCOGS(containers.find(c => c.id === selectedContainerForSale)?.decklist_id);
@@ -2473,46 +2419,6 @@ function MTGInventoryTrackerContent() {
                     className="w-full bg-slate-800 border border-slate-600 px-4 py-2 text-white"
                   />
                 </div>
-                <div className="border-t border-slate-700 hover:border-teal-500 pt-4 mt-4">
-                  <h3 className="font-semibold mb-3 text-teal-300">Auto-Refresh</h3>
-                  <div className="flex items-center justify-between mb-3">
-                    <label className="text-sm">Enable Auto-Refresh</label>
-                    <button
-                      onClick={() => setAutoRefresh(!autoRefresh)}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        autoRefresh ? 'bg-teal-600' : 'bg-slate-600'
-                      }`}
-                    >
-                      <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                          autoRefresh ? 'translate-x-6' : 'translate-x-1'
-                        }`}
-                      />
-                    </button>
-                  </div>
-                  {autoRefresh && (
-                    <div className="mb-3">
-                      <label className="block text-sm mb-2">Refresh Interval</label>
-                      <select
-                        value={refreshInterval}
-                        onChange={(e) => setRefreshInterval(parseInt(e.target.value))}
-                        className="w-full bg-slate-800 border border-slate-600 px-4 py-2 text-white rounded"
-                      >
-                        <option value={15}>Every 15 seconds</option>
-                        <option value={30}>Every 30 seconds</option>
-                        <option value={60}>Every 1 minute</option>
-                        <option value={120}>Every 2 minutes</option>
-                        <option value={300}>Every 5 minutes</option>
-                      </select>
-                    </div>
-                  )}
-                  {lastRefreshTime && autoRefresh && (
-                    <p className="text-xs text-slate-400 mb-3">
-                      Last refreshed: {lastRefreshTime.toLocaleTimeString()}
-                    </p>
-                  )}
-                </div>
-
                 <div className="border-t border-slate-700 hover:border-teal-500 pt-4 mt-4">
                   <button
                     onClick={() => {
