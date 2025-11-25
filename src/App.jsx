@@ -1078,7 +1078,8 @@ function MTGInventoryTrackerContent() {
                 {decklists.map((deck) => {
                   const prices = decklistPrices[deck.id] || { tcg: 0, ck: 0 };
                   const isExpanded = expandedDecklists[deck.id];
-                  const deckCards = deck.decklist
+                  const decklistText = deck.decklist || "";
+                  const deckCards = decklistText
                     .split("\n")
                     .filter((line) => line.trim())
                     .flatMap((line) => {
@@ -1191,7 +1192,7 @@ function MTGInventoryTrackerContent() {
                                             }
 
                                             // Get the original lines (with quantities)
-                                            const lines = deck.decklist
+                                            const lines = (deck.decklist || "")
                                               .split("\n")
                                               .filter((line) => line.trim());
 
