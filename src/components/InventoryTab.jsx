@@ -362,7 +362,7 @@ export const InventoryTab = ({
 
 InventoryTab.propTypes = {
   inventory: PropTypes.arrayOf(PropTypes.shape({
-    id: PropTypes.number,
+    id: PropTypes.string,
     name: PropTypes.string,
     set: PropTypes.string,
     quantity: PropTypes.number,
@@ -387,7 +387,7 @@ InventoryTab.propTypes = {
   addCard: PropTypes.func.isRequired,
   expandedCards: PropTypes.object.isRequired,
   setExpandedCards: PropTypes.func.isRequired,
-  editingId: PropTypes.number,
+  editingId: PropTypes.string,
   editForm: PropTypes.object.isRequired,
   setEditForm: PropTypes.func.isRequired,
   startEditingItem: PropTypes.func.isRequired,
