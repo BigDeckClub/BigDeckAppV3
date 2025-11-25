@@ -1,0 +1,115 @@
+2. Record Purchases in purchase_history
+Whenever cards or containers are added or sold, create a corresponding entry in the purchase_history table.
+
+When Cards are Added to Inventory:
+For each card added to inventory via addInventoryItem:
+Insert a new record into purchase_history.
+Updated addInventoryItem Function Example:
+
+JavaScript
+const addInventoryItem = async (item) => {
+    try {
+        const response = await fetch(`${API_BASE}/inventory`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(item),
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`HTTP ${response.status}: ${errorText}`);
+        }
+
+        // Insert purchase record for each card added to inventory
+        const purchaseDate = new Date().toISOString();
+        const purchasePrice = item.purchase_price || 0;
+        const purchaseQuantity = item.quantity || 1;
+
+        db.run(`
+            INSERT INTO purchase_history (card_id, purchase_date, purchase_price, quantity)
+            VALUES (?, ?, ?, ?)`,
+            [item.id, purchaseDate, purchasePrice, purchaseQuantity],
+            (err) => {
+                if (err) {
+                    console.error("[DEBUG] Failed to record purchase:", err);
+                } else {
+                    console.log("[DEBUG] Purchase successfully recorded.");
+                }
+            }
+        );
+
+        await loadInventory(); // Refresh inventory table in the UI
+        setSuccessMessage("Card added successfully!");
+        setTimeout(() => setSuccessMessage(""), 3000);
+        return true;
+    } catch (error) {
+        setSuccessMessage("Error adding card: " + error.message);
+        setTimeout(() => setSuccessMessage(""), 3000);
+        return false;
+    }
+};
+When Cards Are Moved to Containers:
+Copy the corresponding inventory card_id purchase records into the container.
+Card-to-Container Movement Example SQL:
+
+SQL
+INSERT INTO purchase_history (container_id, purchase_date, purchase_price, quantity)
+SELECT ?, purchase_date, purchase_price, quantity
+FROM purchase_history
+WHERE card_id = ?;
+Update the backend handler for moving inventory cards to containers:
+
+JavaScript
+app.post('/api/containers/:containerId/add-card', (req, res) => {
+    const { containerId } = req.params;
+    const { cardId, quantity } = req.body;
+
+    const purchaseDate = new Date().toISOString();
+
+    db.run(`
+        INSERT INTO purchase_history (container_id, purchase_date, purchase_price, quantity)
+        SELECT ?, purchase_date, purchase_price, ?
+        FROM purchase_history WHERE card_id = ?
+    `, [containerId, quantity, cardId], function(err) {
+        if (err) {
+            console.error("[DEBUG] Failed to log container purchase in history:", err);
+            res.status(500).send({ error: "Failed to update purchase history." });
+            return;
+        }
+        res.sendStatus(200); // Success
+    });
+});
+When Containers Are Sold:
+Create a new purchase history entry with the total aggregated purchase price for that container’s cards.
+Container Sale Example SQL:
+
+SQL
+SELECT SUM(purchase_price * quantity) AS total_cost
+FROM purchase_history
+WHERE container_id = ?;
+Log container sales:
+
+JavaScript
+app.post('/api/containers/sell', (req, res) => {
+    const { containerId, salePrice } = req.body;
+
+    const query = `
+        SELECT SUM(purchase_price * quantity) AS total_cost
+        FROM purchase_history
+        WHERE container_id = ?;
+    `;
+
+    db.get(query, [containerId], (err, row) => {
+        if (err) {
+            console.error("[DEBUG] Failed to fetch container total cost:", err);
+            res.status(500).send({ error: "Failed to calculate total cost." });
+            return;
+        }
+
+        const totalCost = row.total_cost || 0;
+
+        // Sale logic...
+        console.log(`[DEBUG] Container sold. Cost: ${totalCost}, Sale Price: ${salePrice}`);
+        res.status(200).send({ cost: totalCost, price: salePrice });
+    });
+});

@@ -1012,10 +1012,10 @@ app.post('/api/containers/:id/sell', async (req, res) => {
     }
 
     const sale = await client.query(
-      `INSERT INTO sales (container_id, container_name, sale_price, sale_date) 
-       VALUES ($1, $2, $3, NOW()) 
+      `INSERT INTO sales (container_id, sale_price, sold_date) 
+       VALUES ($1, $2, NOW()) 
        RETURNING *`,
-      [req.params.id, container.name, salePrice]
+      [req.params.id, salePrice]
     );
 
     console.log(`[SELL] ✅ Sale recorded: id=${sale.rows[0].id}, container_id=${container.id}, price=${salePrice}`);
