@@ -112,11 +112,21 @@ export const InventoryTab = ({
                     }}
                     className="w-full bg-slate-800 border border-slate-600 rounded px-4 py-2 text-white"
                   >
-                    {selectedCardSets.map((card) => (
-                      <option key={`${card.id}`} value={`${card.set}|${card.name}`}>
-                        {card.setName} ({card.set})
-                      </option>
-                    ))}
+                    {(() => {
+                      const seen = new Set();
+                      return selectedCardSets
+                        .filter(card => {
+                          if (seen.has(card.set)) return false;
+                          seen.add(card.set);
+                          return true;
+                        })
+                        .sort((a, b) => a.set.localeCompare(b.set))
+                        .map((card) => (
+                          <option key={`${card.id}`} value={`${card.set}|${card.name}`}>
+                            {card.set} - {card.setName}
+                          </option>
+                        ));
+                    })()}
                   </select>
                 </div>
               )}
