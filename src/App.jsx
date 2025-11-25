@@ -1498,10 +1498,10 @@ function MTGInventoryTrackerContent() {
                           <h4 className="font-semibold mb-3">
                             Cards in Container
                           </h4>
-                          {containerItems[container.id] &&
-                          containerItems[container.id].length > 0 ? (
-                            <div className="space-y-2 max-h-96 overflow-y-auto">
-                              {containerItems[container.id].map((item, idx) => {
+                          {containerItems[container.id] !== undefined ? (
+                            containerItems[container.id].length > 0 ? (
+                              <div className="space-y-2 max-h-96 overflow-y-auto">
+                                {containerItems[container.id].map((item, idx) => {
                                 const isExpanded = expandedCardCopies[`${container.id}-${idx}`];
                                 const itemCost = parseFloat(item.purchase_price || 0) * (parseInt(item.quantity_used) || 0);
                                 const inventoryItem = inventory.find(inv => inv.id === String(item.inventoryId));
@@ -1559,8 +1559,13 @@ function MTGInventoryTrackerContent() {
                                     )}
                                   </div>
                                 );
-                              })}
-                            </div>
+                                })}
+                              </div>
+                            ) : (
+                              <p className="text-slate-400 text-sm">
+                                No cards in this container.
+                              </p>
+                            )
                           ) : (
                             <p className="text-slate-400 text-sm">
                               Loading container contents...
