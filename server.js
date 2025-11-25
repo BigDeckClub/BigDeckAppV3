@@ -769,7 +769,10 @@ app.get('/api/containers/:id/items', async (req, res) => {
 // Delete container
 app.delete('/api/containers/:id', async (req, res) => {
   try {
-    const { id } = req.params;
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) {
+      return res.status(400).json({ error: 'Invalid container ID' });
+    }
     const result = await pool.query('DELETE FROM containers WHERE id = $1 RETURNING id', [id]);
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Container not found' });
