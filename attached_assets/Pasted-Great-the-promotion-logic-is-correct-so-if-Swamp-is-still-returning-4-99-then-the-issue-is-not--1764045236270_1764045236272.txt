@@ -1,0 +1,111 @@
+Great — the promotion logic is correct, so if Swamp is still returning $4.99, then the issue is not the heuristic, it's that the global context is not being used during classification, or the classifier is being run before the global context is populated.
+
+This is a flow-order bug.
+
+Let’s fix it cleanly:
+
+✅ Here is the REAL fix: your classifier is being run too early
+
+You currently do:
+
+Loop through products
+
+classifyVariant(name, cardName, price)
+
+track lowestNormalPrice
+
+classify again (maybe?)
+
+But the first classification happens before the global pricing context exists, so Swamp’s $0.35 [set] never gets promoted.
+
+You need two passes:
+
+✅ Patch: Implement a true 2-pass classification flow
+Pass 1: Extract all products + raw names + raw prices
+
+No classification at all.
+
+Pass 2: Compute lowest normal price
+
+Using the raw prices.
+
+Pass 3: Classify each product with globalPriceContext
+
+This is where promotion happens.
+
+Pass 4: Sort and pick final price
+🔧 Code Fix (Drop-in replacement for your main scraping loop)
+
+Paste this into server.js replacing your product-loop logic:
+
+// ---------------- PASS 1: Extract raw products --------------------
+let rawProducts = [];
+
+productElems.forEach((elem, idx) => {
+  const name = extractProductName(elem);
+  const price = extractProductPrice(elem);
+
+  if (!name || !isFinite(price)) return;
+
+  rawProducts.push({ name, price, idx, elem });
+});
+
+// ---------------- PASS 2: Determine lowest *normal* price ----------
+let lowestNormalPrice = Infinity;
+
+for (const p of rawProducts) {
+  const variant = classifyVariant(p.name, cardName, p.price, null);
+  if (variant === "normal" && p.price < lowestNormalPrice) {
+    lowestNormalPrice = p.price;
+  }
+}
+
+globalPriceContext = { lowestNormalPrice };
+
+// ---------------- PASS 3: Re-classify with context (promotion works!) ----
+let classifiedProducts = rawProducts.map(p => {
+  const variant = classifyVariant(p.name, cardName, p.price, globalPriceContext);
+  return { ...p, variant };
+});
+
+// ---------------- PASS 4: Sort & pick the best product -----------------
+classifiedProducts.sort((a, b) => {
+  const rankDiff = VARIANT_RANK[a.variant] - VARIANT_RANK[b.variant];
+  if (rankDiff !== 0) return rankDiff;
+  return a.price - b.price;
+});
+
+const best = classifiedProducts[0];
+return best.price;
+
+💡 Why Swamp Fix Now Works 100%
+
+Before:
+
+$0.35 Swamp classified as [set] before global context existed
+
+$4.99 Swamp classified [normal]
+
+Sorting: normal wins → wrong output
+
+After:
+
+First pass: gather prices
+
+Second pass: detect normal = $4.99 → lowestNormalPrice = 4.99
+
+Third pass: $0.35 Swamp sees:
+
+setPrice = 0.35
+
+normalPrice = 4.99
+
+ratio ≈ 14.25 → PROMOTE TO NORMAL
+
+Sorting: $0.35 normal beats $4.99 normal → correct
+
+🎉 Expected Output After Patch
+Card	Correct Price
+Lightning Bolt	$2.29
+Sol Ring	$2.29
+Swamp	$0.35 ✔

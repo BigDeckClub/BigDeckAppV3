@@ -413,11 +413,10 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
           }
         }
         
-        const productPrices = [];
-        let firstNormalIndex = null;
-        let lowestNormalPrice = Infinity;
+        // PASS 1: Extract raw products (no classification yet)
+        let rawProducts = [];
+        const target = cardName.toLowerCase();
         
-        // First pass: identify all products and find lowest "normal" price
         products.each((i, el) => {
           let nameEl = $(el).find('a').first();
           if (nameEl.length === 0) nameEl = $(el).find('.product-name, .item-title, [class*="name"]').first();
@@ -439,66 +438,47 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
             }
           }
           
-          const target = cardName.toLowerCase();
           if (name && name.includes(target)) {
             const numericPrice = rawPrice ? extractNumericPrice(rawPrice) : 0;
-            
             if (isValidPrice(numericPrice)) {
-              const variant = classifyVariant(name, cardName);
-              if (variant === "normal" && numericPrice < lowestNormalPrice) {
-                lowestNormalPrice = numericPrice;
-              }
+              rawProducts.push({ name, price: numericPrice, index: rawProducts.length });
             }
           }
         });
+        
+        // PASS 2: Determine lowest *normal* price from raw products
+        let lowestNormalPrice = Infinity;
+        for (const p of rawProducts) {
+          const variant = classifyVariant(p.name, cardName);
+          if (variant === "normal" && p.price < lowestNormalPrice) {
+            lowestNormalPrice = p.price;
+          }
+        }
         
         const globalPriceContext = { lowestNormalPrice: lowestNormalPrice === Infinity ? null : lowestNormalPrice };
         
-        // Second pass: classify with context
-        products.each((i, el) => {
-          let nameEl = $(el).find('a').first();
-          if (nameEl.length === 0) nameEl = $(el).find('.product-name, .item-title, [class*="name"]').first();
+        // PASS 3: Re-classify all products with context (promotion works!)
+        const productPrices = [];
+        let firstNormalIndex = null;
+        
+        for (let i = 0; i < rawProducts.length; i++) {
+          const p = rawProducts[i];
+          const variant = classifyVariantEnhanced(
+            { name: p.name, price: p.price },
+            i,
+            firstNormalIndex,
+            cardName,
+            globalPriceContext
+          );
           
-          let priceEl = $(el).find('span.stylePrice').first();
-          if (priceEl.length === 0) priceEl = $(el).find('span.price, div.price, [class*="price"]').first();
-          
-          let name = nameEl.length > 0 ? nameEl.text().trim().toLowerCase() : '';
-          let rawPrice = priceEl.length > 0 ? priceEl.text().trim() : '';
-          
-          if (!rawPrice) {
-            const productHtml = $(el).html();
-            const prices = extractPricesFromText(productHtml);
-            if (prices.length > 0) {
-              const bestPrice = Math.min(...prices.filter(p => isValidPrice(p)));
-              if (bestPrice && Number.isFinite(bestPrice)) {
-                rawPrice = `$${bestPrice.toFixed(2)}`;
-              }
-            }
+          if (variant === "normal" && firstNormalIndex === null) {
+            firstNormalIndex = i;
           }
           
-          const target = cardName.toLowerCase();
-          if (name && name.includes(target)) {
-            const numericPrice = rawPrice ? extractNumericPrice(rawPrice) : 0;
-            
-            if (isValidPrice(numericPrice)) {
-              const variant = classifyVariantEnhanced(
-                { name, price: numericPrice },
-                productPrices.length,
-                firstNormalIndex,
-                cardName,
-                globalPriceContext
-              );
-              
-              if (variant === "normal" && firstNormalIndex === null) {
-                firstNormalIndex = productPrices.length;
-              }
-              
-              const rank = getVariantRank(variant);
-              productPrices.push({ price: numericPrice, variant, rank, name });
-              console.log(`      ✓ Valid match found: $${numericPrice.toFixed(2)} [${variant}]`);
-            }
-          }
-        });
+          const rank = getVariantRank(variant);
+          productPrices.push({ price: p.price, variant, rank, name: p.name });
+          console.log(`      ✓ Valid match found: $${p.price.toFixed(2)} [${variant}]`);
+        }
         
         if (productPrices.length > 0) {
           const best = productPrices.sort((a, b) => {
