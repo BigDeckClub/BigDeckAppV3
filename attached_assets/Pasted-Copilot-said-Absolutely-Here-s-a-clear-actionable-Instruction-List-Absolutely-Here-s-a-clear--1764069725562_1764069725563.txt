@@ -1,0 +1,38 @@
+Copilot said: Absolutely! Here’s a clear, actionable **Instruction List
+Absolutely! Here’s a clear, actionable Instruction List for Replit Agent AI when debugging the MTG pricing cache issue:
+
+Replit Agent AI Instruction List: Debugging Pricing Cache
+1. Diagnose Issue Scope
+Confirm which cards are affected (e.g. "Swamp", "Sol Ring").
+Verify whether the backend returns correct prices for these cards.
+2. Normalize and Standardize Cache Keys
+Ensure normalizeCardName(name) returns name in lowercase and trimmed.
+Ensure normalizeSetCode(set) returns set in UPPERCASE and trimmed.
+All cache keys must follow the format: lowercase-cardname|UPPERCASE-SETCODE.
+3. Log Cache Storage and Retrieval
+Add logs when prices are added to cache (CACHE WRITE).
+Add logs when fetching from cache (CACHE READ).
+Example log statements:
+[CACHE WRITE] swamp|SPM: { tcg: "$0.07", ck: "$0.35" }
+[CACHE READ] swamp|SPM: { tcg: "$0.07", ck: "$0.35" }
+4. Confirm Cache Population
+After backend request, immediately check the cache for a matching key.
+Ensure that the fetched price is stored with the same normalized key as will be read by the component.
+5. Verify Frontend Price Retrieval
+In the component (DecklistCardPrice), verify that getPrice(cardName, setCode) returns the correct price object for the normalized key.
+Log the result just before setting state.
+6. Check React State and Context Updates
+Make sure that setPrice() is called with valid data, not fallback { tcg: "N/A", ck: "N/A" }, for all cards.
+7. Inspect API Response in the Browser
+Use browser DevTools, Network panel, to ensure responses for card prices include correct data for test cases.
+8. Test Manual Cache Entry (for validation)
+Manually set cache entry (e.g., cache["swamp|SPM"] = { tcg: "$0.07", ck: "$0.35" }) and verify rendering to ensure reading logic works.
+9. Remove Debug Logs for Production
+Once issue is fixed and prices display for all cards, clean up all temporary console logging.
+10. Document the Fix
+Clearly comment the normalization function and cache logic for future reference.
+Success Criteria:
+
+Prices display for all cards (including Swamp/basic lands), matching backend data.
+Cache keys and normalization are consistent throughout the full fetch/store/render cycle.
+No excessive debug logs in production.

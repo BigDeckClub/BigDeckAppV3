@@ -10,9 +10,14 @@ export function PriceCacheProvider({ children }) {
     const key = `${name}|${setCode}`;
     const cached = cache[key];
 
-    if (cached) return cached;
+    if (cached) {
+      console.log(`[CACHE READ] ${key}:`, cached);
+      return cached;
+    }
 
+    console.log(`[CACHE MISS] ${key} - fetching from backend...`);
     const result = await fetchCardPrices(name, setCode);
+    console.log(`[CACHE WRITE] ${key}:`, result);
     setCache(prev => ({ ...prev, [key]: result }));
     return result;
   }
