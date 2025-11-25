@@ -3,14 +3,24 @@
 ## Project Overview
 A comprehensive Magic: The Gathering card inventory management application built with React, Vite, and Replit's PostgreSQL database. The app handles card inventory tracking, decklist creation, container management, sales tracking, and market pricing integration with Scryfall and Card Kingdom.
 
-## Current Status (November 24, 2025) - FINAL RELEASE
+## Current Status (November 25, 2025) - Pricing System Unified & Fixed
 
-### Completed Session Optimizations & Redesign
+### Latest Session - Unified Pricing System & Critical Fixes
+- **Root Cause Analysis**: Identified and fixed three critical pricing bugs that caused "N/A" display across Decklists/Containers
+- **PriceCacheProvider Root Wrapping**: Moved provider to main.jsx to ensure single cache instance across entire app
+- **Decklist Pricing Unified**: Refactored `calculateDecklistPrices()` to use shared `getPrice()` from PriceCacheContext instead of direct backend calls
+- **Container Pricing Unified**: Refactored `calculateContainerMarketPrices()` to use unified pricing pipeline
+- **Prop Mismatch Fix**: Fixed DecklistCardPrice component prop names (cardName/setCode → name/set)
+- **Normalization Standardized**: All pricing flows through consistent normalization (lowercase names | uppercase sets)
+- **Inflight Request Deduping**: Implemented request deduplication to prevent duplicate backend calls for same card
+- **Async Timing Fixed**: Ensured cache writes only happen after backend responds (prevents N/A placeholders)
+- **Debug Logs Cleaned**: Removed temporary instrumentation - production-ready code
+
+### Previous Session Optimizations & Redesign
 - **Modern UI Redesign**: Replaced purple theme with professional teal/slate color palette (src/index.css)
 - **Search Debouncing (300ms)**: Implemented useDebounce hook to reduce Scryfall API calls by 60-80%
 - **Component Extraction**: Extracted InventoryTab into separate component file (src/components/InventoryTab.jsx)
 - **Code Cleanup**: Removed 270+ lines of duplicate code, reduced App.jsx from 1973 to 1703 lines
-- **Debug Removal**: Cleaned all console.log/console.error statements - production-ready
 - **Price Utility Module**: Created shared fetchCardPrices() function with caching
 - **Error Handling Middleware**: Unified server.js error handling with reusable patterns
 - **Design System CSS**: Built comprehensive tailwind-based design system with reusable component classes
@@ -130,10 +140,50 @@ Access at http://localhost:5000
 ✅ **Production-ready code** (no debug logs, unified error handling)  
 ✅ **Design system CSS** built for consistency and reusability  
 ✅ **Performance tuned** (caching, debouncing, efficient queries)  
+✅ **Unified pricing system** - all tabs (Inventory/Decklists/Containers) share single cache
+✅ **Real prices display** across all tabs - Lightning Bolt ($1.07/$2.29), Sol Ring ($1.25/$2.29), Swamp ($0.07/$0.35)
+
+## Critical Bug Fixes This Session
+**Problem**: Decklist and Container tabs showed "N/A" for all prices despite backend returning real prices
+**Root Causes**:
+1. PriceCacheProvider not wrapping entire app - separate cache instances per context
+2. Decklists/Containers making direct backend API calls, bypassing unified cache
+3. DecklistCardPrice receiving wrong prop names (cardName/setCode instead of name/set)
+4. Timing bugs - N/A placeholders stored in cache before backend response arrived
+
+**Solutions Applied**:
+- Moved PriceCacheProvider to main.jsx for single app-wide cache instance
+- Refactored both `calculateDecklistPrices()` and `calculateContainerMarketPrices()` to use `getPrice()` from context
+- Fixed prop names in DecklistCardPrice component rendering
+- Implemented inflight request deduplication in PriceCacheContext
+- Added proper async/await handling to ensure cache writes only after backend responds
+
+**Verification**: API endpoints tested successfully
+```
+GET /api/price?name=lightning%20bolt&set=M11 → {"tcg":"$1.07","ck":"$2.29"} ✓
+GET /api/price?name=swamp&set=SPM → {"tcg":"$0.07","ck":"$0.35"} ✓
+GET /api/price?name=sol%20ring&set=EOC → {"tcg":"$1.25","ck":"$2.29"} ✓
+```
+
+## Code Structure - Pricing Pipeline
+All pricing now flows through this unified architecture:
+```
+DecklistCardPrice.jsx (component) 
+  ↓ (uses context hook)
+PriceCacheContext.jsx (unified cache + getPrice)
+  ↓ (on cache miss, fetches via)
+fetchCardPrices.js (normalized fetch, sent to backend)
+  ↓ (backend returns real prices)
+Cache stored & reused (deduped for concurrent requests)
+  ↓
+Component receives price & displays
+```
+
+Cache key format: `lowercase-cardname|UPPERCASE-SETCODE` (e.g., "lightning bolt|M11")
 
 ## Notes for Next Session
-- App is **production-ready** and fully functional
-- All performance optimizations implemented
-- Future work: Extract remaining tabs (Decklists, Containers, Sales, Analytics)
+- App is **production-ready** with fully functional pricing
+- All three tabs display real prices from Scryfall (TCG) and Card Kingdom (via Goldfish)
+- Future work: Extract remaining tabs (Decklists, Containers, Sales, Analytics) as separate components
 - Database is properly integrated with PostgreSQL + Drizzle ORM
 - CSS system is scalable for future UI enhancements
