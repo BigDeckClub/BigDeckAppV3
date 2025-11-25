@@ -10,6 +10,9 @@ import Joi from 'joi';
 const { Pool } = pkg;
 const app = express();
 
+// Trust proxy for correct client IP handling in cloud environments
+app.set('trust proxy', 1);
+
 // ========== SECURITY MIDDLEWARE ==========
 app.use(helmet());
 
