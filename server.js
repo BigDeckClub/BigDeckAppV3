@@ -63,9 +63,14 @@ async function initializeDatabase() {
         purchase_price REAL,
         purchase_date TEXT,
         reorder_type VARCHAR(20) DEFAULT 'Normal',
+        image_url TEXT,
+        scryfall_id VARCHAR(255),
         created_at TIMESTAMP DEFAULT NOW()
       )
     `);
+    // Add missing columns for existing databases
+    await pool.query(`ALTER TABLE inventory ADD COLUMN IF NOT EXISTS image_url TEXT`).catch(() => {});
+    await pool.query(`ALTER TABLE inventory ADD COLUMN IF NOT EXISTS scryfall_id VARCHAR(255)`).catch(() => {});
     console.log('[DB] ✓ inventory table ready');
 
     // Decklists table
