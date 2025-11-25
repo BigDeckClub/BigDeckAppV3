@@ -12,11 +12,42 @@ const app = express();
 
 // ========== SECURITY MIDDLEWARE ==========
 app.use(helmet());
+
+// Secure, dynamic CORS handler for Replit
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:5000',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:5000'
+];
+
 app.use(cors({
-  origin: ['http://localhost:5000', 'http://localhost:3000', 'http://172.31.94.226:5000'],
+  origin: (origin, callback) => {
+    // Allow server-to-server, curl, mobile apps
+    if (!origin) return callback(null, true);
+
+    // Allow explicitly in the safelist
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    // Allow ALL Replit proxy deployments
+    if (
+      /^https:\/\/[^.]+\.replit\.dev$/.test(origin) ||
+      /^https:\/\/[^.]+\.id\.repl\.co$/.test(origin)
+    ) {
+      return callback(null, true);
+    }
+
+    // Otherwise block
+    return callback(new Error('CORS blocked for origin: ' + origin));
+  },
+
+  credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
 app.use(bodyParser.json());
 
 // ========== RATE LIMITING ==========
