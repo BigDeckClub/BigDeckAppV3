@@ -25,6 +25,7 @@ import { normalizeCardName, normalizeSetCode } from "./lib/fetchCardPrices";
 const API_BASE = "/api";
 
 function MTGInventoryTrackerContent() {
+  console.log("[APP] Component mounted");
   const { getPrice } = usePriceCache();
   const [activeTab, setActiveTab] = useState("inventory");
   const [inventory, setInventory] = useState([]);
@@ -196,18 +197,16 @@ function MTGInventoryTrackerContent() {
 
     for (const item of items) {
       try {
-        // Use the backend API which has proper pricing with CK data
-        const normalizedSet = (item.set || "").trim().toUpperCase();
-        const response = await fetch(
-          `${API_BASE}/price?name=${encodeURIComponent(item.name)}&set=${encodeURIComponent(normalizedSet)}`,
-        );
-        if (response.ok) {
-          const priceData = await response.json();
-          // Strip $ sign and parse the price
-          const tcgPrice =
-            parseFloat(String(priceData.tcg).replace("$", "")) || 0;
-          const ckRaw = String(priceData.ck).replace("$", "");
-          let ckPrice = parseFloat(ckRaw) || 0;
+        // Use unified pricing via PriceCacheContext
+        const normalizedName = normalizeCardName(item.name);
+        const normalizedSet = normalizeSetCode(item.set);
+        console.log(`[CONTAINER] requesting ${normalizedName}|${normalizedSet}`);
+        const priceData = await getPrice(normalizedName, normalizedSet);
+        console.log(`[CONTAINER] resolved ${normalizedName}|${normalizedSet}:`, priceData);
+        
+        if (priceData && priceData.tcg !== "N/A") {
+          const tcgPrice = parseFloat(String(priceData.tcg).replace("$", "")) || 0;
+          let ckPrice = parseFloat(String(priceData.ck).replace("$", "")) || 0;
 
           // If CK price is N/A or 0, use fallback
           if (ckPrice === 0 && tcgPrice > 0) {
@@ -218,7 +217,9 @@ function MTGInventoryTrackerContent() {
           tcgTotal += tcgPrice * quantity;
           ckTotal += ckPrice * quantity;
         }
-      } catch (err) {}
+      } catch (err) {
+        console.error(`[CONTAINER] getPrice error for ${item.name}|${item.set}:`, err);
+      }
     }
 
     return { tcg: tcgTotal, ck: ckTotal };

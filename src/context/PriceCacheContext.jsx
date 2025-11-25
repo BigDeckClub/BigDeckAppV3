@@ -8,6 +8,7 @@ export function PriceCacheProvider({ children }) {
   const inflightRef = useRef({}); // Track in-flight requests to dedupe
 
   function getPrice(name, setCode) {
+    console.log(`[CONTEXT] getPrice called with name="${name}" setCode="${setCode}"`);
     const key = `${name}|${setCode}`;
 
     // Check cache first
