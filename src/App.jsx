@@ -115,77 +115,6 @@ function MTGInventoryTrackerContent() {
     );
   };
 
-  // Individual card price component for decklist views
-  const DecklistCardPrice = ({ cardName, setCode }) => {
-    const [tcgPrice, setTcgPrice] = useState("N/A");
-    const [ckPrice, setCkPrice] = useState("N/A");
-
-    useEffect(() => {
-      let isMounted = true;
-      
-      // Normalize card name to proper case and set code to uppercase
-      const normalizedName = (cardName || "")
-        .trim()
-        .toLowerCase()
-        .replace(/\b\w/g, c => c.toUpperCase());
-      
-      const normalizedSet = (setCode || "").trim().toUpperCase();
-      
-      const cacheKey = `${normalizedName}|${normalizedSet}`;
-      const CACHE_DURATION_MS = 2 * 60 * 60 * 1000; // 2 hours (shorter to avoid stale N/A)
-
-      const loadPrices = async () => {
-        const priceData = await fetchCardPrices(
-          normalizedName || cardName,
-          normalizedSet || setCode
-        );
-        if (isMounted) {
-          // Don't cache N/A values - always refetch if we get N/A
-          if (priceData.tcg === "N/A" || priceData.ck === "N/A") {
-            setTcgPrice(priceData.tcg);
-            setCkPrice(priceData.ck);
-          } else {
-            // Only cache valid prices
-            setPriceCache((prev) => ({
-              ...prev,
-              [cacheKey]: { ...priceData, timestamp: Date.now() },
-            }));
-            setTcgPrice(priceData.tcg);
-            setCkPrice(priceData.ck);
-          }
-        }
-      };
-
-      // Check cache only if we have valid (non-N/A) cached data
-      if (priceCache[cacheKey]) {
-        const cached = priceCache[cacheKey];
-        const now = Date.now();
-        if (
-          cached.tcg !== "N/A" &&
-          cached.ck !== "N/A" &&
-          now - (cached.timestamp || 0) < CACHE_DURATION_MS
-        ) {
-          if (isMounted) {
-            setTcgPrice(cached.tcg);
-            setCkPrice(cached.ck);
-          }
-          return;
-        }
-      }
-
-      loadPrices();
-      return () => {
-        isMounted = false;
-      };
-    }, [cardName, setCode, priceCache]);
-
-    return (
-      <div className="text-xs flex gap-4 mt-2">
-        <div className="text-teal-300">TCG: {tcgPrice}</div>
-        <div className="text-cyan-300">CK: {ckPrice}</div>
-      </div>
-    );
-  };
 
   const calculateDecklistPrices = async (decklist) => {
     try {
@@ -474,36 +403,6 @@ function MTGInventoryTrackerContent() {
     } catch (error) {}
   };
 
-  const fetchCardPrices = async (cardName, setCode) => {
-    try {
-      let normalizedSet = (setCode || "").trim().toUpperCase();
-
-      if (
-        !normalizedSet ||
-        normalizedSet === "BASICLAND" ||
-        normalizedSet === "BASIC LAND"
-      ) {
-        normalizedSet = "SPM"; // fallback for basic lands
-      }
-
-      const response = await fetch(
-        `/api/price?name=${encodeURIComponent(cardName)}&set=${encodeURIComponent(normalizedSet)}`
-      );
-
-      if (!response.ok) {
-        return { tcg: "N/A", ck: "N/A" };
-      }
-
-      const priceData = await response.json();
-      return {
-        tcg: priceData.tcg || "N/A",
-        ck: priceData.ck || "N/A",
-      };
-    } catch (err) {
-      console.error("Price fetch error:", err);
-      return { tcg: "N/A", ck: "N/A" };
-    }
-  };
 
   const searchScryfall = async (query) => {
     if (!query.trim()) {
