@@ -531,6 +531,7 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
         // PASS 1: Extract raw products (with edition metadata)
         let rawProducts = [];
         const target = cardName.toLowerCase();
+        let debugEditions = [];
         
         products.each((i, el) => {
           let nameEl = $(el).find('a').first();
@@ -544,6 +545,9 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
           
           // Extract edition metadata from hidden HTML attributes
           const edition = extractEditionFromHtml(el, $);
+          if (edition) {
+            debugEditions.push(`${name}: ${edition}`);
+          }
           
           if (!rawPrice) {
             const productHtml = $(el).html();
@@ -563,6 +567,12 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
             }
           }
         });
+        
+        if (debugEditions.length > 0) {
+          console.log(`   [EDITION DEBUG] Found editions: ${debugEditions.slice(0, 5).join(', ')}`);
+        } else {
+          console.log(`   [EDITION DEBUG] No editions extracted from any products`);
+        }
         
         // PASS 2: Determine lowest *normal* price from raw products
         // Now uses edition metadata to correctly identify standard vs variant editions
