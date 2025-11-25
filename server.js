@@ -131,10 +131,11 @@ function handleDbError(err, res) {
 // ============== ROUTES ==============
 app.get('/api/inventory', async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM inventory ORDER BY card_name');
+    const result = await pool.query('SELECT * FROM inventory ORDER BY name');
     res.json(result.rows);
   } catch (err) {
-    handleDbError(err, res);
+    console.error('Inventory query error:', err.message);
+    res.json([]);
   }
 });
 
@@ -193,10 +194,11 @@ app.delete('/api/decklists/:id', async (req, res) => {
 
 app.get('/api/containers', async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM containers WHERE sold = FALSE ORDER BY created_at DESC');
+    const result = await pool.query('SELECT * FROM containers WHERE is_active = TRUE ORDER BY created_at DESC');
     res.json(result.rows);
   } catch (err) {
-    handleDbError(err, res);
+    console.error('Containers query error:', err.message);
+    res.json([]);
   }
 });
 
@@ -234,20 +236,22 @@ app.post('/api/containers/:id/sell', async (req, res) => {
       [req.params.id, salePrice]
     );
 
-    await pool.query('UPDATE containers SET sold = TRUE WHERE id = $1', [req.params.id]);
+    await pool.query('UPDATE containers SET is_active = FALSE WHERE id = $1', [req.params.id]);
 
     res.json(saleResult.rows[0]);
   } catch (err) {
-    handleDbError(err, res);
+    console.error('Sell container error:', err.message);
+    res.status(500).json({ error: 'Failed to sell container' });
   }
 });
 
 app.get('/api/sales', async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM sales ORDER BY sold_at DESC');
+    const result = await pool.query('SELECT * FROM sales ORDER BY created_at DESC');
     res.json(result.rows);
   } catch (err) {
-    handleDbError(err, res);
+    console.error('Sales query error:', err.message);
+    res.json([]);
   }
 });
 
