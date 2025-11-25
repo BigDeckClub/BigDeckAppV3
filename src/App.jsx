@@ -2110,11 +2110,9 @@ function MTGInventoryTrackerContent() {
                         (sum, card) => sum + (card.quantity || 0),
                         0,
                       );
-                      const containerTotal = Object.values(containerItems).flat().reduce(
-                        (sum, item) => sum + (parseInt(item.quantity_used) || 0),
-                        0,
-                      );
-                      return inventoryTotal + containerTotal;
+                      // NOTE: Do NOT add containerTotal because cards in containers are already counted in inventory.quantity
+                      // Containers are just storage/organization, not movement of cards
+                      return inventoryTotal;
                     })()}
                   </div>
                 </div>
@@ -2128,12 +2126,10 @@ function MTGInventoryTrackerContent() {
                           sum + ((parseFloat(card.purchase_price) || 0) * (card.quantity || 0)),
                         0,
                       );
-                      const containerValue = Object.values(containerItems).flat().reduce(
-                        (sum, item) =>
-                          sum + ((parseFloat(item.purchase_price) || 0) * (parseInt(item.quantity_used) || 0)),
-                        0,
-                      );
-                      return (inventoryValue + containerValue).toFixed(2);
+                      // NOTE: Do NOT add containerValue because cards in containers are already counted in inventory
+                      // Containers are just storage/organization, not movement of cards out of inventory
+                      // Total Value only changes when containers are SOLD (inventory actually decrements)
+                      return inventoryValue.toFixed(2);
                     })()}
                   </div>
                 </div>
