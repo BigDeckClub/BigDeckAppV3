@@ -60,14 +60,48 @@ function normalizeName(name) {
     .trim();
 }
 
-function classifyVariant(rawName, cardName) {
+// List of variant/special edition names in Card Kingdom's data
+const SPECIAL_EDITIONS = [
+  'showcase', 'secret lair', 'special edition', 'extended art', 'borderless',
+  'alternate art', 'collector', 'retro frame', 'masterpiece', 'artist series'
+];
+
+function isSpecialEdition(editionName) {
+  if (!editionName) return false;
+  const lower = editionName.toLowerCase();
+  return SPECIAL_EDITIONS.some(special => lower.includes(special));
+}
+
+// Enhanced variant classifier that uses edition metadata
+function classifyVariantWithEdition(rawName, cardName, editionMetadata) {
   const blacklist = DEFAULT_BLACKLIST;
   const name = normalizeName(rawName);
   const target = normalizeName(cardName).trim();
 
+  // --- If we have edition metadata from HTML, use it for better classification ---
+  if (editionMetadata) {
+    const edLower = editionMetadata.toLowerCase();
+    
+    // Check blacklist keywords in edition name
+    for (const kw of blacklist) {
+      if (edLower.includes(kw)) {
+        if (kw.includes('foil')) return 'foil';
+        if (kw.includes('etched')) return 'etched';
+        if (kw.includes('promo') || kw.includes('judge')) return 'promo';
+        if (isSpecialEdition(edLower)) return 'special';
+      }
+    }
+
+    // If edition metadata exists and isn't special, classify as "set" (standard edition)
+    if (!isSpecialEdition(edLower)) {
+      return 'set'; // Real edition metadata = standard edition
+    }
+    
+    return 'special';
+  }
+
+  // --- Fallback to text-based classification if no edition metadata ---
   if (name === target) {
-    // Check if there are edition markers in the raw name
-    // If it's a bare match (no edition info), treat as special, not normal
     const hasEditionMarkers = /\([\w\d]+\)|\bfoil\b|\bpromo\b|\betched\b/i.test(rawName);
     if (!hasEditionMarkers) {
       return 'special'; // Bare match without edition markers is ambiguous
@@ -121,6 +155,11 @@ function classifyVariant(rawName, cardName) {
   return 'premium';
 }
 
+// Backwards-compatible wrapper
+function classifyVariant(rawName, cardName) {
+  return classifyVariantWithEdition(rawName, cardName, null);
+}
+
 // ============== PRICE-BASED HEURISTICS ==============
 function isSuspiciouslyCheap(baseCardName, normalizedName, price) {
   const cheapThresholds = {
@@ -160,7 +199,7 @@ function shouldPromoteSetOverNormal(setPrice, normalPrice) {
 }
 
 function classifyVariantEnhanced(raw, index, firstNormalIndex, cardName, globalPriceContext) {
-  const base = classifyVariant(raw.name, cardName);
+  const base = classifyVariantWithEdition(raw.name, cardName, raw.edition);
   const price = raw.price;
   const lowestNormal = globalPriceContext?.lowestNormalPrice ?? null;
 
@@ -480,10 +519,11 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
         });
         
         // PASS 2: Determine lowest *normal* price from raw products
+        // Now uses edition metadata to correctly identify standard vs variant editions
         let lowestNormalPrice = Infinity;
         for (const p of rawProducts) {
-          const variant = classifyVariant(p.name, cardName);
-          if (variant === "normal" && p.price < lowestNormalPrice) {
+          const variant = classifyVariantWithEdition(p.name, cardName, p.edition);
+          if ((variant === "normal" || variant === "set") && p.price < lowestNormalPrice) {
             lowestNormalPrice = p.price;
           }
         }
