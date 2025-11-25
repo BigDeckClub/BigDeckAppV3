@@ -1,615 +1,100 @@
-import express from 'express';
-import cors from 'cors';
-import bodyParser from 'body-parser';
-import pkg from 'pg';
-import { load } from 'cheerio';
-
-const { Pool } = pkg;
-const app = express();
-
-// Enable CORS for all origins
-app.use(cors({
-  origin: '*',
-  credentials: true,
-  methods: ['GET', 'POST', 'DELETE', 'PUT', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
-
-// Create pool with Replit database connection
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || 'postgresql://localhost/mtgmanager'
-});
-
-// Test connection on startup
-pool.query('SELECT NOW()', (err, res) => {
-  if (err) {
-    // Connection error silently handled
-  }
-});
-
-// Unified error handler middleware
-const handleDbError = (err, res) => {
-  res.status(500).json({ error: err.message });
-};
-
-// Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', message: 'Backend is running' });
-});
-
-// Inventory endpoints
-app.get('/api/inventory', async (req, res) => {
-  try {
-    const result = await pool.query(`
-      SELECT 
-        inv.*,
-        COALESCE(SUM(ci.quantity_used), 0)::integer as in_containers_qty
-      FROM inventory inv
-      LEFT JOIN container_items ci ON inv.id = ci.inventory_id
-      GROUP BY inv.id
-      ORDER BY inv.name
-    `);
-    res.json(result.rows);
-  } catch (err) {
-    handleDbError(err, res);
-  }
-});
-
-app.post('/api/inventory', async (req, res) => {
-  try {
-    const { name, set, set_name, quantity, purchase_date, purchase_price, reorder_type, image_url } = req.body;
-    const result = await pool.query(
-      'INSERT INTO inventory (name, set, set_name, quantity, purchase_date, purchase_price, reorder_type, image_url) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
-      [name, set, set_name, quantity, purchase_date, purchase_price, reorder_type, image_url]
-    );
-    res.json(result.rows[0]);
-  } catch (err) {
-    handleDbError(err, res);
-  }
-});
-
-app.put('/api/inventory/:id', async (req, res) => {
-  try {
-    const { quantity, purchase_price, purchase_date, reorder_type } = req.body;
-    const result = await pool.query(
-      'UPDATE inventory SET quantity = $1, purchase_price = $2, purchase_date = $3, reorder_type = $4 WHERE id = $5 RETURNING *',
-      [quantity, purchase_price, purchase_date, reorder_type, req.params.id]
-    );
-    res.json(result.rows[0]);
-  } catch (err) {
-    handleDbError(err, res);
-  }
-});
-
-app.delete('/api/inventory/:id', async (req, res) => {
-  try {
-    await pool.query('DELETE FROM inventory WHERE id = $1', [req.params.id]);
-    res.json({ success: true });
-  } catch (err) {
-    handleDbError(err, res);
-  }
-});
-
-// Decklists endpoints
-app.get('/api/decklists', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT * FROM decklists ORDER BY name');
-    res.json(result.rows);
-  } catch (err) {
-    handleDbError(err, res);
-  }
-});
-
-app.post('/api/decklists', async (req, res) => {
-  try {
-    const { name, decklist } = req.body;
-    const result = await pool.query(
-      'INSERT INTO decklists (name, decklist) VALUES ($1, $2) RETURNING *',
-      [name, decklist]
-    );
-    res.json(result.rows[0]);
-  } catch (err) {
-    handleDbError(err, res);
-  }
-});
-
-app.put('/api/decklists/:id', async (req, res) => {
-  try {
-    const { decklist } = req.body;
-    const result = await pool.query(
-      'UPDATE decklists SET decklist = $1 WHERE id = $2 RETURNING *',
-      [decklist, req.params.id]
-    );
-    res.json(result.rows[0]);
-  } catch (err) {
-    handleDbError(err, res);
-  }
-});
-
-app.delete('/api/decklists/:id', async (req, res) => {
-  try {
-    await pool.query('DELETE FROM decklists WHERE id = $1', [req.params.id]);
-    res.json({ success: true });
-  } catch (err) {
-    handleDbError(err, res);
-  }
-});
-
-// Containers endpoints
-app.get('/api/containers', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT * FROM containers ORDER BY name');
-    res.json(result.rows);
-  } catch (err) {
-    handleDbError(err, res);
-  }
-});
-
-app.post('/api/containers', async (req, res) => {
-  const client = await pool.connect();
-  try {
-    await client.query('BEGIN');
-    
-    const { name, decklist_id } = req.body;
-    
-    // Insert container
-    const containerResult = await client.query(
-      'INSERT INTO containers (name, decklist_id) VALUES ($1, $2) RETURNING *',
-      [name, decklist_id]
-    );
-    const container = containerResult.rows[0];
-    
-    // Fetch the decklist to get card names and quantities
-    const decklistResult = await client.query(
-      'SELECT decklist FROM decklists WHERE id = $1',
-      [decklist_id]
-    );
-    
-    if (decklistResult.rows.length === 0) {
-      await client.query('ROLLBACK');
-      return res.status(404).json({ error: 'Decklist not found' });
-    }
-    
-    const decklistText = decklistResult.rows[0].decklist;
-    const lines = decklistText.split('\n').filter(line => line.trim());
-    
-    // Parse decklist and allocate inventory
-    for (const line of lines) {
-      const match = line.match(/^(\d+)\s+(.+)$/);
-      if (!match) continue;
-      
-      const neededQty = parseInt(match[1]);
-      const cardName = match[2].trim();
-      let remainingQty = neededQty;
-      
-      // Find inventory items for this card, sorted by purchase_date (oldest first)
-      const inventoryItems = await client.query(
-        `SELECT id, quantity, purchase_date FROM inventory 
-         WHERE name ILIKE $1 AND quantity > 0
-         ORDER BY purchase_date ASC, id ASC`,
-        [cardName]
-      );
-      
-      // Allocate oldest items first
-      for (const item of inventoryItems.rows) {
-        if (remainingQty <= 0) break;
-        
-        const qtyToUse = Math.min(remainingQty, item.quantity);
-        
-        // Add to container_items
-        await client.query(
-          `INSERT INTO container_items (container_id, inventory_id, quantity_used) 
-           VALUES ($1, $2, $3)`,
-          [container.id, item.id, qtyToUse]
-        );
-        
-        // Reduce inventory quantity
-        await client.query(
-          `UPDATE inventory SET quantity = quantity - $1 WHERE id = $2`,
-          [qtyToUse, item.id]
-        );
-        
-        remainingQty -= qtyToUse;
-      }
-    }
-    
-    await client.query('COMMIT');
-    res.json(container);
-  } catch (err) {
-    await client.query('ROLLBACK');
-    handleDbError(err, res);
-  } finally {
-    client.release();
-  }
-});
-
-// Get container items
-app.get('/api/containers/:id/items', async (req, res) => {
-  try {
-    const result = await pool.query(
-      `SELECT ci.id, ci.inventory_id, ci.quantity_used, 
-              inv.name, inv.set, inv.set_name, inv.purchase_price
-       FROM container_items ci
-       JOIN inventory inv ON ci.inventory_id = inv.id
-       WHERE ci.container_id = $1
-       ORDER BY inv.name`,
-      [req.params.id]
-    );
-    res.json(result.rows);
-  } catch (err) {
-    handleDbError(err, res);
-  }
-});
-
-app.delete('/api/containers/:id', async (req, res) => {
-  const client = await pool.connect();
-  try {
-    await client.query('BEGIN');
-    
-    // Get all items in this container to restore inventory
-    const itemsResult = await client.query(
-      `SELECT inventory_id, quantity_used FROM container_items WHERE container_id = $1`,
-      [req.params.id]
-    );
-    
-    // Restore inventory quantities
-    for (const item of itemsResult.rows) {
-      await client.query(
-        `UPDATE inventory SET quantity = quantity + $1 WHERE id = $2`,
-        [item.quantity_used, item.inventory_id]
-      );
-    }
-    
-    // Delete container_items
-    await client.query(`DELETE FROM container_items WHERE container_id = $1`, [req.params.id]);
-    
-    // Delete container
-    await client.query('DELETE FROM containers WHERE id = $1', [req.params.id]);
-    
-    await client.query('COMMIT');
-    res.json({ success: true });
-  } catch (err) {
-    await client.query('ROLLBACK');
-    handleDbError(err, res);
-  } finally {
-    client.release();
-  }
-});
-
-// Sales endpoints
-app.get('/api/sales', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT * FROM sales ORDER BY sold_date DESC');
-    res.json(result.rows);
-  } catch (err) {
-    handleDbError(err, res);
-  }
-});
-
-app.post('/api/sales', async (req, res) => {
-  try {
-    const { container_id, decklist_id, sale_price } = req.body;
-    const result = await pool.query(
-      'INSERT INTO sales (container_id, decklist_id, sale_price) VALUES ($1, $2, $3) RETURNING *',
-      [container_id, decklist_id, sale_price]
-    );
-    res.json(result.rows[0]);
-  } catch (err) {
-    handleDbError(err, res);
-  }
-});
-
-// Settings endpoints
-app.get('/api/settings/:key', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT value FROM settings WHERE key = $1', [req.params.key]);
-    if (result.rows.length > 0) {
-      res.json(result.rows[0].value);
-    } else {
-      res.json(null);
-    }
-  } catch (err) {
-    handleDbError(err, res);
-  }
-});
-
-app.post('/api/settings/:key', async (req, res) => {
-  try {
-    const { value } = req.body;
-    const result = await pool.query(
-      'INSERT INTO settings (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = $2 RETURNING *',
-      [req.params.key, JSON.stringify(value)]
-    );
-    res.json(result.rows[0]);
-  } catch (err) {
-    handleDbError(err, res);
-  }
-});
-
-// Helper: Validate if a price is reasonable
-function isValidPrice(price) {
-  return price > 0.05 && price < 500;
-}
-
-// Helper: Extract numeric price from string (handles commas in prices like $1,799.99)
-function extractNumericPrice(priceStr) {
-  if (!priceStr) return 0;
-  // Remove $ and commas, then parse
-  return parseFloat(priceStr.replace(/[$,]/g, '')) || 0;
-}
-
-// Helper: Extract all prices from text with robust comma handling
-function extractPricesFromText(text = '') {
-  if (!text) return [];
-  const normalized = text.replace(/\u00A0/g, ' ').trim();
-  // Regex handles: $1,799.99 $1799.99 $0.99 $12.00
-  const re = /\$([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{2})?)/g;
-  const matches = [];
-  let m;
-  while ((m = re.exec(normalized)) !== null) {
-    matches.push(m[1]);
-  }
-  return matches.map(s => parseFloat(s.replace(/,/g, ''))).filter(n => !Number.isNaN(n));
-}
-
-// Edition priority ranking (lower number = higher priority)
-const EDITION_PRIORITY = [
-  "normal",      // pure name match, no variants
-  "set",         // set name only
-  "promo",       // promos
-  "special",     // showcase, retro, alternate art, borderless
-  "foil",        // foil
-  "etched",      // etched foil
-  "premium"      // supers, masterpieces, limited promos
+const DEFAULT_BLACKLIST = [
+  'showcase','show case','show-case','alternate art','alternate','alt-art','alt art','alt',
+  'extended art','extended-art','extended','borderless','border-less','border less',
+  'artist','art series','art-series','variant','variant art','premium',
+  'secret lair','secret-lair','promo','judge promo','judge','fnm','f.n.m','prerelease',
+  'foil','etched','etched foil','super foil','super-foil','foil stamped','holo','hyperfoil',
+  'collector','collector edition','collector-edition','oversized','oversized card',
+  'special edition','special-edition','limited edition','limited-edition','retro frame',
+  'retro','masterpiece','artist series'
 ];
 
-// Classify product variant type
-function classifyProductVariant(name) {
-  const n = name.toLowerCase();
-  
-  // Standard printing (no special markers)
-  if (!n.includes("foil") && !n.includes("promo") && !n.includes("showcase") && 
-      !n.includes("etched") && !n.includes("alternate") && !n.includes("alt-art") &&
-      !n.includes("borderless") && !n.includes("retro")) {
-    return "normal";
-  }
-  
-  // Promos (but not showcase/alt variants)
-  if (n.includes("promo") && !n.includes("showcase")) {
-    return "promo";
-  }
-  
-  // Showcase, retro, alt-art, borderless
-  if (n.includes("showcase") || n.includes("retro") || n.includes("borderless") || 
-      n.includes("alternate") || n.includes("alt-art")) {
-    return "special";
-  }
-  
-  // Foils (but not etched)
-  if (n.includes("foil") && !n.includes("etched")) {
-    return "foil";
-  }
-  
-  // Etched foil
-  if (n.includes("etched")) {
-    return "etched";
-  }
-  
-  // Everything else (super premium, masterpiece, etc)
-  return "premium";
+const SET_CODE_CANDIDATE = /^[A-Z0-9]{2,5}$/;
+
+function normalizeName(name) {
+  return name
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[\u2013\u2014–—]/g, '-')
+    .replace(/[^a-z0-9\-\(\)\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
-// Get variant rank (lower = higher priority)
-function getVariantRank(variant) {
-  const idx = EDITION_PRIORITY.indexOf(variant);
-  return idx >= 0 ? idx : EDITION_PRIORITY.length;
+function escapeForRegex(s) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-// Helper: Resolve Card Kingdom price from multiple extraction methods
-function resolveCKPrice(selectorPrice, regexPrices, html) {
-  // Test 1: Check if selector worked
-  if (selectorPrice && isValidPrice(selectorPrice)) {
-    console.log(`  [Test 1 ✓] Selector found valid price: $${selectorPrice.toFixed(2)}`);
-    return `$${selectorPrice.toFixed(2)}`;
-  }
-  if (selectorPrice) console.log(`  [Test 1 ✗] Selector found invalid price: ${selectorPrice}`);
+function classifyVariant(rawName, cardName, options = {}) {
+  const blacklist = options.blacklist || DEFAULT_BLACKLIST;
+  const name = normalizeName(rawName);
+  const target = normalizeName(cardName).trim();
 
-  // Test 2: Check if regex returned results
-  if (!regexPrices || regexPrices.length === 0) {
-    console.log(`  [Test 2 ✗] Regex returned 0 prices — CK markup may have changed`);
-  } else {
-    console.log(`  [Test 2 ✓] Regex found ${regexPrices.length} price candidates`);
-    
-    // Extract and filter numeric prices
-    const numericPrices = regexPrices
-      .map(p => extractNumericPrice(p))
-      .filter(p => isValidPrice(p));
-    
-    if (numericPrices.length > 0) {
-      // CK usually lists lowest price first
-      const lowestPrice = Math.min(...numericPrices);
-      console.log(`  [Test 3 ✓] Sanity check passed — using lowest valid price: $${lowestPrice.toFixed(2)}`);
-      return `$${lowestPrice.toFixed(2)}`;
-    }
+  // If name exactly matches card name -> normal
+  if (name === target) {
+    return 'normal';
   }
 
-  // Test 3: Check for specific status indicators (third-level fallback)
-  if (/sold out/i.test(html)) {
-    console.log(`  [Escape 1] Found "Sold Out" indicator in HTML`);
-    return 'Sold Out';
-  }
-  if (/coming soon/i.test(html)) {
-    console.log(`  [Escape 2] Found "Coming Soon" indicator in HTML`);
-    return 'Unavailable';
-  }
-
-  return 'N/A';
-}
-
-// Card prices endpoint using Scryfall for TCG and Card Kingdom search for CK prices
-app.get('/api/prices/:cardName/:setCode', async (req, res) => {
-  const { cardName, setCode } = req.params;
-  
-  console.log(`\n=== PRICE REQUEST: ${cardName} (${setCode}) ===`);
-  
-  try {
-    // Step 1: Get TCGPlayer price from Scryfall
-    const scryfallUrl = `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(cardName)}&set=${setCode.toLowerCase()}`;
-    const scryfallRes = await fetch(scryfallUrl);
-    
-    let tcgPrice = 'N/A';
-    
-    if (scryfallRes.ok) {
-      const card = await scryfallRes.json();
-      const price = parseFloat(card.prices?.usd);
-      if (price > 0) {
-        tcgPrice = `$${price.toFixed(2)}`;
-        console.log(`✓ Scryfall TCG price: ${tcgPrice}`);
+  // If name is card name + set code in parentheses -> set
+  // e.g. "lightning bolt (kld)", "sol ring (m21)"
+  const parenMatch = rawName.match(/\(([^)]+)\)\s*$/);
+  if (parenMatch && name.startsWith(target)) {
+    const token = parenMatch[1].trim().toUpperCase();
+    if (SET_CODE_CANDIDATE.test(token)) {
+      const tokLower = token.toLowerCase();
+      if (!blacklist.some(b => tokLower.includes(b))) {
+        return 'set';
       }
-    } else {
-      console.log(`✗ Scryfall lookup failed for ${cardName} (${setCode})`);
     }
-    
-    // Step 2: Get Card Kingdom price by searching
-    let ckPrice = 'N/A';
-    
-    try {
-      const ckSearchUrl = `https://www.cardkingdom.com/catalog/search?search=header&filter%5Bname%5D=${encodeURIComponent(cardName)}`;
+  }
+
+  // Check for blacklisted keywords first
+  for (const kw of blacklist) {
+    if (name.includes(kw)) {
+      if (kw.includes('foil') && kw.includes('etched')) return 'etched';
+      if (kw.includes('etched')) return 'etched';
+      if (kw.includes('foil')) return 'foil';
+      if (kw.includes('promo') || kw.includes('judge') || kw.includes('fnm') || kw.includes('prerelease'))
+        return 'promo';
+      return 'special';
+    }
+  }
+
+  // If name starts with card name but has extra descriptive content
+  if (name.startsWith(target)) {
+    const tail = name.slice(target.length).trim();
+    if (tail.length > 0) {
+      // Split on spaces and punctuation
+      const tokens = tail.split(/[\s\-–—:()]+/).filter(Boolean);
       
-      console.log(`Fetching CK: ${ckSearchUrl}`);
+      // If there are multiple tokens after card name, likely variant
+      if (tokens.length >= 2) {
+        return 'special';
+      }
       
-      const ckRes = await fetch(ckSearchUrl, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-          'Accept': 'text/html'
-        }
-      });
+      // Single token after name: check if it's set code
+      if (tokens.length === 1 && SET_CODE_CANDIDATE.test(tokens[0].toUpperCase())) {
+        return 'set';
+      }
       
-      if (ckRes.ok) {
-        const html = await ckRes.text();
-        const $ = load(html);
-        
-        console.log(`  [DEBUG] Scraping products for: ${cardName}`);
-        
-        // Try multiple possible product card selectors
-        const productSelectors = [
-          'div.productCard',
-          'li.productCard',
-          'div.product',
-          'div.card-listing',
-          '.catalog-item',
-          'a[data-product-id]',
-          'div[class*="product"]'
-        ];
-        
-        let products = [];
-        let selectedSelector = null;
-        
-        for (const sel of productSelectors) {
-          const els = $(sel);
-          if (els.length > 0) {
-            console.log(`    ✓ Found ${els.length} elements for selector "${sel}"`);
-            products = els;
-            selectedSelector = sel;
-            break;
-          }
-        }
-        
-        if (products.length === 0) {
-          console.log(`  [DEBUG] No product elements found with any selector`);
-          console.log(`  [DEBUG] HTML preview (first 3000 chars):`);
-          console.log(html.slice(0, 3000));
-        }
-        
-        const productPrices = [];
-        
-        products.each((i, el) => {
-          // Try multiple ways to get product name
-          let nameEl = $(el).find('a').first();
-          if (nameEl.length === 0) nameEl = $(el).find('.product-name, .item-title, [class*="name"]').first();
-          
-          // Try multiple ways to get price
-          let priceEl = $(el).find('span.stylePrice').first();
-          if (priceEl.length === 0) priceEl = $(el).find('span.price, div.price, [class*="price"]').first();
-          
-          let name = nameEl.length > 0 ? nameEl.text().trim().toLowerCase() : '';
-          let rawPrice = priceEl.length > 0 ? priceEl.text().trim() : '';
-          
-          // Fallback: regex inside this product node's HTML if price not found
-          if (!rawPrice) {
-            const productHtml = $(el).html();
-            const prices = extractPricesFromText(productHtml);
-            if (prices.length > 0) {
-              // Use smallest valid price found
-              const bestPrice = Math.min(...prices.filter(p => isValidPrice(p)));
-              if (bestPrice && Number.isFinite(bestPrice)) {
-                rawPrice = `$${bestPrice.toFixed(2)}`;
-              }
-            }
-          }
-          
-          console.log(`    Product #${i + 1}: name="${name}", price="${rawPrice}"`);
-          
-          // Only match products that include the target card name (case-insensitive, partial match)
-          const target = cardName.toLowerCase();
-          if (name && name.includes(target)) {
-            const numericPrice = rawPrice ? extractNumericPrice(rawPrice) : 0;
-            
-            if (isValidPrice(numericPrice)) {
-              const variant = classifyProductVariant(name);
-              const rank = getVariantRank(variant);
-              productPrices.push({ price: numericPrice, variant, rank, name });
-              console.log(`      ✓ Valid match found: $${numericPrice.toFixed(2)} [${variant}]`);
-            } else if (numericPrice > 0) {
-              console.log(`      ✗ Price outside valid range: $${numericPrice.toFixed(2)}`);
-            } else if (rawPrice) {
-              console.log(`      ✗ Could not parse price: "${rawPrice}"`);
-            }
-          } else if (name) {
-            console.log(`      ✗ Name mismatch: "${name}" does not include "${target}"`);
-          }
-        });
-        
-        if (productPrices.length > 0) {
-          // Sort by variant priority first, then by price (ascending)
-          const best = productPrices.sort((a, b) => {
-            if (a.rank !== b.rank) return a.rank - b.rank;
-            return a.price - b.price;
-          })[0];
-          
-          ckPrice = `$${best.price.toFixed(2)}`;
-          console.log(`  [DEBUG] Found ${productPrices.length} matching products`);
-          console.log(`  ✓ Best match: ${best.name} [${best.variant}] = ${ckPrice}`);
-        } else {
-          console.log(`  [DEBUG] No matching products found with valid prices`);
-          // Fallback: Check for status indicators
-          if (/sold out/i.test(html)) {
-            ckPrice = 'Sold Out';
-            console.log(`  [Escape] Found "Sold Out" indicator`);
-          } else if (/coming soon/i.test(html)) {
-            ckPrice = 'Unavailable';
-            console.log(`  [Escape] Found "Coming Soon" indicator`);
-          }
+      // Single word that looks like edition/variant -> special
+      if (tokens.length === 1) {
+        const word = tokens[0].toLowerCase();
+        if (word && word.length > 0 && !word.match(/^[0-9]+$/)) {
+          // Non-numeric single word after card name is suspicious
+          return 'special';
         }
       }
-    } catch (ckError) {
-      console.log(`✗ CK fetch failed: ${ckError.message}`);
     }
-    
-    console.log(`Final result: TCG=${tcgPrice}, CK=${ckPrice}\n`);
-    
-    res.json({ tcg: tcgPrice, ck: ckPrice });
-    
-  } catch (error) {
-    console.error('Price fetch error:', error);
-    res.json({ tcg: 'N/A', ck: 'N/A' });
   }
-});
 
+  // If name includes card name anywhere and no red flags -> normal
+  if (name.includes(target)) {
+    return 'normal';
+  }
 
+  return 'premium';
+}
 
-const PORT = 3000;
-app.listen(PORT, () => {
-});
+module.exports = { classifyVariant, normalizeName };
