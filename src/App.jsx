@@ -1542,6 +1542,7 @@ function MTGInventoryTrackerContent() {
                                 
                                 return Object.entries(grouped).map(([groupKey, group]) => {
                                   const isExpanded = expandedCardCopies[`${container.id}-${groupKey}`];
+                                  const totalQuantity = group.copies.reduce((sum, copy) => sum + (parseInt(copy.quantity_used) || 0), 0);
                                   const totalCost = group.copies.length * parseFloat(group.purchase_price || 0);
                                   
                                   return (
@@ -1561,8 +1562,8 @@ function MTGInventoryTrackerContent() {
                                         </div>
                                         <div className="flex items-center gap-3">
                                           <div className="text-right text-xs">
-                                            <div className="text-teal-300 font-semibold">{group.copies.length}x</div>
-                                            <div className="text-slate-400">${totalCost.toFixed(2)}</div>
+                                            <div className="text-teal-300 font-semibold">{totalQuantity}x</div>
+                                            <div className="text-slate-400">${totalCost.toFixed(2)} total</div>
                                           </div>
                                           <div className="text-slate-400">
                                             {isExpanded ? '▼' : '▶'}
@@ -1574,15 +1575,15 @@ function MTGInventoryTrackerContent() {
                                         <div className="bg-slate-900 bg-opacity-50 border-t border-slate-600 p-3 space-y-2">
                                           {group.copies.map((copy, copyIdx) => (
                                             <div key={copyIdx} className="bg-slate-800 p-2 rounded border border-slate-600 text-xs space-y-2">
-                                              <div className="font-semibold text-slate-200">Copy {copyIdx + 1}</div>
+                                              <div className="font-semibold text-slate-200">Copy {copyIdx + 1} ({copy.quantity_used} card{copy.quantity_used > 1 ? 's' : ''})</div>
                                               <div className="grid grid-cols-2 gap-2">
                                                 <div className="bg-slate-700 p-2 rounded">
                                                   <div className="text-slate-400 text-xs mb-1">Purchase Price</div>
                                                   <div className="text-teal-300 font-semibold">${copy.purchase_price || "N/A"}</div>
                                                 </div>
                                                 <div className="bg-slate-700 p-2 rounded">
-                                                  <div className="text-slate-400 text-xs mb-1">Quantity</div>
-                                                  <div className="font-semibold">{copy.quantity_used}</div>
+                                                  <div className="text-slate-400 text-xs mb-1">Total for Copy</div>
+                                                  <div className="font-semibold text-yellow-300">${(parseFloat(copy.purchase_price || 0) * (parseInt(copy.quantity_used) || 0)).toFixed(2)}</div>
                                                 </div>
                                               </div>
                                               <div className="grid grid-cols-2 gap-2">
