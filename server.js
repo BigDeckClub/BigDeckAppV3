@@ -389,6 +389,23 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
           }
         }
         
+        // Fallback: Look for any price on the page using regex
+        if (ckPrice === 'N/A') {
+          const allPrices = html.match(/\$([0-9]+\.[0-9]{2})/g);
+          if (allPrices && allPrices.length > 0) {
+            // Extract the first price that appears to be reasonable
+            // Skip very large prices (likely errors or high-end cards)
+            for (const priceStr of allPrices) {
+              const price = parseFloat(priceStr.replace('$', ''));
+              if (price > 0 && price < 100) {
+                ckPrice = priceStr;
+                console.log(`✓ Found CK price from HTML: ${ckPrice}`);
+                break;
+              }
+            }
+          }
+        }
+        
       }
     } catch (ckError) {
       console.log(`✗ CK fetch failed: ${ckError.message}`);
