@@ -689,11 +689,15 @@ function MTGInventoryTrackerContent() {
       if (data && data.length > 0) {
         const itemsMap = {};
         data.forEach(container => {
+          console.log(`[CONTAINER] ID: ${container.id}, Cards:`, container.cards);
           itemsMap[container.id] = container.cards || [];
         });
+        console.log('[CONTAINER] Final itemsMap:', itemsMap);
         setContainerItems(itemsMap);
       }
-    } catch (error) {}
+    } catch (error) {
+      console.error('Load containers error:', error);
+    }
   };
 
   const toggleContainerExpand = (containerId) => {
