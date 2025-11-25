@@ -1760,7 +1760,7 @@ app.use(express.static(distPath, {
 }));
 
 // ========== SPA CATCH-ALL (must be last) ==========
-app.get('*', (req, res) => {
+app.use((req, res) => {
   if (req.path.startsWith('/api/')) {
     return res.status(404).json({ error: 'API endpoint not found' });
   }
