@@ -884,10 +884,14 @@ export default function MTGInventoryTracker() {
       if (!response.ok) throw new Error('Failed to record sale');
       
       await loadSales();
+      
+      // Delete the container after recording the sale
+      await deleteContainer(selectedContainerForSale);
+      
       setShowSellModal(false);
       setSelectedContainerForSale(null);
       setSalePrice('');
-      alert('Container sold! Sale recorded.');
+      alert('Container sold! Sale recorded and container removed.');
     } catch (error) {
 
       alert('Error recording sale: ' + error.message);
