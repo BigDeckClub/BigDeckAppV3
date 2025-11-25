@@ -16,20 +16,66 @@ const pool = new Pool({
 });
 
 // ============== EDITION EXTRACTOR ==============
+function normalizeEditionName(name) {
+  if (!name) return null;
+  return name.toLowerCase().trim().replace(/[_-]/g, ' ');
+}
+
 function extractEditionFromHtml(el, $) {
-  // Try to find set icon with title attribute
+  // FALLBACK 1: Try to find set icon with title attribute
   const setIcon = $(el).find('span[class*="set-icon"], .set-icon, [class*="symbol"]').first();
   if (setIcon.length > 0) {
     const title = setIcon.attr('title');
     if (title && title.length > 0) {
-      return title.toLowerCase().trim();
+      return normalizeEditionName(title);
     }
   }
   
-  // Try data-* attributes
+  // FALLBACK 2: Try data-* attributes
   const edition = $(el).attr('data-expansion') || $(el).attr('data-edition');
   if (edition) {
-    return edition.toLowerCase().trim();
+    return normalizeEditionName(edition);
+  }
+  
+  // FALLBACK 3: Extract edition text from nearby <td> or <span> nodes
+  const setCell = $(el).find('.set, .variant, .productSet, .productDetailSet, .text-muted').first();
+  if (setCell.length > 0) {
+    const editionText = setCell.text().trim();
+    if (editionText && editionText.length > 0 && editionText.length < 100) {
+      return normalizeEditionName(editionText);
+    }
+  }
+  
+  // FALLBACK 4: Extract edition from product-title link href
+  // Example: /mtg/4th-edition/lightning-bolt → 4th edition
+  const productLink = $(el).find('a').first();
+  if (productLink.length > 0) {
+    const href = productLink.attr('href');
+    if (href) {
+      const match = href.match(/\/mtg\/([^/]+)\//);
+      if (match && match[1]) {
+        const editionFromUrl = match[1]
+          .split('-')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ');
+        if (editionFromUrl.length > 0 && editionFromUrl.length < 100) {
+          return normalizeEditionName(editionFromUrl);
+        }
+      }
+    }
+  }
+  
+  // FALLBACK 5: Parse JSON from React data attributes
+  try {
+    const reactPropsStr = $(el).attr('data-react-props') || $(el).attr('data-props');
+    if (reactPropsStr) {
+      const props = JSON.parse(reactPropsStr);
+      if (props.printed_set || props.edition || props.set) {
+        return normalizeEditionName(props.printed_set || props.edition || props.set);
+      }
+    }
+  } catch (e) {
+    // JSON parse failed, continue to next fallback
   }
   
   return null;
