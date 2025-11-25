@@ -1539,9 +1539,6 @@ function MTGInventoryTrackerContent() {
                                         >
                                           <div className="text-left flex-1">
                                             <div className="font-semibold">{cardName}</div>
-                                            <div className="text-xs text-slate-400">
-                                              {firstCard.set_name} ({firstCard.set})
-                                            </div>
                                           </div>
                                           <div className="flex items-center gap-3">
                                             <div className="text-right text-xs">
@@ -1561,7 +1558,7 @@ function MTGInventoryTrackerContent() {
                                               
                                               return (
                                                 <div key={copyIdx} className="bg-slate-800 p-3 rounded border border-slate-600 text-xs space-y-2">
-                                                  <div className="font-semibold text-slate-200">Card {copyIdx + 1}</div>
+                                                  <div className="font-semibold text-slate-200">{item.set_name} ({item.set})</div>
                                                   {inventoryItem && (
                                                     <div className="text-xs text-slate-500">
                                                       From Inventory • Purchased {new Date(inventoryItem.purchase_date).toLocaleDateString()}
