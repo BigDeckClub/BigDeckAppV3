@@ -895,7 +895,7 @@ app.post('/api/containers/:id/sell', async (req, res) => {
     for (const card of cards) {
       await client.query(
         `UPDATE inventory SET quantity = quantity - $1 WHERE id = $2 AND quantity >= $1`,
-        [card.quantity, card.inventoryId]
+        [card.quantity_used, card.inventoryId]
       );
     }
 
