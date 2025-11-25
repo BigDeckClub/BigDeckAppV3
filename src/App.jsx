@@ -1498,23 +1498,47 @@ export default function MTGInventoryTracker() {
         {activeTab === 'analytics' && !isLoading && (
           <div className="space-y-6">
             <div className="card p-6">
-              <h2 className="text-xl font-bold mb-4 flex items-center">
-                <AlertCircle className="w-5 h-5 mr-2 text-red-300" />
-                Reorder Alerts
-              </h2>
-              <div className="grid gap-4">
-                {getReorderAlerts().length > 0 ? (
-                  getReorderAlerts().map((item) => (
-                    <div key={item.id} className="bg-slate-800 border border-red-400 p-4">
-                      <div className="font-semibold text-red-300">{item.name}</div>
-                      <div className="text-sm text-slate-300">Quantity: {item.quantity} (Type: {item.reorder_type})</div>
-                      <div className="text-sm text-slate-300">Set: {item.set_name}</div>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-slate-400">No items below reorder threshold.</p>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold flex items-center">
+                  <AlertCircle className="w-5 h-5 mr-2 text-red-300" />
+                  Reorder Alerts
+                </h2>
+                {getReorderAlerts().length > 0 && (
+                  <span className="bg-red-900 text-red-200 px-3 py-1 rounded-full text-sm font-semibold">
+                    {getReorderAlerts().length} items
+                  </span>
                 )}
               </div>
+              {getReorderAlerts().length > 0 ? (
+                <div className="space-y-2">
+                  <div className="grid grid-cols-1 gap-2 max-h-72 overflow-y-auto">
+                    {getReorderAlerts().map((item) => {
+                      const threshold = reorderSettings[item.reorder_type] || 5;
+                      const percentOfThreshold = (item.quantity / threshold) * 100;
+                      const severity = percentOfThreshold < 25 ? 'critical' : percentOfThreshold < 75 ? 'warning' : 'low';
+                      const severityColor = severity === 'critical' ? 'bg-red-950 border-red-500' : severity === 'warning' ? 'bg-orange-950 border-orange-500' : 'bg-yellow-950 border-yellow-500';
+                      const textColor = severity === 'critical' ? 'text-red-300' : severity === 'warning' ? 'text-orange-300' : 'text-yellow-300';
+                      
+                      return (
+                        <div key={item.id} className={`${severityColor} border p-3 rounded flex justify-between items-center text-sm hover:border-opacity-100 transition`}>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-semibold truncate">{item.name}</div>
+                            <div className="text-xs text-slate-400">{item.set_name} • {item.reorder_type}</div>
+                          </div>
+                          <div className={`ml-3 flex-shrink-0 text-right`}>
+                            <div className={`font-bold text-lg ${textColor}`}>{item.quantity}</div>
+                            <div className="text-xs text-slate-400">of {threshold}</div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-slate-800 bg-opacity-50 border border-slate-700 rounded p-4 text-center text-slate-400">
+                  ✓ No reorder alerts
+                </div>
+              )}
             </div>
 
             <div className="card p-6">
