@@ -465,7 +465,27 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
           }
         }
         
-        const globalPriceContext = { lowestNormalPrice: lowestNormalPrice === Infinity ? null : lowestNormalPrice };
+        // FALLBACK: no normals found → use lowest non-premium baseline
+        if (lowestNormalPrice === Infinity) {
+          let fallback = null;
+          for (const p of rawProducts) {
+            const variant = classifyVariant(p.name, cardName);
+            if (variant !== "foil" && 
+                variant !== "etched" &&
+                variant !== "promo" &&
+                variant !== "premium") 
+            {
+              if (fallback === null || p.price < fallback) {
+                fallback = p.price;
+              }
+            }
+          }
+          lowestNormalPrice = fallback === null ? null : fallback;
+        } else {
+          lowestNormalPrice = lowestNormalPrice === Infinity ? null : lowestNormalPrice;
+        }
+        
+        const globalPriceContext = { lowestNormalPrice };
         
         // PASS 3: Re-classify all products with context (promotion works!)
         const productPrices = [];
