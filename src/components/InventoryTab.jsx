@@ -197,8 +197,8 @@ export const InventoryTab = ({
               return acc;
             }, {})
           ).map(([cardName, items]) => {
-            const available = items.reduce((sum, item) => sum + item.quantity, 0);
-            const totalInContainers = items.reduce((sum, item) => sum + (parseInt(item.in_containers_qty) || 0), 0);
+            const available = items.reduce((sum, item) => sum + item.quantity_available, 0);
+            const totalInContainers = items.reduce((sum, item) => sum + (parseInt(item.quantity_in_containers) || 0), 0);
             const totalQty = available + totalInContainers;
             
             const sixtyDaysAgo = new Date();
@@ -315,9 +315,9 @@ export const InventoryTab = ({
                               <div className="flex-1">
                                 <div className="text-sm font-semibold text-slate-100">{item.set_name}</div>
                                 <div className="grid grid-cols-3 gap-3 mt-1 text-xs">
-                                  <div><span className="text-slate-400">Qty:</span> <span className="text-white font-semibold">{item.quantity}</span></div>
-                                  <div><span className="text-slate-400">In Containers:</span> <span className="text-white font-semibold">{item.in_containers_qty || 0}</span></div>
-                                  <div><span className="text-slate-400">Set:</span> <span className="text-white font-semibold">{item.set}</span></div>
+                                  <div><span className="text-slate-400">Total:</span> <span className="text-white font-semibold">{item.quantity}</span></div>
+                                  <div><span className="text-slate-400">In Containers:</span> <span className="text-white font-semibold">{item.quantity_in_containers || 0}</span></div>
+                                  <div><span className="text-slate-400">Available:</span> <span className="text-white font-semibold">{item.quantity_available || 0}</span></div>
                                 </div>
                               </div>
                               <div className="flex items-center gap-3 ml-4">
