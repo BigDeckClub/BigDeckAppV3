@@ -15,7 +15,6 @@ import {
   X,
   ChevronDown,
 } from "lucide-react";
-import { fetchCardPrices } from "./utils/priceUtils";
 import { useDebounce } from "./utils/useDebounce";
 import { InventoryTab } from "./components/InventoryTab";
 
