@@ -1324,7 +1324,7 @@ function MTGInventoryTrackerContent() {
                                                 </div>
                                               ) : (
                                                 <>
-                                                  <div className="grid grid-cols-3 gap-2">
+                                                  <div className="grid grid-cols-4 gap-2">
                                                     <div className="bg-slate-700 p-2 rounded">
                                                       <div className="text-slate-400 text-xs mb-1">TCG Player</div>
                                                       <DecklistCardPrice key={`price-${group.name}-${group.set}-tcg-${copyIdx}`} name={group.name} set={group.set} priceType="tcg" />
@@ -1333,6 +1333,51 @@ function MTGInventoryTrackerContent() {
                                                       <div className="text-slate-400 text-xs mb-1">Card Kingdom</div>
                                                       <DecklistCardPrice key={`price-${group.name}-${group.set}-ck-${copyIdx}`} name={group.name} set={group.set} priceType="ck" />
                                                     </div>
+                                                    <button
+                                                      onClick={() => {
+                                                        const lines = (deck.decklist || "")
+                                                          .split("\n")
+                                                          .filter((line) => line.trim());
+                                                        let cardInstanceCount = 0;
+                                                        const newLines = lines.filter((line) => {
+                                                          const match = line.match(/^(\d+)\s+(.+?)(?:\s+\(([A-Z0-9]+)\))?$/);
+                                                          if (!match) return true;
+                                                          const qty = parseInt(match[1]);
+                                                          const cardNamePart = match[2].trim();
+                                                          if (cardNamePart.toLowerCase() === card.name.toLowerCase()) {
+                                                            if (cardInstanceCount + qty > idx && cardInstanceCount <= idx) {
+                                                              if (qty === 1) return false;
+                                                              return true;
+                                                            }
+                                                            cardInstanceCount += qty;
+                                                          }
+                                                          return true;
+                                                        }).map((line) => {
+                                                          const match = line.match(/^(\d+)\s+(.+?)(?:\s+\(([A-Z0-9]+)\))?$/);
+                                                          if (!match) return line;
+                                                          const qty = parseInt(match[1]);
+                                                          const cardNamePart = match[2].trim();
+                                                          const set = match[3];
+                                                          if (cardNamePart.toLowerCase() === card.name.toLowerCase()) {
+                                                            if (idx < cardInstanceCount) return line;
+                                                            if (qty > 1) {
+                                                              return `${qty - 1} ${cardNamePart}${set ? ` (${set})` : ""}`;
+                                                            }
+                                                            return null;
+                                                          }
+                                                          return line;
+                                                        }).filter(Boolean);
+                                                        const newDecklistText = newLines.join("\n");
+                                                        fetch(`${API_BASE}/decklists/${deck.id}`, {
+                                                          method: "PUT",
+                                                          headers: { "Content-Type": "application/json" },
+                                                          body: JSON.stringify({ decklist: newDecklistText }),
+                                                        }).then(() => loadDecklists()).catch(() => alert("Failed to remove card"));
+                                                      }}
+                                                      className="btn-danger px-2 py-1 text-xs font-semibold h-fit"
+                                                    >
+                                                      Remove
+                                                    </button>
                                                     <button
                                                       onClick={async () => {
                                                         const lastSet =
@@ -1592,7 +1637,7 @@ function MTGInventoryTrackerContent() {
                                                       From Inventory • Purchased {new Date(inventoryItem.purchase_date).toLocaleDateString()}
                                                     </div>
                                                   )}
-                                                  <div className="grid grid-cols-3 gap-2">
+                                                  <div className="grid grid-cols-4 gap-2">
                                                     <div className="bg-slate-700 p-2 rounded">
                                                       <div className="text-slate-400 text-xs mb-1">Purchase Price</div>
                                                       <div className="text-teal-300 font-semibold">${itemCost.toFixed(2)}</div>
@@ -1609,6 +1654,45 @@ function MTGInventoryTrackerContent() {
                                                         <DecklistCardPrice key={`price-${item.name}-${item.set}-ck-${copyIdx}`} name={item.name} set={item.set} priceType="ck" />
                                                       </div>
                                                     </div>
+                                                    <button
+                                                      onClick={async () => {
+                                                        try {
+                                                          const updatedCards = containerItems[container.id].map((card, idx) => {
+                                                            if (idx === item.originalIdx) {
+                                                              const qty = parseInt(card.quantity_used) || 1;
+                                                              if (qty === 1) return null;
+                                                              return { ...card, quantity_used: qty - 1 };
+                                                            }
+                                                            return card;
+                                                          }).filter(Boolean);
+                                                          
+                                                          await fetch(`${API_BASE}/containers/${container.id}`, {
+                                                            method: "PUT",
+                                                            headers: { "Content-Type": "application/json" },
+                                                            body: JSON.stringify({ cards: JSON.stringify(updatedCards) }),
+                                                          });
+                                                          
+                                                          const invItem = inventory.find(inv => inv.id === String(item.inventoryId));
+                                                          if (invItem) {
+                                                            await fetch(`${API_BASE}/inventory/${item.inventoryId}`, {
+                                                              method: "PUT",
+                                                              headers: { "Content-Type": "application/json" },
+                                                              body: JSON.stringify({
+                                                                quantity: invItem.quantity + 1,
+                                                                quantity_in_containers: (invItem.quantity_in_containers || 1) - 1,
+                                                              }),
+                                                            });
+                                                          }
+                                                          
+                                                          await Promise.all([loadContainers(), loadInventory()]);
+                                                        } catch (err) {
+                                                          alert("Failed to remove card");
+                                                        }
+                                                      }}
+                                                      className="btn-danger px-2 py-1 text-xs font-semibold h-fit"
+                                                    >
+                                                      Remove
+                                                    </button>
                                                   </div>
                                                 </div>
                                               );
