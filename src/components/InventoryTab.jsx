@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, X } from 'lucide-react';
+import { usePriceCache } from "../context/PriceCacheContext";
+import { normalizeCardName, normalizeSetCode } from "../lib/fetchCardPrices";
 
 export const InventoryTab = ({
   inventory,
