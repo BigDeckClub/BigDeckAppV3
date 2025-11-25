@@ -39,6 +39,7 @@ function MTGInventoryTrackerContent() {
   });
   const [usageHistory, setUsageHistory] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [totalPurchased60Days, setTotalPurchased60Days] = useState(0);
 
   const [showSellModal, setShowSellModal] = useState(false);
   const [selectedContainerForSale, setSelectedContainerForSale] =
@@ -265,6 +266,22 @@ function MTGInventoryTrackerContent() {
       calculateAllContainerPrices();
     }
   }, [containerItems]);
+
+  useEffect(() => {
+    if (activeTab === "analytics") {
+      const fetchTotalPurchases = async () => {
+        try {
+          const response = await fetch(`${API_BASE}/analytics/total-purchases-60days`);
+          const data = await response.json();
+          setTotalPurchased60Days(data.totalSpent || 0);
+        } catch (err) {
+          console.error('Failed to fetch total purchases:', err);
+          setTotalPurchased60Days(0);
+        }
+      };
+      fetchTotalPurchases();
+    }
+  }, [activeTab]);
 
   const loadAllSets = async () => {
     try {
