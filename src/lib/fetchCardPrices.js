@@ -13,45 +13,50 @@ export async function fetchCardPrices(cardName, setCode) {
 
   // Use path-based endpoint directly instead of query parameters
   const url = `/api/prices/${encodeURIComponent(normalizedName)}/${encodeURIComponent(normalizedSet)}`;
-  console.log("[fetchCardPrices] Fetching from:", url);
+  console.log("[FETCH DEBUG] Fetching from:", url);
 
   // Create an abort controller for timeout handling (10 second timeout)
   const controller = new AbortController();
   const timeoutId = setTimeout(() => {
-    console.error("[fetchCardPrices] Request timeout, aborting");
+    console.error("[FETCH DEBUG] Request timeout, aborting");
     controller.abort();
   }, 10000);
 
   try {
-    console.log("[fetchCardPrices] Sending fetch request with 10s timeout...");
+    console.log("[FETCH DEBUG] Sending fetch request with 10s timeout...");
     const response = await fetch(url, {
       signal: controller.signal,
-      headers: { "Content-Type": "application/json" }
+      headers: { "Accept": "application/json" }
     });
     
     clearTimeout(timeoutId);
-    console.log("[fetchCardPrices] Response received:", { status: response.status, ok: response.ok });
+    console.log("[FETCH DEBUG] Response received:", { status: response.status, ok: response.ok });
+    console.log("[FETCH DEBUG] Response headers:", {
+      contentType: response.headers.get('Content-Type'),
+      corsOrigin: response.headers.get('Access-Control-Allow-Origin')
+    });
 
     if (!response.ok) {
-      console.warn(`[fetchCardPrices] Response not OK (${response.status}), returning N/A`);
+      console.warn(`[FETCH DEBUG] Response not OK (${response.status}), returning N/A`);
       return { tcg: "N/A", ck: "N/A" };
     }
 
+    console.log("[FETCH DEBUG] About to parse JSON...");
     const price = await response.json();
-    console.log("[fetchCardPrices] Parsed JSON:", price);
+    console.log("[FETCH DEBUG] Parsed JSON successfully:", price);
     
     const result = {
       tcg: price.tcg || "N/A",
       ck: price.ck || "N/A"
     };
-    console.log("[fetchCardPrices] Returning result:", result);
+    console.log("[FETCH DEBUG] Returning result:", result);
     return result;
   } catch (err) {
     clearTimeout(timeoutId);
     if (err.name === "AbortError") {
-      console.error("[fetchCardPrices] Request aborted due to timeout (10s exceeded)");
+      console.error("[FETCH DEBUG] Request aborted due to timeout (10s exceeded)");
     } else {
-      console.error("[fetchCardPrices] Fetch error:", err.message || err);
+      console.error("[FETCH DEBUG] Fetch error:", err.message || err, err.stack);
     }
     return { tcg: "N/A", ck: "N/A" };
   }

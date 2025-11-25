@@ -1238,20 +1238,42 @@ app.get('/api/prices/:cardName/:setCode', priceLimiter, async (req, res) => {
     }
     
     console.log(`Final result: TCG=${tcgPrice}, CK=${ckPrice}\n`);
-    console.log("[DEBUG] About to send response...");
+    console.log("[RESPONSE DEBUG] About to send response...");
     
-    const response = { tcg: tcgPrice, ck: ckPrice };
-    console.log("[DEBUG] Response object:", response);
+    const responseData = { tcg: tcgPrice, ck: ckPrice };
+    console.log("[RESPONSE DEBUG] Response object:", responseData);
     
-    res.json(response);
-    console.log("[DEBUG] Response sent successfully");
+    // Explicitly set headers
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    
+    console.log("[RESPONSE DEBUG] Headers set, calling res.json()...");
+    res.status(200).json(responseData);
+    console.log("[RESPONSE DEBUG] res.json() called, response sent to client");
     
   } catch (error) {
     console.error('Price fetch error:', error);
     const fallbackResponse = { tcg: 'N/A', ck: 'N/A' };
-    console.error("[DEBUG] Sending fallback response:", fallbackResponse);
-    res.json(fallbackResponse);
+    console.error("[RESPONSE DEBUG] Sending fallback response:", fallbackResponse);
+    res.setHeader('Content-Type', 'application/json');
+    res.status(500).json(fallbackResponse);
   }
+});
+
+// ========== TEST ENDPOINT - SIMPLIFIED ==========
+app.get('/api/prices-test/:cardName/:setCode', priceLimiter, (req, res) => {
+  const { cardName, setCode } = req.params;
+  console.log(`\n[TEST ENDPOINT] Received request for: ${cardName} (${setCode})`);
+  
+  res.setHeader('Content-Type', 'application/json');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.status(200).json({ 
+    tcg: "$1.23", 
+    ck: "$2.34",
+    source: "test-endpoint",
+    timestamp: new Date().toISOString()
+  });
+  console.log(`[TEST ENDPOINT] Response sent for: ${cardName} (${setCode})`);
 });
 
 // ========== HEALTH CHECK ENDPOINT ==========
