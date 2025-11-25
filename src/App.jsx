@@ -1109,18 +1109,18 @@ function MTGInventoryTrackerContent() {
 
         {/* Decklists Tab */}
         {activeTab === "decklists" && !isLoading && (
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {!showDecklistForm ? (
               <button
                 onClick={() => setShowDecklistForm(true)}
-                className="btn-primary px-6 py-3 font-semibold"
+                className="btn-primary w-full sm:w-auto px-4 sm:px-6 py-3 font-semibold"
               >
                 <Plus className="w-5 h-5 inline mr-2" />
                 New Decklist
               </button>
             ) : (
-              <div className="card p-6">
-                <h2 className="text-xl font-bold mb-4">Create Decklist</h2>
+              <div className="card p-4 sm:p-6">
+                <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">Create Decklist</h2>
                 <input
                   type="text"
                   placeholder="Decklist Name"
@@ -1134,11 +1134,11 @@ function MTGInventoryTrackerContent() {
                   onChange={(e) => setDecklistPaste(e.target.value)}
                   className="w-full bg-slate-800 border border-slate-600 px-4 py-2 text-white mb-4 h-48"
                 />
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <button
                     onClick={parseAndPreviewDecklist}
                     disabled={deckPreviewLoading}
-                    className="flex-1 btn-primary disabled:opacity-50 px-4 py-2 font-semibold"
+                    className="flex-1 btn-primary disabled:opacity-50 px-4 py-3 font-semibold"
                   >
                     {deckPreviewLoading ? "Checking..." : "Check Inventory"}
                   </button>
@@ -1147,7 +1147,7 @@ function MTGInventoryTrackerContent() {
                       setShowDecklistForm(false);
                       setDeckPreview(null);
                     }}
-                    className="flex-1 btn-secondary px-4 py-2 font-semibold"
+                    className="flex-1 btn-secondary px-4 py-3 font-semibold"
                   >
                     Cancel
                   </button>
@@ -1184,11 +1184,11 @@ function MTGInventoryTrackerContent() {
               </div>
             )}
 
-            <div className="card p-6">
-              <h2 className="text-xl font-bold mb-4">
+            <div className="card p-4 sm:p-6">
+              <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">
                 Decklists ({decklists.length})
               </h2>
-              <div className="grid gap-4">
+              <div className="grid gap-3 sm:gap-4">
                 {decklists.map((deck) => {
                   const prices = decklistPrices[deck.id] || { tcg: 0, ck: 0 };
                   const isExpanded = expandedDecklists[deck.id];
@@ -1573,18 +1573,18 @@ function MTGInventoryTrackerContent() {
 
         {/* Containers Tab */}
         {activeTab === "containers" && !isLoading && (
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {!showContainerForm ? (
               <button
                 onClick={() => setShowContainerForm(true)}
-                className="btn-primary px-6 py-3 font-semibold"
+                className="btn-primary w-full sm:w-auto px-4 sm:px-6 py-3 font-semibold"
               >
                 <Plus className="w-5 h-5 inline mr-2" />
                 New Container
               </button>
             ) : (
-              <div className="card p-6">
-                <h2 className="text-xl font-bold mb-4">Create Container</h2>
+              <div className="card p-4 sm:p-6">
+                <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">Create Container</h2>
                 <input
                   type="text"
                   placeholder="Container Name"
@@ -1604,16 +1604,16 @@ function MTGInventoryTrackerContent() {
                     </option>
                   ))}
                 </select>
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <button
                     onClick={addContainer}
-                    className="flex-1 btn-primary px-4 py-2 font-semibold"
+                    className="flex-1 btn-primary px-4 py-3 font-semibold"
                   >
                     Create
                   </button>
                   <button
                     onClick={() => setShowContainerForm(false)}
-                    className="flex-1 btn-secondary px-4 py-2 font-semibold"
+                    className="flex-1 btn-secondary px-4 py-3 font-semibold"
                   >
                     Cancel
                   </button>
@@ -1621,8 +1621,8 @@ function MTGInventoryTrackerContent() {
               </div>
             )}
 
-            <div className="card p-6">
-              <h2 className="text-xl font-bold mb-4">
+            <div className="card p-4 sm:p-6">
+              <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">
                 Containers ({containers.length})
               </h2>
               <div className="space-y-3">

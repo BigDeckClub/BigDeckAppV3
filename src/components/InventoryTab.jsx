@@ -45,8 +45,8 @@ export const InventoryTab = ({
           </button>
         </div>
       )}
-      <div className="card rounded-lg p-6 border border-slate-700">
-        <h2 className="text-xl font-bold mb-4">Add Card to Inventory</h2>
+      <div className="card rounded-lg p-4 sm:p-6 border border-slate-700">
+        <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">Add Card to Inventory</h2>
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-semibold mb-2">Preferred Set (optional):</label>
@@ -75,7 +75,7 @@ export const InventoryTab = ({
             />
             
             {showDropdown && searchResults.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-black border border-slate-600 rounded shadow-lg max-h-64 overflow-y-auto z-10">
+              <div className="absolute top-full left-0 right-0 mt-1 bg-slate-900 border border-slate-600 rounded-lg shadow-xl max-h-60 overflow-y-auto z-20">
                 {(() => {
                   const seen = new Set();
                   return searchResults
@@ -88,9 +88,9 @@ export const InventoryTab = ({
                       <div
                         key={card.id}
                         onClick={() => selectCard(card)}
-                        className="px-4 py-2 hover:bg-purple-700 cursor-pointer border-b border-slate-600"
+                        className="px-4 py-3 hover:bg-teal-600/30 cursor-pointer border-b border-slate-700 last:border-b-0 active:bg-teal-600/50"
                       >
-                        <div className="font-semibold">{card.name}</div>
+                        <div className="font-semibold text-sm sm:text-base">{card.name}</div>
                       </div>
                     ));
                 })()}
@@ -177,7 +177,7 @@ export const InventoryTab = ({
           <button
             onClick={addCard}
             disabled={!newEntry.selectedSet}
-            className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 rounded px-4 py-2 font-semibold transition"
+            className="w-full btn-primary disabled:bg-gray-600 disabled:from-gray-600 disabled:to-gray-600 rounded-lg px-4 py-3 font-semibold transition"
           >
             <Plus className="w-5 h-5 inline mr-2" />
             Add Card
@@ -186,8 +186,8 @@ export const InventoryTab = ({
       </div>
 
       {/* Inventory List */}
-      <div className="card rounded-lg p-6 border border-slate-700">
-        <h2 className="text-xl font-bold mb-4">Card Inventory</h2>
+      <div className="card rounded-lg p-4 sm:p-6 border border-slate-700">
+        <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">Card Inventory</h2>
         <div className="grid gap-4">
           {Object.entries(
             inventory.reduce((acc, item) => {
@@ -215,17 +215,15 @@ export const InventoryTab = ({
             const isExpanded = expandedCards[cardName];
             
             return (
-              <div key={cardName} className="bg-slate-800 border border-slate-600 rounded p-4">
-                <div className="flex justify-between items-start mb-3 cursor-pointer" onClick={() => setExpandedCards({...expandedCards, [cardName]: !isExpanded})}>
-                  <div>
-                    <h3 className="text-lg font-bold text-slate-100">{cardName}</h3>
-                  </div>
-                  <div className="text-purple-400">
+              <div key={cardName} className="bg-slate-800 border border-slate-600 rounded-lg p-3 sm:p-4">
+                <div className="flex justify-between items-center mb-2 sm:mb-3 cursor-pointer" onClick={() => setExpandedCards({...expandedCards, [cardName]: !isExpanded})}>
+                  <h3 className="text-base sm:text-lg font-bold text-slate-100 flex-1 pr-2">{cardName}</h3>
+                  <div className="text-teal-400 text-sm">
                     {isExpanded ? '▼' : '▶'}
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-3">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2 sm:mb-3">
                   <div className="bg-slate-800 bg-opacity-50 rounded p-2 sm:p-2 border border-slate-700">
                     <div className="text-[10px] sm:text-xs text-slate-400">Total Copies</div>
                     <div className="text-lg sm:text-xl font-bold text-teal-300">{totalQty}</div>
@@ -245,7 +243,7 @@ export const InventoryTab = ({
                 </div>
                 
                 {isExpanded && (
-                  <div className="border-t border-purple-600 pt-4 space-y-2">
+                  <div className="border-t border-teal-600/50 pt-3 sm:pt-4 space-y-2">
                     {items.map((item) => {
                       const isEditing = editingId === item.id;
                       return (

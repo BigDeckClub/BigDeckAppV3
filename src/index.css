@@ -157,93 +157,80 @@ select {
   background: linear-gradient(
     to top,
     rgba(15, 23, 42, 0.98) 0%,
-    rgba(30, 41, 59, 0.95) 50%,
-    rgba(30, 41, 59, 0.90) 100%
+    rgba(20, 30, 48, 0.96) 100%
   );
-  border-top: 1px solid rgba(94, 234, 212, 0.2);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-top: 1px solid rgba(94, 234, 212, 0.25);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
   padding-bottom: var(--safe-area-bottom);
   box-shadow: 
-    0 -4px 30px rgba(0, 0, 0, 0.4),
+    0 -8px 32px rgba(0, 0, 0, 0.5),
     0 -1px 0 rgba(255, 255, 255, 0.05) inset;
 }
 
 .mobile-nav-inner {
-  @apply flex items-center justify-evenly;
-  padding: 10px 8px 8px 8px;
+  @apply flex items-center;
+  padding: 6px 4px 6px 4px;
   width: 100%;
-  max-width: 500px;
+  max-width: 420px;
   margin: 0 auto;
+  justify-content: space-around;
 }
 
 .mobile-nav-item {
-  @apply flex flex-col items-center justify-center rounded-xl transition-all duration-200;
-  padding: 8px 6px;
-  min-width: 52px;
-  max-width: 70px;
+  @apply flex flex-col items-center justify-center transition-all duration-150;
+  padding: 6px 4px 4px 4px;
+  min-width: 48px;
   flex: 1;
   position: relative;
+  border-radius: 10px;
 }
 
 .mobile-nav-item.active {
-  @apply text-teal-300;
-  background: linear-gradient(
-    135deg,
-    rgba(20, 184, 166, 0.25) 0%,
-    rgba(6, 182, 212, 0.15) 100%
-  );
-  box-shadow: 
-    0 0 20px rgba(20, 184, 166, 0.3),
-    0 0 8px rgba(20, 184, 166, 0.2) inset;
-  border-radius: 12px;
+  @apply text-teal-400;
+  background: rgba(20, 184, 166, 0.15);
 }
 
 .mobile-nav-item.active::before {
   content: '';
   position: absolute;
-  top: -1px;
+  top: 0;
   left: 50%;
   transform: translateX(-50%);
-  width: 20px;
-  height: 3px;
-  background: linear-gradient(90deg, transparent, var(--primary-light), transparent);
-  border-radius: 0 0 4px 4px;
+  width: 24px;
+  height: 2px;
+  background: var(--primary-light);
+  border-radius: 0 0 2px 2px;
 }
 
 .mobile-nav-item.active .mobile-nav-icon {
-  transform: scale(1.15);
-  filter: drop-shadow(0 0 4px rgba(20, 184, 166, 0.5));
+  transform: scale(1.1);
 }
 
 .mobile-nav-item.active .mobile-nav-label {
-  @apply text-teal-300 font-semibold;
+  @apply text-teal-400 font-semibold;
 }
 
 .mobile-nav-item.inactive {
-  @apply text-slate-400;
-}
-
-.mobile-nav-item.inactive:hover {
-  @apply text-slate-200;
-  background: rgba(255, 255, 255, 0.05);
+  @apply text-slate-500;
 }
 
 .mobile-nav-item:active {
-  transform: scale(0.90);
+  transform: scale(0.92);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .mobile-nav-icon {
-  @apply transition-all duration-200;
-  width: 22px;
-  height: 22px;
+  @apply transition-all duration-150;
+  width: 20px;
+  height: 20px;
 }
 
 .mobile-nav-label {
-  font-size: 10px;
-  margin-top: 4px;
+  font-size: 9px;
+  margin-top: 2px;
   font-weight: 500;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
   text-align: center;
   white-space: nowrap;
 }
@@ -259,21 +246,30 @@ select {
   }
   
   .main-content {
-    padding-bottom: calc(76px + var(--safe-area-bottom));
+    padding-bottom: calc(80px + var(--safe-area-bottom));
+    padding-top: 16px !important;
+    padding-left: 12px !important;
+    padding-right: 12px !important;
   }
   
   .app-header {
-    @apply py-3 px-4;
+    @apply py-2 px-3;
+    justify-content: center !important;
   }
   
   .app-header h1 {
-    @apply text-lg;
+    @apply text-xl;
     font-weight: 700;
   }
   
   /* Hide mobile settings button when there's a settings icon in bottom nav */
   .mobile-settings-btn {
     display: none !important;
+  }
+  
+  /* Slimmer header on mobile */
+  nav.sticky {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   }
 }
 
@@ -291,7 +287,12 @@ select {
 /* Mobile-friendly cards */
 @media (max-width: 768px) {
   .card {
-    @apply rounded-lg p-4;
+    @apply rounded-lg p-3;
+    margin-bottom: 12px;
+  }
+  
+  .card h2 {
+    @apply text-lg mb-3;
   }
   
   .stat-grid-mobile {
@@ -299,15 +300,24 @@ select {
   }
   
   .stat-box-mobile {
-    @apply p-3;
+    @apply p-2;
   }
   
   .stat-box-mobile .text-xl {
-    @apply text-lg;
+    @apply text-base;
   }
   
   .stat-box-mobile .text-xs {
     @apply text-[10px];
+  }
+  
+  /* Compact spacing in cards */
+  .space-y-6 {
+    gap: 12px;
+  }
+  
+  .space-y-4 {
+    gap: 10px;
   }
 }
 
@@ -317,7 +327,7 @@ select {
   .btn-secondary,
   .btn-danger,
   .btn-accent {
-    @apply min-h-[44px] px-4;
+    @apply min-h-[44px] px-3 text-sm;
   }
   
   input[type="text"],
@@ -325,7 +335,13 @@ select {
   input[type="date"],
   textarea,
   select {
-    @apply min-h-[44px] text-base;
+    @apply min-h-[44px] text-base px-3 py-2;
+    font-size: 16px; /* Prevents iOS zoom on focus */
+  }
+  
+  /* Compact buttons in tight spaces */
+  .btn-compact {
+    @apply min-h-[36px] px-2 py-1 text-xs;
   }
 }
 
