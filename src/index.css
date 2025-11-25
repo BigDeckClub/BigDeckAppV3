@@ -163,17 +163,17 @@ select {
 }
 
 .mobile-nav-inner {
-  @apply flex items-center;
-  justify-content: space-evenly;
-  padding: 8px 8px 6px 8px;
-  max-width: 100%;
+  @apply flex items-center justify-center;
+  padding: 8px 0 6px 0;
+  width: 100%;
+  gap: 0;
 }
 
 .mobile-nav-item {
   @apply flex flex-col items-center justify-center rounded-xl transition-all duration-200;
-  padding: 6px 6px;
-  min-width: 48px;
-  width: 16.666%;
+  padding: 6px 4px;
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 .mobile-nav-item.active {
