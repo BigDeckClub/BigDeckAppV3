@@ -1,0 +1,135 @@
+You accidentally replaced server.js with the classifier code, and now server.js no longer contains:
+
+Express server
+
+API endpoints
+
+Price-scraping logic
+
+TCGplayer/TnT query logic
+
+Product normalization & loop pipeline
+
+But your new classifier works perfectly and just needs to be re-inserted into the correct place of the restored server.js.
+
+Below are the steps to get everything back in order.
+
+✅ NEXT STEPS
+1. Restore your last working server.js
+
+Pick one:
+
+If using Git (recommended):
+git checkout -- server.js
+
+
+Or if you want to restore from the last commit but keep the new classifier file on disk:
+
+git checkout HEAD~1 -- server.js
+
+If not using Git:
+
+Recover it from:
+
+/trash / recycle bin
+
+ZIPs you downloaded
+
+Previous ZIP builds I generated for you
+
+Replit history (if using Replit)
+
+✨ Once restored, stop here and paste it for me if you want me to re-integrate the classifier for you.
+
+2. Add your new classifier to server.js
+
+Place this at the top of the restored file, before the scraping logic:
+
+2.1 DEFAULT_BLACKLIST
+const DEFAULT_VARIANT_BLACKLIST = [
+  "showcase",
+  "extended art",
+  "borderless",
+  "full art",
+  "alternate art",
+  "alt art",
+  "promo",
+  "premiere",
+  "premium",
+  "limited",
+  "foil etched",
+  "foil-etched",
+  "judge gift",
+  "prerelease",
+  "bundle",
+  "vip",
+  "collector",
+  "commander collection",
+  "set booster",
+  "draft booster",
+  "theme booster",
+  "secret lair",
+  "slx",
+];
+
+2.2 normalizeName()
+function normalizeName(str) {
+  return str
+    .toLowerCase()
+    .replace(/[\s\-–—_:(){}[\]]+/g, " ")
+    .trim();
+}
+
+2.3 classifyVariant(name, cardName)
+function classifyVariant(productName, cardName) {
+  const base = normalizeName(cardName);
+  const test = normalizeName(productName);
+
+  // 1. If the product name contains the base card name exactly
+  //    AND contains nothing else suspicious, call it normal.
+  const baseIncluded = test.includes(base);
+
+  // 2. If ANY blacklist keyword appears → special edition
+  for (const banned of DEFAULT_VARIANT_BLACKLIST) {
+    if (test.includes(banned)) {
+      return "special";
+    }
+  }
+
+  // 3. Set code detection like “(KLD)”
+  if (/\b[A-Z]{3}\b/.test(productName.replace(cardName, ""))) {
+    return "normal";
+  }
+
+  // 4. If product name contains extra descriptors beyond the card name
+  //    and those descriptors aren’t safe, then it's suspicious.
+  if (baseIncluded && test !== base) {
+    const extra = test.replace(base, "").trim();
+    if (extra.length > 0) return "special";
+  }
+
+  return "normal"; // default safe assumption
+}
+
+✅ 3. Replace the old classifier call
+
+Find where the product loop filters variants, something like:
+
+for (const product of products) {
+    const variant = classifyProductVariant(product.name, cardName);
+
+
+Replace it with:
+
+const variant = classifyVariant(product.name, cardName);
+
+✅ 4. Expected outcomes after integration
+
+Once restored + integrated:
+
+Card	Expected Correct Price	Why
+Lightning Bolt	$2.29	Showcase $1.99 correctly classified as special, so ignored
+Sol Ring	$2.29	Same: $1.99 variant is a showcase, now excluded
+Premiums ($1,799.99)	Excluded	Already filtered by your < $500 rule and parsed properly
+
+Everything now aligns.
