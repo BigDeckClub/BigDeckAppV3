@@ -9,8 +9,25 @@ export default function DecklistCardPrice({ name, set }) {
   useEffect(() => {
     const cardName = normalizeCardName(name);
     const setCode = normalizeSetCode(set);
+    const cacheKey = `${cardName}|${setCode}`;
 
-    getPrice(cardName, setCode).then(setPrice);
+    console.log(`[DecklistCardPrice] name="${name}" set="${set}"`);
+    console.log(`[DecklistCardPrice] normalized: cardName="${cardName}" setCode="${setCode}"`);
+    console.log(`[DecklistCardPrice] cache key: "${cacheKey}"`);
+
+    getPrice(cardName, setCode).then(result => {
+      console.log(`[DecklistCardPrice] getPrice returned for "${cacheKey}":`, result);
+      if (result && typeof result === 'object' && result.tcg && result.ck) {
+        console.log(`[DecklistCardPrice] Valid result, setting price`);
+        setPrice(result);
+      } else {
+        console.warn(`[DecklistCardPrice] Invalid result format:`, result);
+        setPrice({ tcg: "N/A", ck: "N/A" });
+      }
+    }).catch(err => {
+      console.error(`[DecklistCardPrice] getPrice error:`, err);
+      setPrice({ tcg: "N/A", ck: "N/A" });
+    });
   }, [name, set, getPrice]);
 
   return (

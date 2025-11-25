@@ -10,10 +10,24 @@ export function PriceCacheProvider({ children }) {
     const key = `${name}|${setCode}`;
     const cached = cache[key];
 
-    if (cached) return cached;
+    console.log(`[PriceCacheContext] getPrice called with key: "${key}"`);
+    console.log(`[PriceCacheContext] Cache keys exist:`, Object.keys(cache));
+    
+    if (cached) {
+      console.log(`[PriceCacheContext] Found in cache:`, cached);
+      return cached;
+    }
 
+    console.log(`[PriceCacheContext] Not in cache, fetching from backend...`);
     const result = await fetchCardPrices(name, setCode);
-    setCache(prev => ({ ...prev, [key]: result }));
+    console.log(`[PriceCacheContext] Backend returned:`, result);
+    
+    setCache(prev => {
+      const updated = { ...prev, [key]: result };
+      console.log(`[PriceCacheContext] Stored in cache with key "${key}":`, result);
+      return updated;
+    });
+    
     return result;
   }
 
