@@ -164,6 +164,23 @@ function classifyProductName(name) {
   if (!name) return null;
   const lower = name.toLowerCase();
 
+  // Sol Ring special variants - uses regex to catch inconsistent naming patterns
+  if (lower.includes("sol ring")) {
+    const solRingSpecialPatterns = [
+      /\(.*human.*\)/,           // (0410 - human), (human version), etc.
+      /human alternate/,
+      /human alt/,
+      /secret lair human/,
+      /human art/,
+      /\(\d{3,4}\s*-\s*\w+\)/    // Any (#### - ...) pattern like (0410 - human)
+    ];
+
+    for (const pattern of solRingSpecialPatterns) {
+      if (pattern.test(lower)) return "special";
+    }
+  }
+
+  // Generic variant keywords (checked after Sol Ring)
   const specialKeywords = [
     "showcase",
     "borderless",
@@ -179,7 +196,6 @@ function classifyProductName(name) {
     "alternate art",
     "alt art",
     "variant",
-    "human",               // Sol Ring variants
     "thrum of the vestige",
     "secret lair",
     "collector",

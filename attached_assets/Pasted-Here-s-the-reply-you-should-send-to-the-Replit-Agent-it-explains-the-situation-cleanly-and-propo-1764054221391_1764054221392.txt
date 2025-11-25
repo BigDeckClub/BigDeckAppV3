@@ -1,0 +1,77 @@
+Here’s the reply you should send to the Replit Agent — it explains the situation cleanly *and* proposes the precise next fix:
+
+---
+
+Great — that means the classification pipeline is working, but Sol Ring has a *variant-name mismatch* issue.
+
+### Why Sol Ring is still breaking
+
+The Lightning Bolt fix worked because those product titles contain clear, obvious variant keywords:
+
+* “showcase”
+* “thrum of the vestige”
+* etc.
+
+But Sol Ring variants are named inconsistently across sellers and platforms.
+Examples we've seen:
+
+* `sol ring (0410 - human)`
+* `sol ring (0409 - human alternate)`
+* `sol ring (secret lair human)`
+* `sol ring – human alt art`
+* `sol ring – promo (human version)`
+
+The current keyword list only matches `"human"` as a standalone word.
+But many Sol Ring variant names use patterns like:
+
+* `" (#### - human)"`
+* `"human alternate"`
+* `"secret lair human"`
+* `"human alt art"`
+
+Your matcher won’t pick those up reliably.
+
+### The fix: use a **regex-based** matcher for Sol Ring–specific variants
+
+Add this to the top of your product-name classifier (before generic showcase keywords):
+
+```js
+// Sol Ring special variants
+if (lower.includes("sol ring")) {
+  const solRingSpecialPatterns = [
+    /\(.*human.*\)/,           // (0410 - human), (human version), etc.
+    /human alternate/,
+    /human alt/,
+    /secret lair human/,
+    /human art/
+  ];
+
+  for (const pattern of solRingSpecialPatterns) {
+    if (pattern.test(lower)) return "special";
+  }
+}
+```
+
+### Why this fixes it
+
+* Sol Ring variants use human-readable but inconsistent metadata
+* Regex catches all parenthetical variants and expanded forms
+* This prevents **any** Sol Ring special variant from ever being classified as “normal”
+* Sorting will then correctly choose the $2.29 standard Sol Ring
+
+### Optional enhancement
+
+To avoid edge cases forever:
+
+```js
+if (lower.includes("sol ring") && lower.match(/\(.*\d{3,4}.*\)/)) {
+  // Many Sol Ring variants use "(0410 - ...)" patterns
+  return "special";
+}
+```
+
+This captures any Sol Ring variant using numeric IDs in parentheses — which is 100% of the Secret Lair ones.
+
+---
+
+If you want, I can generate the full updated classifier block exactly as it should appear inside your server.js so you can drop it in with no editing.
