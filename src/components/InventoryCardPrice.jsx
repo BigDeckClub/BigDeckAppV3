@@ -3,7 +3,7 @@ import PropTypes from "prop-types";
 import { usePriceCache } from "../context/PriceCacheContext";
 import { normalizeCardName, normalizeSetCode } from "../lib/fetchCardPrices";
 
-export default function DecklistCardPrice({ name, set, className }) {
+export default function InventoryCardPrice({ name, set, className }) {
   const { getPrice } = usePriceCache();
   const [price, setPrice] = useState({ tcg: "N/A", ck: "N/A" });
 
@@ -22,7 +22,7 @@ export default function DecklistCardPrice({ name, set, className }) {
   );
 }
 
-DecklistCardPrice.propTypes = {
+InventoryCardPrice.propTypes = {
   name: PropTypes.string.isRequired,
   set: PropTypes.string.isRequired,
   className: PropTypes.string,
