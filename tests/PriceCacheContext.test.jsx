@@ -1,13 +1,37 @@
-import React, { useEffect, useState } from 'react';
-import { render, waitFor, screen } from '@testing-library/react';
-import { describe, it, expect, beforeEach, afterEach, afterAll } from 'vitest';
-import { http, HttpResponse } from 'msw';
-import { setupServer } from 'msw/node';
-import { PriceCacheProvider, usePriceCache } from '../src/context/PriceCacheContext';
+import React from "react";
+import { render, waitFor } from "@testing-library/react";
+import { http, HttpResponse } from "msw";
+import { setupServer } from "msw/node";
+import { PriceCacheProvider, usePriceCache } from "../src/context/PriceCacheContext";
+import { describe, it, expect, beforeAll, afterEach, afterAll } from "vitest";
 
-// Mock server for pricing API
+// Simple test component that calls getPrice twice concurrently
+function Caller({ name, set, onDone }) {
+  const { getPrice } = usePriceCache();
+  React.useEffect(() => {
+    let mounted = true;
+    Promise.all([getPrice(name, set), getPrice(name, set)])
+      .then((results) => {
+        if (!mounted) return;
+        onDone(results);
+      })
+      .catch((err) => {
+        if (!mounted) return;
+        onDone(err);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [name, set, getPrice, onDone]);
+
+  return null;
+}
+
+let apiCallCount = 0;
 const server = setupServer(
-  http.get('/api/price', ({ request }) => {
+  // Match any URL that contains /api/price with RegExp - robust to absolute vs relative URLs
+  http.get(/\/api\/price/, ({ request }) => {
+    apiCallCount += 1;
     const url = new URL(request.url);
     const name = url.searchParams.get('name');
     const set = url.searchParams.get('set');
@@ -23,95 +47,57 @@ const server = setupServer(
   })
 );
 
-beforeEach(() => server.listen());
-afterEach(() => server.resetHandlers());
+beforeAll(() => server.listen({ onUnhandledRequest: "error" }));
+afterEach(() => {
+  server.resetHandlers();
+  apiCallCount = 0;
+});
 afterAll(() => server.close());
 
-// Test component that uses PriceCacheContext
-function TestComponent({ name, set }) {
-  const { getPrice } = usePriceCache();
-  const [price, setPrice] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    setLoading(true);
-    getPrice(name, set).then(p => {
-      setPrice(p);
-      setLoading(false);
-    });
-  }, [name, set, getPrice]);
-
-  if (loading) return <div>Loading...</div>;
-  return <div>{price?.tcg} | {price?.ck}</div>;
-}
-
-describe('PriceCacheContext', () => {
-  it('should fetch and cache card prices on first request', async () => {
-    render(
-      <PriceCacheProvider>
-        <TestComponent name="lightning bolt" set="M11" />
-      </PriceCacheProvider>
-    );
-
-    await waitFor(() => {
-      expect(screen.getByText('$1.07 | $2.29')).toBeDefined();
-    });
-  });
-
-  it('should return cached price on subsequent requests', async () => {
-    render(
-      <PriceCacheProvider>
-        <TestComponent name="sol ring" set="EOC" />
-      </PriceCacheProvider>
-    );
-
-    await waitFor(() => {
-      expect(screen.getByText('$1.25 | $2.29')).toBeDefined();
-    });
-  });
-
-  it('should handle multiple concurrent requests with deduplication', async () => {
-    function MultiRequestComponent() {
-      const { getPrice } = usePriceCache();
-      const [results, setResults] = useState([]);
-
-      useEffect(() => {
-        Promise.all([
-          getPrice('lightning bolt', 'M11'),
-          getPrice('lightning bolt', 'M11'),
-          getPrice('lightning bolt', 'M11'),
-        ]).then(prices => setResults(prices));
-      }, [getPrice]);
-
-      return <div>{results.length > 0 ? 'Done' : 'Loading'}</div>;
+describe("PriceCacheContext", () => {
+  it("inflight dedupe: concurrent getPrice calls for same key result in only one backend call", async () => {
+    const results = [];
+    function onDone(res) {
+      results.push(res);
     }
 
     render(
       <PriceCacheProvider>
-        <MultiRequestComponent />
+        <Caller name="lightning bolt" set="M11" onDone={onDone} />
       </PriceCacheProvider>
     );
 
+    // wait until onDone pushed results
     await waitFor(() => {
-      expect(screen.getByText('Done')).toBeDefined();
-    });
+      if (results.length === 0) throw new Error("waiting for results");
+      return true;
+    }, { timeout: 5000 });
+
+    // Expect backend invoked only once due to inflight dedupe
+    expect(apiCallCount).toBe(1);
+
+    const first = results[0][0];
+    expect(first).toEqual({ tcg: '$1.07', ck: '$2.29' });
   });
 
-  it('should handle API errors gracefully', async () => {
-    server.use(
-      http.get('/api/price', () => {
-        return HttpResponse.json({ error: 'Server error' }, { status: 500 });
-      })
-    );
+  it("should fetch prices from mocked backend", async () => {
+    const results = [];
+    function onDone(res) {
+      results.push(res);
+    }
 
     render(
       <PriceCacheProvider>
-        <TestComponent name="unknown card" set="UNK" />
+        <Caller name="sol ring" set="EOC" onDone={onDone} />
       </PriceCacheProvider>
     );
 
     await waitFor(() => {
-      expect(screen.getByText(/N\/A.*N\/A/)).toBeDefined();
-    });
+      if (results.length === 0) throw new Error("waiting for results");
+      return true;
+    }, { timeout: 5000 });
+
+    const first = results[0][0];
+    expect(first).toEqual({ tcg: '$1.25', ck: '$2.29' });
   });
 });

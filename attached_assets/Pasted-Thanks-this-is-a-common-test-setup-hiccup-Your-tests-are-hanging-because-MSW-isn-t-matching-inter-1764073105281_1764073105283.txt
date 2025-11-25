@@ -1,0 +1,158 @@
+Thanks — this is a common test setup hiccup. Your tests are hanging because MSW isn't matching/intercepting the actual network requests the code under test is making, so the fetch calls never resolve and the tests wait forever.
+
+I'll give a short explanation of the root causes, then provide exact Replit steps and code patches to fix the tests so MSW intercepts requests reliably and tests complete.
+
+Why the tests hung (short)
+
+The MSW handler in the tests is registered for "/api/prices", but the code under test may be calling a different URL form (absolute URL like "http://localhost:3000/api/prices", a different path, or different host). If MSW handlers don't match the real request URL, the request is left unhandled and the test waits for a response that never comes.
+Another common cause: test environment/config (jsdom vs node) or missing MSW setup can also prevent interception — but the most likely cause here is a mismatch between the request URL and the handler pattern.
+What to do (quick plan)
+
+Update MSW handlers to match any URL that contains /api/prices (use a RegExp handler). This makes the test resilient to absolute/relative URL differences.
+Make MSW warn/error on unhandled requests so tests fail fast instead of hanging.
+Add a small vitest config to set a sensible env and timeouts and optionally a setup file.
+Re-run tests.
+Exact changes to apply (paste these into files)
+
+Create a test branch and edit test files Run:
+bash
+git checkout -b test/fix-msw-unhandled
+Replace tests/PriceCacheContext.test.jsx with this (handler uses RegExp and server.listen warns on unhandled):
+jsx
+// tests/PriceCacheContext.test.jsx
+import React from "react";
+import { render, waitFor } from "@testing-library/react";
+import { rest } from "msw";
+import { setupServer } from "msw/node";
+import { PriceCacheProvider } from "../src/context/PriceCacheContext";
+import { usePriceCache } from "../src/context/PriceCacheContext";
+
+// Simple test component that calls getPrice twice concurrently
+function Caller({ name, set, onDone }) {
+  const { getPrice } = usePriceCache();
+  React.useEffect(() => {
+    let mounted = true;
+    Promise.all([getPrice(name, set), getPrice(name, set)])
+      .then((results) => {
+        if (!mounted) return;
+        onDone(results);
+      })
+      .catch((err) => {
+        if (!mounted) return;
+        onDone(err);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [name, set, getPrice, onDone]);
+
+  return null;
+}
+
+let apiCallCount = 0;
+const server = setupServer(
+  // Match any URL that contains /api/prices, making the handler robust to absolute vs relative URLs
+  rest.get(/\/api\/prices/, (req, res, ctx) => {
+    apiCallCount += 1;
+    // simulate a short delay to let concurrent calls dedupe
+    return res(
+      ctx.delay(10),
+      ctx.json({
+        tcg: "$1.07",
+        ck: "$2.29",
+      })
+    );
+  })
+);
+
+beforeAll(() => server.listen({ onUnhandledRequest: "error" })); // fail fast if a request is unhandled
+afterEach(() => {
+  server.resetHandlers();
+  apiCallCount = 0;
+});
+afterAll(() => server.close());
+
+test("inflight dedupe: concurrent getPrice calls for same key result in only one backend call", async () => {
+  const results = [];
+  function onDone(res) {
+    results.push(res);
+  }
+
+  render(
+    <PriceCacheProvider>
+      <Caller name="lightning bolt" set="M11" onDone={onDone} />
+    </PriceCacheProvider>
+  );
+
+  // wait until onDone pushed results
+  await waitFor(() => {
+    if (results.length === 0) throw new Error("waiting for results");
+    return true;
+  }, { timeout: 5000 });
+
+  // Expect backend invoked only once due to inflight dedupe
+  expect(apiCallCount).toBe(1);
+
+  const first = results[0][0];
+  expect(first).toEqual({ tcg: "$1.07", ck: "$2.29" });
+});
+Replace tests/DecklistCardPrice.test.jsx with this:
+jsx
+// tests/DecklistCardPrice.test.jsx
+import React from "react";
+import { render, screen } from "@testing-library/react";
+import { rest } from "msw";
+import { setupServer } from "msw/node";
+import { PriceCacheProvider } from "../src/context/PriceCacheContext";
+import DecklistCardPrice from "../src/components/DecklistCardPrice";
+
+// Use a regex-based handler to match any /api/prices request
+const server = setupServer(
+  rest.get(/\/api\/prices/, (req, res, ctx) => {
+    return res(
+      ctx.json({
+        tcg: "$1.07",
+        ck: "$2.29",
+      })
+    );
+  })
+);
+
+beforeAll(() => server.listen({ onUnhandledRequest: "error" }));
+afterEach(() => server.resetHandlers());
+afterAll(() => server.close());
+
+test("DecklistCardPrice renders resolved prices (integration)", async () => {
+  render(
+    <PriceCacheProvider>
+      <DecklistCardPrice name="Lightning Bolt" set="M11" />
+    </PriceCacheProvider>
+  );
+
+  const expectedText = /TCG: \$1.07\s*\|\s*CK: \$2.29/i;
+  const node = await screen.findByText(expectedText, {}, { timeout: 2000 });
+  expect(node).toBeTruthy();
+});
+(Optional but recommended) Add a vitest config so tests run in jsdom and have a sensible timeout Create vitest.config.js in project root:
+js
+// vitest.config.js
+import { defineConfig } from "vitest/config";
+
+export default defineConfig({
+  test: {
+    environment: "jsdom", // react testing-library needs jsdom
+    globals: true,
+    setupFiles: [], // optional global setup file if you later centralize msw server
+    testTimeout: 10000,
+  },
+});
+Commit and run tests
+bash
+git add tests/PriceCacheContext.test.jsx tests/DecklistCardPrice.test.jsx vitest.config.js
+git commit -m "test: fix MSW handlers to match /api/prices robustly and add vitest config"
+npm run test
+Troubleshooting if tests still hang
+If you still hit hanging tests, do a quick debug:
+Modify server.listen call to use onUnhandledRequest: "warn" instead of "error" so you can see what request is unhandled, and add console.log in handler fallback: rest.get("*", (req, res, ctx) => { console.warn("Unhandled request:", req.url.href); return res(ctx.status(500)); })
+Search your code for the exact fetch URL used in PriceCacheContext (grep for "fetch(" or "/api/pric"). If code calls a fully-qualified URL (e.g., http://localhost:3000/api/prices), ensure the regex matches that (it will).
+Ensure the app code uses fetch (not axios with a different adapter). MSW matches XHR and fetch; if your code uses a native Node HTTP client in the server-side module, msw/node intercepts Node fetch/http; in tests we render components so that should be fine.
