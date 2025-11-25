@@ -12,7 +12,7 @@ language = "nodejs"
 [deployment]
 deploymentTarget = "autoscale"
 build = ["npm", "run", "build"]
-run = ["npm", "run", "start"]
+run = ["bash", "-c", "PORT=5000 npm run start"]
 
 [[ports]]
 localPort = 3000
@@ -21,6 +21,10 @@ externalPort = 3000
 [[ports]]
 localPort = 5000
 externalPort = 80
+
+[[ports]]
+localPort = 5173
+externalPort = 6800
 
 [[ports]]
 localPort = 36027
@@ -49,6 +53,10 @@ externalPort = 3001
 [[ports]]
 localPort = 45629
 externalPort = 6000
+
+[[ports]]
+localPort = 45947
+externalPort = 8000
 
 [agent]
 expertMode = true

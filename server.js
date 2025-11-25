@@ -6,6 +6,11 @@ import { load } from 'cheerio';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import Joi from 'joi';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const { Pool } = pkg;
 const app = express();
@@ -14,7 +19,9 @@ const app = express();
 app.set('trust proxy', 1);
 
 // ========== SECURITY MIDDLEWARE ==========
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: false
+}));
 
 // Secure, dynamic CORS handler for Replit
 const allowedOrigins = [
@@ -1754,12 +1761,19 @@ process.on('SIGINT', async () => {
   process.exit(0);
 });
 
-// ========== ROOT HEALTH CHECK ==========
-app.get('/', (req, res) => {
-  res.status(200).send('OK');
+// ========== STATIC FILES FOR PRODUCTION ==========
+const distPath = path.join(__dirname, 'dist');
+app.use(express.static(distPath));
+
+// ========== SPA CATCH-ALL (must be last) ==========
+app.get('/{*splat}', (req, res) => {
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ error: 'Not found' });
+  }
+  res.sendFile(path.join(distPath, 'index.html'));
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
 });
