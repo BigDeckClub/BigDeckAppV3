@@ -21,6 +21,7 @@ import { PriceCacheProvider, usePriceCache } from "./context/PriceCacheContext";
 import DecklistCardPrice from "./components/DecklistCardPrice";
 import { normalizeCardName, normalizeSetCode } from "./lib/fetchCardPrices";
 import { FloatingDollarSigns } from "./components/FloatingDollarSigns";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 // Use relative path - Vite dev server will proxy to backend
 const API_BASE = "/api";
@@ -305,14 +306,18 @@ function MTGInventoryTrackerContent() {
 
   const loadAllData = async () => {
     setIsLoading(true);
-    await Promise.all([
-      loadInventory(),
-      loadDecklists(),
-      loadContainers(),
-      loadSales(),
-      loadReorderSettings(),
-      loadUsageHistory(),
-    ]);
+    try {
+      await Promise.allSettled([
+        loadInventory(),
+        loadDecklists(),
+        loadContainers(),
+        loadSales(),
+        loadReorderSettings(),
+        loadUsageHistory(),
+      ]);
+    } catch (error) {
+      console.error('Error loading data:', error);
+    }
     setIsLoading(false);
   };
 
@@ -2412,8 +2417,10 @@ function MTGInventoryTrackerContent() {
 
 export default function MTGInventoryTracker() {
   return (
-    <PriceCacheProvider>
-      <MTGInventoryTrackerContent />
-    </PriceCacheProvider>
+    <ErrorBoundary>
+      <PriceCacheProvider>
+        <MTGInventoryTrackerContent />
+      </PriceCacheProvider>
+    </ErrorBoundary>
   );
 }
