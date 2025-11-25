@@ -917,19 +917,8 @@ app.post('/api/inventory', async (req, res) => {
     );
     
     const inventoryId = result.rows[0].id;
-    const price = purchase_price || 0;
-    const pDate = purchase_date || new Date().toISOString().split('T')[0];
     
     console.log(`[INVENTORY] Database insert successful: id=${inventoryId}, saved_quantity=${result.rows[0].quantity}`);
-    
-    // Log purchase in purchase_history
-    await pool.query(
-      `INSERT INTO purchase_history (inventory_id, purchase_date, purchase_price, quantity)
-       VALUES ($1, $2, $3, $4)`,
-      [inventoryId, pDate, price, parsedQuantity]
-    );
-    
-    console.log(`[INVENTORY] Purchase history recorded: inventory_id=${inventoryId}, quantity=${parsedQuantity}`);
     
     // Log activity
     await recordActivity(
@@ -951,27 +940,38 @@ app.delete('/api/inventory/:id', async (req, res) => {
   console.log(`[DELETE] Inventory deletion requested for id=${inventoryId}`);
   
   try {
-    // Check if this inventory item has purchase_history records
-    const historyCheck = await pool.query(
-      'SELECT COUNT(*) as count FROM purchase_history WHERE inventory_id = $1',
+    // Check if this inventory item is involved in actual sales (via containers that were sold)
+    const salesCheck = await pool.query(
+      `SELECT COUNT(*) as count FROM container_items ci
+       JOIN containers c ON ci.container_id = c.id
+       JOIN sales s ON s.container_id = c.id
+       WHERE ci.inventory_id = $1`,
       [inventoryId]
     );
-    const historyCount = parseInt(historyCheck.rows[0].count, 10);
+    const salesCount = parseInt(salesCheck.rows[0].count, 10);
     
-    if (historyCount > 0) {
-      console.warn(`[DELETE] BLOCKED: Cannot delete inventory id=${inventoryId} - has ${historyCount} purchase_history records. Purchase history is permanent.`);
+    if (salesCount > 0) {
+      console.warn(`[DELETE] BLOCKED: Cannot delete inventory id=${inventoryId} - involved in ${salesCount} sales transactions.`);
       return res.status(400).json({ 
-        error: 'Cannot delete inventory item with purchase history. Purchase history is permanent and immutable.',
-        historyCount
+        error: 'Cannot delete inventory item that has been sold. Sales history must be preserved.',
+        salesCount
       });
     }
     
+    // First, clean up any orphaned purchase_history records (from legacy data)
+    await pool.query('DELETE FROM purchase_history WHERE inventory_id = $1', [inventoryId]);
+    console.log(`[DELETE] Cleaned up purchase_history for inventory id=${inventoryId}`);
+    
+    // Then delete the inventory item
     const result = await pool.query('DELETE FROM inventory WHERE id = $1 RETURNING id', [inventoryId]);
     
     if (result.rows.length === 0) {
       console.warn(`[DELETE] Inventory id=${inventoryId} not found`);
       return res.status(404).json({ error: 'Inventory not found' });
     }
+    
+    // Log activity
+    await recordActivity(`Deleted inventory item id=${inventoryId}`, { inventory_id: inventoryId });
     
     console.log(`[DELETE] Successfully deleted inventory id=${inventoryId}`);
     res.json({ success: true, id: inventoryId });
