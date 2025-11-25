@@ -2123,7 +2123,7 @@ function MTGInventoryTrackerContent() {
                         .filter((card) => new Date(card.purchase_date) >= sixtyDaysAgo)
                         .reduce(
                           (sum, card) =>
-                            sum + (parseFloat(card.purchase_price) || 0),
+                            sum + ((parseFloat(card.purchase_price) || 0) * ((card.quantity || 0) + (card.quantity_in_containers || 0))),
                           0,
                         )
                         .toFixed(2);
