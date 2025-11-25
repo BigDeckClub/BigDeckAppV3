@@ -12,7 +12,7 @@ language = "nodejs"
 [deployment]
 deploymentTarget = "autoscale"
 build = ["npm", "run", "build"]
-run = ["bash", "-c", "PORT=5000 npm run start"]
+run = ["node", "server.js"]
 
 [[ports]]
 localPort = 3000
