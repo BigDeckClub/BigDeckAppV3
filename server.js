@@ -3,6 +3,7 @@ import cors from 'cors';
 import bodyParser from 'body-parser';
 import pkg from 'pg';
 import { load } from 'cheerio';
+import puppeteer from 'puppeteer';
 
 const { Pool } = pkg;
 const app = express();
@@ -357,8 +358,6 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
     let ckPrice = 'N/A';
     
     try {
-      const puppeteer = require('puppeteer');
-      
       browser = await puppeteer.launch({ 
         headless: true,
         args: ['--no-sandbox', '--disable-setuid-sandbox']
