@@ -2115,19 +2115,7 @@ function MTGInventoryTrackerContent() {
                 <div className="bg-slate-800 border border-slate-600 p-4">
                   <div className="text-slate-400 text-sm">Total Purchased (60 days)</div>
                   <div className="text-2xl font-bold text-emerald-300">
-                    $
-                    {(() => {
-                      const sixtyDaysAgo = new Date();
-                      sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
-                      return inventory
-                        .filter((card) => new Date(card.purchase_date) >= sixtyDaysAgo)
-                        .reduce(
-                          (sum, card) =>
-                            sum + ((parseFloat(card.purchase_price) || 0) * ((card.quantity || 0) + (card.quantity_in_containers || 0))),
-                          0,
-                        )
-                        .toFixed(2);
-                    })()}
+                    ${totalPurchased60Days.toFixed(2)}
                   </div>
                 </div>
               </div>

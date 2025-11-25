@@ -66,6 +66,17 @@ const pool = new Pool({
   connectionTimeoutMillis: 5000
 });
 
+// Initialize purchase_history table if it doesn't exist
+pool.query(`
+  CREATE TABLE IF NOT EXISTS purchase_history (
+    id SERIAL PRIMARY KEY,
+    inventory_id INTEGER REFERENCES inventory(id) ON DELETE SET NULL,
+    purchase_date TEXT NOT NULL,
+    purchase_price REAL NOT NULL,
+    quantity INTEGER DEFAULT 1
+  )
+`).catch(err => console.error('Failed to create purchase_history table:', err));
+
 // ========== PARSER: Plain-text decklist to card objects ==========
 /**
  * Parse a plain-text decklist into an array of card objects.
@@ -741,6 +752,19 @@ app.post('/api/inventory', async (req, res) => {
         reorder_type || 'normal'
       ]
     );
+    
+    const inventoryId = result.rows[0].id;
+    const qty = quantity || 1;
+    const price = purchase_price || 0;
+    const pDate = purchase_date || new Date().toISOString().split('T')[0];
+    
+    // Log purchase in purchase_history
+    await pool.query(
+      `INSERT INTO purchase_history (inventory_id, purchase_date, purchase_price, quantity)
+       VALUES ($1, $2, $3, $4)`,
+      [inventoryId, pDate, price, qty]
+    );
+    
     res.json(result.rows[0]);
   } catch (err) {
     console.error('Inventory insert error:', err);
@@ -909,6 +933,13 @@ app.post('/api/containers/:id/sell', async (req, res) => {
         `UPDATE inventory SET quantity = quantity - $1 WHERE id = $2 AND quantity >= $1`,
         [card.quantity_used, card.inventoryId]
       );
+      
+      // Log sale in purchase_history
+      await client.query(
+        `INSERT INTO purchase_history (inventory_id, purchase_date, purchase_price, quantity)
+         VALUES ($1, $2, (SELECT purchase_price FROM inventory WHERE id = $1), $3)`,
+        [card.inventoryId, new Date().toISOString().split('T')[0], card.quantity_used]
+      );
     }
 
     const sale = await client.query(
@@ -941,6 +972,20 @@ app.get('/api/sales', async (req, res) => {
   } catch (err) {
     console.error('Sales query error:', err.message);
     res.json([]);
+  }
+});
+
+app.get('/api/analytics/total-purchases-60days', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT COALESCE(SUM(purchase_price * quantity), 0) as total_spent
+      FROM purchase_history
+      WHERE purchase_date >= NOW() - INTERVAL '60 days'
+    `);
+    res.json({ totalSpent: parseFloat(result.rows[0]?.total_spent || 0) });
+  } catch (err) {
+    console.error('Total purchases query error:', err);
+    res.json({ totalSpent: 0 });
   }
 });
 
