@@ -980,7 +980,7 @@ app.get('/api/analytics/total-purchases-60days', async (req, res) => {
     const result = await pool.query(`
       SELECT COALESCE(SUM(purchase_price * quantity), 0) as total_spent
       FROM purchase_history
-      WHERE purchase_date >= NOW() - INTERVAL '60 days'
+      WHERE to_timestamp(purchase_date, 'YYYY-MM-DD') >= NOW() - INTERVAL '60 days'
     `);
     res.json({ totalSpent: parseFloat(result.rows[0]?.total_spent || 0) });
   } catch (err) {
