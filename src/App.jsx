@@ -333,6 +333,7 @@ function MTGInventoryTrackerContent() {
   };
 
   const addInventoryItem = async (item) => {
+    console.log('[FRONTEND] addInventoryItem called with:', JSON.stringify(item, null, 2));
     try {
       const response = await fetch(`${API_BASE}/inventory`, {
         method: "POST",
@@ -340,15 +341,23 @@ function MTGInventoryTrackerContent() {
         body: JSON.stringify(item),
       });
 
+      console.log('[FRONTEND] Response status:', response.status);
+      
       if (!response.ok) {
         const errorText = await response.text();
+        console.error('[FRONTEND] Error response:', errorText);
         throw new Error(`HTTP ${response.status}: ${errorText}`);
       }
+      
+      const result = await response.json();
+      console.log('[FRONTEND] Success response:', result);
+      
       await loadInventory();
       setSuccessMessage("Card added successfully!");
       setTimeout(() => setSuccessMessage(""), 3000);
       return true;
     } catch (error) {
+      console.error('[FRONTEND] addInventoryItem error:', error);
       setSuccessMessage("Error adding card: " + error.message);
       setTimeout(() => setSuccessMessage(""), 3000);
       return false;

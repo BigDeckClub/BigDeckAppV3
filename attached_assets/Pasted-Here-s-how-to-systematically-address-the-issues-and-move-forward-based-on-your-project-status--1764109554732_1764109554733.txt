@@ -1,0 +1,191 @@
+Here’s how to systematically address the issues and move forward based on your project status:
+
+---
+
+### **1. Fix HTTP 500 Error: POST /api/inventory**
+
+#### **Step 1: Capture Detailed Error Logs**
+Currently, the error message only shows a generic "Database error." Add detailed logging in the backend to log the root cause of the database error (e.g., constraint violations, bad queries).
+
+Modify the `POST /api/inventory` endpoint in `server.js`:
+```javascript
+app.post('/api/inventory', async (req, res) => {
+    const { name, set, quantity, purchase_price, purchase_date } = req.body;
+
+    try {
+        if (!name || !set || !quantity || !purchase_price || !purchase_date) {
+            return res.status(400).json({ error: "Missing required fields" });
+        }
+
+        const query = `
+            INSERT INTO inventory (name, set, quantity, purchase_price, purchase_date)
+            VALUES ($1, $2, $3, $4, $5)
+        `;
+
+        await db.query(query, [name, set, quantity, purchase_price, purchase_date]);
+        res.status(201).send({ message: "Card added successfully!" });
+    } catch (error) {
+        console.error("[POST /api/inventory ERROR] - Detailed Log", error); // Log the full error
+        if (error.constraint) {
+            // Handle specific database constraint errors
+            res.status(400).json({ error: `Constraint violation: ${error.constraint}` });
+        } else {
+            res.status(500).json({ error: "Database error" });
+        }
+    }
+});
+```
+
+#### **Step 2: Check Database Schema for Constraint Violations**
+Run the following command to view table constraints in PostgreSQL:
+```sql
+\d inventory
+```
+
+Look for:
+- **Unique constraints:** Are there keys enforcing uniqueness?
+- **NOT NULL constraints:** Ensure all required columns have values.
+- **Foreign key constraints:** Validate foreign keys, such as references to other tables.
+
+#### **Step 3: Verify Frontend Form Data**
+Inspect the data payload sent by the React form to ensure it matches the database schema (`inventory` table). Add logging before submitting the form:
+```javascript
+const handleSubmit = async (event) => {
+    event.preventDefault();
+    console.log("Form Data:", formData); // Log outgoing form data
+    try {
+        const response = await fetch('/api/inventory', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData),
+        });
+        const data = await response.json();
+        console.log("Server Response:", data); // Log response from server
+    } catch (err) {
+        console.error("Error adding card:", err);
+    }
+};
+```
+
+**Common Frontend-to-Backend Issues:**
+- **Purchase price type mismatch:** Backend expects `REAL`, but it’s being sent as a string.
+- **Date parsing issues:** Ensure `purchase_date` is sent in valid ISO 8601 format (`YYYY-MM-DD`).
+
+#### **Step 4: Enable Debugging in PostgreSQL**
+Enable verbose query error logging in PostgreSQL to identify issues during runtime:
+```sql
+SET client_min_messages TO DEBUG;
+```
+
+Run the query that the API performs in SQL directly to replicate the issue:
+```sql
+INSERT INTO inventory (name, set, quantity, purchase_price, purchase_date)
+VALUES ('Sol Ring', 'PIP', 5, 1.50, '2023-11-01');
+```
+
+---
+
+### **2. Debug Decklist Tab Functionality**
+
+#### **Known Issues Based on Status:**
+- Decklist creation seems partially functional on the backend.
+- The frontend is not integrated properly with CRUD operations for decklists.
+
+#### **Step 1: Smoke Test Backend Endpoints**
+Test the following endpoints manually using `Postman` or `cURL`:
+1. **GET /api/decklists**
+   ```bash
+   curl -X GET http://localhost:5000/api/decklists
+   ```
+   Ensure existing decklists are being fetched correctly.
+
+2. **POST /api/decklists**
+   ```bash
+   curl -X POST http://localhost:5000/api/decklists \
+       -H "Content-Type: application/json" \
+       -d '{"name": "Mono Red Aggro", "decklist": "4 Lightning Bolt\n4 Monastery Swiftspear"}'
+   ```
+   Check if decklists are being created with valid input.
+
+3. **PUT /api/decklists/:id**
+   ```bash
+   curl -X PUT http://localhost:5000/api/decklists/1 \
+       -H "Content-Type: application/json" \
+       -d '{"name": "Mono Red Aggro Update", "decklist": "4 Lightning Bolt\n4 Monastery Swiftspear\n4 Soul-Scar Mage"}'
+   ```
+
+4. **DELETE /api/decklists/:id**
+   ```bash
+   curl -X DELETE http://localhost:5000/api/decklists/1
+   ```
+
+Log backend errors for each endpoint in `server.js`.
+
+#### **Step 2: Frontend Integration**
+Debug the Decklist Tab component (`DecklistTab.jsx`) to ensure:
+- The React state properly reflects backend updates.
+- There are no errors rendering decklists.
+
+Add debugging in the component:
+```javascript
+useEffect(() => {
+    const fetchDecklists = async () => {
+        try {
+            const response = await fetch("/api/decklists");
+            const data = await response.json();
+            console.log("Fetched Decklists:", data); // Log fetched decklists
+            setDecklists(data);
+        } catch (err) {
+            console.error("Error fetching decklists:", err);
+        }
+    };
+    fetchDecklists();
+}, []);
+```
+
+---
+
+### **3. Optimize Database Connection Pooling**
+If database connection pooling issues are suspected, revisit `pg` pooling or add pooling to avoid transaction bottlenecks.
+
+**Enable Connection Pooling**:
+Ensure you’re using `pg.Pool` instead of multiple `pg.Client` instances:
+```javascript
+import pg from 'pg';
+const pool = new pg.Pool({
+    connectionString: process.env.DATABASE_URL,
+    max: 10, // Max simultaneous connections
+});
+
+export const query = (text, params) => pool.query(text, params);
+```
+
+Check for connection limits:
+```sql
+SHOW max_connections;
+```
+Increase the value in `postgresql.conf` if necessary.
+
+---
+
+### **4. Test Other Functionality**
+Systematically verify the rest of the app:
+1. **Sales Tracking**:
+   - Ensure sales are being logged to the `sales` table.
+2. **Unified Pricing**:
+   - Test inventory, containers, and decklists for consistent pricing.
+3. **Mobile UI**:
+   - Perform regression tests on the recent mobile optimizations.
+
+---
+
+### **5. Project Completion Checklist**
+Here’s what needs to be done based on the current status:
+- **Fix Add Card Issue**: Log detailed errors, verify payload consistency, and resolve database constraints.
+- **Decklist CRUD Operations**: Fully integrate backend endpoints and ensure the Decklist tab reflects the data in real-time.
+- **Database Connection Pooling**: Optimize the database connections to prevent crashes/failures under load.
+- **Testing**: Create comprehensive tests for every significant functionality, including inventory updates, decklist updates, sales, and pricing.
+
+---
+
+Once these critical issues are resolved, the app should be fully functional and stable in its current architecture. Let me know how you'd like to proceed or if you'd like further clarification on any step! 🚀

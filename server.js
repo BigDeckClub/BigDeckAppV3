@@ -791,8 +791,27 @@ function getVariantRank(variant) {
 
 // ============== HELPERS ==============
 function handleDbError(err, res) {
-  console.error('DB Error:', err);
-  res.status(500).json({ error: 'Database error' });
+  console.error('[DB ERROR] Full error:', err);
+  console.error('[DB ERROR] Message:', err.message);
+  console.error('[DB ERROR] Code:', err.code);
+  console.error('[DB ERROR] Detail:', err.detail);
+  console.error('[DB ERROR] Constraint:', err.constraint);
+  
+  // Provide more specific error messages
+  if (err.code === '23505') {
+    return res.status(400).json({ error: `Duplicate entry: ${err.detail || err.message}` });
+  }
+  if (err.code === '23503') {
+    return res.status(400).json({ error: `Foreign key violation: ${err.detail || err.message}` });
+  }
+  if (err.code === '22P02') {
+    return res.status(400).json({ error: `Invalid input syntax: ${err.message}` });
+  }
+  if (err.code === '23502') {
+    return res.status(400).json({ error: `Missing required field: ${err.column || err.message}` });
+  }
+  
+  res.status(500).json({ error: `Database error: ${err.message}` });
 }
 
 // ========== ACTIVITY LOGGING HELPER ==========
@@ -839,20 +858,31 @@ app.get('/api/inventory', async (req, res) => {
 });
 
 app.post('/api/inventory', async (req, res) => {
+  console.log('[INVENTORY POST] ========== NEW REQUEST ==========');
+  console.log('[INVENTORY POST] Raw body:', JSON.stringify(req.body, null, 2));
+  
   const { name, set, set_name, quantity, purchase_price, purchase_date, image_url, reorder_type } = req.body;
   
+  console.log('[INVENTORY POST] Extracted fields:', { name, set, set_name, quantity, purchase_price, purchase_date, image_url, reorder_type });
+  
   try {
+    // Validate required field: name
+    if (!name || typeof name !== 'string' || name.trim() === '') {
+      console.warn('[INVENTORY POST] Missing or invalid name');
+      return res.status(400).json({ error: 'Card name is required' });
+    }
+    
     // VALIDATION: Parse and validate quantity as positive integer
     const parsedQuantity = parseInt(quantity, 10);
     if (isNaN(parsedQuantity) || parsedQuantity <= 0) {
-      console.warn(`[INVENTORY] Invalid quantity received: ${quantity}. Rejecting request.`);
+      console.warn(`[INVENTORY POST] Invalid quantity received: ${quantity}. Rejecting request.`);
       return res.status(400).json({ 
         error: 'Quantity must be a positive integer',
         received: quantity 
       });
     }
     
-    console.log(`[INVENTORY] Inserting card: name="${name}", quantity=${parsedQuantity}, price=${purchase_price}, date=${purchase_date}`);
+    console.log(`[INVENTORY POST] Inserting card: name="${name}", set="${set}", quantity=${parsedQuantity}, price=${purchase_price}, date=${purchase_date}`);
     
     const result = await pool.query(
       `INSERT INTO inventory 
