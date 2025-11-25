@@ -107,6 +107,19 @@ function isSuspiciouslyCheap(baseCardName, normalizedName, price) {
   return price < limit;
 }
 
+function isSuspiciouslyExpensive(baseCardName, price) {
+  const expensiveThresholds = {
+    "lightning bolt": 50,
+    "sol ring": 50,
+  };
+
+  const key = baseCardName.toLowerCase().trim();
+  const limit = expensiveThresholds[key];
+
+  if (!limit) return false;
+  return price > limit;
+}
+
 function isSuspiciousByOrdering(index, firstNormalIndex) {
   if (firstNormalIndex == null) return false;
   return index > firstNormalIndex;
@@ -119,10 +132,17 @@ function classifyVariantEnhanced(product, index, firstNormalIndex, baseCardName)
 
   if (result !== "normal") return result;
 
+  // Check for suspiciously HIGH prices first (premium/graded editions)
+  if (isSuspiciouslyExpensive(baseCardName, price)) {
+    return "special";
+  }
+
+  // Check for suspiciously LOW prices (showcase/alternate editions)
   if (isSuspiciouslyCheap(baseCardName, normalized, price)) {
     return "special";
   }
 
+  // Check if it appears after the first normal edition
   if (isSuspiciousByOrdering(index, firstNormalIndex)) {
     return "special";
   }
