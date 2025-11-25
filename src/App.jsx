@@ -91,6 +91,7 @@ function MTGInventoryTrackerContent() {
   const [expandedAlerts, setExpandedAlerts] = useState({});
   const [expandedSoldContainers, setExpandedSoldContainers] = useState({});
   const [expandedCardCopies, setExpandedCardCopies] = useState({});
+  const [showSaleAnimation, setShowSaleAnimation] = useState(false);
 
   const calculateDecklistPrices = async (decklist) => {
     try {
@@ -840,7 +841,11 @@ function MTGInventoryTrackerContent() {
       setSelectedContainerForSale(null);
       setSalePrice("");
       setSuccessMessage("Container sold! Sale recorded.");
-      setTimeout(() => setSuccessMessage(""), 3000);
+      setShowSaleAnimation(true);
+      setTimeout(() => {
+        setSuccessMessage("");
+        setShowSaleAnimation(false);
+      }, 3000);
     } catch (error) {
       setSuccessMessage("Error recording sale: " + error.message);
       setTimeout(() => setSuccessMessage(""), 3000);
@@ -923,8 +928,8 @@ function MTGInventoryTrackerContent() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white">
       <FloatingDollarSigns 
-        show={successMessage && !successMessage.includes('Error')} 
-        onAnimationEnd={() => setSuccessMessage('')}
+        show={showSaleAnimation} 
+        onAnimationEnd={() => setShowSaleAnimation(false)}
       />
       {/* Navigation */}
       <nav className="bg-gradient-to-r from-slate-900 to-slate-800 border-b border-slate-700 sticky top-0 z-50 shadow-xl shadow-slate-900/50">

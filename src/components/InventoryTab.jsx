@@ -3,7 +3,6 @@ import PropTypes from 'prop-types';
 import { Plus, Trash2, X } from 'lucide-react';
 import { usePriceCache } from "../context/PriceCacheContext";
 import { normalizeCardName, normalizeSetCode } from "../lib/fetchCardPrices";
-import { FloatingDollarSigns } from "./FloatingDollarSigns";
 
 export const InventoryTab = ({
   inventory,
@@ -35,10 +34,6 @@ export const InventoryTab = ({
 }) => {
   return (
     <div className="space-y-6">
-      <FloatingDollarSigns 
-        show={successMessage && !successMessage.includes('Error')} 
-        onAnimationEnd={() => setSuccessMessage('')}
-      />
       {successMessage && successMessage.includes('Error') && (
         <div className="rounded-lg p-4 border flex items-center justify-between bg-red-900 bg-opacity-30 border-red-500 text-red-200">
           <span>{successMessage}</span>
