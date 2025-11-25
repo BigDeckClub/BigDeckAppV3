@@ -328,61 +328,158 @@ app.post('/api/settings/:key', async (req, res) => {
   }
 });
 
-// Card prices endpoint using MTGGoldfish search API
+// Smart Scryfall fallback that prefers recent, affordable printings
+const getScryfallPriceWithSmartSetSelection = async (cardName, requestedSet) => {
+  try {
+    // First, try the requested set
+    try {
+      const url = `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(cardName)}&set=${requestedSet.toLowerCase()}`;
+      const response = await fetch(url);
+      if (response.ok) {
+        const card = await response.json();
+        const price = parseFloat(card.prices?.usd) || 0;
+        if (price > 0) {
+          return {
+            tcg: `$${price.toFixed(2)}`,
+            ck: `$${(price * 1.15).toFixed(2)}`,
+            source: `Scryfall (${requestedSet})`
+          };
+        }
+      }
+    } catch (e) {
+      console.log('Requested set not found, searching for cheapest printing...');
+    }
+    
+    // If that fails, search ALL printings and find the cheapest recent one
+    const searchUrl = `https://api.scryfall.com/cards/search?q=!"${cardName}"&unique=prints&order=released`;
+    const searchResponse = await fetch(searchUrl);
+    const searchData = await searchResponse.json();
+    
+    if (!searchData.data || searchData.data.length === 0) {
+      throw new Error('Card not found');
+    }
+    
+    // Filter to cards with USD prices, prefer recent sets
+    const cardsWithPrices = searchData.data
+      .filter(card => card.prices?.usd && parseFloat(card.prices.usd) > 0)
+      .map(card => ({
+        set: card.set,
+        setName: card.set_name,
+        price: parseFloat(card.prices.usd),
+        releaseDate: card.released_at,
+        // Prefer standard-legal, recent sets
+        isRecent: new Date(card.released_at) > new Date('2020-01-01'),
+        isStandard: ['standard', 'core'].includes(card.set_type)
+      }))
+      .sort((a, b) => {
+        // Sort by: recent > standard > cheapest
+        if (a.isRecent !== b.isRecent) return b.isRecent - a.isRecent;
+        if (a.isStandard !== b.isStandard) return b.isStandard - a.isStandard;
+        return a.price - b.price;
+      });
+    
+    if (cardsWithPrices.length === 0) {
+      throw new Error('No cards with prices found');
+    }
+    
+    const bestCard = cardsWithPrices[0];
+    console.log(`Selected ${bestCard.setName} (${bestCard.set}) at $${bestCard.price}`);
+    
+    return {
+      tcg: `$${bestCard.price.toFixed(2)}`,
+      ck: `$${(bestCard.price * 1.15).toFixed(2)}`,
+      source: `Scryfall (${bestCard.set} - cheapest recent)`
+    };
+    
+  } catch (error) {
+    console.error('Scryfall fallback error:', error);
+    return { tcg: 'N/A', ck: 'N/A', source: 'Error' };
+  }
+};
+
+// Card prices endpoint with MTGGoldfish HTML scraping and smart fallback
 app.get('/api/prices/:cardName/:setCode', async (req, res) => {
   const { cardName, setCode } = req.params;
   
+  console.log(`\n=== PRICE REQUEST: ${cardName} (${setCode}) ===`);
+  
+  // Strategy 1: Try MTGGoldfish direct price page with HTML scraping
   try {
-    // Use MTGGoldfish search API to find pricing data
-    const searchUrl = `https://www.mtggoldfish.com/widgets/autocard/${encodeURIComponent(cardName)}`;
+    const formattedName = cardName.replace(/\s+/g, '_');
+    const mtgGoldfishUrl = `https://www.mtggoldfish.com/price/${setCode}/${formattedName}`;
     
-    const response = await fetch(searchUrl, {
+    console.log(`Trying MTGGoldfish: ${mtgGoldfishUrl}`);
+    
+    const response = await fetch(mtgGoldfishUrl, {
       headers: {
-        'Accept': 'application/json',
-        'User-Agent': 'Mozilla/5.0'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'text/html,application/json'
       }
     });
     
     if (response.ok) {
-      const data = await response.json();
+      const html = await response.text();
       
-      // Look for the specific set in the results
-      const cardData = data.find(card => 
-        card.set?.toUpperCase() === setCode.toUpperCase()
-      );
+      // Look for embedded price data in the HTML - Card Kingdom and TCGPlayer prices
+      const ckMatch = html.match(/Card\s+Kingdom[^$]*\$\s*([0-9.]+)/i);
+      const tcgMatch = html.match(/TCG\s*Player[^$]*\$\s*([0-9.]+)/i);
       
-      if (cardData) {
-        const tcgPrice = cardData.tcgplayer_price ? `$${parseFloat(cardData.tcgplayer_price).toFixed(2)}` : 'N/A';
-        const ckPrice = cardData.cardkingdom_price ? `$${parseFloat(cardData.cardkingdom_price).toFixed(2)}` : 'N/A';
+      if (ckMatch || tcgMatch) {
+        const ckPrice = ckMatch ? parseFloat(ckMatch[1]) : 0;
+        const tcgPrice = tcgMatch ? parseFloat(tcgMatch[1]) : 0;
         
-        res.json({ tcg: tcgPrice, ck: ckPrice });
-        return;
+        console.log(`✓ MTGGoldfish success: TCG=$${tcgPrice}, CK=$${ckPrice}`);
+        
+        return res.json({
+          tcg: tcgPrice > 0 ? `$${tcgPrice.toFixed(2)}` : 'N/A',
+          ck: ckPrice > 0 ? `$${ckPrice.toFixed(2)}` : (tcgPrice > 0 ? `$${(tcgPrice * 1.15).toFixed(2)}` : 'N/A')
+        });
       }
     }
     
-    // Fallback: Use Scryfall for basic pricing
-    const scryfallUrl = `https://api.scryfall.com/cards/search?q=!"${cardName}"+set:${setCode.toLowerCase()}&unique=prints`;
-    const scryfallResponse = await fetch(scryfallUrl);
-    
-    if (scryfallResponse.ok) {
-      const scryfallData = await scryfallResponse.json();
-      
-      if (scryfallData.data && scryfallData.data.length > 0) {
-        const card = scryfallData.data[0];
-        const tcgPrice = card.prices?.usd ? `$${card.prices.usd}` : 'N/A';
-        const ckPrice = card.prices?.usd ? `$${(parseFloat(card.prices.usd) * 1.15).toFixed(2)}` : 'N/A';
-        
-        res.json({ tcg: tcgPrice, ck: ckPrice });
-        return;
-      }
-    }
-    
-    res.json({ tcg: 'N/A', ck: 'N/A' });
-    
+    console.log(`✗ MTGGoldfish failed (${response.status})`);
   } catch (error) {
-    console.error('Error fetching prices:', error);
-    res.json({ tcg: 'N/A', ck: 'N/A' });
+    console.log(`✗ MTGGoldfish error: ${error.message}`);
   }
+  
+  // Strategy 2: Scryfall with smart set selection
+  console.log('Falling back to Scryfall with smart set selection...');
+  const scryfallResult = await getScryfallPriceWithSmartSetSelection(cardName, setCode);
+  res.json(scryfallResult);
+});
+
+// Debug endpoint to test MTGGoldfish responses
+app.get('/api/debug/mtggoldfish/:cardName/:setCode?', async (req, res) => {
+  const { cardName, setCode } = req.params;
+  const results = {};
+  
+  // Test MTGGoldfish direct price endpoint
+  try {
+    const formattedName = cardName.replace(/\s+/g, '_');
+    const mtgGoldfishUrl = `https://www.mtggoldfish.com/price/${setCode || 'LEA'}/${formattedName}`;
+    console.log('Testing MTGGoldfish URL:', mtgGoldfishUrl);
+    
+    const response = await fetch(mtgGoldfishUrl);
+    const html = await response.text();
+    
+    // Look for price patterns
+    const ckMatch = html.match(/Card\s+Kingdom[^$]*\$\s*([0-9.]+)/i);
+    const tcgMatch = html.match(/TCG\s*Player[^$]*\$\s*([0-9.]+)/i);
+    
+    results.mtgGoldfish = {
+      status: response.status,
+      htmlLength: html.length,
+      foundCK: !!ckMatch,
+      foundTCG: !!tcgMatch,
+      ckPrice: ckMatch ? ckMatch[1] : null,
+      tcgPrice: tcgMatch ? tcgMatch[1] : null,
+      htmlSnippet: html.substring(0, 500)
+    };
+  } catch (e) {
+    results.mtgGoldfish = { error: e.message };
+  }
+  
+  res.json(results);
 });
 
 
