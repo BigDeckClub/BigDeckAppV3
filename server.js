@@ -665,11 +665,35 @@ app.get('/api/containers', async (req, res) => {
 app.post('/api/containers', async (req, res) => {
   const { name, decklist_id } = req.body;
   try {
+    // Fetch the decklist to get its cards
+    const deckResult = await pool.query('SELECT deck_data FROM decklists WHERE id = $1', [decklist_id]);
+    if (deckResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Decklist not found' });
+    }
+    
+    const deckData = deckResult.rows[0].deck_data;
+    const cards = Array.isArray(deckData) ? deckData : [];
+    
     const result = await pool.query(
-      'INSERT INTO containers (name, decklist_id) VALUES ($1, $2) RETURNING *',
-      [name, decklist_id]
+      'INSERT INTO containers (name, decklist_id, cards) VALUES ($1, $2, $3) RETURNING *',
+      [name, decklist_id, JSON.stringify(cards)]
     );
     res.json(result.rows[0]);
+  } catch (err) {
+    handleDbError(err, res);
+  }
+});
+
+// Get container items/cards
+app.get('/api/containers/:id/items', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT cards FROM containers WHERE id = $1', [req.params.id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Container not found' });
+    }
+    
+    const cards = result.rows[0].cards;
+    res.json(Array.isArray(cards) ? cards : []);
   } catch (err) {
     handleDbError(err, res);
   }
