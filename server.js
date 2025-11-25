@@ -328,6 +328,57 @@ app.post('/api/settings/:key', async (req, res) => {
   }
 });
 
+// Helper: Validate if a price is reasonable
+function isValidPrice(price) {
+  return price > 0.05 && price < 500;
+}
+
+// Helper: Extract numeric price from string
+function extractNumericPrice(priceStr) {
+  return parseFloat(priceStr.replace('$', ''));
+}
+
+// Helper: Resolve Card Kingdom price from multiple extraction methods
+function resolveCKPrice(selectorPrice, regexPrices, html) {
+  // Test 1: Check if selector worked
+  if (selectorPrice && isValidPrice(selectorPrice)) {
+    console.log(`  [Test 1 ✓] Selector found valid price: $${selectorPrice.toFixed(2)}`);
+    return `$${selectorPrice.toFixed(2)}`;
+  }
+  if (selectorPrice) console.log(`  [Test 1 ✗] Selector found invalid price: ${selectorPrice}`);
+
+  // Test 2: Check if regex returned results
+  if (!regexPrices || regexPrices.length === 0) {
+    console.log(`  [Test 2 ✗] Regex returned 0 prices — CK markup may have changed`);
+  } else {
+    console.log(`  [Test 2 ✓] Regex found ${regexPrices.length} price candidates`);
+    
+    // Extract and filter numeric prices
+    const numericPrices = regexPrices
+      .map(p => extractNumericPrice(p))
+      .filter(p => isValidPrice(p));
+    
+    if (numericPrices.length > 0) {
+      // CK usually lists lowest price first
+      const lowestPrice = Math.min(...numericPrices);
+      console.log(`  [Test 3 ✓] Sanity check passed — using lowest valid price: $${lowestPrice.toFixed(2)}`);
+      return `$${lowestPrice.toFixed(2)}`;
+    }
+  }
+
+  // Test 3: Check for specific status indicators (third-level fallback)
+  if (/sold out/i.test(html)) {
+    console.log(`  [Escape 1] Found "Sold Out" indicator in HTML`);
+    return 'Sold Out';
+  }
+  if (/coming soon/i.test(html)) {
+    console.log(`  [Escape 2] Found "Coming Soon" indicator in HTML`);
+    return 'Unavailable';
+  }
+
+  return 'N/A';
+}
+
 // Card prices endpoint using Scryfall for TCG and Card Kingdom search for CK prices
 app.get('/api/prices/:cardName/:setCode', async (req, res) => {
   const { cardName, setCode } = req.params;
@@ -371,46 +422,41 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
         const html = await ckRes.text();
         const $ = load(html);
         
-        // Find the first product card's price
-        const firstProduct = $('div.productGrid').first();
+        let selectorPrice = null;
+        let regexPrices = [];
+
+        // Primary: Use most reliable selector (span.stylePrice)
+        const priceElement = $('span.stylePrice').first();
         
-        if (firstProduct.length > 0) {
-          // Look for price within the first product
-          const priceElement = firstProduct.find('span.stylePrice, .stylePrice, [data-price]').first();
+        if (priceElement.length > 0) {
+          const priceText = priceElement.text().trim();
+          const priceMatch = priceText.match(/\$?([0-9]+\.[0-9]{2})/);
+          if (priceMatch) {
+            selectorPrice = parseFloat(priceMatch[1]);
+          }
+        }
+
+        // Fallback: Smart regex extraction scoped to first product card
+        if (!selectorPrice) {
+          const productCard = $('div.productCard').first();
+          const searchHtml = productCard.length > 0 ? productCard.html() : html;
           
-          if (priceElement.length > 0) {
-            const priceText = priceElement.text().trim();
-            const priceMatch = priceText.match(/\$?([0-9]+\.[0-9]{2})/);
-            
-            if (priceMatch) {
-              ckPrice = `$${parseFloat(priceMatch[1]).toFixed(2)}`;
-              console.log(`✓ Found CK price from first product: ${ckPrice}`);
-            }
+          const priceMatches = searchHtml.match(/\$([0-9]+\.[0-9]{2})/g);
+          if (priceMatches) {
+            regexPrices = priceMatches;
           }
         }
+
+        // Resolve using unified resolver
+        ckPrice = resolveCKPrice(selectorPrice, regexPrices, html);
         
-        // Fallback: Look for any price on the page using regex
-        if (ckPrice === 'N/A') {
-          const allPrices = html.match(/\$([0-9]+\.[0-9]{2})/g);
-          if (allPrices && allPrices.length > 0) {
-            // Extract the first price that appears to be reasonable
-            // Skip very large prices (likely errors or high-end cards)
-            for (const priceStr of allPrices) {
-              const price = parseFloat(priceStr.replace('$', ''));
-              if (price > 0 && price < 100) {
-                ckPrice = priceStr;
-                console.log(`✓ Found CK price from HTML: ${ckPrice}`);
-                break;
-              }
-            }
-          }
+        if (ckPrice !== 'N/A') {
+          console.log(`✓ Found CK price: ${ckPrice}`);
         }
-        
       }
     } catch (ckError) {
       console.log(`✗ CK fetch failed: ${ckError.message}`);
     }
-    
     
     console.log(`Final result: TCG=${tcgPrice}, CK=${ckPrice}\n`);
     
