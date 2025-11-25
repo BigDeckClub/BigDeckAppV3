@@ -24,16 +24,34 @@ function normalizeEditionName(name) {
 function extractEditionFromUrl(url) {
   try {
     if (!url) return null;
-    const parts = url.split("/mtg/");
-    if (parts.length < 2) return null;
+    // normalize, drop query/hash
+    const clean = url.split('?')[0].split('#')[0].toLowerCase();
 
-    const after = parts[1]; // e.g. "beta/lightning-bolt"
-    const editionSlug = after.split("/")[0]; // "beta"
+    // Primary pattern: /mtg/<edition>/<card>
+    let m = clean.match(/\/mtg\/([^\/]+)\/?/);
+    if (m && m[1]) {
+      return normalizeEditionName(m[1].replace(/[-_]/g, ' '));
+    }
 
-    if (!editionSlug || editionSlug.length === 0) return null;
+    // Secondary pattern: /catalog/product/<edition-slug>-<card>-<id> or /product/<edition>/<slug>
+    m = clean.match(/\/product[s]?\//) || clean.match(/\/catalog\/product\//);
+    if (m) {
+      // try to extract everything after /product or /catalog/product
+      const after = clean.split(m[0])[1];
+      if (after) {
+        const slug = after.split('/')[0];
+        if (slug) return normalizeEditionName(slug.replace(/[-_]/g, ' '));
+      }
+    }
 
-    return normalizeEditionName(editionSlug);
-  } catch {
+    // Tertiary: many CK pages embed edition as the first path segment after domain
+    const parts = clean.replace(/^https?:\/\/[^\/]+/,'').split('/').filter(Boolean);
+    if (parts.length >= 2 && parts[0] === 'mtg') {
+      return normalizeEditionName(parts[1]);
+    }
+
+    return null;
+  } catch (e) {
     return null;
   }
 }
@@ -41,22 +59,36 @@ function extractEditionFromUrl(url) {
 // Extract product URL with specific fallback order
 function extractProductUrl($, productElem) {
   // 1. Anchors with /mtg/ in href (most reliable)
-  const direct = $(productElem).find('a[href*="/mtg/"]').attr('href');
-  if (direct) return direct;
+  let href = $(productElem).find('a[href*="/mtg/"]').attr('href');
+  if (!href) {
+    // 2. check common data attributes
+    href = $(productElem).attr('data-href') ||
+           $(productElem).attr('data-product-href') ||
+           $(productElem).attr('data-url') ||
+           $(productElem).attr('href');
+  }
 
-  // 2. data-href attributes
-  const dataHref = $(productElem).attr('data-href');
-  if (dataHref) return dataHref;
+  // 3. Title link inside product card (specific class)
+  if (!href) {
+    href = $(productElem).find('.productCard__title a, .product-card__title a, .card-title a').attr('href');
+  }
 
-  // 3. title link inside product card
-  const titleLink = $(productElem).find('.productCard__title a').attr('href');
-  if (titleLink) return titleLink;
+  // 4. Fallback: first anchor tag
+  if (!href) {
+    href = $(productElem).find('a').attr('href');
+  }
 
-  // 4. fallback: first anchor tag
-  const anyLink = $(productElem).find('a').attr('href');
-  if (anyLink) return anyLink;
+  if (!href) return null;
 
-  return null;
+  // Resolve relative hrefs to absolute using Card Kingdom base
+  try {
+    const base = 'https://www.cardkingdom.com';
+    // If already absolute, new URL will succeed; if relative, new URL(base, href) resolves it.
+    const abs = new URL(href, base).href;
+    return abs;
+  } catch (e) {
+    return href;
+  }
 }
 
 // Extract edition from DOM-based sources (fallback only, URL extraction should be primary)
@@ -658,12 +690,14 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
           if (name && name.includes(target)) {
             const numericPrice = rawPrice ? extractNumericPrice(rawPrice) : 0;
             if (isValidPrice(numericPrice)) {
+              const productUrl = extractProductUrl($, el);
               rawProducts.push({ 
                 name, 
                 price: numericPrice, 
                 edition, 
                 quantity,
                 condition,
+                url: productUrl,
                 index: rawProducts.length 
               });
             }
@@ -676,15 +710,21 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
           console.log(`   [EDITION DEBUG] No editions extracted from any products`);
         }
         
+        // Debug: check edition extraction success rate
+        const nullEditionProducts = rawProducts.filter(p => !p.edition);
+        console.log(`   [DEBUG] products without edition: ${nullEditionProducts.length}/${rawProducts.length}`);
+        if (nullEditionProducts.length > 0 && nullEditionProducts.length <= 5) {
+          console.log(`   [DEBUG URLS] null edition items: ${nullEditionProducts.slice(0, 5).map(p => `"${p.name}" (${p.url || 'no-url'})`).join(', ')}`);
+        }
+
         // PASS 2: Determine baseline price from "set" edition types only
-        // Filter for: (1) "set" type editions, (2) NM or LP condition, (3) take cheapest
         let baselinePrice = null;
         const setCandidates = [];
         
         for (const p of rawProducts) {
           const editionType = classifyEdition(p.edition);
           const cond = (p.condition || "unknown").toUpperCase();
-          
+        
           // Only include "set" editions, skip HP/MP condition
           if (editionType !== "set") continue;
           if (cond === "HP" || cond === "MP") continue;
@@ -694,7 +734,30 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
         
         if (setCandidates.length > 0) {
           setCandidates.sort((a, b) => a - b);
-          baselinePrice = setCandidates[0];
+          baselinePrice = setCandidates[0]; // cheapest legitimate set edition
+        } else {
+          // Fallback: pick median price among non-special-looking items (exclude clear variant keywords)
+          const fallbackCandidates = rawProducts
+            .filter(p => {
+              const nameLower = (p.name || '').toLowerCase();
+              // exclude clear variant names contained in the product name
+              if (DEFAULT_BLACKLIST.some(kw => nameLower.includes(kw))) return false;
+              // exclude poor conditions
+              const cond = (p.condition || "unknown").toUpperCase();
+              if (cond === "HP" || cond === "MP") return false;
+              return isValidPrice(p.price);
+            })
+            .map(p => p.price)
+            .sort((a, b) => a - b);
+
+          if (fallbackCandidates.length > 0) {
+            // choose the median (more robust than absolute cheapest)
+            const mid = Math.floor((fallbackCandidates.length - 1) / 2);
+            baselinePrice = fallbackCandidates[mid];
+            console.log(`   [FALLBACK BASELINE] using median fallback price: $${baselinePrice.toFixed(2)} from ${fallbackCandidates.length} candidates`);
+          } else {
+            baselinePrice = null;
+          }
         }
         
         const globalPriceContext = { lowestNormalPrice: baselinePrice };
