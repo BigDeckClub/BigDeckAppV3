@@ -340,22 +340,25 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
     const scryfallRes = await fetch(scryfallUrl);
     
     let tcgPrice = 'N/A';
+    let setName = '';
     
     if (scryfallRes.ok) {
       const scryfallData = await scryfallRes.json();
       const price = parseFloat(scryfallData.prices?.usd);
       if (price > 0) {
         tcgPrice = `$${price.toFixed(2)}`;
-        console.log(`✓ Scryfall TCG price: ${tcgPrice}`);
       }
+      setName = scryfallData.set_name;
+      console.log(`Scryfall: ${scryfallData.name} [${scryfallData.set_name}] - TCG: ${tcgPrice}`);
     }
     
-    // Step 2: Get Card Kingdom price from their search
+    // Step 2: Get Card Kingdom price
     let ckPrice = 'N/A';
     
     try {
-      // Card Kingdom's search endpoint
-      const ckSearchUrl = `https://www.cardkingdom.com/catalog/search?search=header&filter%5Bname%5D=${encodeURIComponent(cardName)}`;
+      // Add set name to search to get more specific results
+      const searchTerm = setName ? `${cardName} ${setName}` : cardName;
+      const ckSearchUrl = `https://www.cardkingdom.com/catalog/search?search=header&filter%5Bname%5D=${encodeURIComponent(searchTerm)}`;
       
       console.log(`Fetching CK: ${ckSearchUrl}`);
       
@@ -368,17 +371,42 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
       
       if (ckRes.ok) {
         const html = await ckRes.text();
+        const $ = load(html);
         
-        // Look for price in the HTML
-        // Card Kingdom uses format: <span class="stylePrice">$0.35</span>
-        const priceMatches = html.match(/class="stylePrice">\$([0-9.]+)</g);
+        // Find the first product card's price
+        // Card Kingdom uses structure: <div class="productGrid"> with price in a specific element
+        const firstProduct = $('div.productGrid').first();
         
-        if (priceMatches && priceMatches.length > 0) {
-          // Get the first (cheapest/most relevant) price
-          const match = priceMatches[0].match(/\$([0-9.]+)/);
-          if (match) {
-            ckPrice = `$${parseFloat(match[1]).toFixed(2)}`;
-            console.log(`✓ Found CK price: ${ckPrice}`);
+        if (firstProduct.length > 0) {
+          // Look for price within the first product
+          // Card Kingdom typically shows prices like: <span class="stylePrice">$0.35</span>
+          const priceElement = firstProduct.find('span.stylePrice, .stylePrice, [data-price]').first();
+          
+          if (priceElement.length > 0) {
+            const priceText = priceElement.text().trim();
+            const priceMatch = priceText.match(/\$?([0-9]+\.[0-9]{2})/);
+            
+            if (priceMatch) {
+              ckPrice = `$${parseFloat(priceMatch[1]).toFixed(2)}`;
+              console.log(`✓ Found CK price from first product: ${ckPrice}`);
+            }
+          }
+        }
+        
+        // If still not found, look for any price on the page (fallback)
+        if (ckPrice === 'N/A') {
+          const allPrices = html.match(/\$([0-9]+\.[0-9]{2})/g);
+          if (allPrices && allPrices.length > 0) {
+            // Extract the first price that appears to be a product price (not from UI elements)
+            // Skip very large prices (likely errors or high-end cards)
+            for (const priceStr of allPrices) {
+              const price = parseFloat(priceStr.replace('$', ''));
+              if (price > 0 && price < 100) {
+                ckPrice = priceStr;
+                console.log(`✓ Found CK price from first reasonable match: ${ckPrice}`);
+                break;
+              }
+            }
           }
         }
       }
@@ -386,14 +414,14 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
       console.log(`✗ CK fetch failed: ${ckError.message}`);
     }
     
-    // If CK price not found, estimate from TCG
+    // Fallback to estimate
     if (ckPrice === 'N/A' && tcgPrice !== 'N/A') {
       const tcgValue = parseFloat(tcgPrice.replace('$', ''));
       ckPrice = `$${(tcgValue * 1.15).toFixed(2)}`;
       console.log(`Using estimated CK price: ${ckPrice}`);
     }
     
-    console.log(`Final: TCG=${tcgPrice}, CK=${ckPrice}`);
+    console.log(`Final result: TCG=${tcgPrice}, CK=${ckPrice}\n`);
     
     res.json({ tcg: tcgPrice, ck: ckPrice });
     
