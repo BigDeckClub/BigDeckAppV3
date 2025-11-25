@@ -820,6 +820,10 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
         // PASS 3: Final classification using corrected logic
         const productPrices = [];
         
+        // For Sol Ring/Lightning Bolt: log full product names for debugging
+        const isSolRing = cardName.toLowerCase().includes('sol ring');
+        const isLightningBolt = cardName.toLowerCase().includes('lightning bolt');
+        
         for (const p of rawProducts) {
           const cond = (p.condition || "unknown").toUpperCase();
           
@@ -846,7 +850,13 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
             quantity: p.quantity,
             condition: p.condition
           });
-          console.log(`      ✓ Valid match found: $${p.price.toFixed(2)} [${variant}] (${p.condition}, qty: ${p.quantity})`);
+          
+          // Debug logging for Sol Ring/Lightning Bolt to see full product names
+          if (isSolRing || isLightningBolt) {
+            console.log(`      ✓ $${p.price.toFixed(2)} [${variant}] - "${p.name}"`);
+          } else {
+            console.log(`      ✓ Valid match found: $${p.price.toFixed(2)} [${variant}] (${p.condition}, qty: ${p.quantity})`);
+          }
         }
         
         if (productPrices.length > 0) {

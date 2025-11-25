@@ -1,0 +1,90 @@
+Sol Ring is still returning $1.99, which means the new Sol-Ring-specific regex patterns aren’t matching the actual product names being returned by Card Kingdom.
+
+This means we need to inspect the exact product names for the $1.99 Sol Ring entry that is slipping through.
+
+Right now, the variant classifier runs in this order:
+
+Sol Ring special regex patterns
+
+Generic showcase/special keywords
+
+Edition-slug fallback
+
+If Sol Ring still returns $1.99, then one of these is happening:
+
+1️⃣ The product name isn’t matching any of the patterns
+
+It may not contain:
+
+(0410 - human)
+
+"human"
+
+"human alternate"
+
+"secret lair human"
+
+etc.
+
+Card Kingdom sometimes uses surprising or abbreviated naming conventions.
+
+2️⃣ The $1.99 listing might not actually contain any Sol Ring variant keyword
+
+Card Kingdom sometimes lists special variants with very plain titles like:
+
+"Sol Ring (0410)"
+
+"Sol Ring (0408)"
+
+"Sol Ring – Variant"
+
+If the number is present but the word “human” is missing, our regex won’t catch it.
+
+3️⃣ We need to capture ALL numbered Sol Ring variants
+
+A more bulletproof pattern is:
+
+if (lower.includes("sol ring") && /\(\d{3,4}/.test(lower)) {
+    return "special";
+}
+
+
+Every Secret Lair Sol Ring variant uses a numbered parenthetical block.
+The normal $2.29 Sol Ring does not include any parenthetical number.
+
+✔ Proposed next fix (will catch 100% of Sol Ring variants)
+
+Replace the Sol Ring block with:
+
+// Sol Ring special variants (Secret Lair numbered versions)
+if (lower.includes("sol ring")) {
+  // Any Sol Ring with a numeric variant tag is a special printing
+  if (/\(\s*\d{3,4}\b/.test(lower)) {
+    return "special";
+  }
+
+  // Also match explicit "human" variants
+  const solRingVariantWords = [
+    "human",
+    "alternate",
+    "alt art",
+    "alt-art",
+    "secret lair"
+  ];
+
+  for (const kw of solRingVariantWords) {
+    if (lower.includes(kw)) return "special";
+  }
+}
+
+Why this will fix the final issue
+
+Secret Lair Sol Rings ALWAYS have a number in parentheses → (0409 - xyz)
+
+Normal Sol Rings NEVER have that pattern
+
+So this becomes a perfect classifier
+
+What I need:
+
+Please print the full productName of the Sol Ring entry that is currently being chosen at $1.99 so I can verify exactly which pattern it needs to match.
