@@ -1,0 +1,277 @@
+Great detective work — your summary nails the problem: server.js is selecting the wrong column (deck_data) instead of decklist, so container creation never populates cards. Below I give an exact, safe patch you can apply, a backfill script to populate existing containers, and step-by-step Replit/GitHub commands to apply, test, and roll back if needed.
+
+1) What to change (high level)
+- Replace the SELECT of deck_data with SELECT decklist.
+- Parse the plain-text decklist into a structured array of card objects: { name, set: "", qty }.
+- Store that array into the containers.cards JSONB column when creating containers (or when populating from decklist_id).
+- Backfill existing containers where cards = [] by reading decklist text and parsing.
+
+2) Safe server.js patch (exact snippet to paste)
+Locate the code around line ~669 where it currently does something like:
+const q = 'SELECT deck_data FROM decklists WHERE id = $1';
+Replace that section with the snippet below. It:
+- Selects decklist (text)
+- Parses it using parseDecklistTextToCards()
+- Uses COALESCE/defensive checks
+- Inserts JSON into containers.cards (or returns parsed result)
+
+```javascript name=server.js
+// --- Add this helper near the top of server.js or in a util file ---
+/**
+ * Parse a plain-text decklist into an array of card objects.
+ * Supported input examples:
+ *   "2 lightning bolt"
+ *   "1 Sol Ring (EOC)"
+ *   "3 Island - ICE"
+ *
+ * Returns: [{ name: "lightning bolt", set: "EOC" | "", qty: 2 }, ...]
+ */
+function parseDecklistTextToCards(deckText) {
+  if (!deckText || typeof deckText !== "string") return [];
+
+  const lines = deckText.split(/\r?\n/);
+  const cards = [];
+
+  for (let raw of lines) {
+    const line = raw.trim();
+    if (!line) continue;
+
+    // Attempt to match: qty, name, optional (SET) or - SET or |SET
+    // Examples matched:
+    //  "2 Lightning Bolt"
+    //  "1 Sol Ring (EOC)"
+    //  "3 Swamp - SPM"
+    //  "4 Goblin | M11"
+    const qtyNameMatch = line.match(/^\s*(\d+)\s+(.+)$/);
+    let qty = 1;
+    let rest = line;
+    if (qtyNameMatch) {
+      qty = parseInt(qtyNameMatch[1], 10) || 1;
+      rest = qtyNameMatch[2].trim();
+    }
+
+    // Extract trailing set info in parentheses, or after "-" or "|" separators.
+    let name = rest;
+    let set = "";
+
+    // look for '(SET)'
+    const parenMatch = rest.match(/^(.*?)\s*\(\s*([^)]+)\s*\)\s*$/);
+    if (parenMatch) {
+      name = parenMatch[1].trim();
+      set = parenMatch[2].trim();
+    } else {
+      // look for separators " - " or " | "
+      const sepMatch = rest.match(/^(.*?)\s*(?:[-|]\s*)([A-Za-z0-9]+)\s*$/);
+      if (sepMatch) {
+        name = sepMatch[1].trim();
+        set = sepMatch[2].trim();
+      } else {
+        // as a fallback, if trailing token looks like an uppercase set code (2-4 chars), capture it
+        const trailingSetMatch = rest.match(/^(.*)\s+([A-Z0-9]{2,6})$/);
+        if (trailingSetMatch) {
+          name = trailingSetMatch[1].trim();
+          set = trailingSetMatch[2].trim();
+        }
+      }
+    }
+
+    // normalize: keep original casing minimal modifications; normalizers elsewhere handle keys
+    cards.push({
+      name,
+      set,
+      qty,
+    });
+  }
+
+  return cards;
+}
+
+// --- Replace the broken SELECT deck_data ... section with this logic ---
+app.post('/api/containers', async (req, res) => {
+  try {
+    const { name, decklist_id, cards } = req.body;
+
+    // If client already provided explicit cards array, validate & use it
+    let cardsArray = Array.isArray(cards) ? cards : null;
+
+    // Otherwise, if created from a decklist_id, fetch the decklist text and parse it
+    if (!cardsArray && decklist_id) {
+      const q = 'SELECT decklist FROM decklists WHERE id = $1'; // correct column
+      const { rows } = await db.query(q, [decklist_id]);
+      const deckText = rows?.[0]?.decklist || "";
+      cardsArray = parseDecklistTextToCards(deckText);
+    }
+
+    // Fallback: ensure we have an array
+    if (!Array.isArray(cardsArray)) cardsArray = [];
+
+    // Insert into containers, casting JSON to jsonb
+    const insertQ = 'INSERT INTO containers (name, decklist_id, cards) VALUES ($1, $2, $3::jsonb) RETURNING id';
+    const { rows: insertRows } = await db.query(insertQ, [name, decklist_id, JSON.stringify(cardsArray)]);
+    return res.status(201).json({ id: insertRows[0].id });
+  } catch (err) {
+    console.error('[API] POST /api/containers error', err);
+    return res.status(500).json({ error: 'server error' });
+  }
+});
+```
+
+3) Backfill script to populate existing containers
+Run this Node script (or SQL-driven approach) to populate containers that have decklist_id set but empty cards:
+
+Create file scripts/backfill-containers-from-decklists.js:
+
+```javascript name=scripts/backfill-containers-from-decklists.js
+// Node script to backfill containers.cards from decklists.decklist
+// Usage: node scripts/backfill-containers-from-decklists.js
+
+import pg from 'pg';
+import dotenv from 'dotenv';
+import fs from 'fs';
+dotenv.config();
+
+const { Pool } = pg;
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+
+function parseDecklistTextToCards(deckText) {
+  if (!deckText || typeof deckText !== "string") return [];
+  const lines = deckText.split(/\r?\n/);
+  const cards = [];
+  for (let raw of lines) {
+    const line = raw.trim();
+    if (!line) continue;
+    const qtyNameMatch = line.match(/^\s*(\d+)\s+(.+)$/);
+    let qty = 1;
+    let rest = line;
+    if (qtyNameMatch) {
+      qty = parseInt(qtyNameMatch[1], 10) || 1;
+      rest = qtyNameMatch[2].trim();
+    }
+    let name = rest;
+    let set = "";
+    const parenMatch = rest.match(/^(.*?)\s*\(\s*([^)]+)\s*\)\s*$/);
+    if (parenMatch) {
+      name = parenMatch[1].trim();
+      set = parenMatch[2].trim();
+    } else {
+      const sepMatch = rest.match(/^(.*?)\s*(?:[-|]\s*)([A-Za-z0-9]+)\s*$/);
+      if (sepMatch) {
+        name = sepMatch[1].trim();
+        set = sepMatch[2].trim();
+      } else {
+        const trailingSetMatch = rest.match(/^(.*)\s+([A-Z0-9]{2,6})$/);
+        if (trailingSetMatch) {
+          name = trailingSetMatch[1].trim();
+          set = trailingSetMatch[2].trim();
+        }
+      }
+    }
+    cards.push({ name, set, qty });
+  }
+  return cards;
+}
+
+(async function main() {
+  const client = await pool.connect();
+  try {
+    // Find containers with decklist_id set and (cards is null OR empty array)
+    const selectQ = `
+      SELECT c.id AS container_id, c.decklist_id, d.decklist
+      FROM containers c
+      LEFT JOIN decklists d ON d.id = c.decklist_id
+      WHERE c.decklist_id IS NOT NULL
+        AND (c.cards IS NULL OR jsonb_array_length(c.cards) = 0);
+    `;
+    const { rows } = await client.query(selectQ);
+    console.log('Found', rows.length, 'containers to backfill');
+
+    for (const r of rows) {
+      const parsed = parseDecklistTextToCards(r.decklist || "");
+      console.log('Backfilling container', r.container_id, 'with', parsed.length, 'cards');
+      const updateQ = 'UPDATE containers SET cards = $1::jsonb WHERE id = $2';
+      await client.query(updateQ, [JSON.stringify(parsed), r.container_id]);
+    }
+
+    console.log('Backfill complete');
+  } catch (err) {
+    console.error('Backfill error:', err);
+  } finally {
+    client.release();
+    await pool.end();
+  }
+})();
+```
+
+Run:
+```bash
+# ensure env set for DATABASE_URL
+node scripts/backfill-containers-from-decklists.js
+```
+
+4) Minimal frontend defensive guard (if not already added)
+Make sure the front-end code that consumes the endpoint tolerates either { items: [...] } or { cards: [...] } and ensures an array:
+
+```js
+// wherever you fetch container items:
+const resp = await fetch(`/api/containers/${id}/items`);
+const json = await resp.json();
+// accept items or cards
+const items = Array.isArray(json?.items) ? json.items : Array.isArray(json?.cards) ? json.cards : [];
+// proceed with items safely
+```
+
+5) Replit / Git steps to apply patch, test, and push
+Run these steps in order:
+
+```bash
+# 1. Create branch
+git fetch origin
+git checkout -b fix/container-decklist-column-parse
+
+# 2. Edit server.js: apply the snippet above (parse helper + corrected SELECT and insert)
+# 3. Add backfill script
+git add server.js scripts/backfill-containers-from-decklists.js
+git commit -m "fix: read decklist column and parse plain-text decklist into containers.cards JSONB; add backfill script"
+
+# 4. Run local tests / start server
+npm ci
+npm run dev &
+
+# 5. Run backfill (ensure DATABASE_URL env points to the same DB the server uses)
+node scripts/backfill-containers-from-decklists.js
+
+# 6. Manual API verification
+curl -s "http://localhost:3000/api/containers/1/items" | jq .
+
+# 7. Check DB for updated containers
+psql "$DATABASE_URL" -c "SELECT id, jsonb_pretty(cards) FROM containers WHERE id = 1;"
+
+# 8. Push branch and open PR
+git push -u origin fix/container-decklist-column-parse
+# Open PR via GitHub UI or:
+gh pr create --base main --head fix/container-decklist-column-parse --title "fix: parse decklist column and populate containers.cards" --body "Fix container creation reading decklist column, parse plain text into JSON and backfill existing containers."
+```
+
+6) Verification checklist
+- POST /api/containers created container that has JSON in cards column (inspect via psql).
+- Backfilled containers now have cards populated from decklists.
+- GET /api/containers/:id/items returns items array with parsed objects.
+- Frontend calculateContainerMarketPrices no longer sees undefined — it receives an array and computes pricing.
+- No server errors for container creation/retrieval in logs.
+
+7) Rollback plan
+- If something goes wrong, revert the commit and restore DB from the backup you hopefully created earlier:
+  - git revert <commit-sha> && git push
+  - pg_restore from dump saved earlier
+
+8) Extra improvements (optional follow-ups)
+- Normalize/normalizeCardName() and set code resolution: if decklist text lacks set codes, consider a best-effort mapping or use Scryfall fuzzy matching later to resolve set codes.
+- Add unit tests for parseDecklistTextToCards covering common input formats.
+- Add logging for containers created from decklist_id so you can track migration coverage.
+
+If you want, I can:
+- Generate the exact git patch/diff for server.js and the backfill script so you can apply it directly.
+- Create unit tests for parseDecklistTextToCards.
+- Run the backfill remotely if you provide the correct DATABASE_URL (or run the commands step-by-step with you pasting outputs).
+
+Which do you want next: "generate patch" or "create unit tests for parser" or "run backfill instructions now"?

@@ -69,6 +69,61 @@ const pool = new Pool({
   connectionTimeoutMillis: 5000
 });
 
+// ========== PARSER: Plain-text decklist to card objects ==========
+/**
+ * Parse a plain-text decklist into an array of card objects.
+ * Examples: "2 lightning bolt", "1 Sol Ring (EOC)", "3 Swamp - SPM"
+ * Returns: [{ name: "lightning bolt", set: "EOC" | "", qty: 2 }, ...]
+ */
+function parseDecklistTextToCards(deckText) {
+  if (!deckText || typeof deckText !== "string") return [];
+
+  const lines = deckText.split(/\r?\n/);
+  const cards = [];
+
+  for (let raw of lines) {
+    const line = raw.trim();
+    if (!line) continue;
+
+    // Match qty and name: "2 Lightning Bolt" or "1 Sol Ring"
+    const qtyNameMatch = line.match(/^\s*(\d+)\s+(.+)$/);
+    let qty = 1;
+    let rest = line;
+    if (qtyNameMatch) {
+      qty = parseInt(qtyNameMatch[1], 10) || 1;
+      rest = qtyNameMatch[2].trim();
+    }
+
+    let name = rest;
+    let set = "";
+
+    // Extract set from (SET) format
+    const parenMatch = rest.match(/^(.*?)\s*\(\s*([^)]+)\s*\)\s*$/);
+    if (parenMatch) {
+      name = parenMatch[1].trim();
+      set = parenMatch[2].trim();
+    } else {
+      // Extract set from " - SET" or " | SET" format
+      const sepMatch = rest.match(/^(.*?)\s*(?:[-|]\s*)([A-Za-z0-9]+)\s*$/);
+      if (sepMatch) {
+        name = sepMatch[1].trim();
+        set = sepMatch[2].trim();
+      } else {
+        // Fallback: trailing uppercase token is set code
+        const trailingSetMatch = rest.match(/^(.*)\s+([A-Z0-9]{2,6})$/);
+        if (trailingSetMatch) {
+          name = trailingSetMatch[1].trim();
+          set = trailingSetMatch[2].trim();
+        }
+      }
+    }
+
+    cards.push({ name, set, qty });
+  }
+
+  return cards;
+}
+
 // ========== INPUT VALIDATION SCHEMAS ==========
 const inventorySchema = Joi.object({
   cardName: Joi.string().min(1).max(255).required(),
@@ -663,22 +718,28 @@ app.get('/api/containers', async (req, res) => {
 });
 
 app.post('/api/containers', async (req, res) => {
-  const { name, decklist_id } = req.body;
   try {
-    // Fetch the decklist to get its cards
-    const deckResult = await pool.query('SELECT deck_data FROM decklists WHERE id = $1', [decklist_id]);
-    if (deckResult.rows.length === 0) {
-      return res.status(404).json({ error: 'Decklist not found' });
+    const { name, decklist_id, cards } = req.body;
+
+    // If client provided explicit cards array, use it
+    let cardsArray = Array.isArray(cards) ? cards : null;
+
+    // Otherwise, if decklist_id provided, fetch decklist text and parse it
+    if (!cardsArray && decklist_id) {
+      const { rows } = await pool.query('SELECT decklist FROM decklists WHERE id = $1', [decklist_id]);
+      const deckText = rows?.[0]?.decklist || "";
+      cardsArray = parseDecklistTextToCards(deckText);
     }
-    
-    const deckData = deckResult.rows[0].deck_data;
-    const cards = Array.isArray(deckData) ? deckData : [];
-    
-    const result = await pool.query(
-      'INSERT INTO containers (name, decklist_id, cards) VALUES ($1, $2, $3::jsonb) RETURNING *',
-      [name, decklist_id, JSON.stringify(cards)]
+
+    // Fallback to empty array
+    if (!Array.isArray(cardsArray)) cardsArray = [];
+
+    // Insert container with parsed cards as JSONB
+    const { rows } = await pool.query(
+      'INSERT INTO containers (name, decklist_id, cards) VALUES ($1, $2, $3::jsonb) RETURNING id',
+      [name, decklist_id, JSON.stringify(cardsArray)]
     );
-    res.json(result.rows[0]);
+    res.status(201).json({ id: rows[0].id });
   } catch (err) {
     console.error('Container creation error:', err);
     res.status(500).json({ error: 'Failed to create container' });
