@@ -961,8 +961,8 @@ app.post('/api/containers/:id/sell', async (req, res) => {
       // Log sale in purchase_history
       await client.query(
         `INSERT INTO purchase_history (inventory_id, purchase_date, purchase_price, quantity)
-         VALUES ($1, $2, (SELECT purchase_price FROM inventory WHERE id = $1), $3)`,
-        [inventoryId, new Date().toISOString().split('T')[0], quantityUsed]
+         VALUES ($1, $2, (SELECT purchase_price FROM inventory WHERE id = $3), $4)`,
+        [inventoryId, new Date().toISOString().split('T')[0], inventoryId, quantityUsed]
       );
       
       console.log(`[SELL] Purchase history recorded for sale: inventory_id=${inventoryId}, quantity=${quantityUsed}`);
