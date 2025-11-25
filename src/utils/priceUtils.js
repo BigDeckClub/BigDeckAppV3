@@ -17,7 +17,10 @@ export const fetchPriceFromCache = (cache, cardName, setCode) => {
 
 export const fetchCardPrices = async (cardName, setCode) => {
   try {
-    const response = await fetch(`${API_BASE}/prices/${encodeURIComponent(cardName)}/${setCode}`);
+    const normalizedSet = (setCode || '').trim().toUpperCase();
+    const response = await fetch(
+      `/api/price?name=${encodeURIComponent(cardName)}&set=${encodeURIComponent(normalizedSet)}`
+    );
     if (response.ok) {
       const priceData = await response.json();
       return {
@@ -29,7 +32,7 @@ export const fetchCardPrices = async (cardName, setCode) => {
   } catch (error) {
     // Silently handle errors
   }
-  return { tcg: 'N/A', ck: 'N/A', timestamp: Date.now() };
+  return { tcg: 'N/A', ck: 'N/A' };
 };
 
 export const parseDeckslistPrice = (price) => {
