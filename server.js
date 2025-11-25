@@ -782,271 +782,219 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
       console.log(`✗ Scryfall lookup failed for ${cardName} (${setCode})`);
     }
     
-    // Card Kingdom price
+    // ==================== CARD KINGDOM SCRAPE ====================
     let ckPrice = 'N/A';
     
     try {
       const ckSearchUrl = `https://www.cardkingdom.com/catalog/search?search=header&filter%5Bname%5D=${encodeURIComponent(cardName)}`;
       
-      console.log(`[CK] Fetching: ${ckSearchUrl}`);
+      console.log(`[CK] Starting fetch for: ${cardName}`);
       
-      const ckRes = await fetchRetry(ckSearchUrl, {
+      const response = await fetchRetry(ckSearchUrl, {
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-          'Accept': 'text/html'
+          'Accept-Language': 'en-US,en;q=0.9'
         }
       });
       
-      // Diagnostic: Check response validity
-      if (!ckRes) {
-        console.error(`[CK] FAILURE: fetchRetry returned null/undefined`);
-        ckPrice = 'N/A';
-      } else if (!ckRes.ok) {
-        console.error(`[CK] FAILURE: Invalid response status ${ckRes.status} - likely rate-limited or blocked`);
-        ckPrice = 'N/A';
+      // Diagnostic: Validate the response
+      if (!response) {
+        console.error(`[CK][FATAL] fetchRetry returned NULL response`);
+      } else if (!response.ok) {
+        console.error(`[CK][ERROR] Response not OK: status=${response.status}`);
       } else {
-        const html = await ckRes.text();
+        const html = await response.text();
         
-        // Diagnostic: Sanity check on HTML size
-        console.log(`[CK] HTML size: ${html.length} bytes`);
-        
-        if (!html || html.length < 2000) {
-          console.error(`[CK] FAILURE: HTML too small (${html.length} bytes) - CK probably returned captcha/error page`);
-          ckPrice = 'N/A';
-        } else if (html.includes('captcha') || html.includes('bot') || html.includes('blocked')) {
-          console.error(`[CK] FAILURE: HTML contains captcha/bot/blocked markers - CK is blocking this request`);
-          ckPrice = 'N/A';
+        if (!html || html.length < 50) {
+          console.error("[CK][ERROR] Empty or too-short HTML response");
+        } else if (html.includes("captcha") || html.includes("verify you are human")) {
+          console.error("[CK][ERROR] Card Kingdom page returned CAPTCHA / bot protection");
         } else {
+          console.log(`[CK][DEBUG] HTML received: ${html.length} bytes`);
+          
           const $ = load(html);
-        
-        console.log(`  [DEBUG] Scraping products for: ${cardName}`);
-        
-        const productSelectors = [
-          'div.productCard', 'li.productCard', 'div.product', 'div.card-listing',
-          '.catalog-item', 'a[data-product-id]', 'div[class*="product"]'
-        ];
-        
-        let products = [];
-        for (const sel of productSelectors) {
-          const els = $(sel);
-          if (els.length > 0) {
-            console.log(`    ✓ Found ${els.length} elements for selector "${sel}"`);
-            products = els;
-            break;
-          }
-        }
-        
-        // PASS 1: Extract raw products (with edition metadata)
-        let rawProducts = [];
-        const target = cardName.toLowerCase();
-        let debugEditions = [];
-        
-        products.each((i, el) => {
-          let nameEl = $(el).find('a').first();
-          if (nameEl.length === 0) nameEl = $(el).find('.product-name, .item-title, [class*="name"]').first();
+          const products = $('div[class*="product"]');
           
-          let priceEl = $(el).find('span.stylePrice').first();
-          if (priceEl.length === 0) priceEl = $(el).find('span.price, div.price, [class*="price"]').first();
+          console.log(`[CK][DEBUG] Found ${products.length} product elements for ${cardName}`);
           
-          let name = nameEl.length > 0 ? nameEl.text().trim().toLowerCase() : '';
-          let rawPrice = priceEl.length > 0 ? priceEl.text().trim() : '';
-          
-          // Extract edition: URL first (authoritative), then fallback to DOM
-          let edition = null;
-          const productUrl = extractProductUrl($, el);
-          if (productUrl) {
-            edition = extractEditionFromUrl(productUrl);
-          }
-          if (!edition) {
-            edition = extractEditionFromHtml(el, $);
-          }
-          
-          // Extract quantity and condition (NM preferred)
-          let quantity = 0;
-          let condition = 'unknown';
-          
-          // Look for "In Stock: X" or quantity text
-          const stockText = $(el).text();
-          const qtyMatch = stockText.match(/(?:in\s+stock|qty|quantity)[\s:]*(\d+)/i);
-          if (qtyMatch) {
-            quantity = parseInt(qtyMatch[1]) || 0;
-          }
-          
-          // Look for condition indicators (NM > LP > MP)
-          if (stockText.match(/\bNM\b|\bnear\s+mint\b/i)) {
-            condition = 'NM';
-          } else if (stockText.match(/\bLP\b|\blight\s+play\b/i)) {
-            condition = 'LP';
-          } else if (stockText.match(/\bMP\b|\bmoderate\s+play\b/i)) {
-            condition = 'MP';
-          } else if (stockText.match(/\bHP\b|\bheavy\s+play\b/i)) {
-            condition = 'HP';
-          }
-          
-          if (edition) {
-            debugEditions.push(`${name}: ${edition}`);
-          }
-          
-          if (!rawPrice) {
-            const productHtml = $(el).html();
-            const prices = extractPricesFromText(productHtml);
-            if (prices.length > 0) {
-              const bestPrice = Math.min(...prices.filter(p => isValidPrice(p)));
-              if (bestPrice && Number.isFinite(bestPrice)) {
-                rawPrice = `$${bestPrice.toFixed(2)}`;
+          if (products.length === 0) {
+            console.error("[CK][ERROR] CK returned 0 products—possible rate-limit or redirect");
+          } else {
+            // PASS 1: Extract raw products (with edition metadata)
+            let rawProducts = [];
+            const target = cardName.toLowerCase();
+            let debugEditions = [];
+            
+            products.each((i, el) => {
+              let nameEl = $(el).find('a').first();
+              if (nameEl.length === 0) nameEl = $(el).find('.product-name, .item-title, [class*="name"]').first();
+              
+              let priceEl = $(el).find('span.stylePrice').first();
+              if (priceEl.length === 0) priceEl = $(el).find('span.price, div.price, [class*="price"]').first();
+              
+              let name = nameEl.length > 0 ? nameEl.text().trim().toLowerCase() : '';
+              let rawPrice = priceEl.length > 0 ? priceEl.text().trim() : '';
+              
+              // Extract edition: URL first (authoritative), then fallback to DOM
+              let edition = null;
+              const productUrl = extractProductUrl($, el);
+              if (productUrl) {
+                edition = extractEditionFromUrl(productUrl);
+              }
+              if (!edition) {
+                edition = extractEditionFromHtml(el, $);
+              }
+              
+              // Extract quantity and condition (NM preferred)
+              let quantity = 0;
+              let condition = 'unknown';
+              
+              // Look for "In Stock: X" or quantity text
+              const stockText = $(el).text();
+              const qtyMatch = stockText.match(/(?:in\s+stock|qty|quantity)[\s:]*(\d+)/i);
+              if (qtyMatch) {
+                quantity = parseInt(qtyMatch[1]) || 0;
+              }
+              
+              // Look for condition indicators (NM > LP > MP)
+              if (stockText.match(/\bNM\b|\bnear\s+mint\b/i)) {
+                condition = 'NM';
+              } else if (stockText.match(/\bLP\b|\blight\s+play\b/i)) {
+                condition = 'LP';
+              } else if (stockText.match(/\bMP\b|\bmoderate\s+play\b/i)) {
+                condition = 'MP';
+              } else if (stockText.match(/\bHP\b|\bheavy\s+play\b/i)) {
+                condition = 'HP';
+              }
+              
+              if (edition) {
+                debugEditions.push(`${name}: ${edition}`);
+              }
+              
+              if (!rawPrice) {
+                const productHtml = $(el).html();
+                const prices = extractPricesFromText(productHtml);
+                if (prices.length > 0) {
+                  const bestPrice = Math.min(...prices.filter(p => isValidPrice(p)));
+                  if (bestPrice && Number.isFinite(bestPrice)) {
+                    rawPrice = `$${bestPrice.toFixed(2)}`;
+                  }
+                }
+              }
+              
+              if (name && name.includes(target)) {
+                const numericPrice = rawPrice ? extractNumericPrice(rawPrice) : 0;
+                if (isValidPrice(numericPrice)) {
+                  const productUrl = extractProductUrl($, el);
+                  rawProducts.push({ 
+                    name, 
+                    price: numericPrice, 
+                    edition, 
+                    quantity,
+                    condition,
+                    url: productUrl,
+                    index: rawProducts.length 
+                  });
+                }
+              }
+            });
+            
+            console.log(`[CK][DEBUG] Extracted ${rawProducts.length} matching products`);
+            if (debugEditions.length > 0) {
+              console.log(`   [EDITION DEBUG] Found editions: ${debugEditions.slice(0, 5).join(', ')}`);
+            }
+            
+            // PASS 2: Determine baseline price from "set" edition types only
+            let baselinePrice = null;
+            const setCandidates = [];
+            
+            for (const p of rawProducts) {
+              const editionType = classifyEdition(p.edition);
+              const cond = (p.condition || "unknown").toUpperCase();
+            
+              if (editionType !== "set") continue;
+              if (cond === "HP" || cond === "MP") continue;
+              
+              setCandidates.push(p.price);
+            }
+            
+            if (setCandidates.length > 0) {
+              setCandidates.sort((a, b) => a - b);
+              baselinePrice = setCandidates[0];
+            } else {
+              const fallbackCandidates = rawProducts
+                .filter(p => {
+                  const nameLower = (p.name || '').toLowerCase();
+                  if (DEFAULT_BLACKLIST.some(kw => nameLower.includes(kw))) return false;
+                  const cond = (p.condition || "unknown").toUpperCase();
+                  if (cond === "HP" || cond === "MP") return false;
+                  return isValidPrice(p.price);
+                })
+                .map(p => p.price)
+                .sort((a, b) => a - b);
+
+              if (fallbackCandidates.length > 0) {
+                const mid = Math.floor((fallbackCandidates.length - 1) / 2);
+                baselinePrice = fallbackCandidates[mid];
+              } else {
+                baselinePrice = null;
               }
             }
-          }
-          
-          if (name && name.includes(target)) {
-            const numericPrice = rawPrice ? extractNumericPrice(rawPrice) : 0;
-            if (isValidPrice(numericPrice)) {
-              const productUrl = extractProductUrl($, el);
-              rawProducts.push({ 
-                name, 
-                price: numericPrice, 
-                edition, 
-                quantity,
-                condition,
-                url: productUrl,
-                index: rawProducts.length 
+            
+            const globalPriceContext = { lowestNormalPrice: baselinePrice };
+            const conditionRank = { 'NM': 0, 'LP': 1, 'MP': 2, 'HP': 3, 'unknown': 4 };
+            
+            // PASS 3: Final classification using corrected logic
+            const productPrices = [];
+            const isSolRing = cardName.toLowerCase().includes('sol ring');
+            const isLightningBolt = cardName.toLowerCase().includes('lightning bolt');
+            const isBasicLandCard = isBasicLand(cardName);
+            
+            for (const p of rawProducts) {
+              const cond = (p.condition || "unknown").toUpperCase();
+              if (cond === "HP" || cond === "MP") continue;
+              
+              let variant;
+              if (isBasicLandCard) {
+                const nameLower = (p.name || '').toLowerCase();
+                const isFoil = nameLower.includes('foil');
+                variant = isFoil ? 'basicland-foil' : 'basicland-normal';
+              } else {
+                variant = classifyProduct(p.name, p.edition);
+              }
+              
+              const rank = getVariantRank(variant);
+              productPrices.push({ 
+                price: p.price, 
+                variant, 
+                rank, 
+                name: p.name,
+                quantity: p.quantity,
+                condition: p.condition,
+                edition: p.edition
               });
             }
+            
+            if (productPrices.length > 0) {
+              const best = productPrices.sort((a, b) => {
+                if (a.rank !== b.rank) return a.rank - b.rank;
+                if (a.quantity !== b.quantity) return b.quantity - a.quantity;
+                const aCondRank = conditionRank[a.condition] ?? 99;
+                const bCondRank = conditionRank[b.condition] ?? 99;
+                if (aCondRank !== bCondRank) return aCondRank - bCondRank;
+                return a.price - b.price;
+              })[0];
+              
+              ckPrice = `$${best.price.toFixed(2)}`;
+              console.log(`[CK][SUCCESS] Best match: ${best.name} = ${ckPrice}`);
+            } else {
+              console.error(`[CK][ERROR] Matching logic found NO suitable entries for "${cardName}"`);
+            }
           }
-        });
-        
-        if (debugEditions.length > 0) {
-          console.log(`   [EDITION DEBUG] Found editions: ${debugEditions.slice(0, 5).join(', ')}`);
-        } else {
-          console.log(`   [EDITION DEBUG] No editions extracted from any products`);
-        }
-        
-        // Debug: check edition extraction success rate
-        const nullEditionProducts = rawProducts.filter(p => !p.edition);
-        console.log(`   [DEBUG] products without edition: ${nullEditionProducts.length}/${rawProducts.length}`);
-        if (nullEditionProducts.length > 0 && nullEditionProducts.length <= 5) {
-          console.log(`   [DEBUG URLS] null edition items: ${nullEditionProducts.slice(0, 5).map(p => `"${p.name}" (${p.url || 'no-url'})`).join(', ')}`);
-        }
-
-        // PASS 2: Determine baseline price from "set" edition types only
-        let baselinePrice = null;
-        const setCandidates = [];
-        
-        for (const p of rawProducts) {
-          const editionType = classifyEdition(p.edition);
-          const cond = (p.condition || "unknown").toUpperCase();
-        
-          // Only include "set" editions, skip HP/MP condition
-          if (editionType !== "set") continue;
-          if (cond === "HP" || cond === "MP") continue;
-          
-          setCandidates.push(p.price);
-        }
-        
-        if (setCandidates.length > 0) {
-          setCandidates.sort((a, b) => a - b);
-          baselinePrice = setCandidates[0]; // cheapest legitimate set edition
-        } else {
-          // Fallback: pick median price among non-special-looking items (exclude clear variant keywords)
-          const fallbackCandidates = rawProducts
-            .filter(p => {
-              const nameLower = (p.name || '').toLowerCase();
-              // exclude clear variant names contained in the product name
-              if (DEFAULT_BLACKLIST.some(kw => nameLower.includes(kw))) return false;
-              // exclude poor conditions
-              const cond = (p.condition || "unknown").toUpperCase();
-              if (cond === "HP" || cond === "MP") return false;
-              return isValidPrice(p.price);
-            })
-            .map(p => p.price)
-            .sort((a, b) => a - b);
-
-          if (fallbackCandidates.length > 0) {
-            // choose the median (more robust than absolute cheapest)
-            const mid = Math.floor((fallbackCandidates.length - 1) / 2);
-            baselinePrice = fallbackCandidates[mid];
-            console.log(`   [FALLBACK BASELINE] using median fallback price: $${baselinePrice.toFixed(2)} from ${fallbackCandidates.length} candidates`);
-          } else {
-            baselinePrice = null;
-          }
-        }
-        
-        const globalPriceContext = { lowestNormalPrice: baselinePrice };
-        
-        // Condition rank for sorting (higher = better)
-        const conditionRank = { 'NM': 0, 'LP': 1, 'MP': 2, 'HP': 3, 'unknown': 4 };
-        
-        // PASS 3: Final classification using corrected logic
-        const productPrices = [];
-        
-        // For Sol Ring/Lightning Bolt: log full product names for debugging
-        const isSolRing = cardName.toLowerCase().includes('sol ring');
-        const isLightningBolt = cardName.toLowerCase().includes('lightning bolt');
-        const isBasicLandCard = isBasicLand(cardName);
-        
-        for (const p of rawProducts) {
-          const cond = (p.condition || "unknown").toUpperCase();
-          
-          // Skip poor condition
-          if (cond === "HP" || cond === "MP") continue;
-          
-          let variant;
-          
-          // SPECIAL RULE: Basic lands always pick lowest non-foil price
-          if (isBasicLandCard) {
-            const nameLower = (p.name || '').toLowerCase();
-            const isFoil = nameLower.includes('foil');
-            variant = isFoil ? 'basicland-foil' : 'basicland-normal';
-          } else {
-            // NEW: Edition-based classification using safelist
-            // This correctly handles ambiguous plain names (like "sol ring") by checking edition metadata
-            variant = classifyProduct(p.name, p.edition);
-          }
-          
-          const rank = getVariantRank(variant);
-          productPrices.push({ 
-            price: p.price, 
-            variant, 
-            rank, 
-            name: p.name,
-            quantity: p.quantity,
-            condition: p.condition,
-            edition: p.edition
-          });
-          
-          // Debug logging for Sol Ring/Lightning Bolt to see full product names AND edition metadata
-          if (isSolRing || isLightningBolt) {
-            console.log(`      ✓ $${p.price.toFixed(2)} [${variant}] | "${p.name}" | Edition: "${p.edition}"`);
-          } else if (isBasicLandCard) {
-            console.log(`      ✓ Basic land: $${p.price.toFixed(2)} [${variant}] (${p.condition}, qty: ${p.quantity})`);
-          } else {
-            console.log(`      ✓ Valid match found: $${p.price.toFixed(2)} [${variant}] (${p.condition}, qty: ${p.quantity})`);
-          }
-        }
-        
-        if (productPrices.length > 0) {
-          const best = productPrices.sort((a, b) => {
-            // 1. Primary: Sort by rank (variant type - normal before special)
-            if (a.rank !== b.rank) return a.rank - b.rank;
-            // 2. Secondary: Higher quantity first
-            if (a.quantity !== b.quantity) return b.quantity - a.quantity;
-            // 3. Tertiary: Better condition first (NM > LP > MP > HP)
-            const aCondRank = conditionRank[a.condition] ?? 99;
-            const bCondRank = conditionRank[b.condition] ?? 99;
-            if (aCondRank !== bCondRank) return aCondRank - bCondRank;
-            // 4. Final: Lowest price
-            return a.price - b.price;
-          })[0];
-          
-          ckPrice = `$${best.price.toFixed(2)}`;
-          console.log(`  [DEBUG] Found ${productPrices.length} matching products`);
-          console.log(`  ✓ Best match: ${best.name} [${best.variant}] ${best.condition} (qty: ${best.quantity}) = ${ckPrice}`);
-        }
         }
       }
-    } catch (ckError) {
-      console.error(`[CK] SCRAPE FAILURE: ${ckError.message}`);
-      ckPrice = 'N/A';
+    } catch (err) {
+      console.error("[CK][CRITICAL] Exception during CK fetch:", err);
     }
     
     console.log(`Final result: TCG=${tcgPrice}, CK=${ckPrice}\n`);
