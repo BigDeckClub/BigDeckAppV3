@@ -45,7 +45,15 @@ function classifyVariant(rawName, cardName) {
   const name = normalizeName(rawName);
   const target = normalizeName(cardName).trim();
 
-  if (name === target) return 'normal';
+  if (name === target) {
+    // Check if there are edition markers in the raw name
+    // If it's a bare match (no edition info), treat as special, not normal
+    const hasEditionMarkers = /\([\w\d]+\)|\bfoil\b|\bpromo\b|\betched\b/i.test(rawName);
+    if (!hasEditionMarkers) {
+      return 'special'; // Bare match without edition markers is ambiguous
+    }
+    return 'normal';
+  }
 
   const parenMatch = rawName.match(/\(([^)]+)\)\s*$/);
   if (parenMatch && name.startsWith(target)) {
