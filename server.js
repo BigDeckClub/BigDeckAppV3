@@ -38,39 +38,29 @@ function extractEditionFromUrl(url) {
   }
 }
 
+// Extract product URL with specific fallback order
+function extractProductUrl($, productElem) {
+  // 1. Anchors with /mtg/ in href (most reliable)
+  const direct = $(productElem).find('a[href*="/mtg/"]').attr('href');
+  if (direct) return direct;
+
+  // 2. data-href attributes
+  const dataHref = $(productElem).attr('data-href');
+  if (dataHref) return dataHref;
+
+  // 3. title link inside product card
+  const titleLink = $(productElem).find('.productCard__title a').attr('href');
+  if (titleLink) return titleLink;
+
+  // 4. fallback: first anchor tag
+  const anyLink = $(productElem).find('a').attr('href');
+  if (anyLink) return anyLink;
+
+  return null;
+}
+
+// Extract edition from DOM-based sources (fallback only, URL extraction should be primary)
 function extractEditionFromHtml(el, $) {
-  // PRIMARY METHOD: Extract edition from product URL (most reliable, always in HTML)
-  // URLs like: /mtg/magic-2011/lightning-bolt → "magic 2011"
-  
-  // Try to find product link in various ways
-  let href = null;
-  
-  // First try: look for link with /mtg/ in href (most reliable)
-  const productLink = $(el).find('a[href*="/mtg/"]').first();
-  if (productLink.length > 0) {
-    href = productLink.attr('href');
-  }
-  
-  // Second try: check data attributes that might contain URL
-  if (!href) {
-    href = $(el).attr('data-product-url') || $(el).attr('href');
-  }
-  
-  // Third try: get any href from first link
-  if (!href) {
-    const anyLink = $(el).find('a').first();
-    if (anyLink.length > 0) {
-      href = anyLink.attr('href');
-    }
-  }
-  
-  if (href) {
-    const editionFromUrl = extractEditionFromUrl(href);
-    if (editionFromUrl) {
-      return editionFromUrl;
-    }
-  }
-  
   // FALLBACK 1: Try to find set icon with title attribute
   const setIcon = $(el).find('span[class*="set-icon"], .set-icon, [class*="symbol"]').first();
   if (setIcon.length > 0) {
@@ -579,8 +569,16 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
           let name = nameEl.length > 0 ? nameEl.text().trim().toLowerCase() : '';
           let rawPrice = priceEl.length > 0 ? priceEl.text().trim() : '';
           
-          // Extract edition metadata from hidden HTML attributes
-          const edition = extractEditionFromHtml(el, $);
+          // Extract edition: URL first (authoritative), then fallback to DOM
+          let edition = null;
+          const productUrl = extractProductUrl($, el);
+          if (productUrl) {
+            edition = extractEditionFromUrl(productUrl);
+          }
+          if (!edition) {
+            edition = extractEditionFromHtml(el, $);
+          }
+          
           if (edition) {
             debugEditions.push(`${name}: ${edition}`);
           }
