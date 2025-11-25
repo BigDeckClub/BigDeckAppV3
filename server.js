@@ -333,9 +333,25 @@ function isValidPrice(price) {
   return price > 0.05 && price < 500;
 }
 
-// Helper: Extract numeric price from string
+// Helper: Extract numeric price from string (handles commas in prices like $1,799.99)
 function extractNumericPrice(priceStr) {
-  return parseFloat(priceStr.replace('$', ''));
+  if (!priceStr) return 0;
+  // Remove $ and commas, then parse
+  return parseFloat(priceStr.replace(/[$,]/g, '')) || 0;
+}
+
+// Helper: Extract all prices from text with robust comma handling
+function extractPricesFromText(text = '') {
+  if (!text) return [];
+  const normalized = text.replace(/\u00A0/g, ' ').trim();
+  // Regex handles: $1,799.99 $1799.99 $0.99 $12.00
+  const re = /\$([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{2})?)/g;
+  const matches = [];
+  let m;
+  while ((m = re.exec(normalized)) !== null) {
+    matches.push(m[1]);
+  }
+  return matches.map(s => parseFloat(s.replace(/,/g, ''))).filter(n => !Number.isNaN(n));
 }
 
 // Edition priority ranking (lower number = higher priority)
@@ -524,9 +540,13 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
           // Fallback: regex inside this product node's HTML if price not found
           if (!rawPrice) {
             const productHtml = $(el).html();
-            const priceMatch = productHtml.match(/\$([0-9]+\.[0-9]{2})/);
-            if (priceMatch) {
-              rawPrice = priceMatch[0];
+            const prices = extractPricesFromText(productHtml);
+            if (prices.length > 0) {
+              // Use smallest valid price found
+              const bestPrice = Math.min(...prices.filter(p => isValidPrice(p)));
+              if (bestPrice && Number.isFinite(bestPrice)) {
+                rawPrice = `$${bestPrice.toFixed(2)}`;
+              }
             }
           }
           
