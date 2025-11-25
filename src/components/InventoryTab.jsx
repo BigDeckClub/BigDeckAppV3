@@ -136,37 +136,37 @@ export const InventoryTab = ({
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <input
               type="number"
               min="1"
               value={newEntry.quantity}
               onChange={(e) => setNewEntry({...newEntry, quantity: parseInt(e.target.value)})}
               placeholder="Quantity"
-              className="bg-slate-800 border border-slate-600 rounded px-4 py-2 text-white"
+              className="bg-slate-800 border border-slate-600 rounded px-4 py-3 text-white text-base"
             />
             <input
               type="date"
               value={newEntry.purchaseDate}
               max={new Date().toISOString().split("T")[0]}
               onChange={(e) => setNewEntry({...newEntry, purchaseDate: e.target.value})}
-              className="bg-slate-800 border border-slate-600 rounded px-4 py-2 text-white"
+              className="bg-slate-800 border border-slate-600 rounded px-4 py-3 text-white text-base"
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <input
               type="number"
               step="0.01"
               value={newEntry.purchasePrice}
               onChange={(e) => setNewEntry({...newEntry, purchasePrice: e.target.value})}
               placeholder="Purchase Price ($)"
-              className="bg-slate-800 border border-slate-600 rounded px-4 py-2 text-white"
+              className="bg-slate-800 border border-slate-600 rounded px-4 py-3 text-white text-base"
             />
             <select
               value={newEntry.reorderType}
               onChange={(e) => setNewEntry({...newEntry, reorderType: e.target.value})}
-              className="bg-slate-800 border border-slate-600 rounded px-4 py-2 text-white"
+              className="bg-slate-800 border border-slate-600 rounded px-4 py-3 text-white text-base"
             >
               <option value="normal">Normal</option>
               <option value="land">Land</option>
@@ -225,22 +225,22 @@ export const InventoryTab = ({
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-4 gap-3 mb-3">
-                  <div className="bg-slate-800 bg-opacity-50 rounded p-2 border border-slate-700">
-                    <div className="text-xs text-slate-400">Total Copies</div>
-                    <div className="text-xl font-bold text-teal-300">{totalQty}</div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-3">
+                  <div className="bg-slate-800 bg-opacity-50 rounded p-2 sm:p-2 border border-slate-700">
+                    <div className="text-[10px] sm:text-xs text-slate-400">Total Copies</div>
+                    <div className="text-lg sm:text-xl font-bold text-teal-300">{totalQty}</div>
                   </div>
-                  <div className="bg-slate-800 bg-opacity-50 rounded p-2 border border-slate-700">
-                    <div className="text-xs text-slate-400">Available</div>
-                    <div className="text-xl font-bold text-green-300">{available}</div>
+                  <div className="bg-slate-800 bg-opacity-50 rounded p-2 sm:p-2 border border-slate-700">
+                    <div className="text-[10px] sm:text-xs text-slate-400">Available</div>
+                    <div className="text-lg sm:text-xl font-bold text-green-300">{available}</div>
                   </div>
-                  <div className="bg-slate-800 bg-opacity-50 rounded p-2 border border-slate-700">
-                    <div className="text-xs text-slate-400">In Containers</div>
-                    <div className="text-xl font-bold text-pink-300">{totalInContainers}</div>
+                  <div className="bg-slate-800 bg-opacity-50 rounded p-2 sm:p-2 border border-slate-700">
+                    <div className="text-[10px] sm:text-xs text-slate-400">In Containers</div>
+                    <div className="text-lg sm:text-xl font-bold text-pink-300">{totalInContainers}</div>
                   </div>
-                  <div className="bg-slate-800 bg-opacity-50 rounded p-2 border border-slate-700">
-                    <div className="text-xs text-slate-400">Avg Price (60d)</div>
-                    <div className="text-xl font-bold text-blue-300">${avgPrice.toFixed(2)}</div>
+                  <div className="bg-slate-800 bg-opacity-50 rounded p-2 sm:p-2 border border-slate-700">
+                    <div className="text-[10px] sm:text-xs text-slate-400">Avg Price (60d)</div>
+                    <div className="text-lg sm:text-xl font-bold text-blue-300">${avgPrice.toFixed(2)}</div>
                   </div>
                 </div>
                 
@@ -312,40 +312,38 @@ export const InventoryTab = ({
                               </div>
                             </div>
                           ) : (
-                            <div className="flex justify-between items-center">
+                            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
                               <div className="flex-1">
                                 <div className="text-sm font-semibold text-slate-100">{item.set_name}</div>
-                                <div className="grid grid-cols-3 gap-3 mt-1 text-xs">
+                                <div className="grid grid-cols-3 gap-2 sm:gap-3 mt-1 text-xs">
                                   <div><span className="text-slate-400">Total:</span> <span className="text-white font-semibold">{item.quantity}</span></div>
-                                  <div><span className="text-slate-400">In Containers:</span> <span className="text-white font-semibold">{item.quantity_in_containers || 0}</span></div>
-                                  <div><span className="text-slate-400">Available:</span> <span className="text-white font-semibold">{item.quantity_available || 0}</span></div>
+                                  <div><span className="text-slate-400">In Cont:</span> <span className="text-white font-semibold">{item.quantity_in_containers || 0}</span></div>
+                                  <div><span className="text-slate-400">Avail:</span> <span className="text-white font-semibold">{item.quantity_available || 0}</span></div>
                                 </div>
                               </div>
-                              <div className="flex items-center gap-4 ml-4">
+                              <div className="flex flex-wrap items-center gap-2 sm:gap-4 sm:ml-4">
                                 <div className="flex flex-col items-center gap-1">
-                                  <div className="text-xs text-slate-500">TCG Player</div>
-                                  {console.log("[DEBUG] InventoryTab rendering MarketPrices TCG with:", { name: item.name, set: item.set, priceType: "tcg" })}
+                                  <div className="text-[10px] sm:text-xs text-slate-500">TCG</div>
                                   <MarketPrices key={`price-${item.name}-${item.set}-tcg`} name={item.name} set={item.set} priceType="tcg" className="text-slate-300 text-sm font-semibold" />
                                 </div>
                                 <div className="flex flex-col items-center gap-1">
-                                  <div className="text-xs text-slate-500">Card Kingdom</div>
-                                  {console.log("[DEBUG] InventoryTab rendering MarketPrices CK with:", { name: item.name, set: item.set, priceType: "ck" })}
+                                  <div className="text-[10px] sm:text-xs text-slate-500">CK</div>
                                   <MarketPrices key={`price-${item.name}-${item.set}-ck`} name={item.name} set={item.set} priceType="ck" className="text-slate-300 text-sm font-semibold" />
                                 </div>
                                 <div className="bg-slate-800 bg-opacity-50 border border-slate-600 rounded px-2 py-1 text-xs">
                                   <div className="text-slate-400">Avg Cost</div>
                                   <div className="font-bold text-green-300">${avgPrice.toFixed(2)}</div>
                                 </div>
-                                <div className="flex gap-1">
+                                <div className="flex gap-1 ml-auto sm:ml-0">
                                   <button
                                     onClick={() => startEditingItem(item)}
-                                    className="bg-blue-600 hover:bg-blue-700 rounded px-2 py-1 text-xs font-semibold"
+                                    className="bg-blue-600 hover:bg-blue-700 rounded px-3 py-2 sm:px-2 sm:py-1 text-xs font-semibold min-h-[36px] sm:min-h-0"
                                   >
                                     Edit
                                   </button>
                                   <button
                                     onClick={() => deleteInventoryItem(item.id)}
-                                    className="bg-red-600 hover:bg-red-700 rounded px-2 py-1"
+                                    className="bg-red-600 hover:bg-red-700 rounded px-3 py-2 sm:px-2 sm:py-1 min-h-[36px] sm:min-h-0"
                                   >
                                     <Trash2 className="w-4 h-4" />
                                   </button>

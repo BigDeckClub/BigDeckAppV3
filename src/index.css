@@ -17,15 +17,19 @@
   --text-primary: #f1f5f9;
   --text-secondary: #cbd5e1;
   --text-muted: #94a3b8;
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 * {
   @apply transition-colors duration-200;
+  -webkit-tap-highlight-color: transparent;
 }
 
 html, body {
   @apply bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white min-h-screen;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
@@ -145,4 +149,177 @@ select {
 
 .text-gradient {
   @apply bg-gradient-to-r from-teal-400 to-cyan-300 bg-clip-text text-transparent;
+}
+
+/* Mobile Bottom Navigation - Hidden by default on desktop */
+.mobile-nav {
+  @apply fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-700 z-50 hidden;
+  padding-bottom: var(--safe-area-bottom);
+}
+
+.mobile-nav-inner {
+  @apply flex justify-around items-center py-2;
+}
+
+.mobile-nav-item {
+  @apply flex flex-col items-center justify-center py-2 px-3 rounded-lg transition-all duration-200 min-w-[60px];
+}
+
+.mobile-nav-item.active {
+  @apply bg-teal-600/20 text-teal-400;
+}
+
+.mobile-nav-item.inactive {
+  @apply text-slate-400;
+}
+
+.mobile-nav-item:active {
+  @apply scale-95;
+}
+
+.mobile-nav-label {
+  @apply text-xs mt-1 font-medium;
+}
+
+/* Hide desktop nav on mobile, show bottom nav */
+@media (max-width: 768px) {
+  .desktop-nav {
+    display: none !important;
+  }
+  
+  .mobile-nav {
+    display: flex !important;
+  }
+  
+  .main-content {
+    padding-bottom: calc(80px + var(--safe-area-bottom));
+  }
+  
+  .app-header {
+    @apply py-3 px-3;
+  }
+  
+  .app-header h1 {
+    @apply text-xl;
+  }
+}
+
+/* Show desktop nav on larger screens, hide bottom nav */
+@media (min-width: 769px) {
+  .desktop-nav {
+    display: flex !important;
+  }
+  
+  .mobile-nav {
+    display: none !important;
+  }
+}
+
+/* Mobile-friendly cards */
+@media (max-width: 768px) {
+  .card {
+    @apply rounded-lg p-4;
+  }
+  
+  .stat-grid-mobile {
+    @apply grid-cols-2 gap-2;
+  }
+  
+  .stat-box-mobile {
+    @apply p-3;
+  }
+  
+  .stat-box-mobile .text-xl {
+    @apply text-lg;
+  }
+  
+  .stat-box-mobile .text-xs {
+    @apply text-[10px];
+  }
+}
+
+/* Touch-friendly buttons */
+@media (max-width: 768px) {
+  .btn-primary,
+  .btn-secondary,
+  .btn-danger,
+  .btn-accent {
+    @apply min-h-[44px] px-4;
+  }
+  
+  input[type="text"],
+  input[type="number"],
+  input[type="date"],
+  textarea,
+  select {
+    @apply min-h-[44px] text-base;
+  }
+}
+
+/* Mobile form layouts */
+@media (max-width: 640px) {
+  .form-grid-mobile {
+    @apply grid-cols-1 !important;
+  }
+  
+  .flex-col-mobile {
+    @apply flex-col;
+  }
+  
+  .gap-mobile {
+    @apply gap-2;
+  }
+}
+
+/* Card item mobile layout */
+@media (max-width: 768px) {
+  .card-item-mobile {
+    @apply flex-col items-start gap-3;
+  }
+  
+  .card-item-actions-mobile {
+    @apply w-full flex justify-between mt-2;
+  }
+  
+  .price-display-mobile {
+    @apply flex-wrap gap-2;
+  }
+}
+
+/* Inventory card mobile adjustments */
+@media (max-width: 640px) {
+  .inventory-stats-grid {
+    @apply grid-cols-2 gap-2;
+  }
+  
+  .inventory-item-details {
+    @apply flex-col gap-2;
+  }
+  
+  .inventory-item-prices {
+    @apply flex-row flex-wrap justify-start gap-3 w-full;
+  }
+  
+  .inventory-item-actions {
+    @apply w-full flex justify-end gap-2 mt-2 pt-2 border-t border-slate-700;
+  }
+}
+
+/* Modal mobile styles */
+@media (max-width: 768px) {
+  .modal-content {
+    @apply mx-4 max-h-[85vh] overflow-y-auto;
+  }
+}
+
+/* Smooth scrolling on mobile */
+@supports (-webkit-touch-callout: none) {
+  .scroll-container {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Pull to refresh indicator area */
+.ptr-element {
+  @apply absolute top-0 left-0 right-0 flex items-center justify-center h-16 -mt-16;
 }

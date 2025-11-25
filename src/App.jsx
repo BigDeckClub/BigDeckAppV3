@@ -967,17 +967,25 @@ function MTGInventoryTrackerContent() {
     return containerPriceCache[containerId] || { tcg: 0, ck: 0 };
   };
 
+  const navItems = [
+    { id: "inventory", icon: Layers, label: "Inventory" },
+    { id: "decklists", icon: FileText, label: "Decks" },
+    { id: "containers", icon: Package, label: "Containers" },
+    { id: "analytics", icon: TrendingUp, label: "Analytics" },
+    { id: "sales", icon: DollarSign, label: "Sales" },
+  ];
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white">
       <FloatingDollarSigns 
         show={showSaleAnimation} 
         onAnimationEnd={() => setShowSaleAnimation(false)}
       />
-      {/* Navigation */}
+      {/* Desktop Navigation */}
       <nav className="bg-gradient-to-r from-slate-900 to-slate-800 border-b border-slate-700 sticky top-0 z-50 shadow-xl shadow-slate-900/50">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 py-4 app-header flex items-center justify-between">
           <h1 className="text-2xl font-bold text-teal-300">MTG Card Manager</h1>
-          <div className="flex gap-2">
+          <div className="desktop-nav flex gap-2">
             <button
               onClick={() => setActiveTab("inventory")}
               className={`px-4 py-2 nav-tab inactive ${activeTab === "inventory" ? "btn-primary" : "hover:shadow-lg"}`}
@@ -1020,11 +1028,37 @@ function MTGInventoryTrackerContent() {
               <Settings className="w-5 h-5" />
             </button>
           </div>
+          {/* Mobile Settings Button */}
+          <button
+            onClick={() => setShowSettings(!showSettings)}
+            className="md:hidden px-3 py-2 hover:bg-slate-700 rounded-lg transition"
+          >
+            <Settings className="w-5 h-5" />
+          </button>
+        </div>
+      </nav>
+
+      {/* Mobile Bottom Navigation */}
+      <nav className="mobile-nav">
+        <div className="mobile-nav-inner">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.id}
+                onClick={() => setActiveTab(item.id)}
+                className={`mobile-nav-item ${activeTab === item.id ? "active" : "inactive"}`}
+              >
+                <Icon className="w-5 h-5" />
+                <span className="mobile-nav-label">{item.label}</span>
+              </button>
+            );
+          })}
         </div>
       </nav>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 py-8">
+      <main className="max-w-7xl mx-auto px-4 py-8 main-content md:px-4 px-3">
         {isLoading && (
           <div className="text-center py-8">
             <RefreshCw className="w-8 h-8 animate-spin mx-auto text-teal-400" />
