@@ -461,13 +461,18 @@ export default function MTGInventoryTracker() {
     } catch (error) {}
   };
 
-  const fetchCardPrices = async (cardName, setCode) => {
+  const fetchCardPrices = async (cardName, cardSet) => {
     try {
-      let normalizedSet = (setCode || "").trim().toUpperCase();
+      let normalizedSet = (cardSet || "").trim().toUpperCase();
 
-      // Basic lands often have missing or incorrect set codes.
-      // If set code is empty or invalid, fallback to "SPM" which backend prices successfully.
-      if (!normalizedSet || normalizedSet === "BASIC LAND" || normalizedSet === "BASICLAND") {
+      // Basic lands often have missing or invalid set codes in the inventory.
+      // If Swamp (or any basic land) has no valid setCode, fallback to SPM,
+      // which is correctly priced by the backend.
+      if (
+        !normalizedSet ||
+        normalizedSet === "BASIC LAND" ||
+        normalizedSet === "BASICLAND"
+      ) {
         normalizedSet = "SPM";
       }
 
