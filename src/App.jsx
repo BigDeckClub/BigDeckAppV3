@@ -1611,8 +1611,10 @@ export default function MTGInventoryTracker() {
                       
                       return Object.entries(groupedByName).map(([cardName, cardAlerts]) => {
                         const totalQty = cardAlerts.reduce((sum, a) => sum + a.quantity, 0);
+                        const totalUsedSold = cardAlerts.reduce((sum, a) => sum + (a.cardsInContainers || 0), 0);
+                        const displayQty = totalQty + totalUsedSold;
                         const threshold = reorderSettings[cardAlerts[0].reorder_type] || 5;
-                        const percentOfThreshold = (totalQty / threshold) * 100;
+                        const percentOfThreshold = (displayQty / threshold) * 100;
                         const severity = percentOfThreshold < 25 ? 'critical' : percentOfThreshold < 75 ? 'warning' : 'low';
                         const severityColor = severity === 'critical' ? 'bg-red-950 border-red-500' : severity === 'warning' ? 'bg-orange-950 border-orange-500' : 'bg-yellow-950 border-yellow-500';
                         const textColor = severity === 'critical' ? 'text-red-300' : severity === 'warning' ? 'text-orange-300' : 'text-yellow-300';
@@ -1632,7 +1634,7 @@ export default function MTGInventoryTracker() {
                               </div>
                               <div className="flex items-center gap-2 ml-3 flex-shrink-0">
                                 <div className="text-right">
-                                  <div className={`font-bold text-lg ${textColor}`}>{totalQty}</div>
+                                  <div className={`font-bold text-lg ${textColor}`}>{displayQty}</div>
                                   <div className="text-xs text-slate-400">of {threshold}</div>
                                 </div>
                                 <ChevronDown className={`w-4 h-4 transition ${isExpanded ? 'rotate-180' : ''}`} />
