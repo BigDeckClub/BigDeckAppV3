@@ -2202,71 +2202,64 @@ function MTGInventoryTrackerContent() {
               )}
             </div>
 
-            <div className="card p-6">
-              <h2 className="text-xl font-bold mb-4">Inventory Statistics</h2>
-              <div className="grid grid-cols-4 gap-4">
-                <div className="bg-slate-800 border border-slate-600 p-4">
-                  <div className="text-slate-400 text-sm">Total Unique Cards</div>
-                  <div className="text-2xl font-bold text-teal-300">
+            <div className="card p-4 sm:p-6">
+              <h2 className="text-lg sm:text-xl font-bold mb-4">Inventory Statistics</h2>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+                <div className="bg-slate-800 border border-slate-600 rounded-lg p-3 sm:p-4 text-center">
+                  <div className="text-slate-400 text-xs sm:text-sm">Total Unique Cards</div>
+                  <div className="text-xl sm:text-2xl font-bold text-teal-300 mt-1">
                     {inventory.filter(card => (card.quantity || 0) > 0).length}
                   </div>
                 </div>
-                <div className="bg-slate-800 border border-slate-600 p-4">
-                  <div className="text-slate-400 text-sm">Total Quantity</div>
-                  <div className="text-2xl font-bold text-teal-300">
+                <div className="bg-slate-800 border border-slate-600 rounded-lg p-3 sm:p-4 text-center">
+                  <div className="text-slate-400 text-xs sm:text-sm">Total Quantity</div>
+                  <div className="text-xl sm:text-2xl font-bold text-teal-300 mt-1">
                     {(() => {
                       const inventoryTotal = inventory.reduce(
                         (sum, card) => sum + (card.quantity || 0),
                         0,
                       );
-                      // NOTE: Do NOT add containerTotal because cards in containers are already counted in inventory.quantity
-                      // Containers are just storage/organization, not movement of cards
                       return inventoryTotal;
                     })()}
                   </div>
                 </div>
-                <div className="bg-slate-800 border border-slate-600 p-4">
-                  <div className="text-slate-400 text-sm">Total Value</div>
-                  <div className="text-2xl font-bold text-teal-300">
-                    $
-                    {(() => {
+                <div className="bg-slate-800 border border-slate-600 rounded-lg p-3 sm:p-4 text-center">
+                  <div className="text-slate-400 text-xs sm:text-sm">Total Value</div>
+                  <div className="text-xl sm:text-2xl font-bold text-teal-300 mt-1">
+                    ${(() => {
                       const inventoryValue = inventory.reduce(
                         (sum, card) =>
                           sum + ((parseFloat(card.purchase_price) || 0) * (card.quantity || 0)),
                         0,
                       );
-                      // NOTE: Do NOT add containerValue because cards in containers are already counted in inventory
-                      // Containers are just storage/organization, not movement of cards out of inventory
-                      // Total Value only changes when containers are SOLD (inventory actually decrements)
                       return inventoryValue.toFixed(2);
                     })()}
                   </div>
                 </div>
-                <div className="bg-slate-800 border border-slate-600 p-4">
-                  <div className="text-slate-400 text-sm">Total Purchased (60 days)</div>
-                  <div className="text-2xl font-bold text-emerald-300">
+                <div className="bg-slate-800 border border-slate-600 rounded-lg p-3 sm:p-4 text-center">
+                  <div className="text-slate-400 text-xs sm:text-sm">Purchased (60d)</div>
+                  <div className="text-xl sm:text-2xl font-bold text-emerald-300 mt-1">
                     ${totalPurchased60Days.toFixed(2)}
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="card p-6">
-              <h2 className="text-xl font-bold mb-4">Recent Activity</h2>
+            <div className="card p-4 sm:p-6">
+              <h2 className="text-lg sm:text-xl font-bold mb-4">Recent Activity</h2>
               <div className="grid gap-2">
                 {usageHistory.length > 0 ? (
                   usageHistory.map((entry, idx) => (
                     <div
                       key={idx}
-                      className="bg-slate-800 border border-slate-600 p-3 text-sm"
+                      className="bg-slate-800 border border-slate-600 rounded-lg p-3 text-xs sm:text-sm"
                     >
-                      <span className="font-semibold text-teal-300">
+                      <div className="font-semibold text-teal-300">
                         {entry.action}
-                      </span>
-                      <span className="text-slate-400">
-                        {" "}
-                        - {new Date(entry.created_at).toLocaleString()}
-                      </span>
+                      </div>
+                      <div className="text-slate-400 mt-1">
+                        {new Date(entry.created_at).toLocaleString()}
+                      </div>
                     </div>
                   ))
                 ) : (
