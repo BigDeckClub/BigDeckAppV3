@@ -157,12 +157,15 @@ const NORMAL_EDITIONS = [
   "Commander Masters",
   "Commander Anthology",
   "From the Vault: Relics",
+  "Magic 2010",
+  "Magic 2011",
+  "Magic 2012",
+  "Magic 2013",
   "Magic 2014",
   "Magic 2015",
+  "Magic Origins",
   "Secret Lair Drop Series",
   "Judge Gift Cards",
-  "Magic Origins",
-  "Core Set",
   "Starter Commander Deck",
 ];
 
