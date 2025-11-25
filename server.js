@@ -704,7 +704,7 @@ app.get('/api/inventory', async (req, res) => {
     // For each inventory item, calculate how many cards are in active containers
     const enriched = await Promise.all(invResult.rows.map(async (item) => {
       const containerResult = await pool.query(
-        `SELECT COALESCE(SUM(card->>'quantity_used'), 0)::int as in_containers 
+        `SELECT COALESCE(SUM((card->>'quantity_used')::int), 0)::int as in_containers 
          FROM containers, jsonb_array_elements(cards) as card 
          WHERE card->>'inventoryId' = $1`,
         [String(item.id)]
