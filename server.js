@@ -1039,10 +1039,17 @@ app.post('/api/containers/:id/sell', async (req, res) => {
 
     console.log(`[SALE RECORDED] Container: ${container.name}, Price: $${parsedPrice}, Sale ID: ${sale.rows[0].id}`);
 
-    // Delete container after recording sale
-    await client.query('DELETE FROM containers WHERE id = $1', [req.params.id]);
-
     await client.query('COMMIT');
+    
+    // ✅ CRITICAL: Delete container OUTSIDE the transaction
+    // This way, even if delete fails, the sale is already committed
+    try {
+      await pool.query('DELETE FROM containers WHERE id = $1', [req.params.id]);
+      console.log(`[SELL] ✅ Container deleted: id=${req.params.id}`);
+    } catch (deleteErr) {
+      console.warn(`[SELL] ⚠️ Container delete failed (non-fatal, sale already recorded): ${deleteErr.message}`);
+    }
+    
     res.json(sale.rows[0]);
 
   } catch (err) {
