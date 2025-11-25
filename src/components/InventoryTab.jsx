@@ -143,14 +143,14 @@ export const InventoryTab = ({
               value={newEntry.quantity}
               onChange={(e) => setNewEntry({...newEntry, quantity: parseInt(e.target.value)})}
               placeholder="Quantity"
-              className="bg-slate-800 border border-slate-600 rounded px-4 py-3 text-white text-base"
+              className="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-3 text-white text-base"
             />
             <input
               type="date"
               value={newEntry.purchaseDate}
               max={new Date().toISOString().split("T")[0]}
               onChange={(e) => setNewEntry({...newEntry, purchaseDate: e.target.value})}
-              className="bg-slate-800 border border-slate-600 rounded px-4 py-3 text-white text-base"
+              className="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-3 text-white text-base"
             />
           </div>
 
@@ -161,12 +161,12 @@ export const InventoryTab = ({
               value={newEntry.purchasePrice}
               onChange={(e) => setNewEntry({...newEntry, purchasePrice: e.target.value})}
               placeholder="Purchase Price ($)"
-              className="bg-slate-800 border border-slate-600 rounded px-4 py-3 text-white text-base"
+              className="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-3 text-white text-base"
             />
             <select
               value={newEntry.reorderType}
               onChange={(e) => setNewEntry({...newEntry, reorderType: e.target.value})}
-              className="bg-slate-800 border border-slate-600 rounded px-4 py-3 text-white text-base"
+              className="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-3 text-white text-base"
             >
               <option value="normal">Normal</option>
               <option value="land">Land</option>

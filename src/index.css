@@ -153,7 +153,12 @@ select {
 
 /* Mobile Bottom Navigation - Hidden by default on desktop */
 .mobile-nav {
-  @apply fixed bottom-0 left-0 right-0 z-50 hidden;
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 9999 !important;
+  display: none;
   background: linear-gradient(
     to top,
     rgba(15, 23, 42, 0.98) 0%,
@@ -162,33 +167,39 @@ select {
   border-top: 1px solid rgba(94, 234, 212, 0.25);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
-  padding-bottom: var(--safe-area-bottom);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
   box-shadow: 
     0 -8px 32px rgba(0, 0, 0, 0.5),
     0 -1px 0 rgba(255, 255, 255, 0.05) inset;
 }
 
 .mobile-nav-inner {
-  @apply flex items-center;
-  padding: 6px 4px 6px 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
   width: 100%;
-  max-width: 420px;
-  margin: 0 auto;
-  justify-content: space-around;
+  gap: 0;
 }
 
 .mobile-nav-item {
-  @apply flex flex-col items-center justify-center transition-all duration-150;
-  padding: 6px 4px 4px 4px;
-  min-width: 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  padding: 6px 8px 4px 8px;
+  min-width: 50px;
   flex: 1;
+  max-width: 65px;
   position: relative;
   border-radius: 10px;
 }
 
 .mobile-nav-item.active {
-  @apply text-teal-400;
+  color: #2dd4bf;
   background: rgba(20, 184, 166, 0.15);
+  border-radius: 8px;
 }
 
 .mobile-nav-item.active::before {
@@ -197,40 +208,41 @@ select {
   top: 0;
   left: 50%;
   transform: translateX(-50%);
-  width: 24px;
+  width: 20px;
   height: 2px;
-  background: var(--primary-light);
+  background: #14b8a6;
   border-radius: 0 0 2px 2px;
 }
 
 .mobile-nav-item.active .mobile-nav-icon {
-  transform: scale(1.1);
+  transform: scale(1.05);
 }
 
 .mobile-nav-item.active .mobile-nav-label {
-  @apply text-teal-400 font-semibold;
+  color: #2dd4bf;
+  font-weight: 600;
 }
 
 .mobile-nav-item.inactive {
-  @apply text-slate-500;
+  color: #64748b;
 }
 
 .mobile-nav-item:active {
-  transform: scale(0.92);
+  transform: scale(0.95);
   background: rgba(255, 255, 255, 0.05);
 }
 
 .mobile-nav-icon {
-  @apply transition-all duration-150;
+  transition: all 0.15s ease;
   width: 20px;
   height: 20px;
 }
 
 .mobile-nav-label {
-  font-size: 9px;
-  margin-top: 2px;
+  font-size: 10px;
+  margin-top: 3px;
   font-weight: 500;
-  letter-spacing: 0.01em;
+  letter-spacing: 0;
   text-align: center;
   white-space: nowrap;
 }
@@ -327,21 +339,37 @@ select {
   .btn-secondary,
   .btn-danger,
   .btn-accent {
-    @apply min-h-[44px] px-3 text-sm;
+    min-height: 44px;
+    padding-left: 12px;
+    padding-right: 12px;
+    font-size: 14px;
   }
   
   input[type="text"],
   input[type="number"],
-  input[type="date"],
   textarea,
   select {
-    @apply min-h-[44px] text-base px-3 py-2;
-    font-size: 16px; /* Prevents iOS zoom on focus */
+    min-height: 44px;
+    font-size: 16px !important; /* Prevents iOS zoom on focus */
+    padding: 10px 12px;
+    width: 100%;
+  }
+  
+  /* Date input specific fix for iOS */
+  input[type="date"] {
+    min-height: 44px;
+    font-size: 16px !important;
+    padding: 10px 12px;
+    width: 100% !important;
+    -webkit-appearance: none;
+    appearance: none;
   }
   
   /* Compact buttons in tight spaces */
   .btn-compact {
-    @apply min-h-[36px] px-2 py-1 text-xs;
+    min-height: 36px;
+    padding: 4px 8px;
+    font-size: 12px;
   }
 }
 
