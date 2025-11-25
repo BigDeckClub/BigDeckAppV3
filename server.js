@@ -21,7 +21,35 @@ function normalizeEditionName(name) {
   return name.toLowerCase().trim().replace(/[_-]/g, ' ');
 }
 
+function extractEditionFromUrl(url) {
+  try {
+    if (!url) return null;
+    const parts = url.split("/mtg/");
+    if (parts.length < 2) return null;
+
+    const after = parts[1]; // e.g. "beta/lightning-bolt"
+    const editionSlug = after.split("/")[0]; // "beta"
+
+    if (!editionSlug || editionSlug.length === 0) return null;
+
+    return normalizeEditionName(editionSlug);
+  } catch {
+    return null;
+  }
+}
+
 function extractEditionFromHtml(el, $) {
+  // PRIMARY METHOD: Extract edition from product URL (most reliable, always in HTML)
+  // URLs like: /mtg/magic-2011/lightning-bolt → "magic 2011"
+  const productLink = $(el).find('a').first();
+  if (productLink.length > 0) {
+    const href = productLink.attr('href');
+    const editionFromUrl = extractEditionFromUrl(href);
+    if (editionFromUrl) {
+      return editionFromUrl;
+    }
+  }
+  
   // FALLBACK 1: Try to find set icon with title attribute
   const setIcon = $(el).find('span[class*="set-icon"], .set-icon, [class*="symbol"]').first();
   if (setIcon.length > 0) {
@@ -46,26 +74,7 @@ function extractEditionFromHtml(el, $) {
     }
   }
   
-  // FALLBACK 4: Extract edition from product-title link href
-  // Example: /mtg/4th-edition/lightning-bolt → 4th edition
-  const productLink = $(el).find('a').first();
-  if (productLink.length > 0) {
-    const href = productLink.attr('href');
-    if (href) {
-      const match = href.match(/\/mtg\/([^/]+)\//);
-      if (match && match[1]) {
-        const editionFromUrl = match[1]
-          .split('-')
-          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-          .join(' ');
-        if (editionFromUrl.length > 0 && editionFromUrl.length < 100) {
-          return normalizeEditionName(editionFromUrl);
-        }
-      }
-    }
-  }
-  
-  // FALLBACK 5: Parse JSON from React data attributes
+  // FALLBACK 4: Parse JSON from React data attributes
   try {
     const reactPropsStr = $(el).attr('data-react-props') || $(el).attr('data-props');
     if (reactPropsStr) {
@@ -109,7 +118,13 @@ function normalizeName(name) {
 // List of variant/special edition names in Card Kingdom's data
 const SPECIAL_EDITIONS = [
   'showcase', 'secret lair', 'special edition', 'extended art', 'borderless',
-  'alternate art', 'collector', 'retro frame', 'masterpiece', 'artist series'
+  'alternate art', 'collector', 'retro frame', 'masterpiece', 'artist series',
+  'commander deck', 'commander', 'variants', 'limited edition', 'premium'
+];
+
+// List of core/standard edition keywords that indicate normal printings
+const STANDARD_EDITIONS = [
+  'core set', 'magic', 'edition', 'alpha', 'beta', 'unlimited', 'revised'
 ];
 
 function isSpecialEdition(editionName) {
