@@ -432,8 +432,8 @@ export default function MTGInventoryTracker() {
         if (data.data && data.data.length > 0) {
           const card = data.data[0];
           const prices = {
-            tcgplayer: card.prices?.usd ? `$${parseFloat(card.prices.usd).toFixed(2)}` : 'N/A',
-            cardkingdom: card.prices?.usd_foil ? `$${parseFloat(card.prices.usd_foil).toFixed(2)}` : 'N/A'
+            tcg: card.prices?.usd ? `$${parseFloat(card.prices.usd).toFixed(2)}` : 'N/A',
+            ck: card.prices?.usd_foil ? `$${parseFloat(card.prices.usd_foil).toFixed(2)}` : 'N/A'
           };
           setPriceCache(prev => ({...prev, [cacheKey]: prices}));
           return prices;
@@ -442,7 +442,7 @@ export default function MTGInventoryTracker() {
     } catch (error) {
 
     }
-    const fallback = { tcgplayer: 'N/A', cardkingdom: 'N/A' };
+    const fallback = { tcg: 'N/A', ck: 'N/A' };
     setPriceCache(prev => ({...prev, [cacheKey]: fallback}));
     return fallback;
   };
