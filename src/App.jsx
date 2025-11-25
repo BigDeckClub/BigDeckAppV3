@@ -1608,77 +1608,33 @@ function MTGInventoryTrackerContent() {
           <div className="space-y-6">
             {sales.length > 0 && (
               <div className="card p-6">
-                <h2 className="text-xl font-bold mb-4">Sold Containers</h2>
+                <h2 className="text-xl font-bold mb-4">Sales History</h2>
                 <div className="space-y-2">
                   {sales.map((sale) => {
-                    const container = containers.find(
-                      (c) => c.id === sale.container_id,
-                    );
-                    const isExpanded =
-                      expandedSoldContainers && expandedSoldContainers[sale.id];
-                    const containerCardsList =
-                      containerItems[sale.container_id] || [];
+                    const salePrice = parseFloat(sale.sale_price) || 0;
+                    const saleDate = new Date(sale.created_at || sale.sold_date);
 
                     return (
                       <div
                         key={sale.id}
-                        className="bg-slate-800 border border-slate-600 rounded"
+                        className="bg-slate-800 border border-slate-600 rounded p-4 flex justify-between items-center hover:bg-slate-700 transition"
                       >
-                        <button
-                          onClick={() =>
-                            setExpandedSoldContainers((prev) => ({
-                              ...prev,
-                              [sale.id]: !prev[sale.id],
-                            }))
-                          }
-                          className="w-full p-4 flex justify-between items-center hover:bg-slate-700 transition text-left"
-                        >
-                          <div>
-                            <div className="font-semibold">
-                              {container?.name || "Unknown Container"}
-                            </div>
-                            <div className="text-sm text-slate-400">
-                              {new Date(sale.sold_date).toLocaleDateString()} •{" "}
-                              {containerCardsList.length} cards
-                            </div>
+                        <div>
+                          <div className="font-semibold">
+                            Container #{sale.container_id}
                           </div>
-                          <ChevronDown
-                            className={`w-4 h-4 transition ${isExpanded ? "rotate-180" : ""}`}
-                          />
-                        </button>
-                        {isExpanded && (
-                          <div className="bg-slate-700 bg-opacity-50 border-t border-slate-600 p-4 space-y-2">
-                            {containerCardsList.length > 0 ? (
-                              containerCardsList.map((item, idx) => (
-                                <div
-                                  key={idx}
-                                  className="bg-slate-800 bg-opacity-50 p-3 rounded flex justify-between text-sm"
-                                >
-                                  <div>
-                                    <div className="text-slate-200">
-                                      {item.name}
-                                    </div>
-                                    <div className="text-xs text-slate-500">
-                                      {item.set_name} ({item.set})
-                                    </div>
-                                  </div>
-                                  <div className="text-right">
-                                    <div className="text-teal-300 font-semibold">
-                                      {item.quantity_used}x
-                                    </div>
-                                    <div className="text-xs text-slate-400">
-                                      @${item.purchase_price || "N/A"}
-                                    </div>
-                                  </div>
-                                </div>
-                              ))
-                            ) : (
-                              <p className="text-slate-400 text-sm">
-                                No cards in this container
-                              </p>
-                            )}
+                          <div className="text-sm text-slate-400">
+                            {saleDate.toLocaleDateString()} at {saleDate.toLocaleTimeString()}
                           </div>
-                        )}
+                        </div>
+                        <div className="text-right">
+                          <div className="text-lg font-bold text-emerald-400">
+                            ${salePrice.toFixed(2)}
+                          </div>
+                          <div className="text-xs text-slate-400">
+                            Sold
+                          </div>
+                        </div>
                       </div>
                     );
                   })}
