@@ -29,7 +29,6 @@ export default function DecklistCardPrice({ name, set, priceType, className }) {
         if (!result) {
           console.warn("[DecklistCardPrice] Result is falsy:", result);
           setPrice("N/A");
-          setLoading(false);
           return;
         }
         
@@ -42,11 +41,13 @@ export default function DecklistCardPrice({ name, set, priceType, className }) {
           console.warn("[DecklistCardPrice] Price not found for type:", priceType, "available keys:", Object.keys(result));
           setPrice("N/A");
         }
-        setLoading(false);
       })
       .catch(err => {
         console.error(`[DecklistCardPrice] Price fetch error for ${name}|${set}:`, err);
         setPrice("N/A");
+      })
+      .finally(() => {
+        console.log("[DecklistCardPrice] Clearing loading state");
         setLoading(false);
       });
   }, [name, set, getPrice, priceType]);
