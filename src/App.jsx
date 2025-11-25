@@ -398,10 +398,30 @@ function MTGInventoryTrackerContent() {
   };
 
   const deleteInventoryItem = async (id) => {
+    console.log('[DELETE] Attempting to delete inventory item:', id);
+    if (!id) {
+      console.error('[DELETE] No ID provided');
+      return;
+    }
+    
+    if (!confirm('Are you sure you want to delete this card?')) {
+      return;
+    }
+    
     try {
-      await fetch(`${API_BASE}/inventory/${id}`, { method: "DELETE" });
+      const response = await fetch(`${API_BASE}/inventory/${id}`, { method: "DELETE" });
+      console.log('[DELETE] Response status:', response.status);
+      if (!response.ok) {
+        throw new Error(`Failed to delete: ${response.status}`);
+      }
       await loadInventory();
-    } catch (error) {}
+      setSuccessMessage("Card deleted successfully!");
+      setTimeout(() => setSuccessMessage(""), 3000);
+    } catch (error) {
+      console.error('[DELETE] Error:', error);
+      setSuccessMessage("Error deleting card: " + error.message);
+      setTimeout(() => setSuccessMessage(""), 3000);
+    }
   };
 
 

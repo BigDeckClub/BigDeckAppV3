@@ -334,13 +334,19 @@ export const InventoryTab = ({
                                 </div>
                                 <div className="flex gap-1 ml-auto sm:ml-0">
                                   <button
-                                    onClick={() => startEditingItem(item)}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      startEditingItem(item);
+                                    }}
                                     className="bg-blue-600 hover:bg-blue-700 rounded px-3 py-2 sm:px-2 sm:py-1 text-xs font-semibold min-h-[36px] sm:min-h-0"
                                   >
                                     Edit
                                   </button>
                                   <button
-                                    onClick={() => deleteInventoryItem(item.id)}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      deleteInventoryItem(item.id);
+                                    }}
                                     className="bg-red-600 hover:bg-red-700 rounded px-3 py-2 sm:px-2 sm:py-1 min-h-[36px] sm:min-h-0"
                                   >
                                     <Trash2 className="w-4 h-4" />
