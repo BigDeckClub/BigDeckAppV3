@@ -802,9 +802,21 @@ function MTGInventoryTrackerContent() {
     return totalCost;
   };
 
+  const calculateContainerTotalCost = (containerId) => {
+    const items = containerItems[containerId] || [];
+    if (!Array.isArray(items)) return 0;
+    
+    return items.reduce((total, item) => {
+      const quantity = parseInt(item.quantity_used) || 0;
+      const price = parseFloat(item.purchase_price) || 0;
+      return total + (quantity * price);
+    }, 0);
+  };
+
   const sellContainer = async () => {
-    if (!selectedContainerForSale || !salePrice) {
-      alert("Please enter a sale price");
+    const priceToParse = parseFloat(salePrice);
+    if (!selectedContainerForSale || !priceToParse || isNaN(priceToParse)) {
+      alert("Please enter a valid sale price");
       return;
     }
 
@@ -817,9 +829,9 @@ function MTGInventoryTrackerContent() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          container_id: selectedContainerForSale,
+          container_id: parseInt(selectedContainerForSale),
           decklist_id: container.decklist_id,
-          sale_price: parseFloat(salePrice),
+          sale_price: priceToParse,
         }),
       });
 
@@ -1448,6 +1460,7 @@ function MTGInventoryTrackerContent() {
                   const containerPrices = calculateContainerPrices(
                     container.id,
                   );
+                  const totalCost = calculateContainerTotalCost(container.id);
                   return (
                     <div
                       key={container.id}
@@ -1459,12 +1472,18 @@ function MTGInventoryTrackerContent() {
                           <div className="text-sm text-slate-300">
                             Decklist ID: {container.decklist_id}
                           </div>
-                          <div className="grid grid-cols-2 gap-2 text-xs mt-2 text-slate-400">
-                            <div className="text-teal-300">
-                              TCG: ${containerPrices.tcg.toFixed(2)}
+                          <div className="grid grid-cols-3 gap-2 text-xs mt-2 text-slate-400">
+                            <div className="text-orange-300 bg-slate-800 bg-opacity-50 p-2 rounded">
+                              <div className="text-xs">Purchase Cost</div>
+                              <div className="font-semibold">${totalCost.toFixed(2)}</div>
                             </div>
-                            <div className="text-cyan-300">
-                              CK: ${containerPrices.ck.toFixed(2)}
+                            <div className="text-teal-300 bg-slate-800 bg-opacity-50 p-2 rounded">
+                              <div className="text-xs">TCG Value</div>
+                              <div className="font-semibold">${containerPrices.tcg.toFixed(2)}</div>
+                            </div>
+                            <div className="text-cyan-300 bg-slate-800 bg-opacity-50 p-2 rounded">
+                              <div className="text-xs">CK Value</div>
+                              <div className="font-semibold">${containerPrices.ck.toFixed(2)}</div>
                             </div>
                           </div>
                         </div>
@@ -1502,11 +1521,11 @@ function MTGInventoryTrackerContent() {
                           </h4>
                           {containerItems[container.id] &&
                           containerItems[container.id].length > 0 ? (
-                            <div className="space-y-2 max-h-64 overflow-y-auto">
+                            <div className="space-y-2 max-h-96 overflow-y-auto">
                               {containerItems[container.id].map((item, idx) => (
                                 <div
                                   key={idx}
-                                  className="bg-slate-800 bg-opacity-50 border border-slate-600 p-3 text-sm"
+                                  className="bg-slate-800 bg-opacity-50 border border-slate-600 p-3 text-sm space-y-2"
                                 >
                                   <div className="flex justify-between">
                                     <div>
@@ -1522,8 +1541,18 @@ function MTGInventoryTrackerContent() {
                                         {item.quantity_used}x
                                       </div>
                                       <div className="text-xs text-slate-400">
-                                        ${item.purchase_price || "N/A"}
+                                        Purchase: ${item.purchase_price || "N/A"}
                                       </div>
+                                    </div>
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-2 text-xs">
+                                    <div className="bg-slate-700 p-2 rounded">
+                                      <div className="text-slate-400">TCG Player</div>
+                                      <DecklistCardPrice name={item.name} set={item.set} />
+                                    </div>
+                                    <div className="bg-slate-700 p-2 rounded">
+                                      <div className="text-slate-400">Card Kingdom</div>
+                                      <DecklistCardPrice name={item.name} set={item.set} />
                                     </div>
                                   </div>
                                 </div>
