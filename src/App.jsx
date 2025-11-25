@@ -944,7 +944,7 @@ export default function MTGInventoryTracker() {
           groupName: item.name // For grouping in display
         };
       }
-      grouped[key].quantity += item.quantity;
+      grouped[key].quantity += parseInt(item.quantity) || 0;
     });
 
     // Calculate container usage + sold cards for each card+set combo
