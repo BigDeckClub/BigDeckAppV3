@@ -73,16 +73,24 @@ export const InventoryTab = ({
             
             {showDropdown && searchResults.length > 0 && (
               <div className="absolute top-full left-0 right-0 mt-2 bg-black border border-slate-600 rounded shadow-lg max-h-64 overflow-y-auto z-10">
-                {searchResults.map((card) => (
-                  <div
-                    key={card.id}
-                    onClick={() => selectCard(card)}
-                    className="px-4 py-2 hover:bg-purple-700 cursor-pointer border-b border-slate-600"
-                  >
-                    <div className="font-semibold">{card.name}</div>
-                    <div className="text-sm text-slate-300">{card.setName} ({card.set})</div>
-                  </div>
-                ))}
+                {(() => {
+                  const seen = new Set();
+                  return searchResults
+                    .filter(card => {
+                      if (seen.has(card.name)) return false;
+                      seen.add(card.name);
+                      return true;
+                    })
+                    .map((card) => (
+                      <div
+                        key={card.id}
+                        onClick={() => selectCard(card)}
+                        className="px-4 py-2 hover:bg-purple-700 cursor-pointer border-b border-slate-600"
+                      >
+                        <div className="font-semibold">{card.name}</div>
+                      </div>
+                    ));
+                })()}
               </div>
             )}
           </div>
