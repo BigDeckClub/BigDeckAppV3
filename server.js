@@ -131,18 +131,41 @@ function shouldPromoteSetOverNormal(setPrice, normalPrice) {
   return ratio >= 3;
 }
 
-function classifyVariantEnhanced(product, index, firstNormalIndex, baseCardName, ctx) {
-  // 1. Base classification using your original logic
-  let variant = classifyVariant(product.name, baseCardName);
+function classifyVariantEnhanced(raw, index, firstNormalIndex, cardName, globalPriceContext) {
+  const base = classifyVariant(raw.name, cardName);
+  const price = raw.price;
+  const lowestNormal = globalPriceContext?.lowestNormalPrice ?? null;
 
-  // 2. Promotion logic: set → normal if very cheap compared to baseline normal
-  if (variant === "set" && ctx && ctx.lowestNormalPrice != null) {
-    if (shouldPromoteSetOverNormal(product.price, ctx.lowestNormalPrice)) {
-      variant = "normal";
+  // --- CASE 1: Use base classification if no context yet ---
+  if (lowestNormal === null) {
+    return base;
+  }
+
+  // --- CASE 2: Set promotion logic (fixed Swamp) ---
+  if (base === "set") {
+    if (shouldPromoteSetOverNormal(price, lowestNormal)) {
+      return "normal";
     }
   }
 
-  return variant;
+  // --- CASE 3: Price sanity heuristics (Lightning Bolt/Sol Ring regression fix) ---
+
+  // Helper thresholds
+  const tooExpensive = price > lowestNormal * 1.6;   // configurable
+  const veryCheap    = price < lowestNormal * 0.4;   // configurable
+
+  // 3A: A "normal" candidate that is way more expensive should NOT be treated as normal
+  if (base === "normal" && tooExpensive) {
+    return "special"; // previously worked logic
+  }
+
+  // 3B: A "special/set" candidate that is extremely cheap should be promoted
+  if ((base === "set" || base === "special") && veryCheap) {
+    return "normal";
+  }
+
+  // If no special rules apply, keep the base result
+  return base;
 }
 
 // ============== PRICE PARSING ==============
