@@ -1,0 +1,74 @@
+Here's the fix - replace the end of your Settings section (around line 1680-1710) with this corrected version:
+jsx        {/* Settings */}
+        {showSettings && (
+          <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+            <div className="bg-slate-800 border border-slate-700 hover:border-teal-500 rounded-lg p-6 max-w-md w-full mx-4">
+              <h2 className="text-xl font-bold mb-4">Reorder Thresholds</h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold mb-2">Normal Cards</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={reorderSettings.normal}
+                    onChange={(e) => setReorderSettings({...reorderSettings, normal: parseInt(e.target.value)})}
+                    className="w-full bg-slate-800 border border-slate-600 px-4 py-2 text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold mb-2">Lands</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={reorderSettings.land}
+                    onChange={(e) => setReorderSettings({...reorderSettings, land: parseInt(e.target.value)})}
+                    className="w-full bg-slate-800 border border-slate-600 px-4 py-2 text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold mb-2">Bulk Items</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={reorderSettings.bulk}
+                    onChange={(e) => setReorderSettings({...reorderSettings, bulk: parseInt(e.target.value)})}
+                    className="w-full bg-slate-800 border border-slate-600 px-4 py-2 text-white"
+                  />
+                </div>
+                <div className="border-t border-slate-700 hover:border-teal-500 pt-4 mt-4">
+                  <button
+                    onClick={() => {
+                      setPriceCache({});
+                      setSuccessMessage('Price cache cleared successfully!');
+                      setTimeout(() => setSuccessMessage(''), 3000);
+                    }}
+                    className="w-full btn-accent mb-2"
+                  >
+                    Refresh Price Cache
+                  </button>
+                  <p className="text-xs text-slate-400">Clears cached card prices and fetches fresh data</p>
+                </div>
+                <div className="flex gap-2 mt-4 justify-end">
+                  <button
+                    onClick={saveReorderSettings}
+                    className="flex-1 btn-primary px-4 py-2 font-semibold"
+                  >
+                    Save
+                  </button>
+                  <button
+                    onClick={() => setShowSettings(false)}
+                    className="flex-1 btn-secondary px-4 py-2 font-semibold"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>  {/* ✅ ADD THIS CLOSING DIV */}
+        )}
+      </main>
+    </div>
+  );
+}
+The problem: Your Settings modal has an opening <div className="fixed..."> but it's missing the corresponding closing </div> before the )} that closes the conditional render.
+Add that one closing </div> tag right before the )} on line ~1700, and your JSX structure will be complete!
