@@ -422,36 +422,49 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
         const html = await ckRes.text();
         const $ = load(html);
         
-        let selectorPrice = null;
-        let regexPrices = [];
-
-        // Primary: Use most reliable selector (span.stylePrice)
-        const priceElement = $('span.stylePrice').first();
+        console.log(`  [DEBUG] Scraping all product cards for: ${cardName}`);
         
-        if (priceElement.length > 0) {
-          const priceText = priceElement.text().trim();
-          const priceMatch = priceText.match(/\$?([0-9]+\.[0-9]{2})/);
-          if (priceMatch) {
-            selectorPrice = parseFloat(priceMatch[1]);
-          }
-        }
-
-        // Fallback: Smart regex extraction scoped to first product card
-        if (!selectorPrice) {
-          const productCard = $('div.productCard').first();
-          const searchHtml = productCard.length > 0 ? productCard.html() : html;
+        // Extract ALL product cards with name + price
+        const productPrices = [];
+        
+        $('div.productCard').each((i, el) => {
+          const nameEl = $(el).find('a').first();
+          const priceEl = $(el).find('span.stylePrice').first();
           
-          const priceMatches = searchHtml.match(/\$([0-9]+\.[0-9]{2})/g);
-          if (priceMatches) {
-            regexPrices = priceMatches;
+          if (nameEl.length === 0 || priceEl.length === 0) return;
+          
+          const name = nameEl.text().trim().toLowerCase();
+          const rawPrice = priceEl.text().trim();
+          const numericPrice = extractNumericPrice(rawPrice);
+          
+          console.log(`    Product #${i + 1}: "${name}" = ${rawPrice}`);
+          
+          // Only match products that include the target card name
+          if (name.includes(cardName.toLowerCase())) {
+            if (isValidPrice(numericPrice)) {
+              productPrices.push(numericPrice);
+              console.log(`      ✓ Valid match found: $${numericPrice.toFixed(2)}`);
+            } else {
+              console.log(`      ✗ Price outside valid range: $${numericPrice.toFixed(2)}`);
+            }
           }
-        }
-
-        // Resolve using unified resolver
-        ckPrice = resolveCKPrice(selectorPrice, regexPrices, html);
+        });
         
-        if (ckPrice !== 'N/A') {
-          console.log(`✓ Found CK price: ${ckPrice}`);
+        if (productPrices.length > 0) {
+          const lowestPrice = Math.min(...productPrices);
+          ckPrice = `$${lowestPrice.toFixed(2)}`;
+          console.log(`  [DEBUG] Found ${productPrices.length} matching products`);
+          console.log(`  ✓ Returning lowest price: ${ckPrice}`);
+        } else {
+          console.log(`  [DEBUG] No matching products found with valid prices`);
+          // Fallback: Check for status indicators
+          if (/sold out/i.test(html)) {
+            ckPrice = 'Sold Out';
+            console.log(`  [Escape] Found "Sold Out" indicator`);
+          } else if (/coming soon/i.test(html)) {
+            ckPrice = 'Unavailable';
+            console.log(`  [Escape] Found "Coming Soon" indicator`);
+          }
         }
       }
     } catch (ckError) {
