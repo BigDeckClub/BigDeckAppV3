@@ -843,12 +843,13 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
             rank, 
             name: p.name,
             quantity: p.quantity,
-            condition: p.condition
+            condition: p.condition,
+            edition: p.edition
           });
           
-          // Debug logging for Sol Ring/Lightning Bolt to see full product names
+          // Debug logging for Sol Ring/Lightning Bolt to see full product names AND edition metadata
           if (isSolRing || isLightningBolt) {
-            console.log(`      ✓ $${p.price.toFixed(2)} [${variant}] - "${p.name}"`);
+            console.log(`      ✓ $${p.price.toFixed(2)} [${variant}] | "${p.name}" | Edition: "${p.edition}"`);
           } else {
             console.log(`      ✓ Valid match found: $${p.price.toFixed(2)} [${variant}] (${p.condition}, qty: ${p.quantity})`);
           }
