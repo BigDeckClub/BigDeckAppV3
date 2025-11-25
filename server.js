@@ -93,6 +93,43 @@ function classifyVariant(rawName, cardName) {
   return 'premium';
 }
 
+// ============== PRICE-BASED HEURISTICS ==============
+function isSuspiciouslyCheap(baseCardName, normalizedName, price) {
+  const cheapThresholds = {
+    "lightning bolt": 2.20,
+    "sol ring": 2.20,
+  };
+
+  const key = baseCardName.toLowerCase().trim();
+  const limit = cheapThresholds[key];
+
+  if (!limit) return false;
+  return price < limit;
+}
+
+function isSuspiciousByOrdering(index, firstNormalIndex) {
+  if (firstNormalIndex == null) return false;
+  return index > firstNormalIndex;
+}
+
+function classifyVariantEnhanced(product, index, firstNormalIndex, baseCardName) {
+  const { name, price } = product;
+  const result = classifyVariant(name, baseCardName);
+  const normalized = normalizeName(name);
+
+  if (result !== "normal") return result;
+
+  if (isSuspiciouslyCheap(baseCardName, normalized, price)) {
+    return "special";
+  }
+
+  if (isSuspiciousByOrdering(index, firstNormalIndex)) {
+    return "special";
+  }
+
+  return "normal";
+}
+
 // ============== PRICE PARSING ==============
 function isValidPrice(price) {
   return price > 0.05 && price < 500;
@@ -341,6 +378,7 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
         }
         
         const productPrices = [];
+        let firstNormalIndex = null;
         
         products.each((i, el) => {
           let nameEl = $(el).find('a').first();
@@ -368,7 +406,17 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
             const numericPrice = rawPrice ? extractNumericPrice(rawPrice) : 0;
             
             if (isValidPrice(numericPrice)) {
-              const variant = classifyVariant(name, cardName);
+              const variant = classifyVariantEnhanced(
+                { name, price: numericPrice },
+                productPrices.length,
+                firstNormalIndex,
+                cardName
+              );
+              
+              if (variant === "normal" && firstNormalIndex === null) {
+                firstNormalIndex = productPrices.length;
+              }
+              
               const rank = getVariantRank(variant);
               productPrices.push({ price: numericPrice, variant, rank, name });
               console.log(`      ✓ Valid match found: $${numericPrice.toFixed(2)} [${variant}]`);
