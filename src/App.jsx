@@ -1615,8 +1615,7 @@ export default function MTGInventoryTracker() {
                                     <span className="text-emerald-300">
                                       ${(
                                         cardAlerts.reduce((sum, a) => {
-                                          const needed = Math.max(0, threshold - a.quantity);
-                                          return sum + (needed * parseFloat(a.purchase_price || 0));
+                                          return sum + ((a.cardsInContainers || 0) * parseFloat(a.purchase_price || 0));
                                         }, 0)
                                       ).toFixed(2)}
                                     </span>
