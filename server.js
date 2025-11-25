@@ -42,8 +42,15 @@ const priceLimiter = rateLimit({
 });
 
 // PostgreSQL connection
+const dbUrl = process.env.DATABASE_URL;
+console.log('[DB] DATABASE_URL configured:', dbUrl ? '✓ YES' : '✗ NO');
+if (dbUrl && dbUrl.includes('helium')) {
+  console.log('[DB] ⚠️ WARNING: Using internal "helium" hostname - this won\'t work in production!');
+  console.log('[DB] For production deployment, set DATABASE_URL via Replit Database or environment variables.');
+}
+
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: dbUrl,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 5000
 });
@@ -796,6 +803,14 @@ function handleDbError(err, res) {
   console.error('[DB ERROR] Code:', err.code);
   console.error('[DB ERROR] Detail:', err.detail);
   console.error('[DB ERROR] Constraint:', err.constraint);
+  
+  // Check for connection errors
+  if (err.code === 'ENOTFOUND' || err.code === 'EAI_AGAIN') {
+    console.error('[DB ERROR] ✗ Cannot resolve database host. Check DATABASE_URL is set correctly.');
+    return res.status(500).json({ 
+      error: `Database connection failed: ${err.message}. Check that DATABASE_URL environment variable is configured.` 
+    });
+  }
   
   // Provide more specific error messages
   if (err.code === '23505') {
