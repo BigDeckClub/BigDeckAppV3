@@ -3,31 +3,27 @@ import PropTypes from "prop-types";
 import { usePriceCache } from "../context/PriceCacheContext";
 import { normalizeCardName, normalizeSetCode } from "../lib/fetchCardPrices";
 
+/**
+ * DecklistCardPrice Component
+ * Displays TCG or Card Kingdom price for a specific card
+ * 
+ * @param {string} name - Card name
+ * @param {string} set - Set code (e.g., "M11")
+ * @param {string} priceType - Either "tcg" or "ck"
+ * @param {string} className - Optional CSS class
+ */
 export default function DecklistCardPrice({ name, set, priceType, className }) {
   const { getPrice } = usePriceCache();
   const [price, setPrice] = useState("N/A");
   const [loading, setLoading] = useState(true);
 
-  // Mount log
-  useEffect(() => {
-    console.log("[DEBUG] DecklistCardPrice mounted with props:", { name, set, priceType });
-  }, []);
-
-  // Props change log
-  useEffect(() => {
-    console.log("[DEBUG] DecklistCardPrice props updated:", { name, set, priceType });
-  }, [name, set, priceType]);
-
-  // Main fetch effect
   useEffect(() => {
     if (!name || !set) {
-      console.log("[DEBUG] Missing name or set, setting N/A");
       setPrice("N/A");
       setLoading(false);
       return;
     }
 
-    console.log("[DEBUG] DecklistCardPrice starting fetch for:", { name, set, priceType });
     setLoading(true);
     
     const cardName = normalizeCardName(name);
@@ -35,29 +31,17 @@ export default function DecklistCardPrice({ name, set, priceType, className }) {
     
     getPrice(cardName, setCode)
       .then(result => {
-        console.log("[DEBUG] Price data fetched:", result);
-        
         if (!result) {
-          console.log("[DEBUG] Result is falsy");
           setPrice("N/A");
           setLoading(false);
           return;
         }
         
         const priceValue = result[priceType];
-        console.log("[DEBUG] Extracted priceValue from result[" + priceType + "]:", priceValue);
-        
-        if (priceValue) {
-          console.log("[DEBUG] Setting price to:", priceValue);
-          setPrice(priceValue);
-        } else {
-          console.log("[DEBUG] priceValue is falsy, setting N/A. Available keys:", Object.keys(result));
-          setPrice("N/A");
-        }
+        setPrice(priceValue || "N/A");
         setLoading(false);
       })
-      .catch(err => {
-        console.error("[DEBUG] getPrice error:", err);
+      .catch(() => {
         setPrice("N/A");
         setLoading(false);
       });
