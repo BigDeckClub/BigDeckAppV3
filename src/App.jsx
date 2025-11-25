@@ -461,9 +461,9 @@ export default function MTGInventoryTracker() {
     } catch (error) {}
   };
 
-  const fetchCardPrices = async (cardName, cardSet) => {
+  const fetchCardPrices = async (cardName, setCode) => {
     try {
-      let normalizedSet = (cardSet || "").trim().toUpperCase();
+      let normalizedSet = (setCode || "").trim().toUpperCase();
 
       // Basic lands often have missing or invalid set codes in the inventory.
       // If Swamp (or any basic land) has no valid setCode, fallback to SPM,
