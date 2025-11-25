@@ -421,30 +421,19 @@ export default function MTGInventoryTracker() {
   };
 
   const fetchCardPrices = async (cardName, setCode) => {
-    const cacheKey = `${cardName}|${setCode}`;
-    if (priceCache[cacheKey]) {
-      return priceCache[cacheKey];
-    }
     try {
-      const response = await fetch(`https://api.scryfall.com/cards/search?q=!"${cardName}"+set:${setCode}&unique=prints`);
+      const response = await fetch(`${API_BASE}/prices/${encodeURIComponent(cardName)}/${setCode}`);
       if (response.ok) {
-        const data = await response.json();
-        if (data.data && data.data.length > 0) {
-          const card = data.data[0];
-          const prices = {
-            tcg: card.prices?.usd ? `$${parseFloat(card.prices.usd).toFixed(2)}` : 'N/A',
-            ck: card.prices?.usd_foil ? `$${parseFloat(card.prices.usd_foil).toFixed(2)}` : 'N/A'
-          };
-          setPriceCache(prev => ({...prev, [cacheKey]: prices}));
-          return prices;
-        }
+        const priceData = await response.json();
+        return {
+          tcg: priceData.tcg || 'N/A',
+          ck: priceData.ck || 'N/A'
+        };
       }
     } catch (error) {
-
+      // Silently handle errors
     }
-    const fallback = { tcg: 'N/A', ck: 'N/A' };
-    setPriceCache(prev => ({...prev, [cacheKey]: fallback}));
-    return fallback;
+    return { tcg: 'N/A', ck: 'N/A' };
   };
 
   const searchScryfall = async (query) => {
