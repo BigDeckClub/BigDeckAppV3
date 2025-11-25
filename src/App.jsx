@@ -1139,247 +1139,265 @@ function MTGInventoryTrackerContent() {
                       </div>
 
                       {isExpanded && (
-                        <div className="mt-4 border-t border-slate-700 hover:border-teal-500 pt-4">
-                          <div className="space-y-3">
-                            {deckCards.map((card, idx) => {
-                              // Use set from decklist, fallback to inventory, then default
-                              let cardSet = card.setCode;
-                              if (!cardSet) {
-                                const inventoryCard = inventory.find(
-                                  (inv) =>
-                                    inv.name.toLowerCase() ===
-                                    card.name.toLowerCase(),
-                                );
-                                cardSet =
-                                  inventoryCard?.set ||
-                                  defaultSearchSet ||
-                                  "UNK";
-                              }
-                              const isEditingThisCard =
-                                editingDecklistCard?.idx === idx &&
-                                editingDecklistCard?.deckId === deck.id;
+                        <div className="mt-4 pt-4 border-t border-slate-700 hover:border-teal-500">
+                          <h4 className="font-semibold mb-3">Cards in Decklist</h4>
+                          <div className="space-y-2 max-h-96 overflow-y-auto">
+                            {(() => {
+                              // Group cards by name
+                              const groupedByName = {};
+                              deckCards.forEach((card, idx) => {
+                                let cardSet = card.setCode;
+                                if (!cardSet) {
+                                  const inventoryCard = inventory.find(
+                                    (inv) =>
+                                      inv.name.toLowerCase() ===
+                                      card.name.toLowerCase(),
+                                  );
+                                  cardSet =
+                                    inventoryCard?.set ||
+                                    defaultSearchSet ||
+                                    "UNK";
+                                }
+                                const cardKey = `${card.name}|${cardSet}`;
+                                if (!groupedByName[cardKey]) {
+                                  groupedByName[cardKey] = {
+                                    name: card.name,
+                                    set: cardSet,
+                                    copies: [],
+                                  };
+                                }
+                                groupedByName[cardKey].copies.push({ idx, card });
+                              });
 
-                              return (
-                                <div key={idx} className="card p-6 border p-3">
-                                  {isEditingThisCard ? (
-                                    <div className="space-y-2">
-                                      <select
-                                        value={editCardSet}
-                                        onChange={(e) =>
-                                          setEditCardSet(e.target.value)
-                                        }
-                                        className="w-full bg-slate-800 border border-slate-600 px-3 py-2 text-white text-xs"
-                                      >
-                                        <option value="">
-                                          Select a set...
-                                        </option>
-                                        {editCardAvailableSets.map((set) => (
-                                          <option
-                                            key={set.code}
-                                            value={set.code}
-                                          >
-                                            {set.code.toUpperCase()} -{" "}
-                                            {set.name}
-                                          </option>
-                                        ))}
-                                      </select>
-                                      <div className="flex gap-2">
-                                        <button
-                                          onClick={() => {
-                                            if (!editCardSet) {
-                                              alert("Please select a set");
-                                              return;
-                                            }
+                              return Object.entries(groupedByName).map(([cardKey, group]) => {
+                                const isGroupExpanded = expandedCardCopies[`${deck.id}-group-${cardKey}`];
+                                
+                                return (
+                                  <div key={cardKey} className="bg-slate-800 border border-slate-600 rounded">
+                                    <button
+                                      onClick={() => setExpandedCardCopies(prev => ({
+                                        ...prev,
+                                        [`${deck.id}-group-${cardKey}`]: !isGroupExpanded
+                                      }))}
+                                      className="w-full p-3 text-sm flex justify-between items-center hover:bg-slate-700 transition"
+                                    >
+                                      <div className="text-left flex-1">
+                                        <div className="font-semibold">{group.name}</div>
+                                      </div>
+                                      <div className="flex items-center gap-3">
+                                        <div className="text-right text-xs">
+                                          <div className="text-teal-300 font-semibold">{group.copies.length}x</div>
+                                        </div>
+                                        <div className="text-slate-400">
+                                          {isGroupExpanded ? '▼' : '▶'}
+                                        </div>
+                                      </div>
+                                    </button>
 
-                                            // Get the original lines (with quantities)
-                                            const lines = (deck.decklist || "")
-                                              .split("\n")
-                                              .filter((line) => line.trim());
+                                    {isGroupExpanded && (
+                                      <div className="bg-slate-900 bg-opacity-50 border-t border-slate-600 p-3 space-y-2">
+                                        {group.copies.map(({ idx, card }, copyIdx) => {
+                                          const isEditingThisCard =
+                                            editingDecklistCard?.idx === idx &&
+                                            editingDecklistCard?.deckId === deck.id;
 
-                                            // Find the line with this card and update its set code
-                                            let found = false;
-                                            let cardInstanceCount = 0;
-                                            const newLines = lines.map(
-                                              (line) => {
-                                                const match = line.match(
-                                                  /^(\d+)\s+(.+?)(?:\s+\(([A-Z0-9]+)\))?$/,
-                                                );
-                                                if (match) {
-                                                  const qty = match[1];
-                                                  const cardNamePart =
-                                                    match[2].trim();
-                                                  const existingSet = match[3];
-
-                                                  if (
-                                                    cardNamePart.toLowerCase() ===
-                                                    card.name.toLowerCase()
-                                                  ) {
-                                                    // This is the card we're looking for
-                                                    // Check if this is the instance we want to edit (idx is the individual card position)
-                                                    if (
-                                                      cardInstanceCount +
-                                                        parseInt(qty) >
-                                                        idx &&
-                                                      cardInstanceCount <= idx
-                                                    ) {
-                                                      found = true;
-                                                      // Replace the entire line with updated set code
-                                                      return `${qty} ${cardNamePart} (${editCardSet.toUpperCase()})`;
+                                          return (
+                                            <div key={copyIdx} className="bg-slate-800 p-3 rounded border border-slate-600 text-xs space-y-2">
+                                              <div className="font-semibold text-slate-200">{group.set}</div>
+                                              {isEditingThisCard ? (
+                                                <div className="space-y-2">
+                                                  <select
+                                                    value={editCardSet}
+                                                    onChange={(e) =>
+                                                      setEditCardSet(e.target.value)
                                                     }
-                                                    cardInstanceCount +=
-                                                      parseInt(qty);
-                                                  }
-                                                }
-                                                return line;
-                                              },
-                                            );
+                                                    className="w-full bg-slate-700 border border-slate-600 px-3 py-2 text-white text-xs"
+                                                  >
+                                                    <option value="">
+                                                      Select a set...
+                                                    </option>
+                                                    {editCardAvailableSets.map((set) => (
+                                                      <option
+                                                        key={set.code}
+                                                        value={set.code}
+                                                      >
+                                                        {set.code.toUpperCase()} -{" "}
+                                                        {set.name}
+                                                      </option>
+                                                    ))}
+                                                  </select>
+                                                  <div className="flex gap-2">
+                                                    <button
+                                                      onClick={() => {
+                                                        if (!editCardSet) {
+                                                          alert("Please select a set");
+                                                          return;
+                                                        }
 
-                                            if (found) {
-                                              const newDecklistText =
-                                                newLines.join("\n");
+                                                        const lines = (deck.decklist || "")
+                                                          .split("\n")
+                                                          .filter((line) => line.trim());
 
-                                              fetch(
-                                                `${API_BASE}/decklists/${deck.id}`,
-                                                {
-                                                  method: "PUT",
-                                                  headers: {
-                                                    "Content-Type":
-                                                      "application/json",
-                                                  },
-                                                  body: JSON.stringify({
-                                                    decklist: newDecklistText,
-                                                  }),
-                                                },
-                                              )
-                                                .then(() => {
-                                                  // Track last used set
-                                                  setLastUsedSets((prev) => ({
-                                                    ...prev,
-                                                    [card.name.toLowerCase()]:
-                                                      editCardSet,
-                                                  }));
-                                                  loadDecklists();
-                                                  setEditingDecklistCard(null);
-                                                })
-                                                .catch((err) => {
-                                                  alert(
-                                                    "Failed to update decklist",
-                                                  );
-                                                });
-                                            } else {
-                                              alert(
-                                                "Could not find card in decklist",
-                                              );
-                                            }
-                                          }}
-                                          className="flex-1 btn-primary px-2 py-1 text-xs font-semibold"
-                                        >
-                                          Save
-                                        </button>
-                                        <button
-                                          onClick={() =>
-                                            setEditingDecklistCard(null)
-                                          }
-                                          className="flex-1 btn-secondary px-2 py-1 text-xs font-semibold"
-                                        >
-                                          Cancel
-                                        </button>
-                                      </div>
-                                    </div>
-                                  ) : (
-                                    <>
-                                      <div className="flex justify-between items-start mb-2">
-                                        <div className="flex-1">
-                                          <div className="font-semibold">
-                                            {card.name}
-                                          </div>
-                                          <div className="text-xs text-slate-400">
-                                            {cardSet.toUpperCase()}
-                                          </div>
-                                        </div>
-                                        <button
-                                          onClick={async () => {
-                                            const lastSet =
-                                              lastUsedSets[
-                                                card.name.toLowerCase()
-                                              ];
-                                            setEditingDecklistCard({
-                                              idx,
-                                              deckId: deck.id,
-                                            });
-                                            setEditCardSet(lastSet || cardSet);
+                                                        let found = false;
+                                                        let cardInstanceCount = 0;
+                                                        const newLines = lines.map(
+                                                          (line) => {
+                                                            const match = line.match(
+                                                              /^(\d+)\s+(.+?)(?:\s+\(([A-Z0-9]+)\))?$/,
+                                                            );
+                                                            if (match) {
+                                                              const qty = match[1];
+                                                              const cardNamePart =
+                                                                match[2].trim();
 
-                                            // Fetch available sets for this card
-                                            try {
-                                              const response = await fetch(
-                                                `https://api.scryfall.com/cards/search?q=!"${encodeURIComponent(card.name)}"&unique=prints&order=released`,
-                                              );
-                                              if (response.ok) {
-                                                const data =
-                                                  await response.json();
-                                                const sets =
-                                                  data.data?.map((card) => ({
-                                                    code: card.set.toUpperCase(),
-                                                    name: card.set_name,
-                                                  })) || [];
-                                                // Remove duplicates, sort with last used first
-                                                const uniqueSets = Array.from(
-                                                  new Map(
-                                                    sets.map((s) => [
-                                                      s.code,
-                                                      s,
-                                                    ]),
-                                                  ).values(),
-                                                );
-                                                if (lastSet) {
-                                                  uniqueSets.sort((a, b) => {
-                                                    if (a.code === lastSet)
-                                                      return -1;
-                                                    if (b.code === lastSet)
-                                                      return 1;
-                                                    return 0;
-                                                  });
-                                                }
-                                                setEditCardAvailableSets(
-                                                  uniqueSets,
-                                                );
-                                              }
-                                            } catch (error) {
-                                              setEditCardAvailableSets([]);
-                                            }
-                                          }}
-                                          className="btn-primary px-2 py-1 text-xs ml-2"
-                                        >
-                                          Edit Set
-                                        </button>
+                                                              if (
+                                                                cardNamePart.toLowerCase() ===
+                                                                card.name.toLowerCase()
+                                                              ) {
+                                                                if (
+                                                                  cardInstanceCount +
+                                                                    parseInt(qty) >
+                                                                    idx &&
+                                                                  cardInstanceCount <= idx
+                                                                ) {
+                                                                  found = true;
+                                                                  return `${qty} ${cardNamePart} (${editCardSet.toUpperCase()})`;
+                                                                }
+                                                                cardInstanceCount +=
+                                                                  parseInt(qty);
+                                                              }
+                                                            }
+                                                            return line;
+                                                          },
+                                                        );
+
+                                                        if (found) {
+                                                          const newDecklistText =
+                                                            newLines.join("\n");
+
+                                                          fetch(
+                                                            `${API_BASE}/decklists/${deck.id}`,
+                                                            {
+                                                              method: "PUT",
+                                                              headers: {
+                                                                "Content-Type":
+                                                                  "application/json",
+                                                              },
+                                                              body: JSON.stringify({
+                                                                decklist: newDecklistText,
+                                                              }),
+                                                            },
+                                                          )
+                                                            .then(() => {
+                                                              setLastUsedSets((prev) => ({
+                                                                ...prev,
+                                                                [card.name.toLowerCase()]:
+                                                                  editCardSet,
+                                                              }));
+                                                              loadDecklists();
+                                                              setEditingDecklistCard(null);
+                                                            })
+                                                            .catch(() => {
+                                                              alert(
+                                                                "Failed to update decklist",
+                                                              );
+                                                            });
+                                                        } else {
+                                                          alert(
+                                                            "Could not find card in decklist",
+                                                          );
+                                                        }
+                                                      }}
+                                                      className="flex-1 btn-primary px-2 py-1 text-xs font-semibold"
+                                                    >
+                                                      Save
+                                                    </button>
+                                                    <button
+                                                      onClick={() =>
+                                                        setEditingDecklistCard(null)
+                                                      }
+                                                      className="flex-1 btn-secondary px-2 py-1 text-xs font-semibold"
+                                                    >
+                                                      Cancel
+                                                    </button>
+                                                  </div>
+                                                </div>
+                                              ) : (
+                                                <>
+                                                  <div className="grid grid-cols-3 gap-2">
+                                                    <div className="bg-slate-700 p-2 rounded">
+                                                      <div className="text-slate-400 text-xs mb-1">TCG Player</div>
+                                                      <DecklistCardPrice key={`price-${group.name}-${group.set}-tcg-${copyIdx}`} name={group.name} set={group.set} priceType="tcg" />
+                                                    </div>
+                                                    <div className="bg-slate-700 p-2 rounded">
+                                                      <div className="text-slate-400 text-xs mb-1">Card Kingdom</div>
+                                                      <DecklistCardPrice key={`price-${group.name}-${group.set}-ck-${copyIdx}`} name={group.name} set={group.set} priceType="ck" />
+                                                    </div>
+                                                    <button
+                                                      onClick={async () => {
+                                                        const lastSet =
+                                                          lastUsedSets[
+                                                            card.name.toLowerCase()
+                                                          ];
+                                                        setEditingDecklistCard({
+                                                          idx,
+                                                          deckId: deck.id,
+                                                        });
+                                                        setEditCardSet(lastSet || group.set);
+
+                                                        try {
+                                                          const response = await fetch(
+                                                            `https://api.scryfall.com/cards/search?q=!"${encodeURIComponent(card.name)}"&unique=prints&order=released`,
+                                                          );
+                                                          if (response.ok) {
+                                                            const data =
+                                                              await response.json();
+                                                            const sets =
+                                                              data.data?.map((c) => ({
+                                                                code: c.set.toUpperCase(),
+                                                                name: c.set_name,
+                                                              })) || [];
+                                                            const uniqueSets = Array.from(
+                                                              new Map(
+                                                                sets.map((s) => [
+                                                                  s.code,
+                                                                  s,
+                                                                ]),
+                                                              ).values(),
+                                                            );
+                                                            if (lastSet) {
+                                                              uniqueSets.sort((a, b) => {
+                                                                if (a.code === lastSet)
+                                                                  return -1;
+                                                                if (b.code === lastSet)
+                                                                  return 1;
+                                                                return 0;
+                                                              });
+                                                            }
+                                                            setEditCardAvailableSets(
+                                                              uniqueSets,
+                                                            );
+                                                          }
+                                                        } catch (error) {
+                                                          setEditCardAvailableSets([]);
+                                                        }
+                                                      }}
+                                                      className="btn-primary px-2 py-1 text-xs font-semibold h-fit"
+                                                    >
+                                                      Edit Set
+                                                    </button>
+                                                  </div>
+                                                </>
+                                              )}
+                                            </div>
+                                          );
+                                        })}
                                       </div>
-                                      <div className="flex gap-4 mt-2">
-                                        <div className="flex flex-col items-start gap-1">
-                                          <div className="text-xs text-slate-500">TCG Player</div>
-                                          <DecklistCardPrice
-                                            key={`price-${card.name}-${cardSet}-tcg`}
-                                            name={card.name}
-                                            set={cardSet}
-                                            priceType="tcg"
-                                            className="text-slate-300 text-sm font-semibold"
-                                          />
-                                        </div>
-                                        <div className="flex flex-col items-start gap-1">
-                                          <div className="text-xs text-slate-500">Card Kingdom</div>
-                                          <DecklistCardPrice
-                                            key={`price-${card.name}-${cardSet}-ck`}
-                                            name={card.name}
-                                            set={cardSet}
-                                            priceType="ck"
-                                            className="text-slate-300 text-sm font-semibold"
-                                          />
-                                        </div>
-                                      </div>
-                                    </>
-                                  )}
-                                </div>
-                              );
-                            })}
+                                    )}
+                                  </div>
+                                );
+                              });
+                            })()}
                           </div>
                         </div>
                       )}
