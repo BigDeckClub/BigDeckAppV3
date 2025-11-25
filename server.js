@@ -1267,6 +1267,12 @@ app.post('/api/containers/:id/sell', async (req, res) => {
     
     console.log(`[SALE RECORDED] Container: ${container.name}, Price: $${parsedPrice}, Sale ID: ${sale.id} ✅ PERSISTED`);
     
+    // Log the sale activity
+    await recordActivity(
+      `Sold container: ${container.name} for $${parsedPrice}`,
+      { container_id: container.id, container_name: container.name, sale_price: parsedPrice, sale_id: sale.id }
+    );
+    
     // Return the sale data
     res.json({
       ...sale,

@@ -237,6 +237,7 @@ function MTGInventoryTrackerContent() {
   useEffect(() => {
     loadAllData();
     loadAllSets();
+    loadUsageHistory();
     const saved = localStorage.getItem("defaultSearchSet");
     if (saved) setDefaultSearchSet(saved);
   }, []);
@@ -271,6 +272,7 @@ function MTGInventoryTrackerContent() {
 
   useEffect(() => {
     if (activeTab === "analytics") {
+      loadUsageHistory();
       const fetchTotalPurchases = async () => {
         try {
           const response = await fetch(`${API_BASE}/analytics/total-purchases-60days`);
@@ -824,6 +826,7 @@ function MTGInventoryTrackerContent() {
     }
 
     try {
+      const containerName = containers.find(c => c.id === selectedContainerForSale)?.name || 'Unknown';
       const response = await fetch(`${API_BASE}/containers/${selectedContainerForSale}/sell`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -836,6 +839,14 @@ function MTGInventoryTrackerContent() {
 
       await loadSales();
       await loadContainers();
+      
+      // Log the sale activity
+      const cogs = calculateDeckCOGS(containers.find(c => c.id === selectedContainerForSale)?.decklist_id);
+      const profit = priceToParse - cogs;
+      await recordUsage(
+        `Sold container: ${containerName} for $${priceToParse}`,
+        { container_id: selectedContainerForSale, container_name: containerName, sale_price: priceToParse, cogs, profit }
+      );
 
       setShowSellModal(false);
       setSelectedContainerForSale(null);
@@ -874,11 +885,37 @@ function MTGInventoryTrackerContent() {
   };
 
   const loadUsageHistory = async () => {
-    // Usage history is not critical, skip for now
+    try {
+      console.log('[ACTIVITY] Fetching recent activity...');
+      const response = await fetch(`${API_BASE}/usage-history?limit=50`);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      
+      const history = await response.json();
+      console.log(`[ACTIVITY] ✅ Loaded ${history.length} activity records`);
+      setUsageHistory(history);
+    } catch (error) {
+      console.error('[ACTIVITY] ❌ Failed to load history:', error.message);
+      setUsageHistory([]);
+    }
   };
 
   const recordUsage = async (action, details) => {
-    // Usage history is not critical, skip for now
+    try {
+      console.log(`[ACTIVITY] Recording: ${action}`);
+      const response = await fetch(`${API_BASE}/usage-history`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, details })
+      });
+      
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      console.log(`[ACTIVITY] ✅ Activity recorded`);
+      
+      // Reload activity list
+      await loadUsageHistory();
+    } catch (error) {
+      console.error('[ACTIVITY] ❌ Failed to record activity:', error.message);
+    }
   };
 
   const getReorderAlerts = () => {
