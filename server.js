@@ -85,9 +85,15 @@ async function initializeDatabase() {
         id SERIAL PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
         decklist_id INTEGER REFERENCES decklists(id) ON DELETE SET NULL,
+        cards JSONB DEFAULT '[]',
         created_at TIMESTAMP DEFAULT NOW()
       )
     `);
+    // Add cards column if it doesn't exist (for existing databases)
+    await pool.query(`
+      ALTER TABLE containers 
+      ADD COLUMN IF NOT EXISTS cards JSONB DEFAULT '[]'
+    `).catch(() => {}); // Ignore if column already exists
     console.log('[DB] ✓ containers table ready');
 
     // Container items table
