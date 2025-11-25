@@ -431,39 +431,6 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
   }
 });
 
-// Debug endpoint to test MTGGoldfish responses
-app.get('/api/debug/mtggoldfish/:cardName/:setCode', async (req, res) => {
-  const { cardName, setCode } = req.params;
-  const results = {};
-  
-  // Test MTGGoldfish direct price endpoint
-  try {
-    const formattedName = cardName.replace(/\s+/g, '_');
-    const mtgGoldfishUrl = `https://www.mtggoldfish.com/price/${setCode}/${formattedName}`;
-    console.log('Testing MTGGoldfish URL:', mtgGoldfishUrl);
-    
-    const response = await fetch(mtgGoldfishUrl);
-    const html = await response.text();
-    
-    // Look for price patterns
-    const ckMatch = html.match(/Card\s+Kingdom[^$]*\$\s*([0-9.]+)/i);
-    const tcgMatch = html.match(/TCG\s*Player[^$]*\$\s*([0-9.]+)/i);
-    
-    results.mtgGoldfish = {
-      status: response.status,
-      htmlLength: html.length,
-      foundCK: !!ckMatch,
-      foundTCG: !!tcgMatch,
-      ckPrice: ckMatch ? ckMatch[1] : null,
-      tcgPrice: tcgMatch ? tcgMatch[1] : null,
-      htmlSnippet: html.substring(0, 500)
-    };
-  } catch (e) {
-    results.mtgGoldfish = { error: e.message };
-  }
-  
-  res.json(results);
-});
 
 
 const PORT = 3000;
