@@ -760,6 +760,32 @@ app.post('/api/settings/:key', async (req, res) => {
 });
 
 // ============== PRICE SCRAPING ==============
+
+// NEW ENDPOINT — query parameter version for frontend compatibility
+app.get('/api/price', async (req, res) => {
+  const name = req.query.name;
+  const set = req.query.set;
+
+  if (!name) {
+    return res.status(400).json({ error: "Missing 'name' query parameter" });
+  }
+
+  // Forward to the existing path-based route by setting params
+  req.params.cardName = name;
+  req.params.setCode = set || '';
+  
+  // Invoke the existing handler directly
+  return app._router.handle(
+    {
+      ...req,
+      url: `/api/prices/${encodeURIComponent(name)}/${encodeURIComponent(set || '')}`,
+      method: 'GET'
+    },
+    res,
+    () => {}
+  );
+});
+
 app.get('/api/prices/:cardName/:setCode', async (req, res) => {
   const { cardName, setCode } = req.params;
   
