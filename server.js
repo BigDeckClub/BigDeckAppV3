@@ -3,17 +3,92 @@ import cors from 'cors';
 import bodyParser from 'body-parser';
 import pkg from 'pg';
 import { load } from 'cheerio';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import Joi from 'joi';
 
 const { Pool } = pkg;
 const app = express();
 
-app.use(cors());
+// ========== SECURITY MIDDLEWARE ==========
+app.use(helmet());
+app.use(cors({
+  origin: ['http://localhost:5000', 'http://localhost:3000', 'http://172.31.94.226:5000'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(bodyParser.json());
+
+// ========== RATE LIMITING ==========
+const priceLimiter = rateLimit({
+  windowMs: 30 * 1000,
+  max: 10,
+  message: 'Rate limit exceeded for price lookups.'
+});
+
+app.use('/api/prices', priceLimiter);
 
 // PostgreSQL connection
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 5000
 });
+
+// ========== INPUT VALIDATION SCHEMAS ==========
+const inventorySchema = Joi.object({
+  cardName: Joi.string().min(1).max(255).required(),
+  setCode: Joi.string().max(20).allow(null),
+  quantity: Joi.number().integer().min(0).required(),
+  tcgPrice: Joi.number().min(0).allow(null),
+  ckPrice: Joi.number().min(0).allow(null)
+});
+
+const containerSchema = Joi.object({
+  name: Joi.string().min(1).max(255).required(),
+  cards: Joi.array().items(
+    Joi.object({
+      inventoryId: Joi.number().integer().required(),
+      quantity: Joi.number().integer().min(1).required()
+    })
+  ).required()
+});
+
+const decklistSchema = Joi.object({
+  name: Joi.string().min(1).max(255).required(),
+  cards: Joi.array().items(
+    Joi.object({
+      cardName: Joi.string().required(),
+      quantity: Joi.number().integer().min(1).required()
+    })
+  ).required()
+});
+
+const settingsSchema = Joi.object({
+  reorderType: Joi.string().valid('Bulk', 'Land', 'Normal').required()
+});
+
+// ========== FETCH WITH TIMEOUT + RETRY ==========
+async function fetchWithTimeout(url, options = {}, timeout = 8000) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeout);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(id);
+  }
+}
+
+async function fetchRetry(url, options = {}, retries = 2) {
+  for (let i = 0; i <= retries; i++) {
+    try {
+      return await fetchWithTimeout(url, options, 8000);
+    } catch (err) {
+      if (i === retries) throw err;
+      await new Promise(r => setTimeout(r, 500 * (i + 1)));
+    }
+  }
+}
 
 // ============== EDITION EXTRACTOR ==============
 function normalizeEditionName(name) {
@@ -559,33 +634,51 @@ app.post('/api/containers', async (req, res) => {
   }
 });
 
+// ========== SELL CONTAINER (WITH TRANSACTION) ==========
 app.post('/api/containers/:id/sell', async (req, res) => {
-  const { salePrice } = req.body;
+  const client = await pool.connect();
   try {
-    const containerResult = await pool.query('SELECT cards FROM containers WHERE id = $1', [req.params.id]);
+    const { salePrice } = req.body;
+
+    await client.query('BEGIN');
+
+    const containerResult = await client.query(
+      'SELECT id, cards FROM containers WHERE id = $1 FOR UPDATE',
+      [req.params.id]
+    );
     if (containerResult.rows.length === 0) {
+      await client.query('ROLLBACK');
       return res.status(404).json({ error: 'Container not found' });
     }
 
     const cards = containerResult.rows[0].cards;
+
     for (const card of cards) {
-      await pool.query(
-        'UPDATE inventory SET quantity = quantity - $1 WHERE id = $2',
+      await client.query(
+        `UPDATE inventory SET quantity = quantity - $1 WHERE id = $2 AND quantity >= $1`,
         [card.quantity, card.inventoryId]
       );
     }
 
-    const saleResult = await pool.query(
-      'INSERT INTO sales (container_id, sale_price) VALUES ($1, $2) RETURNING *',
+    const sale = await client.query(
+      `INSERT INTO sales (container_id, sale_price) VALUES ($1, $2) RETURNING *`,
       [req.params.id, salePrice]
     );
 
-    await pool.query('UPDATE containers SET is_active = FALSE WHERE id = $1', [req.params.id]);
+    await client.query(
+      `UPDATE containers SET is_active = FALSE WHERE id = $1`,
+      [req.params.id]
+    );
 
-    res.json(saleResult.rows[0]);
+    await client.query('COMMIT');
+    res.json(sale.rows[0]);
+
   } catch (err) {
-    console.error('Sell container error:', err.message);
+    await client.query('ROLLBACK');
+    console.error('Sell error:', err);
     res.status(500).json({ error: 'Failed to sell container' });
+  } finally {
+    client.release();
   }
 });
 
@@ -634,7 +727,7 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
   try {
     // Scryfall TCG price
     const scryfallUrl = `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(cardName)}&set=${setCode.toLowerCase()}`;
-    const scryfallRes = await fetch(scryfallUrl);
+    const scryfallRes = await fetchRetry(scryfallUrl);
     
     let tcgPrice = 'N/A';
     if (scryfallRes.ok) {
@@ -656,7 +749,7 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
       
       console.log(`Fetching CK: ${ckSearchUrl}`);
       
-      const ckRes = await fetch(ckSearchUrl, {
+      const ckRes = await fetchRetry(ckSearchUrl, {
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
           'Accept': 'text/html'
@@ -891,6 +984,29 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
     console.error('Price fetch error:', error);
     res.json({ tcg: 'N/A', ck: 'N/A' });
   }
+});
+
+// ========== HEALTH CHECK ENDPOINT ==========
+app.get('/health', async (req, res) => {
+  try {
+    await pool.query('SELECT 1');
+    res.json({ ok: true });
+  } catch {
+    res.status(500).json({ ok: false });
+  }
+});
+
+// ========== GRACEFUL SHUTDOWN ==========
+process.on('SIGTERM', async () => {
+  console.log('Received SIGTERM, shutting down...');
+  await pool.end();
+  process.exit(0);
+});
+
+process.on('SIGINT', async () => {
+  console.log('Received SIGINT, shutting down...');
+  await pool.end();
+  process.exit(0);
 });
 
 const PORT = 3000;
