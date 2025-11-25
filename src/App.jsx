@@ -804,31 +804,23 @@ function MTGInventoryTrackerContent() {
     }
 
     try {
-      const container = containers.find(
-        (c) => c.id === selectedContainerForSale,
-      );
-
-      const response = await fetch(`${API_BASE}/sales`, {
+      const response = await fetch(`${API_BASE}/containers/${selectedContainerForSale}/sell`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          container_id: parseInt(selectedContainerForSale),
-          decklist_id: container.decklist_id,
-          sale_price: priceToParse,
+          salePrice: priceToParse,
         }),
       });
 
       if (!response.ok) throw new Error("Failed to record sale");
 
       await loadSales();
-
-      // Delete the container after recording the sale
-      await deleteContainer(selectedContainerForSale);
+      await loadContainers();
 
       setShowSellModal(false);
       setSelectedContainerForSale(null);
       setSalePrice("");
-      alert("Container sold! Sale recorded and container removed.");
+      alert("Container sold! Sale recorded.");
     } catch (error) {
       alert("Error recording sale: " + error.message);
     }
