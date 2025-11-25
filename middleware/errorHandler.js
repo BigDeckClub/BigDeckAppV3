@@ -18,6 +18,9 @@ const DB_ERROR_CODES = {
   'ETIMEDOUT': { status: 500, message: 'Database connection timed out' }
 };
 
+// Cache environment check at module load time
+const IS_DEVELOPMENT = process.env.NODE_ENV !== 'production';
+
 /**
  * Error handler middleware
  * Place this after all routes in the Express app
@@ -77,11 +80,9 @@ export function errorHandler(err, req, res, next) {
   }
 
   // Default to 500 for unknown errors
-  const isDevelopment = process.env.NODE_ENV !== 'production';
-  
   res.status(err.status || 500).json({
-    error: isDevelopment ? err.message : 'Internal server error',
-    ...(isDevelopment && { stack: err.stack })
+    error: IS_DEVELOPMENT ? err.message : 'Internal server error',
+    ...(IS_DEVELOPMENT && { stack: err.stack })
   });
 }
 

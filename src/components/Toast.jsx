@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from 'lucide-react';
 
@@ -126,7 +126,7 @@ ToastContainer.propTypes = {
  */
 export function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([]);
-  const toastIdRef = React.useRef(0);
+  const toastIdRef = useRef(0);
 
   const dismissToast = useCallback((id) => {
     setToasts(prev => prev.filter(toast => toast.id !== id));

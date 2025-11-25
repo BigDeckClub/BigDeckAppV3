@@ -1,6 +1,9 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
+// Stats grid items for inventory card skeleton
+const STATS_GRID_ITEMS = [0, 1, 2, 3];
+
 /**
  * Skeleton loader component for showing placeholder content while loading.
  * 
@@ -64,7 +67,7 @@ export function Skeleton({
             <div className={`${baseClasses} h-5 w-5 rounded`} />
           </div>
           <div className="grid grid-cols-4 gap-2">
-            {[1, 2, 3, 4].map(i => (
+            {STATS_GRID_ITEMS.map(i => (
               <div key={i} className="bg-slate-800 bg-opacity-50 rounded p-2 border border-slate-700">
                 <div className={`${baseClasses} h-3 w-16 mb-2`} />
                 <div className={`${baseClasses} h-6 w-12`} />

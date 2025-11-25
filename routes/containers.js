@@ -3,6 +3,15 @@ import Joi from 'joi';
 
 const router = express.Router();
 
+// Regex patterns for parsing decklist card entries
+// Matches formats like: "Card Name (SET)" or "Card Name - SET" or "Card Name SET"
+const CARD_LINE_QTY_PATTERN = /^\s*(\d+)\s+(.+)$/;
+const CARD_SET_PAREN_PATTERN = /^(.*?)\s*\(\s*([^)]+)\s*\)\s*$/;
+const CARD_SET_SEP_PATTERN = /^(.*?)\s*(?:[-|]\s*)([A-Za-z0-9]+)\s*$/;
+const CARD_SET_TRAILING_PATTERN = /^(.*)\s+([A-Z0-9]{2,6})$/;
+
+const router = express.Router();
+
 // Validation schemas
 const containerSchema = Joi.object({
   name: Joi.string().min(1).max(255).required().messages({
@@ -44,7 +53,7 @@ function parseDecklistTextToCards(deckText) {
     const line = raw.trim();
     if (!line) continue;
 
-    const qtyNameMatch = line.match(/^\s*(\d+)\s+(.+)$/);
+    const qtyNameMatch = line.match(CARD_LINE_QTY_PATTERN);
     let qty = 1;
     let rest = line;
     if (qtyNameMatch) {
@@ -55,17 +64,20 @@ function parseDecklistTextToCards(deckText) {
     let name = rest;
     let set = "";
 
-    const parenMatch = rest.match(/^(.*?)\s*\(\s*([^)]+)\s*\)\s*$/);
+    // Try to extract set code from parentheses: "Card Name (SET)"
+    const parenMatch = rest.match(CARD_SET_PAREN_PATTERN);
     if (parenMatch) {
       name = parenMatch[1].trim();
       set = parenMatch[2].trim();
     } else {
-      const sepMatch = rest.match(/^(.*?)\s*(?:[-|]\s*)([A-Za-z0-9]+)\s*$/);
+      // Try separator format: "Card Name - SET" or "Card Name | SET"
+      const sepMatch = rest.match(CARD_SET_SEP_PATTERN);
       if (sepMatch) {
         name = sepMatch[1].trim();
         set = sepMatch[2].trim();
       } else {
-        const trailingSetMatch = rest.match(/^(.*)\s+([A-Z0-9]{2,6})$/);
+        // Try trailing set code: "Card Name SET"
+        const trailingSetMatch = rest.match(CARD_SET_TRAILING_PATTERN);
         if (trailingSetMatch) {
           name = trailingSetMatch[1].trim();
           set = trailingSetMatch[2].trim();

@@ -3,6 +3,14 @@ import Joi from 'joi';
 
 const router = express.Router();
 
+/**
+ * Get today's date in ISO format (YYYY-MM-DD)
+ * @returns {string}
+ */
+function getTodayDate() {
+  return new Date().toISOString().split('T')[0];
+}
+
 // Validation schema for inventory items
 const inventorySchema = Joi.object({
   name: Joi.string().min(1).max(255).required().messages({
@@ -108,7 +116,7 @@ export default function createInventoryRoutes(pool, recordActivity) {
           set_name || null,
           quantity, 
           purchase_price || null, 
-          purchase_date || new Date().toISOString().split('T')[0],
+          purchase_date || getTodayDate(),
           image_url || null,
           reorder_type
         ]
@@ -116,7 +124,7 @@ export default function createInventoryRoutes(pool, recordActivity) {
       
       const inventoryId = result.rows[0].id;
       const price = purchase_price || 0;
-      const pDate = purchase_date || new Date().toISOString().split('T')[0];
+      const pDate = purchase_date || getTodayDate();
       
       console.log(`[INVENTORY] ✅ Database insert successful: id=${inventoryId}, saved_quantity=${result.rows[0].quantity}`);
       

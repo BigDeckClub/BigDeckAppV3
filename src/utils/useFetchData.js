@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 /**
  * Custom hook for fetching data from API endpoints.
@@ -24,6 +24,10 @@ export function useFetchData(url, options = {}) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(immediate);
   const [error, setError] = useState(null);
+  
+  // Use ref to store fetchOptions to avoid unnecessary re-renders
+  const fetchOptionsRef = useRef(fetchOptions);
+  fetchOptionsRef.current = fetchOptions;
 
   const fetchData = useCallback(async () => {
     if (!url) {
@@ -31,7 +35,6 @@ export function useFetchData(url, options = {}) {
       return;
     }
     
-    console.log(`[useFetchData] Fetching: ${url}`);
     setLoading(true);
     setError(null);
     
@@ -40,9 +43,9 @@ export function useFetchData(url, options = {}) {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
-          ...fetchOptions.headers
+          ...fetchOptionsRef.current.headers
         },
-        ...fetchOptions
+        ...fetchOptionsRef.current
       });
       
       if (!response.ok) {
@@ -51,17 +54,16 @@ export function useFetchData(url, options = {}) {
       }
       
       const result = await response.json();
-      console.log(`[useFetchData] ✅ Success: ${url}`, { itemCount: Array.isArray(result) ? result.length : 1 });
       setData(result);
       return result;
     } catch (err) {
-      console.error(`[useFetchData] ❌ Error fetching ${url}:`, err.message);
+      console.error(`[useFetchData] Error fetching ${url}:`, err.message);
       setError(err);
       throw err;
     } finally {
       setLoading(false);
     }
-  }, [url, JSON.stringify(fetchOptions)]);
+  }, [url]);
 
   useEffect(() => {
     if (immediate && url) {
