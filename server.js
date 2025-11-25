@@ -57,11 +57,8 @@ app.use(bodyParser.json());
 const priceLimiter = rateLimit({
   windowMs: 60 * 1000,  // 60 second window
   max: 100,             // Requests per window
-  message: 'Rate limit exceeded for price lookups.',
-  keyGenerator: (req, res) => {
-    // Use IP address as key instead of req.params (which is undefined at middleware level)
-    return req.ip;
-  }
+  message: 'Rate limit exceeded for price lookups.'
+  // Use default key generator which handles IPv6 properly
 });
 
 // PostgreSQL connection
