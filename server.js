@@ -968,6 +968,7 @@ app.delete('/api/containers/:id', async (req, res) => {
 // ========== SELL CONTAINER (COMPLETE FIX) ==========
 app.post('/api/containers/:id/sell', async (req, res) => {
   const client = await pool.connect();
+  
   try {
     const { salePrice } = req.body;
     
@@ -981,6 +982,7 @@ app.post('/api/containers/:id/sell', async (req, res) => {
     }
 
     await client.query('BEGIN');
+    console.log(`[SELL] Transaction started`);
 
     // Get container details INCLUDING decklist_id for COGS calculation
     const containerResult = await client.query(
@@ -990,6 +992,7 @@ app.post('/api/containers/:id/sell', async (req, res) => {
     
     if (containerResult.rows.length === 0) {
       await client.query('ROLLBACK');
+      console.log(`[SELL] ❌ Container not found: ${req.params.id}`);
       return res.status(404).json({ error: 'Container not found' });
     }
 
@@ -998,30 +1001,31 @@ app.post('/api/containers/:id/sell', async (req, res) => {
 
     console.log(`[SELL CONTAINER] ID: ${container.id}, Name: ${container.name}, Decklist: ${container.decklist_id}, Price: $${parsedPrice}`);
 
-    // ✅ FIXED: Decrement inventory quantity when selling (cards leave permanently)
+    // Decrement inventory (cards are sold and leave inventory)
     for (const card of cards) {
       if (card.inventoryId && card.quantity_used > 0) {
-        const inventoryId = parseInt(card.inventoryId, 10);
-        const quantityUsed = parseInt(card.quantity_used, 10);
-        
         const updateResult = await client.query(
           `UPDATE inventory 
-           SET quantity = GREATEST(0, quantity - $1)
-           WHERE id = $2 
+           SET quantity = GREATEST(0, quantity - $1),
+               quantity_in_containers = GREATEST(0, COALESCE(quantity_in_containers, 0) - $1)
+           WHERE id = $2
            RETURNING id, quantity`,
-          [quantityUsed, inventoryId]
+          [card.quantity_used, card.inventoryId]
         );
         
-        if (updateResult.rows.length === 0) {
-          console.warn(`[SELL] Warning: Unable to update inventory for id=${inventoryId}, qty=${quantityUsed}`);
-        } else {
-          console.log(`[SELL] ✅ Inventory decremented: id=${inventoryId}, new_qty=${updateResult.rows[0].quantity}`);
+        if (updateResult.rows.length > 0) {
+          console.log(`[SELL] ✅ Inventory decremented: id=${updateResult.rows[0].id}, new_qty=${updateResult.rows[0].quantity}`);
         }
       }
     }
 
-    // ✅ FIXED: Record the sale with ALL required fields that exist in schema
-    const sale = await client.query(
+    // ✅ CRITICAL FIX: DELETE CONTAINER BEFORE INSERTING SALE
+    // This prevents cascade delete if there's a FK constraint
+    await client.query('DELETE FROM containers WHERE id = $1', [container.id]);
+    console.log(`[SELL] ✅ Container deleted: id=${container.id}`);
+
+    // Insert sale record AFTER deleting container (avoids FK cascade issues)
+    const saleResult = await client.query(
       `INSERT INTO sales (
         container_id, 
         sale_price, 
@@ -1030,31 +1034,58 @@ app.post('/api/containers/:id/sell', async (req, res) => {
         created_at
       ) VALUES ($1, $2, NOW(), $3, NOW()) 
       RETURNING *`,
-      [
-        container.id, 
-        parsedPrice,
-        container.decklist_id
-      ]
+      [container.id, parsedPrice, container.decklist_id]
     );
 
-    console.log(`[SALE RECORDED] Container: ${container.name}, Price: $${parsedPrice}, Sale ID: ${sale.rows[0].id}`);
+    if (!saleResult.rows[0]) {
+      throw new Error('Sale insert returned no data');
+    }
 
-    await client.query('COMMIT');
+    const sale = saleResult.rows[0];
+    console.log(`[SALE INSERTED] ID: ${sale.id}, Container: ${container.name}, Price: $${parsedPrice}`);
+
+    // Verify sale exists before commit
+    const verifyResult = await client.query(
+      'SELECT id, container_id, sale_price FROM sales WHERE id = $1',
+      [sale.id]
+    );
     
-    // ✅ CRITICAL: Delete container OUTSIDE the transaction
-    // This way, even if delete fails, the sale is already committed
-    try {
-      await pool.query('DELETE FROM containers WHERE id = $1', [req.params.id]);
-      console.log(`[SELL] ✅ Container deleted: id=${req.params.id}`);
-    } catch (deleteErr) {
-      console.warn(`[SELL] ⚠️ Container delete failed (non-fatal, sale already recorded): ${deleteErr.message}`);
+    if (verifyResult.rows.length === 0) {
+      throw new Error(`Sale ${sale.id} not found after insert - transaction issue`);
     }
     
-    res.json(sale.rows[0]);
+    console.log(`[SALE VERIFIED] Sale ${sale.id} exists in transaction`);
+
+    // Commit transaction
+    await client.query('COMMIT');
+    console.log(`[SELL] ✅ Transaction committed`);
+
+    // CRITICAL: Verify sale persisted after commit
+    const postCommitVerify = await pool.query(
+      'SELECT id, container_id, sale_price, sold_date FROM sales WHERE id = $1',
+      [sale.id]
+    );
+    
+    if (postCommitVerify.rows.length === 0) {
+      console.error(`[SELL] ❌ CRITICAL: Sale ${sale.id} NOT FOUND after commit!`);
+      return res.status(500).json({ 
+        error: 'Sale was not persisted', 
+        saleId: sale.id 
+      });
+    }
+    
+    console.log(`[SALE RECORDED] Container: ${container.name}, Price: $${parsedPrice}, Sale ID: ${sale.id} ✅ PERSISTED`);
+    
+    // Return the sale data
+    res.json({
+      ...sale,
+      container_name: container.name
+    });
 
   } catch (err) {
     await client.query('ROLLBACK');
-    console.error('[SELL] ❌ Error:', err.message);
+    console.error('[SELL] ❌ Transaction rolled back:', err);
+    console.error('[SELL] Error stack:', err.stack);
     res.status(500).json({ 
       error: 'Failed to sell container', 
       details: err.message 
@@ -1067,32 +1098,93 @@ app.post('/api/containers/:id/sell', async (req, res) => {
 app.get('/api/sales', async (req, res) => {
   try {
     console.log('[GET SALES] Fetching sales records...');
+    
     const result = await pool.query(`
       SELECT 
-        id,
-        container_id,
-        sale_price,
-        sold_date,
-        created_at,
-        decklist_id
-      FROM sales 
-      ORDER BY sold_date DESC NULLS LAST, created_at DESC
+        s.id,
+        s.container_id,
+        s.sale_price,
+        s.sold_date,
+        s.created_at,
+        s.decklist_id,
+        d.name as decklist_name
+      FROM sales s
+      LEFT JOIN decklists d ON s.decklist_id = d.id
+      ORDER BY COALESCE(s.sold_date, s.created_at) DESC
     `);
     
     console.log(`[GET SALES] ✅ Found ${result.rows.length} sales records`);
     
-    // Return sales with proper date field handling for frontend compatibility
+    if (result.rows.length > 0) {
+      console.log(`[GET SALES] Sample record:`, JSON.stringify(result.rows[0], null, 2));
+    }
+    
+    // Map to frontend-expected format
     const sales = result.rows.map(sale => ({
-      ...sale,
-      // Frontend looks for either created_at or sold_date, provide both
-      created_at: sale.sold_date || sale.created_at,
-      sold_date: sale.sold_date || sale.created_at
+      id: sale.id,
+      container_id: sale.container_id,
+      sale_price: parseFloat(sale.sale_price),
+      sold_date: sale.sold_date || sale.created_at,
+      created_at: sale.created_at || sale.sold_date,
+      decklist_id: sale.decklist_id,
+      decklist_name: sale.decklist_name
     }));
     
     res.json(sales);
   } catch (err) {
-    console.error('[GET SALES] ❌ Query error:', err.message);
-    res.json([]);
+    console.error('[GET SALES] ❌ Query error:', err);
+    console.error('[GET SALES] Error stack:', err.stack);
+    res.status(500).json({ 
+      error: 'Failed to fetch sales',
+      details: err.message 
+    });
+  }
+});
+
+// ========== DEBUG ENDPOINT (Temporary) ==========
+app.get('/api/debug/sales', async (req, res) => {
+  try {
+    // Check table structure
+    const tableInfo = await pool.query(`
+      SELECT column_name, data_type, is_nullable
+      FROM information_schema.columns
+      WHERE table_name = 'sales'
+      ORDER BY ordinal_position
+    `);
+    
+    // Check foreign key constraints
+    const constraints = await pool.query(`
+      SELECT 
+        tc.constraint_name, 
+        tc.constraint_type,
+        kcu.column_name,
+        rc.delete_rule
+      FROM information_schema.table_constraints tc
+      LEFT JOIN information_schema.key_column_usage kcu 
+        ON tc.constraint_name = kcu.constraint_name
+      LEFT JOIN information_schema.referential_constraints rc
+        ON tc.constraint_name = rc.constraint_name
+      WHERE tc.table_name = 'sales'
+    `);
+    
+    // Check sales count
+    const count = await pool.query('SELECT COUNT(*) as total FROM sales');
+    
+    // Get recent sales
+    const recentSales = await pool.query(`
+      SELECT * FROM sales 
+      ORDER BY COALESCE(sold_date, created_at) DESC 
+      LIMIT 5
+    `);
+    
+    res.json({
+      columns: tableInfo.rows,
+      constraints: constraints.rows,
+      total_sales: parseInt(count.rows[0].total),
+      recent_sales: recentSales.rows
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message, stack: err.stack });
   }
 });
 
