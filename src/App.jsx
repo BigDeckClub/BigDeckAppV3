@@ -749,7 +749,8 @@ function MTGInventoryTrackerContent() {
       setSelectedDecklist(null);
       setShowContainerForm(false);
       await loadContainers();
-      alert("Container created successfully!");
+      setSuccessMessage("Container created successfully!");
+      setTimeout(() => setSuccessMessage(""), 3000);
     } catch (error) {
       console.error("Container creation error:", error);
       alert("Error: " + error.message);
