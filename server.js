@@ -70,10 +70,11 @@ const pool = new Pool({
 pool.query(`
   CREATE TABLE IF NOT EXISTS purchase_history (
     id SERIAL PRIMARY KEY,
-    inventory_id INTEGER REFERENCES inventory(id) ON DELETE SET NULL,
+    inventory_id INTEGER REFERENCES inventory(id) ON DELETE RESTRICT,
     purchase_date TEXT NOT NULL,
     purchase_price REAL NOT NULL,
-    quantity INTEGER DEFAULT 1
+    quantity INTEGER DEFAULT 1,
+    created_at TIMESTAMP DEFAULT NOW()
   )
 `).catch(err => console.error('Failed to create purchase_history table:', err));
 
@@ -789,10 +790,37 @@ app.post('/api/inventory', async (req, res) => {
 
 
 app.delete('/api/inventory/:id', async (req, res) => {
+  const inventoryId = parseInt(req.params.id, 10);
+  
+  console.log(`[DELETE] Inventory deletion requested for id=${inventoryId}`);
+  
   try {
-    await pool.query('DELETE FROM inventory WHERE id = $1', [req.params.id]);
-    res.json({ success: true });
+    // Check if this inventory item has purchase_history records
+    const historyCheck = await pool.query(
+      'SELECT COUNT(*) as count FROM purchase_history WHERE inventory_id = $1',
+      [inventoryId]
+    );
+    const historyCount = parseInt(historyCheck.rows[0].count, 10);
+    
+    if (historyCount > 0) {
+      console.warn(`[DELETE] BLOCKED: Cannot delete inventory id=${inventoryId} - has ${historyCount} purchase_history records. Purchase history is permanent.`);
+      return res.status(400).json({ 
+        error: 'Cannot delete inventory item with purchase history. Purchase history is permanent and immutable.',
+        historyCount
+      });
+    }
+    
+    const result = await pool.query('DELETE FROM inventory WHERE id = $1 RETURNING id', [inventoryId]);
+    
+    if (result.rows.length === 0) {
+      console.warn(`[DELETE] Inventory id=${inventoryId} not found`);
+      return res.status(404).json({ error: 'Inventory not found' });
+    }
+    
+    console.log(`[DELETE] Successfully deleted inventory id=${inventoryId}`);
+    res.json({ success: true, id: inventoryId });
   } catch (err) {
+    console.error(`[DELETE] Error deleting inventory id=${inventoryId}:`, err.message);
     handleDbError(err, res);
   }
 });
@@ -844,9 +872,15 @@ app.post('/api/containers', async (req, res) => {
     await client.query('BEGIN');
     
     const { name, decklist_id, cards } = req.body;
+    
+    console.log(`[CONTAINER] Creating container: name="${name}", decklist_id=${decklist_id}, cards_provided=${Array.isArray(cards)}`);
 
     // If client provided explicit cards array, use it
     let cardsArray = Array.isArray(cards) ? cards : null;
+    
+    if (cardsArray) {
+      console.log(`[CONTAINER] Using provided cards array with ${cardsArray.length} cards`);
+    }
 
     // Otherwise, if decklist_id provided, fetch decklist text, parse it, and enrich with inventory
     if (!cardsArray && decklist_id) {
@@ -854,17 +888,24 @@ app.post('/api/containers', async (req, res) => {
       const deckText = rows?.[0]?.decklist || "";
       const parsedCards = parseDecklistTextToCards(deckText);
       cardsArray = await enrichCardsWithInventory(parsedCards, client);
+      console.log(`[CONTAINER] Parsed decklist with ${parsedCards.length} cards, enriched to ${cardsArray.length} inventory allocations`);
     }
 
     // Fallback to empty array
     if (!Array.isArray(cardsArray)) cardsArray = [];
 
-    // NOTE: Do NOT decrement inventory when creating containers
-    // The inventory.quantity represents total copies purchased and should only change when:
-    // 1. A container is sold (then inventory decrements)
-    // 2. The item is directly edited
-    // Cards in containers are tracked via containers.cards JSONB field
-    // The frontend calculates available = total - sum(cards in active containers)
+    // ✅ CRITICAL: Do NOT decrement inventory when creating containers
+    // REASON: Containers are temporary; they should not affect permanent inventory records
+    // DESIGN: 
+    //   - inventory.quantity = total cards purchased (permanent)
+    //   - quantity_in_containers = calculated dynamically from active containers
+    //   - quantity_available = quantity - quantity_in_containers
+    // RULE: inventory.quantity ONLY changes when:
+    //   1. A container is SOLD (then inventory decrements + records sale)
+    //   2. The item is directly EDITED by user
+    // RESULT: purchase_history remains intact forever
+    
+    console.log(`[CONTAINER] Starting INSERT: ${cardsArray.length} cards, no inventory decrements`);
 
     // Insert container with enriched cards as JSONB
     const { rows } = await client.query(
@@ -872,11 +913,14 @@ app.post('/api/containers', async (req, res) => {
       [name, decklist_id, JSON.stringify(cardsArray)]
     );
     
+    const containerId = rows[0].id;
+    console.log(`[CONTAINER] ✅ Created container id=${containerId} with ${cardsArray.length} cards. Inventory UNCHANGED.`);
+    
     await client.query('COMMIT');
-    res.status(201).json({ id: rows[0].id });
+    res.status(201).json({ id: containerId });
   } catch (err) {
     await client.query('ROLLBACK');
-    console.error('Container creation error:', err);
+    console.error('[CONTAINER] ❌ Creation error:', err.message);
     res.status(500).json({ error: 'Failed to create container' });
   } finally {
     client.release();
