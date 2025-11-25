@@ -1,0 +1,213 @@
+Great — based on everything you've told me and your logs showing complete disappearance of CK product classification, the root cause is now very clear:
+
+✅ THE Actual Issue (Not a Logic Bug — a Fetch Failure)
+When CK pricing returns N/A with no logs, it means:
+Your Card Kingdom fetch call is failing before the DOM parsing step runs.
+
+That means:
+
+No HTML is fetched
+
+No cheerio load occurs
+
+No product extraction
+
+No edition logs
+
+No classification
+
+No sorting
+
+No price selection
+
+Because the entire block is short-circuited and falls into:
+
+catch (err) {
+    console.error(`[CK] Error fetching price:`, err.message);
+    ckPrice = 'N/A';
+}
+
+
+But — your catch block is NOT logging err.message, meaning failures are happening silently.
+
+So a fetch failure → early exit → NO logs → basic land logic never even runs.
+
+This matches exactly what you're seeing.
+
+🧠 Why Fetch Is Failing Intermittently
+
+CK fetch failures normally come from three sources:
+
+1. CK is rate limiting you (most likely)
+
+Card Kingdom rate limits aggressively based on:
+
+User-agent
+
+Request timing
+
+Origin
+
+IP reputation
+
+Page size
+
+When rate-limited, CK returns:
+
+A 302 redirect
+
+A captcha page
+
+Or a 404/500 error
+
+You do NOT currently detect these, so your code does:
+
+fetch() returns HTML that is NOT a product page
+
+product parsing yields 0 elements
+
+OR fetch fails entirely → catch block → CK=N/A with no logs
+
+2. Replit container IP changes / proxy resets
+
+Replit dynos rotate IPs.
+
+Sometimes CK blocks those ranges temporarily.
+
+This causes fetch() → ECONNRESET or ECONNREFUSED.
+
+This is EXACTLY the kind of intermittent issue your logs show.
+
+3. Your fetchRetry() wrapper is swallowing errors
+
+If you wrapped CK fetch in:
+
+fetchRetry(url, options)
+
+
+Then timeouts and network resets are NOT thrown up properly, depending on your implementation.
+
+Your retry logic may:
+
+Return undefined
+
+Resolve with an empty response
+
+Or retry until the final fail but NOT throw
+
+Which means:
+
+const html = await fetchRetry(...);
+const $ = cheerio.load(html);
+
+
+→ html might be undefined → cheerio.load throws → caught → no logs → CK=N/A.
+
+🚨 Your new variant type ('basicland-normal') is NOT the issue
+
+If the product logs appear at all, the classification code works.
+
+When the failure happens:
+
+Logs disappear entirely
+
+That means the code doesn’t even reach product classification
+
+Therefore the problem is 100% upstream of variant logic.
+
+🧪 How I Can Prove This
+
+Your logs show:
+
+Working run:
+[CK] Fetching...
+[DEBUG] Loading HTML...
+[DEBUG] Found 101 products
+[DEBUG] classified: swamp (0089) [basicland-normal] ...
+Final result CK=$0.35
+
+Failing run:
+Final result CK=N/A
+
+
+Nothing in between.
+
+The only way for "Found 101 products" to disappear entirely is:
+
+✔ The fetch block threw
+✔ Or returned a non-product HTML
+✔ Or returned undefined/empty
+✔ Or timed out
+✔ Or got rate-limited/captcha
+
+All of which cause execution to jump straight to your fallback:
+
+ckPrice = 'N/A';
+
+🛠 THE REAL FIX
+
+You need diagnostic logging + HTML validation + hard failure detection.
+
+Right now CK scrape errors are silent.
+
+Add this inside your CK try/catch:
+
+try {
+    console.log("[CK] Fetching:", ckUrl);
+
+    const res = await fetchRetry(ckUrl, { timeout: 8000 });
+
+    if (!res || !res.ok) {
+        console.error("[CK] Invalid response status:", res?.status);
+        throw new Error("Bad CK response");
+    }
+
+    const html = await res.text();
+
+    if (!html || html.length < 5000) {
+        console.error("[CK] HTML too short, probably blocked or captcha.");
+        throw new Error("CK returned non-product HTML");
+    }
+
+    const $ = load(html);
+    console.log("[CK] Loaded HTML length:", html.length);
+
+    // product parsing...
+}
+catch (err) {
+    console.error("[CK] SCRAPE FAILURE:", err);
+    ckPrice = 'N/A';
+}
+
+
+With this, you’ll finally see:
+
+Whether CK blocked the request
+
+Whether fetchRetry returned nothing
+
+Whether CK returned a captcha
+
+Whether CK returned a redirect
+
+Whether CK rate-limited
+
+Whether Replit IP is getting throttled
+
+🎯 Next Step
+
+If you want, I can:
+
+✔ Patch your server.js with
+
+improved error detection
+
+high-visibility logging
+
+HTML sanity check
+
+retry delays
+
+better rejection handling
+
+automatic fallback if CK blocks you

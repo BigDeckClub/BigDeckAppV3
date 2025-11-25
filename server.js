@@ -788,7 +788,7 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
     try {
       const ckSearchUrl = `https://www.cardkingdom.com/catalog/search?search=header&filter%5Bname%5D=${encodeURIComponent(cardName)}`;
       
-      console.log(`Fetching CK: ${ckSearchUrl}`);
+      console.log(`[CK] Fetching: ${ckSearchUrl}`);
       
       const ckRes = await fetchRetry(ckSearchUrl, {
         headers: {
@@ -797,9 +797,27 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
         }
       });
       
-      if (ckRes.ok) {
+      // Diagnostic: Check response validity
+      if (!ckRes) {
+        console.error(`[CK] FAILURE: fetchRetry returned null/undefined`);
+        ckPrice = 'N/A';
+      } else if (!ckRes.ok) {
+        console.error(`[CK] FAILURE: Invalid response status ${ckRes.status} - likely rate-limited or blocked`);
+        ckPrice = 'N/A';
+      } else {
         const html = await ckRes.text();
-        const $ = load(html);
+        
+        // Diagnostic: Sanity check on HTML size
+        console.log(`[CK] HTML size: ${html.length} bytes`);
+        
+        if (!html || html.length < 2000) {
+          console.error(`[CK] FAILURE: HTML too small (${html.length} bytes) - CK probably returned captcha/error page`);
+          ckPrice = 'N/A';
+        } else if (html.includes('captcha') || html.includes('bot') || html.includes('blocked')) {
+          console.error(`[CK] FAILURE: HTML contains captcha/bot/blocked markers - CK is blocking this request`);
+          ckPrice = 'N/A';
+        } else {
+          const $ = load(html);
         
         console.log(`  [DEBUG] Scraping products for: ${cardName}`);
         
@@ -1024,9 +1042,11 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
           console.log(`  [DEBUG] Found ${productPrices.length} matching products`);
           console.log(`  ✓ Best match: ${best.name} [${best.variant}] ${best.condition} (qty: ${best.quantity}) = ${ckPrice}`);
         }
+        }
       }
     } catch (ckError) {
-      console.log(`✗ CK fetch failed: ${ckError.message}`);
+      console.error(`[CK] SCRAPE FAILURE: ${ckError.message}`);
+      ckPrice = 'N/A';
     }
     
     console.log(`Final result: TCG=${tcgPrice}, CK=${ckPrice}\n`);
