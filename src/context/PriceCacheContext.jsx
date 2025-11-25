@@ -1,4 +1,5 @@
 import { createContext, useState, useContext, useRef, useEffect } from "react";
+import PropTypes from "prop-types";
 import { fetchCardPrices } from "../lib/fetchCardPrices";
 
 const PriceCacheContext = createContext();
@@ -120,3 +121,7 @@ export function PriceCacheProvider({ children }) {
 export function usePriceCache() {
   return useContext(PriceCacheContext);
 }
+
+PriceCacheProvider.propTypes = {
+  children: PropTypes.node.isRequired,
+};

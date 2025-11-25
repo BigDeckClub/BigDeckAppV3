@@ -359,3 +359,40 @@ export const InventoryTab = ({
     </div>
   );
 };
+
+InventoryTab.propTypes = {
+  inventory: PropTypes.arrayOf(PropTypes.shape({
+    id: PropTypes.number,
+    name: PropTypes.string,
+    set: PropTypes.string,
+    quantity: PropTypes.number,
+    purchaseDate: PropTypes.string,
+    purchasePrice: PropTypes.number,
+    reorderType: PropTypes.string,
+  })).isRequired,
+  successMessage: PropTypes.string,
+  setSuccessMessage: PropTypes.func.isRequired,
+  newEntry: PropTypes.object.isRequired,
+  setNewEntry: PropTypes.func.isRequired,
+  selectedCardSets: PropTypes.array.isRequired,
+  allSets: PropTypes.array.isRequired,
+  defaultSearchSet: PropTypes.string,
+  setDefaultSearchSet: PropTypes.func.isRequired,
+  searchQuery: PropTypes.string.isRequired,
+  setSearchQuery: PropTypes.func.isRequired,
+  searchResults: PropTypes.array.isRequired,
+  showDropdown: PropTypes.bool.isRequired,
+  setShowDropdown: PropTypes.func.isRequired,
+  selectCard: PropTypes.func.isRequired,
+  addCard: PropTypes.func.isRequired,
+  expandedCards: PropTypes.object.isRequired,
+  setExpandedCards: PropTypes.func.isRequired,
+  editingId: PropTypes.number,
+  editForm: PropTypes.object.isRequired,
+  setEditForm: PropTypes.func.isRequired,
+  startEditingItem: PropTypes.func.isRequired,
+  updateInventoryItem: PropTypes.func.isRequired,
+  deleteInventoryItem: PropTypes.func.isRequired,
+  MarketPrices: PropTypes.func.isRequired,
+  handleSearch: PropTypes.func.isRequired,
+};
