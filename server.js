@@ -725,17 +725,32 @@ app.get('/api/inventory', async (req, res) => {
 });
 
 app.post('/api/inventory', async (req, res) => {
-  const { cardName, setCode, quantity, tcgPrice, ckPrice } = req.body;
+  const { name, set, set_name, quantity, purchase_price, purchase_date, image_url, reorder_type } = req.body;
+  
   try {
     const result = await pool.query(
-      'INSERT INTO inventory (card_name, set_code, quantity, tcg_price, ck_price) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-      [cardName, setCode, quantity, tcgPrice, ckPrice]
+      `INSERT INTO inventory 
+       (name, set, set_name, quantity, purchase_price, purchase_date, image_url, reorder_type, created_at) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW()) 
+       RETURNING *`,
+      [
+        name, 
+        set, 
+        set_name || null,
+        quantity || 1, 
+        purchase_price || null, 
+        purchase_date || new Date().toISOString().split('T')[0],
+        image_url || null,
+        reorder_type || 'normal'
+      ]
     );
     res.json(result.rows[0]);
   } catch (err) {
+    console.error('Inventory insert error:', err);
     handleDbError(err, res);
   }
 });
+
 
 app.delete('/api/inventory/:id', async (req, res) => {
   try {

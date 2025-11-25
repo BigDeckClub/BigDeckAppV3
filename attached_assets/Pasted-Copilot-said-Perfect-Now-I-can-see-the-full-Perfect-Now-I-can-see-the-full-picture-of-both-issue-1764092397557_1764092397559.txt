@@ -1,0 +1,176 @@
+Copilot said: Perfect! Now I can see the full
+Perfect! Now I can see the full picture of both issues. Let me help you fix both the database schema mismatch AND the container display issue.Based on your problem description, you're dealing with two separate but related issues:
+
+Issue 1: Container Cards Not Displaying (UI Issue)
+The root cause is that your toggleContainerExpand() function has a race condition. It expands the container immediately while the API fetch is still in progress:
+
+JavaScript
+const toggleContainerExpand = async (containerId) => {
+  // Fetch starts (asynchronous)
+  if (!containerItems[containerId]) {
+    try {
+      const response = await fetch(`${API_BASE}/containers/${containerId}/items`);
+      const data = await response.json();
+      setContainerItems((prev) => ({
+        ...prev,
+        [containerId]: data || [],
+      }));
+    } catch (error) {}  // ⚠️ Silent failure - errors are swallowed
+  }
+
+  // Container expands IMMEDIATELY (before fetch completes)
+  setExpandedContainers((prev) => ({
+    ...prev,
+    [containerId]: !prev[containerId],
+  }));
+};
+Additionally, your rendering logic doesn't properly handle the undefined state:
+
+JavaScript
+{containerItems[container.id] && containerItems[container.id].length > 0 ? (
+  // Show cards
+) : (
+  // Shows "Loading..." even when data exists but is empty array
+)}
+Fix for Container Display:
+JavaScript
+const toggleContainerExpand = async (containerId) => {
+  // If already expanded, just collapse
+  if (expandedContainers[containerId]) {
+    setExpandedContainers((prev) => ({
+      ...prev,
+      [containerId]: false,
+    }));
+    return;
+  }
+
+  // Expand first (shows loading state)
+  setExpandedContainers((prev) => ({
+    ...prev,
+    [containerId]: true,
+  }));
+
+  // Load items if not already loaded
+  if (!containerItems[containerId]) {
+    try {
+      const response = await fetch(`${API_BASE}/containers/${containerId}/items`);
+      
+      if (!response.ok) {
+        console.error(`API error: ${response.status} ${response.statusText}`);
+        setContainerItems((prev) => ({
+          ...prev,
+          [containerId]: [],
+        }));
+        return;
+      }
+      
+      const data = await response.json();
+      console.log('Container items loaded:', containerId, data);
+      
+      setContainerItems((prev) => ({
+        ...prev,
+        [containerId]: Array.isArray(data) ? data : [],
+      }));
+    } catch (error) {
+      console.error('Failed to load container items:', error);
+      setContainerItems((prev) => ({
+        ...prev,
+        [containerId]: [],
+      }));
+    }
+  }
+};
+And update your rendering logic to properly distinguish between loading, empty, and populated states:
+
+JavaScript
+{expandedContainers[container.id] && (
+  <div className="mt-4 pt-4 border-t border-slate-700 hover:border-teal-500">
+    <h4 className="font-semibold mb-3">Cards in Container</h4>
+    {containerItems[container.id] === undefined ? (
+      // Still loading
+      <p className="text-slate-400 text-sm">
+        <RefreshCw className="w-4 h-4 inline animate-spin mr-2" />
+        Loading container contents...
+      </p>
+    ) : containerItems[container.id].length > 0 ? (
+      // Has cards - display them
+      <div className="space-y-2 max-h-96 overflow-y-auto">
+        {containerItems[container.id].map((item, idx) => {
+          // ... your existing card rendering code
+        })}
+      </div>
+    ) : (
+      // Empty container
+      <p className="text-slate-400 text-sm">
+        No cards in this container. This may indicate the container was not created properly.
+      </p>
+    )}
+  </div>
+)}
+Issue 2: Database Schema Mismatch (Backend Issue)
+Your backend POST /api/inventory endpoint is using incorrect column names that don't match your actual database schema.
+
+Current (Broken) Code:
+
+JavaScript
+app.post('/api/inventory', async (req, res) => {
+  const { cardName, setCode, quantity, tcgPrice, ckPrice } = req.body;
+  try {
+    const result = await pool.query(
+      'INSERT INTO inventory (card_name, set_code, quantity, tcg_price, ck_price) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+      [cardName, setCode, quantity, tcgPrice, ckPrice]
+    );
+    res.json(result.rows[0]);
+  } catch (err) {
+    handleDbError(err, res);
+  }
+});
+Correct Column Mapping:
+
+card_name → should be name
+set_code → should be set
+tcg_price → should be purchase_price
+ck_price → no column exists (needs to be removed or added)
+Fixed Backend Code:
+
+JavaScript
+app.post('/api/inventory', async (req, res) => {
+  const { name, set, set_name, quantity, purchase_price, purchase_date, image_url, reorder_type } = req.body;
+  
+  try {
+    const result = await pool.query(
+      `INSERT INTO inventory 
+       (name, set, set_name, quantity, purchase_price, purchase_date, image_url, reorder_type, created_at) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW()) 
+       RETURNING *`,
+      [
+        name, 
+        set, 
+        set_name || null,
+        quantity || 1, 
+        purchase_price || null, 
+        purchase_date || new Date().toISOString().split('T')[0],
+        image_url || null,
+        reorder_type || 'normal'
+      ]
+    );
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Inventory insert error:', err);
+    handleDbError(err, res);
+  }
+});
+Note: Your frontend is already sending the correct field names! Looking at your addCard() function in App.jsx:
+
+JavaScript
+const item = {
+  name: newEntry.selectedSet.name,           // ✅ Correct
+  set: newEntry.selectedSet.set,             // ✅ Correct
+  set_name: newEntry.selectedSet.setName,    // ✅ Correct
+  quantity: newEntry.quantity,               // ✅ Correct
+  purchase_price: newEntry.purchasePrice ? parseFloat(newEntry.purchasePrice) : null,  // ✅ Correct
+  purchase_date: newEntry.purchaseDate,      // ✅ Correct
+  reorder_type: newEntry.reorderType,        // ✅ Correct
+  image_url: newEntry.selectedSet.imageUrl,  // ✅ Correct
+};
+So the issue is purely in the backend - it's trying to use old column names that don't exist.
