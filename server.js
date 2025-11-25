@@ -15,6 +15,26 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
 
+// ============== EDITION EXTRACTOR ==============
+function extractEditionFromHtml(el, $) {
+  // Try to find set icon with title attribute
+  const setIcon = $(el).find('span[class*="set-icon"], .set-icon, [class*="symbol"]').first();
+  if (setIcon.length > 0) {
+    const title = setIcon.attr('title');
+    if (title && title.length > 0) {
+      return title.toLowerCase().trim();
+    }
+  }
+  
+  // Try data-* attributes
+  const edition = $(el).attr('data-expansion') || $(el).attr('data-edition');
+  if (edition) {
+    return edition.toLowerCase().trim();
+  }
+  
+  return null;
+}
+
 // ============== VARIANT CLASSIFIER ==============
 const DEFAULT_BLACKLIST = [
   'showcase','show case','show-case','alternate art','alternate','alt-art','alt art','alt',
@@ -423,7 +443,7 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
           }
         }
         
-        // PASS 1: Extract raw products (no classification yet)
+        // PASS 1: Extract raw products (with edition metadata)
         let rawProducts = [];
         const target = cardName.toLowerCase();
         
@@ -436,6 +456,9 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
           
           let name = nameEl.length > 0 ? nameEl.text().trim().toLowerCase() : '';
           let rawPrice = priceEl.length > 0 ? priceEl.text().trim() : '';
+          
+          // Extract edition metadata from hidden HTML attributes
+          const edition = extractEditionFromHtml(el, $);
           
           if (!rawPrice) {
             const productHtml = $(el).html();
@@ -451,7 +474,7 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
           if (name && name.includes(target)) {
             const numericPrice = rawPrice ? extractNumericPrice(rawPrice) : 0;
             if (isValidPrice(numericPrice)) {
-              rawProducts.push({ name, price: numericPrice, index: rawProducts.length });
+              rawProducts.push({ name, price: numericPrice, edition, index: rawProducts.length });
             }
           }
         });
