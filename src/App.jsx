@@ -1566,13 +1566,13 @@ function MTGInventoryTrackerContent() {
                                                     <div className="bg-slate-700 p-2 rounded">
                                                       <div className="text-slate-400 text-xs mb-1">TCG Player</div>
                                                       <div className="text-teal-300 font-semibold text-sm">
-                                                        <DecklistCardPrice name={item.name} set={item.set} priceType="tcg" />
+                                                        <DecklistCardPrice key={`price-${item.name}-${item.set}-tcg-${copyIdx}`} name={item.name} set={item.set} priceType="tcg" />
                                                       </div>
                                                     </div>
                                                     <div className="bg-slate-700 p-2 rounded">
                                                       <div className="text-slate-400 text-xs mb-1">Card Kingdom</div>
                                                       <div className="text-cyan-300 font-semibold text-sm">
-                                                        <DecklistCardPrice name={item.name} set={item.set} priceType="ck" />
+                                                        <DecklistCardPrice key={`price-${item.name}-${item.set}-ck-${copyIdx}`} name={item.name} set={item.set} priceType="ck" />
                                                       </div>
                                                     </div>
                                                   </div>
