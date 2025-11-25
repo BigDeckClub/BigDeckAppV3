@@ -1353,12 +1353,28 @@ function MTGInventoryTrackerContent() {
                                           Edit Set
                                         </button>
                                       </div>
-                                      <DecklistCardPrice
-                                        key={`price-${card.name}-${cardSet}-tcg`}
-                                        name={card.name}
-                                        set={cardSet}
-                                        priceType="tcg"
-                                      />
+                                      <div className="flex gap-4 mt-2">
+                                        <div className="flex flex-col items-start gap-1">
+                                          <div className="text-xs text-slate-500">TCG Player</div>
+                                          <DecklistCardPrice
+                                            key={`price-${card.name}-${cardSet}-tcg`}
+                                            name={card.name}
+                                            set={cardSet}
+                                            priceType="tcg"
+                                            className="text-slate-300 text-sm font-semibold"
+                                          />
+                                        </div>
+                                        <div className="flex flex-col items-start gap-1">
+                                          <div className="text-xs text-slate-500">Card Kingdom</div>
+                                          <DecklistCardPrice
+                                            key={`price-${card.name}-${cardSet}-ck`}
+                                            name={card.name}
+                                            set={cardSet}
+                                            priceType="ck"
+                                            className="text-slate-300 text-sm font-semibold"
+                                          />
+                                        </div>
+                                      </div>
                                     </>
                                   )}
                                 </div>
