@@ -328,92 +328,80 @@ app.post('/api/settings/:key', async (req, res) => {
   }
 });
 
-// Card prices endpoint using Scryfall for TCG and Card Kingdom search for CK prices
+// Card prices endpoint using Puppeteer for reliable Card Kingdom scraping
 app.get('/api/prices/:cardName/:setCode', async (req, res) => {
   const { cardName, setCode } = req.params;
   
   console.log(`\n=== PRICE REQUEST: ${cardName} (${setCode}) ===`);
   
+  let browser;
   try {
     // Step 1: Get TCGPlayer price from Scryfall
     const scryfallUrl = `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(cardName)}&set=${setCode.toLowerCase()}`;
     const scryfallRes = await fetch(scryfallUrl);
     
     let tcgPrice = 'N/A';
-    let setName = '';
     
     if (scryfallRes.ok) {
-      const scryfallData = await scryfallRes.json();
-      const price = parseFloat(scryfallData.prices?.usd);
+      const card = await scryfallRes.json();
+      const price = parseFloat(card.prices?.usd);
       if (price > 0) {
         tcgPrice = `$${price.toFixed(2)}`;
+        console.log(`✓ Scryfall TCG price: ${tcgPrice}`);
       }
-      setName = scryfallData.set_name;
-      console.log(`Scryfall: ${scryfallData.name} [${scryfallData.set_name}] - TCG: ${tcgPrice}`);
+    } else {
+      console.log(`✗ Scryfall lookup failed for ${cardName} (${setCode})`);
     }
     
-    // Step 2: Get Card Kingdom price
+    // Step 2: Get Card Kingdom price using Puppeteer
     let ckPrice = 'N/A';
     
     try {
-      // Search just by card name (set name in URL causes issues with some sets)
-      const ckSearchUrl = `https://www.cardkingdom.com/catalog/search?search=header&filter%5Bname%5D=${encodeURIComponent(cardName)}`;
+      const puppeteer = require('puppeteer');
       
-      console.log(`Fetching CK: ${ckSearchUrl}`);
+      browser = await puppeteer.launch({ 
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
+      });
+      const page = await browser.newPage();
       
-      const ckRes = await fetch(ckSearchUrl, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-          'Accept': 'text/html'
+      const ckUrl = `https://www.cardkingdom.com/catalog/search?search=header&filter%5Bname%5D=${encodeURIComponent(cardName)}`;
+      console.log(`Fetching CK with Puppeteer: ${ckUrl}`);
+      
+      await page.goto(ckUrl, { waitUntil: 'networkidle0', timeout: 30000 });
+      
+      // Extract price from rendered page
+      const ckPriceText = await page.evaluate(() => {
+        const priceElement = document.querySelector('.stylePrice');
+        if (priceElement) {
+          return priceElement.textContent.trim();
         }
+        return null;
       });
       
-      if (ckRes.ok) {
-        const html = await ckRes.text();
-        const $ = load(html);
-        
-        // Find the first product card's price
-        // Card Kingdom uses structure: <div class="productGrid"> with price in a specific element
-        const firstProduct = $('div.productGrid').first();
-        
-        if (firstProduct.length > 0) {
-          // Look for price within the first product
-          // Card Kingdom typically shows prices like: <span class="stylePrice">$0.35</span>
-          const priceElement = firstProduct.find('span.stylePrice, .stylePrice, [data-price]').first();
-          
-          if (priceElement.length > 0) {
-            const priceText = priceElement.text().trim();
-            const priceMatch = priceText.match(/\$?([0-9]+\.[0-9]{2})/);
-            
-            if (priceMatch) {
-              ckPrice = `$${parseFloat(priceMatch[1]).toFixed(2)}`;
-              console.log(`✓ Found CK price from first product: ${ckPrice}`);
-            }
-          }
-        }
-        
-        // If still not found, look for any price on the page (fallback)
-        if (ckPrice === 'N/A') {
-          const allPrices = html.match(/\$([0-9]+\.[0-9]{2})/g);
-          if (allPrices && allPrices.length > 0) {
-            // Extract the first price that appears to be a product price (not from UI elements)
-            // Skip very large prices (likely errors or high-end cards)
-            for (const priceStr of allPrices) {
-              const price = parseFloat(priceStr.replace('$', ''));
-              if (price > 0 && price < 100) {
-                ckPrice = priceStr;
-                console.log(`✓ Found CK price from first reasonable match: ${ckPrice}`);
-                break;
-              }
-            }
-          }
+      if (ckPriceText) {
+        const priceMatch = ckPriceText.match(/\$?([0-9]+\.[0-9]{2})/);
+        if (priceMatch) {
+          ckPrice = `$${parseFloat(priceMatch[1]).toFixed(2)}`;
+          console.log(`✓ Found CK price: ${ckPrice}`);
         }
       }
-    } catch (ckError) {
-      console.log(`✗ CK fetch failed: ${ckError.message}`);
+      
+      await browser.close();
+      browser = null;
+      
+    } catch (puppeteerError) {
+      console.log(`✗ Puppeteer CK lookup failed: ${puppeteerError.message}`);
+      if (browser) {
+        try {
+          await browser.close();
+        } catch (e) {
+          console.error('Error closing browser:', e);
+        }
+      }
     }
     
-    // Fallback to estimate
+    // Fallback to estimate if CK price not found
     if (ckPrice === 'N/A' && tcgPrice !== 'N/A') {
       const tcgValue = parseFloat(tcgPrice.replace('$', ''));
       ckPrice = `$${(tcgValue * 1.15).toFixed(2)}`;
@@ -426,6 +414,13 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
     
   } catch (error) {
     console.error('Price fetch error:', error);
+    if (browser) {
+      try {
+        await browser.close();
+      } catch (e) {
+        console.error('Error closing browser:', e);
+      }
+    }
     res.json({ tcg: 'N/A', ck: 'N/A' });
   }
 });
