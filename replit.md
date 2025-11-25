@@ -3,9 +3,22 @@
 ## Project Overview
 A comprehensive Magic: The Gathering card inventory management application built with React, Vite, and Replit's PostgreSQL database. The app handles card inventory tracking, decklist creation, container management, sales tracking, and market pricing integration with Scryfall and Card Kingdom.
 
-## Current Status (November 25, 2025) - Mobile Optimized & Production Ready
+## Current Status (November 25, 2025) - Production Deployment & Database Configuration
 
-### Latest Session - Mobile Interface Optimization
+### Latest Session - App Name Change & Deployment Configuration (Current)
+- **App Renamed**: Changed from "MTG Card Manager" to "BigDeck.app"
+- **Mobile UI Fixed**: Centered bottom navigation with 6 tabs (Inventory, Decks, Boxes, Stats, Sales, Settings)
+- **Glassmorphism Nav**: Enhanced bottom nav with backdrop blur and smooth animations
+- **Enhanced Error Logging**: Added detailed error messages for database connection issues in handleDbError()
+- **Deployment Config**: Set up Autoscale deployment with build and run commands
+  - Build: `npm run build` (compiles React via Vite)
+  - Run: `node server.js` (serves production build + API)
+- **CRITICAL DATABASE ISSUE IDENTIFIED**: 
+  - Development uses "helium" (internal hostname) - works only locally
+  - Production deployment gets EAI_AGAIN error because DATABASE_URL not configured for deployed environment
+  - **SOLUTION REQUIRED**: Create production PostgreSQL database and set DATABASE_URL env var
+
+### Mobile Interface Optimization Session
 - **Mobile Bottom Navigation**: Added fixed bottom nav bar with icons for all 5 tabs (Inventory, Decks, Containers, Analytics, Sales)
 - **Responsive Breakpoints**: CSS media queries at 768px to switch between desktop and mobile layouts
 - **Touch-Friendly Inputs**: All form inputs have minimum 44px height for easy tapping
@@ -190,9 +203,45 @@ Component receives price & displays
 
 Cache key format: `lowercase-cardname|UPPERCASE-SETCODE` (e.g., "lightning bolt|M11")
 
+## Deployment Status & Next Steps
+
+### Production Deployment Issues
+**ERROR**: `HTTP 500: {"error":"Database error: getaddrinfo EAI_AGAIN helium"}`
+- **Root Cause**: Production deployment cannot resolve "helium" hostname (internal to dev environment)
+- **Impact**: Add Card, Decklists, and all DB operations fail in deployed version
+- **Current Deployment Config**: 
+  - Autoscale deployment configured
+  - Build: `npm run build` ✓ Works
+  - Run: `node server.js` ✓ Runs
+  - Static files: Served from dist/ ✓ Works
+  - **Database**: ✗ Missing production DATABASE_URL
+
+### To Fix Production Database
+1. **In Replit Dashboard**:
+   - Go to **Database** panel (left sidebar)
+   - Create a new **PostgreSQL database** for production (if not already done)
+   - Copy the connection string (DATABASE_URL)
+
+2. **Set Environment Variable**:
+   - Go to **Secrets** tab in project
+   - Add key: `DATABASE_URL`
+   - Value: (paste the PostgreSQL connection string)
+   - Save
+
+3. **Redeploy**:
+   - Replit will auto-redeploy with new DATABASE_URL
+   - Test at: [Your production deployment URL]
+
+### Development vs Production Database
+- **Development**: Uses "helium" internal hostname (only works locally in dev)
+- **Production**: Needs external PostgreSQL connection string (Neon or similar)
+- Both use same schema auto-initialized by server.js on startup
+
 ## Notes for Next Session
-- App is **production-ready** with fully functional pricing
-- All three tabs display real prices from Scryfall (TCG) and Card Kingdom (via Goldfish)
+- App is **production-ready** with fully functional pricing (in development environment)
+- Mobile UI optimized with bottom navigation and responsive design
+- All tabs display real prices from Scryfall (TCG) and Card Kingdom (via Goldfish)
+- **PENDING**: Database configuration for production deployment
 - Future work: Extract remaining tabs (Decklists, Containers, Sales, Analytics) as separate components
-- Database is properly integrated with PostgreSQL + Drizzle ORM
 - CSS system is scalable for future UI enhancements
+- Error handling now includes specific messages for connection issues
