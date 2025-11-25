@@ -27,6 +27,8 @@
     "cheerio": "^1.1.2",
     "cors": "^2.8.5",
     "express": "^5.1.0",
+    "express-rate-limit": "^8.2.1",
+    "helmet": "^8.1.0",
     "lucide-react": "^0.554.0",
     "pg": "^8.16.3",
     "puppeteer": "^24.31.0"
