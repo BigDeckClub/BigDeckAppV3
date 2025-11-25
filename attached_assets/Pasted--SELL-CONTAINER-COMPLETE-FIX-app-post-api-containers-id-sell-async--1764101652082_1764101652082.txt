@@ -1,0 +1,122 @@
+// ========== SELL CONTAINER (COMPLETE FIX) ==========
+app.post('/api/containers/:id/sell', async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { salePrice } = req.body;
+    
+    // Validate sale price
+    const parsedPrice = parseFloat(salePrice);
+    if (isNaN(parsedPrice) || parsedPrice < 0) {
+      return res.status(400).json({ 
+        error: 'Invalid sale price', 
+        received: salePrice 
+      });
+    }
+
+    await client.query('BEGIN');
+
+    // Get container details INCLUDING decklist_id for COGS calculation
+    const containerResult = await client.query(
+      'SELECT id, name, decklist_id, cards FROM containers WHERE id = $1',
+      [req.params.id]
+    );
+    
+    if (containerResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Container not found' });
+    }
+
+    const container = containerResult.rows[0];
+    const cards = container.cards || [];
+
+    console.log(`[SELL CONTAINER] ID: ${container.id}, Name: ${container.name}, Price: $${parsedPrice}`);
+
+    // ✅ FIXED: Reduce quantity_in_containers when selling (cards leave inventory permanently)
+    for (const card of cards) {
+      if (card.inventoryId && card.quantity_used > 0) {
+        // Reduce both quantity AND quantity_in_containers
+        await client.query(
+          `UPDATE inventory 
+           SET quantity = GREATEST(0, quantity - $1),
+               quantity_in_containers = GREATEST(0, COALESCE(quantity_in_containers, 0) - $1)
+           WHERE id = $2`,
+          [card.quantity_used, card.inventoryId]
+        );
+      }
+    }
+
+    // ✅ FIXED: Record the sale with ALL required fields
+    const sale = await client.query(
+      `INSERT INTO sales (
+        container_id, 
+        container_name, 
+        sale_price, 
+        sale_date, 
+        decklist_id,
+        created_at
+      ) VALUES ($1, $2, $3, NOW(), $4, NOW()) 
+      RETURNING *`,
+      [
+        container.id, 
+        container.name, 
+        parsedPrice,
+        container.decklist_id
+      ]
+    );
+
+    // Delete container after recording sale
+    await client.query('DELETE FROM containers WHERE id = $1', [req.params.id]);
+
+    await client.query('COMMIT');
+    
+    console.log(`[SALE RECORDED] Container: ${container.name}, Price: $${parsedPrice}, Sale ID: ${sale.rows[0].id}`);
+    
+    res.json(sale.rows[0]);
+
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('Sell container error:', err);
+    res.status(500).json({ 
+      error: 'Failed to sell container', 
+      details: err.message 
+    });
+  } finally {
+    client.release();
+  }
+});
+
+// ========== GET SALES WITH ERROR LOGGING ==========
+app.get('/api/sales', async (req, res) => {
+  try {
+    console.log('[GET SALES] Fetching sales records...');
+    const result = await pool.query(`
+      SELECT 
+        id,
+        container_id,
+        container_name,
+        sale_price,
+        sale_date,
+        created_at,
+        decklist_id,
+        notes
+      FROM sales 
+      ORDER BY sale_date DESC
+    `);
+    
+    console.log(`[GET SALES] Found ${result.rows.length} sales records`);
+    
+    // Return sales with proper date field handling
+    const sales = result.rows.map(sale => ({
+      ...sale,
+      // Frontend looks for either created_at or sold_date, so provide both
+      created_at: sale.sale_date || sale.created_at,
+      sold_date: sale.sale_date || sale.created_at
+    }));
+    
+    res.json(sales);
+  } catch (err) {
+    console.error('Sales query error:', err);
+    // Return empty array but log the error
+    res.json([]);
+  }
+});
