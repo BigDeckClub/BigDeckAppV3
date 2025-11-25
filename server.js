@@ -825,6 +825,122 @@ app.delete('/api/inventory/:id', async (req, res) => {
   }
 });
 
+// ========== PUT /api/inventory/:id - UPDATE AN INVENTORY ITEM ==========
+app.put('/api/inventory/:id', async (req, res) => {
+  const inventoryId = parseInt(req.params.id, 10);
+  const { quantity, purchase_price, purchase_date, reorder_type } = req.body;
+  
+  try {
+    console.log(`[UPDATE] Inventory update requested: id=${inventoryId}, quantity=${quantity}, price=${purchase_price}, date=${purchase_date}, reorder=${reorder_type}`);
+    
+    // Validate quantity
+    if (quantity !== undefined) {
+      const parsedQty = parseInt(quantity, 10);
+      if (isNaN(parsedQty) || parsedQty < 0) {
+        console.warn(`[UPDATE] Invalid quantity: ${quantity}`);
+        return res.status(400).json({ 
+          error: 'Quantity must be a non-negative integer',
+          received: quantity
+        });
+      }
+    }
+    
+    // Validate purchase_price
+    if (purchase_price !== undefined) {
+      const parsedPrice = parseFloat(purchase_price);
+      if (isNaN(parsedPrice) || parsedPrice < 0) {
+        console.warn(`[UPDATE] Invalid purchase_price: ${purchase_price}`);
+        return res.status(400).json({ 
+          error: 'Purchase price must be a non-negative number',
+          received: purchase_price
+        });
+      }
+    }
+    
+    // Validate purchase_date (must be ISO date format)
+    if (purchase_date !== undefined && purchase_date !== null && purchase_date !== '') {
+      if (!purchase_date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        console.warn(`[UPDATE] Invalid purchase_date format: ${purchase_date}`);
+        return res.status(400).json({ 
+          error: 'Purchase date must be in YYYY-MM-DD format',
+          received: purchase_date
+        });
+      }
+    }
+    
+    // Validate reorder_type
+    if (reorder_type !== undefined && reorder_type !== null) {
+      if (typeof reorder_type !== 'string' || reorder_type.trim() === '') {
+        console.warn(`[UPDATE] Invalid reorder_type: ${reorder_type}`);
+        return res.status(400).json({ 
+          error: 'Reorder type must be a valid string',
+          received: reorder_type
+        });
+      }
+    }
+    
+    // First check if inventory exists
+    const checkResult = await pool.query('SELECT id FROM inventory WHERE id = $1', [inventoryId]);
+    if (checkResult.rows.length === 0) {
+      console.warn(`[UPDATE] Inventory not found: id=${inventoryId}`);
+      return res.status(404).json({ error: 'Inventory item not found' });
+    }
+    
+    // Build dynamic UPDATE query based on provided fields
+    const fields = [];
+    const values = [];
+    let paramIndex = 1;
+    
+    if (quantity !== undefined) {
+      fields.push(`quantity = $${paramIndex}`);
+      values.push(parseInt(quantity, 10));
+      paramIndex++;
+    }
+    if (purchase_price !== undefined) {
+      fields.push(`purchase_price = $${paramIndex}`);
+      values.push(purchase_price === null ? null : parseFloat(purchase_price));
+      paramIndex++;
+    }
+    if (purchase_date !== undefined) {
+      fields.push(`purchase_date = $${paramIndex}`);
+      values.push(purchase_date === null || purchase_date === '' ? null : purchase_date);
+      paramIndex++;
+    }
+    if (reorder_type !== undefined) {
+      fields.push(`reorder_type = $${paramIndex}`);
+      values.push(reorder_type === null ? null : reorder_type);
+      paramIndex++;
+    }
+    
+    // If no fields to update, return error
+    if (fields.length === 0) {
+      console.warn(`[UPDATE] No fields provided to update: id=${inventoryId}`);
+      return res.status(400).json({ error: 'No fields to update provided' });
+    }
+    
+    // Add id as final parameter
+    values.push(inventoryId);
+    
+    // Execute update
+    const updateQuery = `UPDATE inventory SET ${fields.join(', ')} WHERE id = $${paramIndex} RETURNING *`;
+    const result = await pool.query(updateQuery, values);
+    
+    if (result.rows.length === 0) {
+      console.warn(`[UPDATE] Update returned no rows: id=${inventoryId}`);
+      return res.status(500).json({ error: 'Update failed: no rows returned' });
+    }
+    
+    const updatedItem = result.rows[0];
+    console.log(`[UPDATE] ✅ Inventory updated: id=${inventoryId}, new_quantity=${updatedItem.quantity}, new_price=${updatedItem.purchase_price}`);
+    
+    res.json(updatedItem);
+  } catch (err) {
+    console.error(`[UPDATE] Error updating inventory id=${inventoryId}:`, err.message);
+    console.error(`[UPDATE] Error stack:`, err.stack);
+    handleDbError(err, res);
+  }
+});
+
 app.get('/api/decklists', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM decklists ORDER BY created_at DESC');
