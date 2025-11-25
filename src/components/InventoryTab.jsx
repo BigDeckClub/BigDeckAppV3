@@ -368,12 +368,12 @@ export const InventoryTab = ({
 
 InventoryTab.propTypes = {
   inventory: PropTypes.arrayOf(PropTypes.shape({
-    id: PropTypes.string,
+    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     name: PropTypes.string,
     set: PropTypes.string,
     quantity: PropTypes.number,
     purchaseDate: PropTypes.string,
-    purchasePrice: PropTypes.number,
+    purchasePrice: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     reorderType: PropTypes.string,
   })).isRequired,
   successMessage: PropTypes.string,
