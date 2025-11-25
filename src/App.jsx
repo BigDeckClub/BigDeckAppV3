@@ -17,8 +17,9 @@ import {
 } from "lucide-react";
 import { useDebounce } from "./utils/useDebounce";
 import { InventoryTab } from "./components/InventoryTab";
-import { PriceCacheProvider } from "./context/PriceCacheContext";
+import { PriceCacheProvider, usePriceCache } from "./context/PriceCacheContext";
 import DecklistCardPrice from "./components/DecklistCardPrice";
+import { normalizeCardName, normalizeSetCode } from "./lib/fetchCardPrices";
 
 // Use relative path - Vite dev server will proxy to backend
 const API_BASE = "/api";
@@ -87,30 +88,22 @@ function MTGInventoryTrackerContent() {
   const [expandedAlerts, setExpandedAlerts] = useState({});
   const [expandedSoldContainers, setExpandedSoldContainers] = useState({});
 
-  // Price display component
+  // Price display component - now using global cache context
   const MarketPrices = ({ cardName, setCode }) => {
-    const [prices, setPrices] = useState(null);
+    const { getPrice } = usePriceCache();
+    const [price, setPrice] = useState({ tcg: "Loading...", ck: "Loading..." });
 
     useEffect(() => {
-      const cacheKey = `${cardName}|${setCode}`;
-      if (priceCache[cacheKey]) {
-        setPrices(priceCache[cacheKey]);
-      } else {
-        const loadPrices = async () => {
-          const priceData = await fetchCardPrices(cardName, setCode);
-          setPrices(priceData);
-          setPriceCache((prev) => ({ ...prev, [cacheKey]: priceData }));
-        };
-        loadPrices();
-      }
-    }, [cardName, setCode]);
+      const normalizedName = normalizeCardName(cardName);
+      const normalizedSet = normalizeSetCode(setCode);
 
-    if (!prices)
-      return <div className="text-xs text-slate-500">Loading...</div>;
+      getPrice(normalizedName, normalizedSet).then(setPrice);
+    }, [cardName, setCode, getPrice]);
+
     return (
       <div className="text-xs whitespace-nowrap">
-        <div className="text-teal-300">TCG: {prices.tcg}</div>
-        <div className="text-cyan-300">CK: {prices.ck}</div>
+        <div className="text-teal-300">TCG: {price.tcg}</div>
+        <div className="text-cyan-300">CK: {price.ck}</div>
       </div>
     );
   };
