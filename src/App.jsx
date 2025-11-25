@@ -20,6 +20,7 @@ import { InventoryTab } from "./components/InventoryTab";
 import { PriceCacheProvider, usePriceCache } from "./context/PriceCacheContext";
 import DecklistCardPrice from "./components/DecklistCardPrice";
 import { normalizeCardName, normalizeSetCode } from "./lib/fetchCardPrices";
+import { FloatingDollarSigns } from "./components/FloatingDollarSigns";
 
 // Use relative path - Vite dev server will proxy to backend
 const API_BASE = "/api";
@@ -817,7 +818,7 @@ function MTGInventoryTrackerContent() {
   const sellContainer = async () => {
     const priceToParse = parseFloat(salePrice);
     if (!selectedContainerForSale || !priceToParse || isNaN(priceToParse)) {
-      alert("Please enter a valid sale price");
+      setSuccessMessage("Error: Please enter a valid sale price");
       return;
     }
 
@@ -838,9 +839,11 @@ function MTGInventoryTrackerContent() {
       setShowSellModal(false);
       setSelectedContainerForSale(null);
       setSalePrice("");
-      alert("Container sold! Sale recorded.");
+      setSuccessMessage("Container sold! Sale recorded.");
+      setTimeout(() => setSuccessMessage(""), 3000);
     } catch (error) {
-      alert("Error recording sale: " + error.message);
+      setSuccessMessage("Error recording sale: " + error.message);
+      setTimeout(() => setSuccessMessage(""), 3000);
     }
   };
 
@@ -919,6 +922,10 @@ function MTGInventoryTrackerContent() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white">
+      <FloatingDollarSigns 
+        show={successMessage && !successMessage.includes('Error')} 
+        onAnimationEnd={() => setSuccessMessage('')}
+      />
       {/* Navigation */}
       <nav className="bg-gradient-to-r from-slate-900 to-slate-800 border-b border-slate-700 sticky top-0 z-50 shadow-xl shadow-slate-900/50">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
