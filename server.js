@@ -145,6 +145,27 @@ const DEFAULT_BLACKLIST = [
   'retro','masterpiece','artist series'
 ];
 
+// ============== EDITION SAFELIST FOR NORMAL PRINTINGS ==============
+const NORMAL_EDITIONS = [
+  "Commander",
+  "Commander 2014",
+  "Commander 2016",
+  "Commander 2018",
+  "Commander 2020",
+  "Commander 2021",
+  "Commander 2022",
+  "Commander Masters",
+  "Commander Anthology",
+  "From the Vault: Relics",
+  "Magic 2014",
+  "Magic 2015",
+  "Secret Lair Drop Series",
+  "Judge Gift Cards",
+  "Magic Origins",
+  "Core Set",
+  "Starter Commander Deck",
+];
+
 const SET_CODE_CANDIDATE = /^[A-Z0-9]{2,5}$/;
 
 function normalizeName(name) {
@@ -158,57 +179,26 @@ function normalizeName(name) {
     .trim();
 }
 
-// ============== CORRECTED EDITION CLASSIFIER ==============
-// Check product NAME FIRST for variant keywords (these override edition slug)
-function classifyProductName(name) {
-  if (!name) return null;
-  const lower = name.toLowerCase();
+// ============== EDITION-BASED PRODUCT CLASSIFIER ==============
+// New classification system: name parentheses + edition safelist
+function classifyProduct(name, edition) {
+  const normalized = name.toLowerCase();
 
-  // Sol Ring special variants - uses regex to catch inconsistent naming patterns
-  if (lower.includes("sol ring")) {
-    const solRingSpecialPatterns = [
-      /\(.*human.*\)/,           // (0410 - human), (human version), etc.
-      /human alternate/,
-      /human alt/,
-      /secret lair human/,
-      /human art/,
-      /\(\d{3,4}\s*-\s*\w+\)/    // Any (#### - ...) pattern like (0410 - human)
-    ];
+  // Case 1 — any parentheses always indicate variant/special
+  if (/\(.+\)/.test(normalized)) return "special";
 
-    for (const pattern of solRingSpecialPatterns) {
-      if (pattern.test(lower)) return "special";
-    }
+  // Case 2 — if edition exists and is NOT in the safelist → special
+  if (
+    edition &&
+    !NORMAL_EDITIONS.some(e =>
+      edition.toLowerCase().includes(e.toLowerCase())
+    )
+  ) {
+    return "special";
   }
 
-  // Generic variant keywords (checked after Sol Ring)
-  const specialKeywords = [
-    "showcase",
-    "borderless",
-    "extended art",
-    "full art",
-    "foil etched",
-    "etched foil",
-    "retro frame",
-    "textured",
-    "surge foil",
-    "serialized",
-    "promo pack",
-    "alternate art",
-    "alt art",
-    "variant",
-    "thrum of the vestige",
-    "secret lair",
-    "collector",
-    "premium deck",
-    "special edition",
-    "limited edition"
-  ];
-
-  for (const kw of specialKeywords) {
-    if (lower.includes(kw)) return "special";
-  }
-
-  return null; // no classification found here
+  // Case 3 — only plain name + safelisted edition = normal
+  return "normal";
 }
 
 // This is the primary classifier - determines if edition is "special" or "set"
@@ -830,16 +820,9 @@ app.get('/api/prices/:cardName/:setCode', async (req, res) => {
           // Skip poor condition
           if (cond === "HP" || cond === "MP") continue;
           
-          // CRITICAL: Check product name FIRST for variant keywords
-          // This overrides edition-based classification
-          let type = classifyProductName(p.name);
-          if (!type) {
-            // Fall back to edition classification only if no name match
-            type = classifyEdition(p.edition);
-          }
-          
-          // Determine final variant type based on name/edition classification
-          const variant = (type === "special") ? "special" : "normal";
+          // NEW: Edition-based classification using safelist
+          // This correctly handles ambiguous plain names (like "sol ring") by checking edition metadata
+          const variant = classifyProduct(p.name, p.edition);
           
           const rank = getVariantRank(variant);
           productPrices.push({ 
