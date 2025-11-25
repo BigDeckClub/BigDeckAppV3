@@ -1,0 +1,82 @@
+Goal: Produce the Vite compile error, show the offending lines in src/App.jsx, and fix the syntax so HMR compiles.
+
+Stop any running dev server (if running):
+
+# stop the process (or use Replit UI "Stop")
+pkill -f "vite" || true
+
+
+Run Vite with full output (disable clear screen and HMR overlay masking):
+
+# from the project root
+# this shows the real compile error in the terminal
+NODE_ENV=development npx vite --clearScreen=false
+
+
+OR if your package.json has dev script:
+
+# show full output
+npm run dev -- --clearScreen=false
+
+
+Copy the entire terminal error output — we need the compilation stack trace. Paste the whole error here. (If it’s long, paste the first 50 lines plus the last 20 lines of the trace.)
+
+If the error message gives a filename and a line number (it will), run this to show a small context window around the broken line (replace LINENO with the numeric line shown in the Vite error):
+
+# show 8 lines before/after the failing line to inspect context
+sed -n "$((LINENO-8)),$((LINENO+8))p" src/App.jsx
+
+
+Paste that 17-line context here.
+
+If Vite output is obscure or doesn't show a line number, run a targeted quick-scan commands now (they will help find typical JSX/JS mistakes):
+
+# 1) Show any lines that are exactly a single '<' or that are suspiciously only angle-brackets:
+nl -ba src/App.jsx | grep -n -E '^\s*<\s*$|^\s*</\s*$|^\s*<>\s*$|^\s*</>\s*$' || true
+
+# 2) Show any lines that contain the broken spread pattern ".prev," (common merge typo)
+nl -ba src/App.jsx | grep -n -E '\(\s*prev\s*\)\s*=>\s*\(\s*\{\s*\.prev' || true
+
+# 3) Show lines where a template literal may be open (backtick count debug)
+nl -ba src/App.jsx | awk 'BEGIN{c=0} {c+=gsub("`",""); if (c%2==1) print NR" (odd backtick cumulative) : "substr($0,1,200)}'
+
+
+If you identify the offending line, apply the minimal fix. Below are the most-likely minimal fixes based on what we've already seen — apply the one that matches the context Vite flagged:
+
+If Vite points to a line that contains .prev, instead of ...prev, — fix like this:
+
+- setLastUsedSets((prev) => ({ .prev, [card.name.toLowerCase()]: editCardSet }));
++ setLastUsedSets((prev) => ({ ...prev, [card.name.toLowerCase()]: editCardSet }));
+
+
+If Vite points to an unclosed JSX fragment <>' / missing closing </>, add the missing </> at the right place.
+
+If Vite points to an unexpected token on a line inside a JSX return, paste the exact 17-line context here and I will produce the exact minimal patch.
+
+After applying the fix, restart the dev server (same command from step 2) and confirm:
+
+# restart
+npm run dev -- --clearScreen=false
+
+
+Wait for:
+
+VITE vX.Y.Z  ready in ...
+> Local: http://localhost:xxxx/
+Vite compiled successfully
+HMR connection established
+
+
+Finally: Open the browser console and confirm the HMR error is gone and inventory prices load. If any card still shows N/A, run this quick browser verification to capture what the frontend actually fetched:
+
+Open browser devtools → Network tab → filter XHR → reload the Inventory page → find the /api/price?name=... requests and copy the request URL and the response body for a failing card.
+
+What I will do once you paste back the Vite error + src/App.jsx context:
+
+I will read the Vite error and the 17-line code snippet you pasted.
+
+I will produce an exact patch (diff) for src/App.jsx with the minimal lines to change.
+
+I will include the sed or git apply command help so Replit agent can patch automatically.
+
+I will confirm the expected behavior (HMR success and prices restored).
