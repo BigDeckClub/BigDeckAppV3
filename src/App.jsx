@@ -734,12 +734,21 @@ function MTGInventoryTrackerContent() {
           decklist_id: parseInt(selectedDecklist),
         }),
       });
-      if (!response.ok) throw new Error("Failed to add container");
+      if (!response.ok) {
+        const error = await response.text();
+        console.error("Failed to add container:", response.status, error);
+        alert("Error creating container: " + error);
+        return;
+      }
       setContainerName("");
       setSelectedDecklist(null);
       setShowContainerForm(false);
       await loadContainers();
-    } catch (error) {}
+      alert("Container created successfully!");
+    } catch (error) {
+      console.error("Container creation error:", error);
+      alert("Error: " + error.message);
+    }
   };
 
   const deleteContainer = async (id) => {
