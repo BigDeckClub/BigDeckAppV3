@@ -17,11 +17,13 @@ import {
 } from "lucide-react";
 import { useDebounce } from "./utils/useDebounce";
 import { InventoryTab } from "./components/InventoryTab";
+import { PriceCacheProvider } from "./context/PriceCacheContext";
+import DecklistCardPrice from "./components/DecklistCardPrice";
 
 // Use relative path - Vite dev server will proxy to backend
 const API_BASE = "/api";
 
-export default function MTGInventoryTracker() {
+function MTGInventoryTrackerContent() {
   const [activeTab, setActiveTab] = useState("inventory");
   const [inventory, setInventory] = useState([]);
   const [decklists, setDecklists] = useState([]);
@@ -2314,5 +2316,13 @@ export default function MTGInventoryTracker() {
         )}
       </main>
     </div>
+  );
+}
+
+export default function MTGInventoryTracker() {
+  return (
+    <PriceCacheProvider>
+      <MTGInventoryTrackerContent />
+    </PriceCacheProvider>
   );
 }
