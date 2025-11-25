@@ -770,20 +770,15 @@ app.get('/api/price', async (req, res) => {
     return res.status(400).json({ error: "Missing 'name' query parameter" });
   }
 
-  // Forward to the existing path-based route by setting params
-  req.params.cardName = name;
-  req.params.setCode = set || '';
-  
-  // Invoke the existing handler directly
-  return app._router.handle(
-    {
-      ...req,
-      url: `/api/prices/${encodeURIComponent(name)}/${encodeURIComponent(set || '')}`,
-      method: 'GET'
-    },
-    res,
-    () => {}
-  );
+  // Forward to the existing path-based endpoint via local fetch
+  try {
+    const url = `http://localhost:3000/api/prices/${encodeURIComponent(name)}/${encodeURIComponent(set || '')}`;
+    const result = await fetch(url);
+    const data = await result.json();
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: "Price lookup failed", details: err.message });
+  }
 });
 
 app.get('/api/prices/:cardName/:setCode', async (req, res) => {
