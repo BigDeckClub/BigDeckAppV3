@@ -124,6 +124,58 @@ function parseDecklistTextToCards(deckText) {
   return cards;
 }
 
+/**
+ * Enrich decklist cards with inventory linkage.
+ * For each card in decklist, find matching inventory items and allocate qty.
+ */
+async function enrichCardsWithInventory(deckCards, pool) {
+  const enriched = [];
+  
+  for (const card of deckCards) {
+    let remainingQty = card.qty;
+    
+    // Find inventory items matching this card (by name, prefer matching set if specified)
+    const query = card.set 
+      ? `SELECT id, name, set, quantity, set_name, purchase_price FROM inventory WHERE LOWER(name) = LOWER($1) AND UPPER(set) = UPPER($2) ORDER BY id`
+      : `SELECT id, name, set, quantity, set_name, purchase_price FROM inventory WHERE LOWER(name) = LOWER($1) ORDER BY id`;
+    
+    const params = card.set ? [card.name, card.set] : [card.name];
+    const { rows } = await pool.query(query, params);
+    
+    // Allocate from available inventory
+    for (const invItem of rows) {
+      if (remainingQty <= 0) break;
+      
+      const allocate = Math.min(remainingQty, invItem.quantity);
+      if (allocate > 0) {
+        enriched.push({
+          name: invItem.name,
+          set: invItem.set || card.set,
+          set_name: invItem.set_name,
+          quantity_used: allocate,
+          purchase_price: invItem.purchase_price,
+          inventoryId: invItem.id
+        });
+        remainingQty -= allocate;
+      }
+    }
+    
+    // If not all cards found in inventory, still add them (qty will show 0 for unavailable)
+    if (remainingQty > 0) {
+      enriched.push({
+        name: card.name,
+        set: card.set,
+        set_name: null,
+        quantity_used: 0,
+        purchase_price: null,
+        inventoryId: null
+      });
+    }
+  }
+  
+  return enriched;
+}
+
 // ========== INPUT VALIDATION SCHEMAS ==========
 const inventorySchema = Joi.object({
   cardName: Joi.string().min(1).max(255).required(),
@@ -724,17 +776,18 @@ app.post('/api/containers', async (req, res) => {
     // If client provided explicit cards array, use it
     let cardsArray = Array.isArray(cards) ? cards : null;
 
-    // Otherwise, if decklist_id provided, fetch decklist text and parse it
+    // Otherwise, if decklist_id provided, fetch decklist text, parse it, and enrich with inventory
     if (!cardsArray && decklist_id) {
       const { rows } = await pool.query('SELECT decklist FROM decklists WHERE id = $1', [decklist_id]);
       const deckText = rows?.[0]?.decklist || "";
-      cardsArray = parseDecklistTextToCards(deckText);
+      const parsedCards = parseDecklistTextToCards(deckText);
+      cardsArray = await enrichCardsWithInventory(parsedCards, pool);
     }
 
     // Fallback to empty array
     if (!Array.isArray(cardsArray)) cardsArray = [];
 
-    // Insert container with parsed cards as JSONB
+    // Insert container with enriched cards as JSONB
     const { rows } = await pool.query(
       'INSERT INTO containers (name, decklist_id, cards) VALUES ($1, $2, $3::jsonb) RETURNING id',
       [name, decklist_id, JSON.stringify(cardsArray)]
