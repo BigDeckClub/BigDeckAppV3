@@ -341,7 +341,7 @@ function MTGInventoryTrackerContent() {
       
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('[FRONTEND] Error response:', errorText);
+        console.error('[ERROR] Inventory add failed:', errorText);
         throw new Error(`HTTP ${response.status}: ${errorText}`);
       }
       
@@ -351,7 +351,7 @@ function MTGInventoryTrackerContent() {
       setTimeout(() => setSuccessMessage(""), 3000);
       return true;
     } catch (error) {
-      console.error('[FRONTEND] addInventoryItem error:', error);
+      console.error('[ERROR] Inventory add failed:', error);
       setSuccessMessage("Error adding card: " + error.message);
       setTimeout(() => setSuccessMessage(""), 3000);
       return false;
@@ -393,7 +393,7 @@ function MTGInventoryTrackerContent() {
 
   const deleteInventoryItem = async (id) => {
     if (!id) {
-      console.error('[DELETE] No ID provided');
+      console.error('[ERROR] Delete failed: No ID provided');
       return;
     }
     
@@ -410,7 +410,7 @@ function MTGInventoryTrackerContent() {
       setSuccessMessage("Card deleted successfully!");
       setTimeout(() => setSuccessMessage(""), 3000);
     } catch (error) {
-      console.error('[DELETE] Error:', error);
+      console.error('[ERROR] Delete failed:', error);
       setSuccessMessage("Error deleting card: " + error.message);
       setTimeout(() => setSuccessMessage(""), 3000);
     }
@@ -915,7 +915,7 @@ function MTGInventoryTrackerContent() {
       const history = await response.json();
       setUsageHistory(history);
     } catch (error) {
-      console.error('[ACTIVITY] Failed to load history:', error.message);
+      console.error('[ERROR] Failed to load usage history:', error.message);
       setUsageHistory([]);
     }
   };
@@ -933,7 +933,7 @@ function MTGInventoryTrackerContent() {
       // Reload activity list
       await loadUsageHistory();
     } catch (error) {
-      console.error('[ACTIVITY] Failed to record activity:', error.message);
+      console.error('[ERROR] Failed to record activity:', error.message);
     }
   };
 
