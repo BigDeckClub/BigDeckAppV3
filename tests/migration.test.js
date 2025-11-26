@@ -4,7 +4,7 @@
  * Tests for the migration utility functions used in the database refactoring.
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 
 // Normalize card name function (replicated from migration scripts)
 function normalizeCardName(name) {
