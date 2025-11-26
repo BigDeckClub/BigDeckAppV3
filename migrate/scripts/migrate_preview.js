@@ -132,10 +132,12 @@ async function main() {
         c.id,
         c.name,
         COALESCE(jsonb_array_length(c.cards), 0) as json_count,
-        COALESCE((SELECT COUNT(*) FROM container_items WHERE container_id = c.id), 0) as items_count
+        COALESCE(COUNT(ci.id), 0) as items_count
       FROM containers c
+      LEFT JOIN container_items ci ON ci.container_id = c.id
       WHERE COALESCE(jsonb_array_length(c.cards), 0) > 0 
-         OR EXISTS (SELECT 1 FROM container_items WHERE container_id = c.id)
+         OR ci.id IS NOT NULL
+      GROUP BY c.id, c.name, c.cards
       LIMIT 10
     `);
 
