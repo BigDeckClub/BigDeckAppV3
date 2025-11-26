@@ -10,8 +10,21 @@
 
 import pkg from 'pg';
 import dotenv from 'dotenv';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-dotenv.config();
+// Load .env file if it exists
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const envPath = path.join(__dirname, '../../.env');
+
+if (fs.existsSync(envPath)) {
+  dotenv.config({ path: envPath });
+} else {
+  // Try loading from project root
+  dotenv.config();
+}
 
 const { Pool } = pkg;
 
@@ -19,22 +32,38 @@ const { Pool } = pkg;
 const DRY_RUN = true;
 
 async function main() {
-  const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-  });
-
   console.log('\n========================================');
   console.log('   BigDeck.app Migration Preview');
   console.log('========================================\n');
-  console.log(`Mode: ${DRY_RUN ? 'DRY RUN (no writes)' : 'LIVE'}`);
-  console.log(`Database: ${process.env.DATABASE_URL ? 'Connected' : 'NOT CONFIGURED'}\n`);
-
+  
+  // Validate environment
   if (!process.env.DATABASE_URL) {
     console.error('❌ DATABASE_URL environment variable not set');
+    console.error('');
+    console.error('Please set DATABASE_URL in your environment or create a .env file.');
+    console.error('Example: DATABASE_URL=postgresql://user:password@host:5432/database');
     process.exit(1);
   }
 
-  const client = await pool.connect();
+  console.log(`Mode: ${DRY_RUN ? 'DRY RUN (no writes)' : 'LIVE'}`);
+  console.log(`Database: Configured\n`);
+
+  let pool;
+  let client;
+  
+  try {
+    pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      connectionTimeoutMillis: 10000,
+    });
+    
+    client = await pool.connect();
+  } catch (err) {
+    console.error('❌ Failed to connect to database:', err.message);
+    console.error('');
+    console.error('Please verify your DATABASE_URL is correct and the database is accessible.');
+    process.exit(1);
+  }
 
   try {
     console.log('--- Current Table Statistics ---\n');

@@ -19,7 +19,7 @@ const __dirname = path.dirname(__filename);
 const { Pool } = pkg;
 
 const DRY_RUN = process.argv.includes('--dry-run');
-const SCRYFALL_DELAY = 100; // ms between API calls
+const SCRYFALL_DELAY = 200; // ms between API calls (conservative rate limiting)
 
 // Normalize card name for matching
 function normalizeCardName(name) {
@@ -42,23 +42,60 @@ async function fetchPrintingFromScryfall(cardName, setCode) {
   try {
     // Try exact match first
     const url = `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(cardName)}&set=${setCode.toLowerCase()}`;
-    const response = await fetch(url);
+    let response;
+    
+    try {
+      response = await fetch(url);
+    } catch (networkErr) {
+      console.error(`  Network error fetching ${cardName} (${setCode}):`, networkErr.message);
+      return null;
+    }
+    
+    // Check for rate limiting
+    if (response.status === 429) {
+      console.warn(`  Rate limited by Scryfall - waiting 5 seconds...`);
+      await sleep(5000);
+      response = await fetch(url);
+    }
     
     if (response.ok) {
-      return await response.json();
+      try {
+        return await response.json();
+      } catch (parseErr) {
+        console.error(`  Failed to parse response for ${cardName} (${setCode}):`, parseErr.message);
+        return null;
+      }
     }
 
     // Fallback to fuzzy match
     const fuzzyUrl = `https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(cardName)}&set=${setCode.toLowerCase()}`;
-    const fuzzyResponse = await fetch(fuzzyUrl);
+    let fuzzyResponse;
+    
+    try {
+      fuzzyResponse = await fetch(fuzzyUrl);
+    } catch (networkErr) {
+      console.error(`  Network error in fuzzy search for ${cardName} (${setCode}):`, networkErr.message);
+      return null;
+    }
     
     if (fuzzyResponse.ok) {
-      return await fuzzyResponse.json();
+      try {
+        return await fuzzyResponse.json();
+      } catch (parseErr) {
+        console.error(`  Failed to parse fuzzy response for ${cardName} (${setCode}):`, parseErr.message);
+        return null;
+      }
+    }
+    
+    // Handle specific HTTP errors
+    if (fuzzyResponse.status === 404) {
+      // Card not found - this is expected for some cards
+      return null;
     }
 
     return null;
   } catch (err) {
-    console.error(`  Error fetching ${cardName} (${setCode}):`, err.message);
+    console.error(`  Unexpected error fetching ${cardName} (${setCode}):`, err.message);
     return null;
   }
 }

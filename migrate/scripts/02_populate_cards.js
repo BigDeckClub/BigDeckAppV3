@@ -19,7 +19,7 @@ const __dirname = path.dirname(__filename);
 const { Pool } = pkg;
 
 const DRY_RUN = process.argv.includes('--dry-run');
-const SCRYFALL_DELAY = 100; // ms between API calls (Scryfall rate limit)
+const SCRYFALL_DELAY = 200; // ms between API calls (Scryfall rate limit is 50-100 req/s, being conservative)
 
 // Normalize card name for matching
 function normalizeCardName(name) {
