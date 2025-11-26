@@ -193,7 +193,7 @@ async function main() {
     const specialChars = await client.query(`
       SELECT DISTINCT name 
       FROM inventory 
-      WHERE name ~ '[^a-zA-Z0-9 ,''\\-\\.]'
+      WHERE name ~ '[^a-zA-Z0-9 ,'\\-.]'
       LIMIT 10
     `);
 
