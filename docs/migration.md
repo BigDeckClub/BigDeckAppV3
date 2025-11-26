@@ -6,25 +6,37 @@ This document tracks all database schema changes and migrations for the BigDeck.
 
 ## Migration History
 
-### [Planned] Phase 2 - Reference Tables
+### [In Progress] Phase 2 - Reference Tables
 
-**Status:** Not Started  
-**Target Date:** TBD
+**Status:** Ready to Execute  
+**Date Created:** 2025-11-26
 
 **Changes:**
-- Create `cards` table (master card catalog)
-- Create `printings` table (set-specific card data)
-- Create `price_snapshots` table (price history)
+- Create `cards` table (master card catalog with oracle_id)
+- Create `printings` table (set-specific card data with scryfall_id)
+- Create `price_snapshots` table (price history tracking)
 - Create `deck_items` table (parsed decklist cards)
+- Add `printing_id` column to `inventory` table
+- Add `printing_id` column to `container_items` table
+- Add missing indexes to existing tables
 
-**Migration File:** `prisma/migrations/YYYYMMDDHHMMSS_init_reference_tables/`
+**Files:**
+- Schema: `prisma/schema.prisma`
+- Migration SQL: `prisma/migrations/20251126_create_reference_tables.sql`
+- Rollback SQL: `migrate/rollback/01_drop_reference_tables.sql`
+
+**To Execute:**
+```bash
+# Option 1: Run SQL migration directly
+psql $DATABASE_URL -f prisma/migrations/20251126_create_reference_tables.sql
+
+# Option 2: Use Prisma (if configured)
+npx prisma migrate deploy
+```
 
 **Rollback:**
-```sql
-DROP TABLE IF EXISTS price_snapshots CASCADE;
-DROP TABLE IF EXISTS deck_items CASCADE;
-DROP TABLE IF EXISTS printings CASCADE;
-DROP TABLE IF EXISTS cards CASCADE;
+```bash
+psql $DATABASE_URL -f migrate/rollback/01_drop_reference_tables.sql
 ```
 
 ---
