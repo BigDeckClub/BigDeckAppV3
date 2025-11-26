@@ -303,7 +303,7 @@ UNION ALL
 SELECT 'purchase_history', COUNT(*) FROM backup_20251126.purchase_history;
 ```
 
-**Rollback:** `DROP SCHEMA backup_20251126 CASCADE;`
+**Cleanup:** After verifying migration success, remove backup schema with `DROP SCHEMA backup_20251126 CASCADE;`
 
 ### 3.3 Step 2: Populate Cards Table
 
