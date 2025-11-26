@@ -75,7 +75,7 @@ async function main() {
         const result = await client.query(`SELECT COUNT(*) as count FROM ${table}`);
         console.log(`  ${table.padEnd(20)} ${result.rows[0].count} rows`);
       } catch (err) {
-        console.log(`  ${table.padEnd(20)} ⚠️ Table does not exist`);
+        console.log(`  ${table.padEnd(20)} ⚠️ Table does not exist - ${err.message}`);
       }
     }
 
