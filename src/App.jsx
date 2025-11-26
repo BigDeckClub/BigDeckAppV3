@@ -27,7 +27,6 @@ import ErrorBoundary from "./components/ErrorBoundary";
 const API_BASE = "/api";
 
 function MTGInventoryTrackerContent() {
-  console.log("[APP] Component mounted");
   const { getPrice } = usePriceCache();
   const [activeTab, setActiveTab] = useState("inventory");
   const [inventory, setInventory] = useState([]);
@@ -333,15 +332,12 @@ function MTGInventoryTrackerContent() {
   };
 
   const addInventoryItem = async (item) => {
-    console.log('[FRONTEND] addInventoryItem called with:', JSON.stringify(item, null, 2));
     try {
       const response = await fetch(`${API_BASE}/inventory`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(item),
       });
-
-      console.log('[FRONTEND] Response status:', response.status);
       
       if (!response.ok) {
         const errorText = await response.text();
@@ -349,9 +345,7 @@ function MTGInventoryTrackerContent() {
         throw new Error(`HTTP ${response.status}: ${errorText}`);
       }
       
-      const result = await response.json();
-      console.log('[FRONTEND] Success response:', result);
-      
+      await response.json();
       await loadInventory();
       setSuccessMessage("Card added successfully!");
       setTimeout(() => setSuccessMessage(""), 3000);
@@ -398,7 +392,6 @@ function MTGInventoryTrackerContent() {
   };
 
   const deleteInventoryItem = async (id) => {
-    console.log('[DELETE] Attempting to delete inventory item:', id);
     if (!id) {
       console.error('[DELETE] No ID provided');
       return;
@@ -410,7 +403,6 @@ function MTGInventoryTrackerContent() {
     
     try {
       const response = await fetch(`${API_BASE}/inventory/${id}`, { method: "DELETE" });
-      console.log('[DELETE] Response status:', response.status);
       if (!response.ok) {
         throw new Error(`Failed to delete: ${response.status}`);
       }
@@ -744,10 +736,8 @@ function MTGInventoryTrackerContent() {
       if (data && data.length > 0) {
         const itemsMap = {};
         data.forEach(container => {
-          console.log(`[CONTAINER] ID: ${container.id}, Cards:`, container.cards);
           itemsMap[container.id] = container.cards || [];
         });
-        console.log('[CONTAINER] Final itemsMap:', itemsMap);
         setContainerItems(itemsMap);
       }
     } catch (error) {
@@ -919,22 +909,19 @@ function MTGInventoryTrackerContent() {
 
   const loadUsageHistory = async () => {
     try {
-      console.log('[ACTIVITY] Fetching recent activity...');
       const response = await fetch(`${API_BASE}/usage-history?limit=50`);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       
       const history = await response.json();
-      console.log(`[ACTIVITY] ✅ Loaded ${history.length} activity records`);
       setUsageHistory(history);
     } catch (error) {
-      console.error('[ACTIVITY] ❌ Failed to load history:', error.message);
+      console.error('[ACTIVITY] Failed to load history:', error.message);
       setUsageHistory([]);
     }
   };
 
   const recordUsage = async (action, details) => {
     try {
-      console.log(`[ACTIVITY] Recording: ${action}`);
       const response = await fetch(`${API_BASE}/usage-history`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -942,12 +929,11 @@ function MTGInventoryTrackerContent() {
       });
       
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      console.log(`[ACTIVITY] ✅ Activity recorded`);
       
       // Reload activity list
       await loadUsageHistory();
     } catch (error) {
-      console.error('[ACTIVITY] ❌ Failed to record activity:', error.message);
+      console.error('[ACTIVITY] Failed to record activity:', error.message);
     }
   };
 
