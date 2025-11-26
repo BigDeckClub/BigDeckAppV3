@@ -1928,24 +1928,24 @@ function MTGInventoryTrackerContent() {
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-3 gap-4 text-sm">
-                            <div className="bg-slate-800 bg-opacity-50 border border-slate-600 p-3">
-                              <div className="text-slate-400 text-xs">COGS</div>
+                          <div className="flex flex-wrap gap-3 text-sm">
+                            <div className="flex-1 min-w-[80px] bg-slate-700/50 border border-slate-600 rounded p-3 text-center">
+                              <div className="text-slate-400 text-xs mb-1">COGS</div>
                               <div className="font-semibold text-teal-300">
                                 ${deckCOGS.toFixed(2)}
                               </div>
                             </div>
-                            <div className="bg-slate-800 bg-opacity-50 border border-slate-600 p-3">
-                              <div className="text-slate-400 text-xs">
-                                Sale Price
+                            <div className="flex-1 min-w-[80px] bg-slate-700/50 border border-slate-600 rounded p-3 text-center">
+                              <div className="text-slate-400 text-xs mb-1">
+                                Sale
                               </div>
                               <div className="font-semibold text-cyan-300">
                                 ${salePrice.toFixed(2)}
                               </div>
                             </div>
-                            <div className="bg-slate-800 bg-opacity-50 border border-slate-600 p-3">
-                              <div className="text-slate-400 text-xs">
-                                Profit %
+                            <div className="flex-1 min-w-[80px] bg-slate-700/50 border border-slate-600 rounded p-3 text-center">
+                              <div className="text-slate-400 text-xs mb-1">
+                                Profit
                               </div>
                               <div
                                 className={`font-semibold ${profit >= 0 ? "text-emerald-300" : "text-red-300"}`}
@@ -1959,21 +1959,21 @@ function MTGInventoryTrackerContent() {
                     })}
                   </div>
 
-                  <div className="mt-6 pt-6 border-t border-slate-700 hover:border-teal-500">
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="bg-slate-800 bg-opacity-50 p-4 border border-slate-600">
-                        <div className="text-slate-400 text-sm">
+                  <div className="mt-6 pt-6 border-t border-slate-700">
+                    <div className="flex flex-wrap gap-3">
+                      <div className="flex-1 min-w-[100px] bg-slate-700/50 p-4 border border-slate-600 rounded text-center">
+                        <div className="text-slate-400 text-xs mb-1">
                           Total Sales
                         </div>
-                        <div className="text-2xl font-bold text-teal-300">
+                        <div className="text-xl font-bold text-teal-300">
                           {sales.length}
                         </div>
                       </div>
-                      <div className="bg-slate-800 bg-opacity-50 p-4 border border-slate-600">
-                        <div className="text-slate-400 text-sm">
-                          Total Revenue
+                      <div className="flex-1 min-w-[100px] bg-slate-700/50 p-4 border border-slate-600 rounded text-center">
+                        <div className="text-slate-400 text-xs mb-1">
+                          Revenue
                         </div>
-                        <div className="text-2xl font-bold text-cyan-300">
+                        <div className="text-xl font-bold text-cyan-300">
                           $
                           {sales
                             .reduce(
@@ -1983,11 +1983,11 @@ function MTGInventoryTrackerContent() {
                             .toFixed(2)}
                         </div>
                       </div>
-                      <div className="bg-slate-800 bg-opacity-50 p-4 border border-slate-600">
-                        <div className="text-slate-400 text-sm">
-                          Total Profit
+                      <div className="flex-1 min-w-[100px] bg-slate-700/50 p-4 border border-slate-600 rounded text-center">
+                        <div className="text-slate-400 text-xs mb-1">
+                          Profit
                         </div>
-                        <div className="text-2xl font-bold text-emerald-300">
+                        <div className="text-xl font-bold text-emerald-300">
                           $
                           {sales
                             .reduce(
