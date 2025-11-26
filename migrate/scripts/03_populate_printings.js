@@ -140,7 +140,7 @@ async function main() {
     let failed = 0;
 
     for (let i = 0; i < uniquePrintings.length; i++) {
-      const { name: cardName, set_code: setCode, set_name: setName } = uniquePrintings[i];
+      const { name: cardName, set_code: setCode } = uniquePrintings[i];
       
       process.stdout.write(`\r[${i + 1}/${uniquePrintings.length}] Processing: ${cardName.substring(0, 30).padEnd(30)} (${setCode})`);
 
