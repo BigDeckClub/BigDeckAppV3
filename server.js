@@ -1657,8 +1657,6 @@ app.get('/api/price', async (req, res) => {
 app.get('/api/prices/:cardName/:setCode', priceLimiter, async (req, res) => {
   const { cardName, setCode } = req.params;
   
-  console.log(`\n=== PRICE REQUEST: ${cardName} (${setCode}) ===`);
-  
   try {
     // Scryfall TCG price
     const scryfallUrl = `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(cardName)}&set=${setCode.toLowerCase()}`;
@@ -1670,10 +1668,7 @@ app.get('/api/prices/:cardName/:setCode', priceLimiter, async (req, res) => {
       const price = parseFloat(card.prices?.usd);
       if (price > 0) {
         tcgPrice = `$${price.toFixed(2)}`;
-        console.log(`✓ Scryfall TCG price: ${tcgPrice}`);
       }
-    } else {
-      console.log(`✗ Scryfall lookup failed for ${cardName} (${setCode})`);
     }
     
     // ==================== CARD KINGDOM SCRAPE ====================
@@ -1682,38 +1677,32 @@ app.get('/api/prices/:cardName/:setCode', priceLimiter, async (req, res) => {
     try {
       const ckSearchUrl = `https://www.cardkingdom.com/catalog/search?search=header&filter%5Bname%5D=${encodeURIComponent(cardName)}`;
       
-      console.log(`[CK] Starting fetch for: ${cardName}`);
       
       const response = await fetchRetry(ckSearchUrl, {
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-          'Accept-Language': 'en-US,en;q=0.9'
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.9',
+          'Accept-Encoding': 'gzip, deflate, br',
+          'DNT': '1',
+          'Connection': 'keep-alive',
+          'Upgrade-Insecure-Requests': '1',
+          'Referer': 'https://www.cardkingdom.com/'
         }
       });
       
-      // Diagnostic: Validate the response
       if (!response) {
-        console.error(`[CK][FATAL] fetchRetry returned NULL response`);
+        // Silent fail - will return N/A
       } else if (!response.ok) {
-        console.error(`[CK][ERROR] Response not OK: status=${response.status}`);
+        // Silent fail - will return N/A
       } else {
         const html = await response.text();
         
-        if (!html || html.length < 50) {
-          console.error("[CK][ERROR] Empty or too-short HTML response");
-        } else if (html.includes("captcha") || html.includes("verify you are human")) {
-          console.error("[CK][ERROR] Card Kingdom page returned CAPTCHA / bot protection");
-        } else {
-          console.log(`[CK][DEBUG] HTML received: ${html.length} bytes`);
-          
+        if (html && html.length > 50 && !html.includes("captcha") && !html.includes("verify you are human")) {
           const $ = load(html);
           const products = $('div[class*="product"]');
           
-          console.log(`[CK][DEBUG] Found ${products.length} product elements for ${cardName}`);
-          
-          if (products.length === 0) {
-            console.error("[CK][ERROR] CK returned 0 products—possible rate-limit or redirect");
-          } else {
+          if (products.length > 0) {
             // PASS 1: Extract raw products (with edition metadata)
             let rawProducts = [];
             const target = cardName.toLowerCase();
@@ -1793,18 +1782,6 @@ app.get('/api/prices/:cardName/:setCode', priceLimiter, async (req, res) => {
               }
             });
             
-            console.log(`[CK][DEBUG] Extracted ${rawProducts.length} matching products`);
-            if (debugEditions.length > 0) {
-              console.log(`   [EDITION DEBUG] Found editions: ${debugEditions.slice(0, 5).join(', ')}`);
-            }
-            
-            // Debug: Check for null editions
-            const nullEditionProducts = rawProducts.filter(p => !p.edition);
-            console.log(`   [DEBUG] products without edition: ${nullEditionProducts.length}/${rawProducts.length}`);
-            if (nullEditionProducts.length > 0) {
-              console.log(nullEditionProducts.slice(0,5).map(p => ({ name: p.name, url: p.url || 'N/A', price: p.price })));
-            }
-            
             // PASS 2: Determine baseline price from "set" edition types only
             let baselinePrice = null;
             const setCandidates = [];
@@ -1837,7 +1814,6 @@ app.get('/api/prices/:cardName/:setCode', priceLimiter, async (req, res) => {
               if (fallbackCandidates.length > 0) {
                 const mid = Math.floor((fallbackCandidates.length - 1) / 2);
                 baselinePrice = fallbackCandidates[mid];
-                console.log(`   [FALLBACK BASELINE] using median fallback price: ${baselinePrice}`);
               } else {
                 baselinePrice = null;
               }
@@ -1888,35 +1864,21 @@ app.get('/api/prices/:cardName/:setCode', priceLimiter, async (req, res) => {
               })[0];
               
               ckPrice = `$${best.price.toFixed(2)}`;
-              console.log(`[CK][SUCCESS] Best match: ${best.name} = ${ckPrice}`);
-            } else {
-              console.error(`[CK][ERROR] Matching logic found NO suitable entries for "${cardName}"`);
             }
           }
         }
       }
     } catch (err) {
-      console.error("[CK][CRITICAL] Exception during CK fetch:", err);
+      // Silent error - will return N/A
     }
     
-    console.log(`Final result: TCG=${tcgPrice}, CK=${ckPrice}\n`);
-    console.log("[RESPONSE DEBUG] About to send response...");
-    
     const responseData = { tcg: tcgPrice, ck: ckPrice };
-    console.log("[RESPONSE DEBUG] Response object:", responseData);
-    
-    // Explicitly set headers
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Access-Control-Allow-Origin', '*');
-    
-    console.log("[RESPONSE DEBUG] Headers set, calling res.json()...");
     res.status(200).json(responseData);
-    console.log("[RESPONSE DEBUG] res.json() called, response sent to client");
     
   } catch (error) {
-    console.error('Price fetch error:', error);
     const fallbackResponse = { tcg: 'N/A', ck: 'N/A' };
-    console.error("[RESPONSE DEBUG] Sending fallback response:", fallbackResponse);
     res.setHeader('Content-Type', 'application/json');
     res.status(500).json(fallbackResponse);
   }
@@ -1925,7 +1887,6 @@ app.get('/api/prices/:cardName/:setCode', priceLimiter, async (req, res) => {
 // ========== TEST ENDPOINT - SIMPLIFIED ==========
 app.get('/api/prices-test/:cardName/:setCode', priceLimiter, (req, res) => {
   const { cardName, setCode } = req.params;
-  console.log(`\n[TEST ENDPOINT] Received request for: ${cardName} (${setCode})`);
   
   res.setHeader('Content-Type', 'application/json');
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -1935,7 +1896,6 @@ app.get('/api/prices-test/:cardName/:setCode', priceLimiter, (req, res) => {
     source: "test-endpoint",
     timestamp: new Date().toISOString()
   });
-  console.log(`[TEST ENDPOINT] Response sent for: ${cardName} (${setCode})`);
 });
 
 // ========== HEALTH CHECK ENDPOINT ==========
@@ -1961,21 +1921,8 @@ process.on('SIGINT', async () => {
   process.exit(0);
 });
 
-// ========== DEBUG LOGGING ==========
-console.log('[DEBUG] Environment Variables:');
-console.log('[DEBUG] DATABASE_URL:', process.env.DATABASE_URL ? '✓ SET' : '✗ NOT SET');
-console.log('[DEBUG] NODE_ENV:', process.env.NODE_ENV || 'not set');
-console.log('[DEBUG] PORT:', process.env.PORT || 'will default to 3000');
-
-// ========== REQUEST LOGGING ==========
-app.use((req, res, next) => {
-  console.log(`[ROUTE] ${req.method} ${req.path}`);
-  next();
-});
-
 // ========== STATIC FILES FOR PRODUCTION ==========
 const distPath = path.join(__dirname, 'dist');
-console.log('[DEBUG] Static files path:', distPath);
 app.use(express.static(distPath, { 
   setHeaders: (res, path) => {
     if (path.endsWith('.js') || path.endsWith('.css')) {
@@ -1989,7 +1936,6 @@ app.use((req, res) => {
   if (req.path.startsWith('/api/')) {
     return res.status(404).json({ error: 'API endpoint not found' });
   }
-  console.log('[SPA] Serving index.html for:', req.path);
   res.sendFile(path.join(distPath, 'index.html'), (err) => {
     if (err) console.error('[SPA] Error serving index.html:', err);
   });
