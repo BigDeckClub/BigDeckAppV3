@@ -12,9 +12,17 @@ The application follows a client-server architecture:
 -   **Backend**: An Express.js server handles API requests, CORS, and integrates with the PostgreSQL database. It includes unified error handling and performs data processing for pricing.
 -   **Database**: PostgreSQL, managed via Drizzle ORM, storing inventory, decklists, containers, and sales data. The schema is auto-initialized on server startup.
 -   **UI/UX Decisions**:
-    -   **Color Palette**: Modern teal/slate theme for a professional and accessible dark mode.
+    -   **Color Palette**: Modern teal/slate theme with cyan accents (#06f5d8) for a professional dark mode.
     -   **Responsive Design**: Utilizes CSS media queries at 768px for desktop/mobile layouts, with touch-friendly inputs (min 44px height) and full-width buttons on mobile.
-    -   **Component Organization**: Main app logic resides in `App.jsx`, with key features like `InventoryTab` extracted into separate components. Further extraction of other tabs is planned.
+    -   **Component Organization**: App.jsx (591 lines) serves as the orchestrator, managing shared data state and routing. Each tab is a focused component:
+        -   `InventoryTab.jsx` (449 lines) - Card search, add/edit, quantity tracking
+        -   `DecklistTab.jsx` (685 lines) - Decklist creation, parsing, preview, card set selection
+        -   `ContainersTab.jsx` (411 lines) - Container creation, viewing, selling
+        -   `SalesTab.jsx` (162 lines) - Sales history display
+        -   `AnalyticsTab.jsx` (271 lines) - Reorder alerts, inventory stats, activity history
+        -   `SettingsPanel.jsx` (120 lines) - Reorder threshold settings modal
+        -   `SellModal.jsx` (116 lines) - Container sale dialog
+    -   **Data Flow Pattern**: Data state (inventory, decklists, containers, sales) managed in App.jsx and passed as props. Components use local UI state (expanded items, form inputs) and call `onLoadXxx` callbacks after mutations to sync parent state.
     -   **CSS Architecture**: Utility-first Tailwind CSS with reusable component classes defined in `index.css`.
 -   **Technical Implementations**:
     -   **Search Debouncing**: Implemented a `useDebounce` hook (300ms) to optimize Scryfall API calls.
