@@ -31,8 +31,6 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-console.log('[DEBUG] CORS enabled for all origins');
-
 app.use(bodyParser.json());
 
 // ========== RATE LIMITING ==========
