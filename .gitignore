@@ -145,3 +145,4 @@ prisma.config.ts
 # Migration mappings (contain actual data, should not be committed)
 migrate/mappings/*.csv
 migrate/unmapped.csv
+.env
