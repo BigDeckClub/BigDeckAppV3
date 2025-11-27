@@ -1,8 +1,6 @@
 import express from 'express';
 import Joi from 'joi';
 
-const router = express.Router();
-
 /**
  * Get today's date in ISO format (YYYY-MM-DD)
  * @returns {string}
@@ -48,22 +46,32 @@ const updateInventorySchema = Joi.object({
 
 // Factory function to create routes with pool dependency
 export default function createInventoryRoutes(pool, recordActivity) {
+  const router = express.Router();
   
   // GET /api/inventory - List all inventory items
   router.get('/', async (req, res, next) => {
     try {
       console.log('[INVENTORY GET] Fetching all inventory items');
       
-      // Fetch all inventory items
-      const invResult = await pool.query('SELECT * FROM inventory ORDER BY name');
+      // Fetch all inventory items with printing relation if available
+      const invResult = await pool.query(`
+        SELECT 
+          i.*,
+          p.image_uri_small as printing_image_small,
+          p.image_uri_normal as printing_image_normal
+        FROM inventory i
+        LEFT JOIN printings p ON i.printing_id = p.id
+        ORDER BY i.name
+      `);
       
       // For each inventory item, calculate how many cards are in active containers
+      // Using container_items table instead of JSONB
       const enriched = await Promise.all(invResult.rows.map(async (item) => {
         const containerResult = await pool.query(
-          `SELECT COALESCE(SUM((card->>'quantity_used')::int), 0)::int as in_containers 
-           FROM containers, jsonb_array_elements(cards) as card 
-           WHERE card->>'inventoryId' = $1`,
-          [String(item.id)]
+          `SELECT COALESCE(SUM(ci.quantity), 0)::int as in_containers 
+           FROM container_items ci
+           WHERE ci.inventory_id = $1`,
+          [item.id]
         );
         const quantity_in_containers = parseInt(containerResult.rows?.[0]?.in_containers || 0, 10);
         return {

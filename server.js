@@ -108,16 +108,33 @@ async function initializeDatabase() {
     `).catch(() => {}); // Ignore if column already exists
     console.log('[DB] ✓ containers table ready');
 
-    // Container items table
+    // Container items table - relational storage for container contents
     await pool.query(`
       CREATE TABLE IF NOT EXISTS container_items (
         id SERIAL PRIMARY KEY,
         container_id INTEGER REFERENCES containers(id) ON DELETE CASCADE,
         inventory_id INTEGER REFERENCES inventory(id) ON DELETE CASCADE,
+        printing_id INTEGER,
         quantity INTEGER DEFAULT 1
       )
     `);
+    // Add printing_id column if it doesn't exist (for existing databases)
+    await pool.query(`ALTER TABLE container_items ADD COLUMN IF NOT EXISTS printing_id INTEGER`).catch(() => {});
     console.log('[DB] ✓ container_items table ready');
+
+    // Deck items table - parsed decklist cards
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS deck_items (
+        id SERIAL PRIMARY KEY,
+        decklist_id INTEGER REFERENCES decklists(id) ON DELETE CASCADE,
+        printing_id INTEGER,
+        card_name VARCHAR(255),
+        set_code VARCHAR(10),
+        quantity INTEGER DEFAULT 1,
+        is_sideboard BOOLEAN DEFAULT FALSE
+      )
+    `);
+    console.log('[DB] ✓ deck_items table ready');
 
     // Sales table
     await pool.query(`
@@ -844,18 +861,29 @@ async function recordActivity(action, details = null) {
 }
 
 // ============== ROUTES ==============
+// Using new modular schema with container_items table instead of JSONB
+
 app.get('/api/inventory', async (req, res) => {
   try {
-    // Fetch all inventory items
-    const invResult = await pool.query('SELECT * FROM inventory ORDER BY name');
+    // Fetch all inventory items with printing relation if available
+    const invResult = await pool.query(`
+      SELECT 
+        i.*,
+        p.image_uri_small as printing_image_small,
+        p.image_uri_normal as printing_image_normal
+      FROM inventory i
+      LEFT JOIN printings p ON i.printing_id = p.id
+      ORDER BY i.name
+    `);
     
     // For each inventory item, calculate how many cards are in active containers
+    // Using container_items table instead of JSONB
     const enriched = await Promise.all(invResult.rows.map(async (item) => {
       const containerResult = await pool.query(
-        `SELECT COALESCE(SUM((card->>'quantity_used')::int), 0)::int as in_containers 
-         FROM containers, jsonb_array_elements(cards) as card 
-         WHERE card->>'inventoryId' = $1`,
-        [String(item.id)]
+        `SELECT COALESCE(SUM(ci.quantity), 0)::int as in_containers 
+         FROM container_items ci
+         WHERE ci.inventory_id = $1`,
+        [item.id]
       );
       const quantity_in_containers = parseInt(containerResult.rows?.[0]?.in_containers || 0, 10);
       return {
@@ -1186,8 +1214,42 @@ app.delete('/api/decklists/:id', async (req, res) => {
 
 app.get('/api/containers', async (req, res) => {
   try {
-    const result = await pool.query('SELECT *, COALESCE(cards, \'[]\'::jsonb) as cards FROM containers ORDER BY created_at DESC');
-    res.json(result.rows);
+    console.log('[CONTAINERS GET] Fetching all containers');
+    
+    // Fetch containers (no longer relying on JSONB cards field)
+    const containersResult = await pool.query(
+      'SELECT id, name, decklist_id, created_at FROM containers ORDER BY created_at DESC'
+    );
+    
+    // For each container, fetch its items from container_items table
+    const containersWithItems = await Promise.all(
+      containersResult.rows.map(async (container) => {
+        const itemsResult = await pool.query(
+          `SELECT 
+            ci.id as container_item_id,
+            ci.inventory_id as "inventoryId",
+            ci.printing_id as "printingId",
+            ci.quantity as quantity_used,
+            i.name,
+            i.set,
+            i.set_name,
+            i.purchase_price
+          FROM container_items ci
+          LEFT JOIN inventory i ON ci.inventory_id = i.id
+          WHERE ci.container_id = $1
+          ORDER BY ci.id`,
+          [container.id]
+        );
+        return {
+          ...container,
+          // Return items as 'cards' for backward compatibility with frontend
+          cards: itemsResult.rows
+        };
+      })
+    );
+    
+    console.log(`[CONTAINERS GET] ✅ Retrieved ${containersWithItems.length} containers`);
+    res.json(containersWithItems);
   } catch (err) {
     console.error('Containers query error:', err.message);
     res.json([]);
@@ -1235,16 +1297,34 @@ app.post('/api/containers', async (req, res) => {
     
     console.log(`[CONTAINER] Starting INSERT: ${cardsArray.length} cards, no inventory decrements`);
 
-    // Insert container with enriched cards as JSONB
+    // Insert container (no longer storing cards as JSONB)
     const { rows } = await client.query(
-      'INSERT INTO containers (name, decklist_id, cards) VALUES ($1, $2, $3::jsonb) RETURNING id',
-      [name, decklist_id, JSON.stringify(cardsArray)]
+      'INSERT INTO containers (name, decklist_id) VALUES ($1, $2) RETURNING id',
+      [name, decklist_id]
     );
     
     const containerId = rows[0].id;
-    console.log(`[CONTAINER] ✅ Created container id=${containerId} with ${cardsArray.length} cards. Inventory UNCHANGED.`);
+    
+    // Insert container items into container_items table (new relational schema)
+    for (const card of cardsArray) {
+      const inventoryId = card.inventoryId ? parseInt(card.inventoryId, 10) : null;
+      const printingId = card.printingId ? parseInt(card.printingId, 10) : null;
+      const quantity = card.quantity_used || card.quantity || 1;
+      
+      await client.query(
+        `INSERT INTO container_items (container_id, inventory_id, printing_id, quantity)
+         VALUES ($1, $2, $3, $4)`,
+        [containerId, inventoryId || null, printingId || null, quantity]
+      );
+    }
+    
+    console.log(`[CONTAINER] ✅ Created container id=${containerId} with ${cardsArray.length} items in container_items table. Inventory UNCHANGED.`);
     
     await client.query('COMMIT');
+    
+    // Log activity
+    await recordActivity(`Created container: ${name}`, { container_id: containerId, name });
+    
     res.status(201).json({ id: containerId });
   } catch (err) {
     await client.query('ROLLBACK');
@@ -1257,18 +1337,46 @@ app.post('/api/containers', async (req, res) => {
 
 // Get container items/cards
 app.get('/api/containers/:id/items', async (req, res) => {
+  const containerId = parseInt(req.params.id, 10);
+  
+  if (isNaN(containerId)) {
+    return res.status(400).json({ error: 'Invalid container ID' });
+  }
+  
   try {
-    const result = await pool.query(
-      'SELECT COALESCE(cards, \'[]\'::jsonb) as cards FROM containers WHERE id = $1',
-      [req.params.id]
+    console.log(`[CONTAINERS GET ITEMS] Fetching items for container id=${containerId}`);
+    
+    // Check if container exists
+    const containerCheck = await pool.query(
+      'SELECT id FROM containers WHERE id = $1',
+      [containerId]
     );
-    if (result.rows.length === 0) {
-      return res.json([]);
+    
+    if (containerCheck.rows.length === 0) {
+      console.warn(`[CONTAINERS GET ITEMS] Container not found: id=${containerId}`);
+      return res.status(404).json({ error: 'Container not found' });
     }
     
-    const cards = result.rows[0].cards;
-    const items = Array.isArray(cards) ? cards : [];
-    res.json(items);
+    // Fetch items from container_items table
+    const result = await pool.query(
+      `SELECT 
+        ci.id as container_item_id,
+        ci.inventory_id as "inventoryId",
+        ci.printing_id as "printingId",
+        ci.quantity as quantity_used,
+        i.name,
+        i.set,
+        i.set_name,
+        i.purchase_price
+      FROM container_items ci
+      LEFT JOIN inventory i ON ci.inventory_id = i.id
+      WHERE ci.container_id = $1
+      ORDER BY ci.id`,
+      [containerId]
+    );
+    
+    console.log(`[CONTAINERS GET ITEMS] ✅ Retrieved ${result.rows.length} items`);
+    res.json(result.rows);
   } catch (err) {
     console.error('Container items error:', err);
     res.json([]);
@@ -1293,7 +1401,7 @@ app.delete('/api/containers/:id', async (req, res) => {
   }
 });
 
-// ========== SELL CONTAINER (COMPLETE FIX) ==========
+// ========== SELL CONTAINER (USING NEW MODULAR SCHEMA) ==========
 app.post('/api/containers/:id/sell', async (req, res) => {
   const client = await pool.connect();
   
@@ -1312,9 +1420,9 @@ app.post('/api/containers/:id/sell', async (req, res) => {
     await client.query('BEGIN');
     console.log(`[SELL] Transaction started`);
 
-    // Get container details INCLUDING decklist_id for COGS calculation
+    // Get container details
     const containerResult = await client.query(
-      'SELECT id, name, decklist_id, cards FROM containers WHERE id = $1 FOR UPDATE',
+      'SELECT id, name, decklist_id FROM containers WHERE id = $1 FOR UPDATE',
       [req.params.id]
     );
     
@@ -1325,19 +1433,29 @@ app.post('/api/containers/:id/sell', async (req, res) => {
     }
 
     const container = containerResult.rows[0];
-    const cards = container.cards || [];
 
-    console.log(`[SELL CONTAINER] ID: ${container.id}, Name: ${container.name}, Decklist: ${container.decklist_id}, Price: $${parsedPrice}`);
+    // Fetch container items from container_items table
+    const itemsResult = await client.query(
+      `SELECT 
+        ci.inventory_id as "inventoryId",
+        ci.quantity as quantity_used
+      FROM container_items ci
+      WHERE ci.container_id = $1`,
+      [container.id]
+    );
+    const items = itemsResult.rows;
 
-    // Decrement inventory (cards are sold and leave inventory)
-    for (const card of cards) {
-      if (card.inventoryId && card.quantity_used > 0) {
+    console.log(`[SELL CONTAINER] ID: ${container.id}, Name: ${container.name}, Decklist: ${container.decklist_id}, Items: ${items.length}, Price: $${parsedPrice}`);
+
+    // Decrement inventory for each container item
+    for (const item of items) {
+      if (item.inventoryId && item.quantity_used > 0) {
         const updateResult = await client.query(
           `UPDATE inventory 
            SET quantity = GREATEST(0, quantity - $1)
            WHERE id = $2
            RETURNING id, quantity`,
-          [card.quantity_used, card.inventoryId]
+          [item.quantity_used, item.inventoryId]
         );
         
         if (updateResult.rows.length > 0) {
@@ -1346,8 +1464,7 @@ app.post('/api/containers/:id/sell', async (req, res) => {
       }
     }
 
-    // ✅ CRITICAL FIX: DELETE CONTAINER BEFORE INSERTING SALE
-    // This prevents cascade delete if there's a FK constraint
+    // Delete container (container_items will be deleted via ON DELETE CASCADE)
     await client.query('DELETE FROM containers WHERE id = $1', [container.id]);
     console.log(`[SELL] ✅ Container deleted: id=${container.id}`);
 

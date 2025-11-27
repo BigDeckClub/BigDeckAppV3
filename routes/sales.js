@@ -1,9 +1,8 @@
 import express from 'express';
 
-const router = express.Router();
-
 // Factory function to create routes with pool dependency
 export default function createSalesRoutes(pool) {
+  const router = express.Router();
   
   // GET /api/sales - List all sales
   router.get('/', async (req, res, next) => {
