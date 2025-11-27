@@ -10,8 +10,6 @@ const CARD_SET_PAREN_PATTERN = /^(.*?)\s*\(\s*([^)]+)\s*\)\s*$/;
 const CARD_SET_SEP_PATTERN = /^(.*?)\s*(?:[-|]\s*)([A-Za-z0-9]+)\s*$/;
 const CARD_SET_TRAILING_PATTERN = /^(.*)\s+([A-Z0-9]{2,6})$/;
 
-const router = express.Router();
-
 // Validation schemas
 const containerSchema = Joi.object({
   name: Joi.string().min(1).max(255).required().messages({
@@ -137,6 +135,48 @@ async function enrichCardsWithInventory(deckCards, client) {
   return enriched;
 }
 
+// Helper: Fetch container items from container_items table
+// Returns items in the same format as the old JSONB cards field for backward compatibility
+async function fetchContainerItems(client, containerId) {
+  const result = await client.query(
+    `SELECT 
+      ci.id as container_item_id,
+      ci.inventory_id as "inventoryId",
+      ci.printing_id as "printingId",
+      ci.quantity as quantity_used,
+      i.name,
+      i.set,
+      i.set_name,
+      i.purchase_price
+    FROM container_items ci
+    LEFT JOIN inventory i ON ci.inventory_id = i.id
+    WHERE ci.container_id = $1
+    ORDER BY ci.id`,
+    [containerId]
+  );
+  return result.rows;
+}
+
+// Helper: Insert container items into container_items table
+async function insertContainerItems(client, containerId, cardsArray) {
+  for (const card of cardsArray) {
+    const inventoryId = card.inventoryId ? parseInt(card.inventoryId, 10) : null;
+    const printingId = card.printingId ? parseInt(card.printingId, 10) : null;
+    const quantity = card.quantity_used || card.quantity || 1;
+    
+    await client.query(
+      `INSERT INTO container_items (container_id, inventory_id, printing_id, quantity)
+       VALUES ($1, $2, $3, $4)`,
+      [containerId, inventoryId || null, printingId || null, quantity]
+    );
+  }
+}
+
+// Helper: Delete all container items for a container
+async function deleteContainerItems(client, containerId) {
+  await client.query('DELETE FROM container_items WHERE container_id = $1', [containerId]);
+}
+
 // Factory function to create routes with pool dependency
 export default function createContainerRoutes(pool, recordActivity) {
   
@@ -144,9 +184,26 @@ export default function createContainerRoutes(pool, recordActivity) {
   router.get('/', async (req, res, next) => {
     try {
       console.log('[CONTAINERS GET] Fetching all containers');
-      const result = await pool.query("SELECT *, COALESCE(cards, '[]'::jsonb) as cards FROM containers ORDER BY created_at DESC");
-      console.log(`[CONTAINERS GET] ✅ Retrieved ${result.rows.length} containers`);
-      res.json(result.rows);
+      
+      // Fetch containers with their items using new relational structure
+      const containersResult = await pool.query(
+        'SELECT id, name, decklist_id, created_at FROM containers ORDER BY created_at DESC'
+      );
+      
+      // For each container, fetch its items from container_items table
+      const containersWithItems = await Promise.all(
+        containersResult.rows.map(async (container) => {
+          const items = await fetchContainerItems(pool, container.id);
+          return {
+            ...container,
+            // Return items as 'cards' for backward compatibility with frontend
+            cards: items
+          };
+        })
+      );
+      
+      console.log(`[CONTAINERS GET] ✅ Retrieved ${containersWithItems.length} containers`);
+      res.json(containersWithItems);
     } catch (err) {
       console.error('[ERROR] Containers GET endpoint failure:', err.message, {
         code: err.code,
@@ -167,18 +224,21 @@ export default function createContainerRoutes(pool, recordActivity) {
     
     try {
       console.log(`[CONTAINERS GET ITEMS] Fetching items for container id=${containerId}`);
-      const result = await pool.query(
-        "SELECT COALESCE(cards, '[]'::jsonb) as cards FROM containers WHERE id = $1",
+      
+      // Check if container exists
+      const containerCheck = await pool.query(
+        'SELECT id FROM containers WHERE id = $1',
         [containerId]
       );
       
-      if (result.rows.length === 0) {
+      if (containerCheck.rows.length === 0) {
         console.warn(`[CONTAINERS GET ITEMS] Container not found: id=${containerId}`);
         return res.status(404).json({ error: 'Container not found' });
       }
       
-      const cards = result.rows[0].cards;
-      const items = Array.isArray(cards) ? cards : [];
+      // Fetch items from container_items table
+      const items = await fetchContainerItems(pool, containerId);
+      
       console.log(`[CONTAINERS GET ITEMS] ✅ Retrieved ${items.length} items`);
       res.json(items);
     } catch (err) {
@@ -235,14 +295,18 @@ export default function createContainerRoutes(pool, recordActivity) {
 
       if (!Array.isArray(cardsArray)) cardsArray = [];
 
-      // Insert container
+      // Insert container (no longer storing cards as JSONB)
       const { rows } = await client.query(
-        'INSERT INTO containers (name, decklist_id, cards) VALUES ($1, $2, $3::jsonb) RETURNING id',
-        [name, decklist_id, JSON.stringify(cardsArray)]
+        'INSERT INTO containers (name, decklist_id) VALUES ($1, $2) RETURNING id',
+        [name, decklist_id]
       );
       
       const containerId = rows[0].id;
-      console.log(`[CONTAINERS POST] ✅ Created container id=${containerId} with ${cardsArray.length} cards`);
+      
+      // Insert container items into container_items table
+      await insertContainerItems(client, containerId, cardsArray);
+      
+      console.log(`[CONTAINERS POST] ✅ Created container id=${containerId} with ${cardsArray.length} items in container_items table`);
       
       await client.query('COMMIT');
       
@@ -271,49 +335,65 @@ export default function createContainerRoutes(pool, recordActivity) {
       return res.status(400).json({ error: 'Invalid container ID' });
     }
     
+    const client = await pool.connect();
+    
     try {
       console.log(`[CONTAINERS PUT] Updating container id=${containerId}`);
       
+      await client.query('BEGIN');
+      
       // Check if container exists
-      const checkResult = await pool.query('SELECT id FROM containers WHERE id = $1', [containerId]);
+      const checkResult = await client.query('SELECT id, name FROM containers WHERE id = $1', [containerId]);
       if (checkResult.rows.length === 0) {
+        await client.query('ROLLBACK');
         console.warn(`[CONTAINERS PUT] Container not found: id=${containerId}`);
         return res.status(404).json({ error: 'Container not found' });
       }
       
       const { name, cards } = req.body;
-      const updates = [];
-      const values = [];
-      let paramIndex = 1;
       
+      // Update container name if provided
       if (name !== undefined) {
-        updates.push(`name = $${paramIndex}`);
-        values.push(name);
-        paramIndex++;
+        await client.query('UPDATE containers SET name = $1 WHERE id = $2', [name, containerId]);
       }
+      
+      // Update container items if provided
       if (cards !== undefined) {
-        updates.push(`cards = $${paramIndex}::jsonb`);
-        values.push(typeof cards === 'string' ? cards : JSON.stringify(cards));
-        paramIndex++;
+        const cardsArray = Array.isArray(cards) ? cards : [];
+        
+        // Delete existing container items
+        await deleteContainerItems(client, containerId);
+        
+        // Insert new container items
+        await insertContainerItems(client, containerId, cardsArray);
+        
+        console.log(`[CONTAINERS PUT] Updated ${cardsArray.length} items in container_items table`);
       }
       
-      if (updates.length === 0) {
-        return res.status(400).json({ error: 'No fields to update' });
-      }
+      await client.query('COMMIT');
       
-      values.push(containerId);
-      const query = `UPDATE containers SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING *`;
-      const result = await pool.query(query, values);
+      // Fetch updated container with items
+      const updatedContainer = await client.query(
+        'SELECT id, name, decklist_id, created_at FROM containers WHERE id = $1',
+        [containerId]
+      );
+      const items = await fetchContainerItems(pool, containerId);
       
       console.log(`[CONTAINERS PUT] ✅ Updated container id=${containerId}`);
-      res.json(result.rows[0]);
+      res.json({
+        ...updatedContainer.rows[0],
+        cards: items
+      });
     } catch (err) {
+      await client.query('ROLLBACK');
       console.error('[ERROR] Containers PUT endpoint failure:', err.message, {
         code: err.code,
         detail: err.detail,
         stack: err.stack
       });
       next(err);
+    } finally {
+      client.release();
     }
   });
 
@@ -337,6 +417,7 @@ export default function createContainerRoutes(pool, recordActivity) {
       
       const containerName = checkResult.rows[0].name;
       
+      // Delete container (container_items will be deleted via ON DELETE CASCADE)
       const result = await pool.query('DELETE FROM containers WHERE id = $1 RETURNING id', [containerId]);
       console.log(`[CONTAINERS DELETE] ✅ Deleted container id=${containerId}`);
       
@@ -383,7 +464,7 @@ export default function createContainerRoutes(pool, recordActivity) {
 
       // Get container details
       const containerResult = await client.query(
-        'SELECT id, name, decklist_id, cards FROM containers WHERE id = $1 FOR UPDATE',
+        'SELECT id, name, decklist_id FROM containers WHERE id = $1 FOR UPDATE',
         [containerId]
       );
       
@@ -394,28 +475,30 @@ export default function createContainerRoutes(pool, recordActivity) {
       }
 
       const container = containerResult.rows[0];
-      const cards = container.cards || [];
 
-      console.log(`[CONTAINERS SELL] Container: ${container.name}, Price: $${salePrice}`);
+      // Fetch container items from container_items table
+      const items = await fetchContainerItems(client, containerId);
 
-      // Decrement inventory
-      for (const card of cards) {
-        if (card.inventoryId && card.quantity_used > 0) {
+      console.log(`[CONTAINERS SELL] Container: ${container.name}, Price: $${salePrice}, Items: ${items.length}`);
+
+      // Decrement inventory for each container item
+      for (const item of items) {
+        if (item.inventoryId && item.quantity_used > 0) {
           const updateResult = await client.query(
             `UPDATE inventory 
              SET quantity = GREATEST(0, quantity - $1)
              WHERE id = $2
              RETURNING id, quantity`,
-            [card.quantity_used, card.inventoryId]
+            [item.quantity_used, item.inventoryId]
           );
           
           if (updateResult.rows.length > 0) {
-            console.log(`[CONTAINERS SELL] ✅ Inventory decremented: id=${updateResult.rows[0].id}`);
+            console.log(`[CONTAINERS SELL] ✅ Inventory decremented: id=${updateResult.rows[0].id}, new_qty=${updateResult.rows[0].quantity}`);
           }
         }
       }
 
-      // Delete container first
+      // Delete container (container_items will be deleted via ON DELETE CASCADE)
       await client.query('DELETE FROM containers WHERE id = $1', [container.id]);
       console.log(`[CONTAINERS SELL] ✅ Container deleted`);
 
