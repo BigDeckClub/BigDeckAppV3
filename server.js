@@ -8,7 +8,6 @@ import rateLimit from 'express-rate-limit';
 import Joi from 'joi';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import mtgjsonService from './server/mtgjson-service.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -175,18 +174,6 @@ async function initializeDatabase() {
 
 // Initialize database on startup
 initializeDatabase();
-
-// Initialize MTGJSON price service on startup
-mtgjsonService.initialize().catch(err => {
-  console.error('[SERVER] Failed to initialize MTGJSON service:', err.message);
-});
-
-// Refresh MTGJSON prices daily (run check every hour)
-setInterval(() => {
-  mtgjsonService.refreshDaily().catch(err => {
-    console.error('[SERVER] Daily refresh failed:', err.message);
-  });
-}, 60 * 60 * 1000);
 
 // ========== PARSER: Plain-text decklist to card objects ==========
 /**
@@ -1883,32 +1870,6 @@ app.get('/api/prices/:cardName/:setCode', priceLimiter, async (req, res) => {
       }
     } catch (err) {
       // Silent error - will return N/A
-    }
-    
-    // ==================== MTGJSON FALLBACK ====================
-    // If CK scrape failed, try MTGJSON
-    if (ckPrice === 'N/A') {
-      try {
-        // Fetch card from Scryfall to get UUID
-        const scryfallUuidUrl = `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(cardName)}&set=${setCode.toLowerCase()}`;
-        const uuidRes = await fetchRetry(scryfallUuidUrl);
-        
-        if (uuidRes.ok) {
-          const card = await uuidRes.json();
-          const uuid = card.id;
-          
-          // Look up in MTGJSON cache
-          if (uuid) {
-            const mtgjsonPrice = mtgjsonService.getRetailPriceByUUID(uuid);
-            if (mtgjsonPrice && mtgjsonPrice > 0) {
-              ckPrice = `$${mtgjsonPrice.toFixed(2)}`;
-              console.log(`[PRICES] Using MTGJSON fallback for ${cardName}: $${mtgjsonPrice.toFixed(2)}`);
-            }
-          }
-        }
-      } catch (err) {
-        // Silent error - ckPrice remains N/A
-      }
     }
     
     const responseData = { tcg: tcgPrice, ck: ckPrice };
