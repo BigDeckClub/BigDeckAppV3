@@ -137,3 +137,12 @@ dist
 # Temporary files
 *_temp*
 *.tmp
+
+# Prisma generated files
+/src/generated/prisma
+prisma.config.ts
+
+# Migration mappings (contain actual data, should not be committed)
+migrate/mappings/*.csv
+migrate/unmapped.csv
+.env
