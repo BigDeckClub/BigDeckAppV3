@@ -43,7 +43,13 @@ function parseArgs() {
 
   for (const arg of process.argv) {
     if (arg.startsWith('--user-id=')) {
-      args.userId = parseInt(arg.split('=')[1], 10);
+      const parsed = parseInt(arg.split('=')[1], 10);
+      if (!isNaN(parsed) && parsed > 0) {
+        args.userId = parsed;
+      } else {
+        console.error(`Invalid user ID: ${arg.split('=')[1]}`);
+        process.exit(1);
+      }
     }
   }
 
