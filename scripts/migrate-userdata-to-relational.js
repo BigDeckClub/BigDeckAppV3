@@ -57,7 +57,8 @@ function parseArgs() {
     userId: null,
     batchSize: 50,
     verbose: process.argv.includes('--verbose'),
-    help: process.argv.includes('--help')
+    help: process.argv.includes('--help'),
+    errorLogPath: process.env.MIGRATION_ERROR_LOG || null
   };
 
   for (const arg of process.argv) {
@@ -79,9 +80,34 @@ function parseArgs() {
         process.exit(1);
       }
     }
+    if (arg.startsWith('--error-log=')) {
+      args.errorLogPath = arg.split('=')[1];
+    }
   }
 
   return args;
+}
+
+/**
+ * Safely parse a date string with validation
+ * @param {string|Date|null} dateValue - The date value to parse
+ * @param {Date|null} defaultValue - Default value if parsing fails (defaults to current date, pass null for nullable dates)
+ * @returns {Date|null}
+ */
+function safeParseDate(dateValue, defaultValue = new Date()) {
+  if (!dateValue) {
+    return defaultValue;
+  }
+  try {
+    const parsed = new Date(dateValue);
+    // Check if date is valid (Invalid Date returns NaN for getTime())
+    if (isNaN(parsed.getTime())) {
+      return defaultValue;
+    }
+    return parsed;
+  } catch (e) {
+    return defaultValue;
+  }
 }
 
 function showHelp() {
@@ -95,12 +121,14 @@ Options:
   --dry-run          Preview changes without writing to database
   --user-id=ID       Migrate only a specific user
   --batch-size=N     Process N users at a time (default: 50)
+  --error-log=PATH   Custom path for error log file
   --verbose          Show detailed logging
   --help             Show this help message
 
 Environment:
-  DATABASE_URL       PostgreSQL connection string (required)
-  DRY_RUN=true       Alternative to --dry-run flag
+  DATABASE_URL            PostgreSQL connection string (required)
+  DRY_RUN=true            Alternative to --dry-run flag
+  MIGRATION_ERROR_LOG     Custom path for error log file
 
 Examples:
   # Dry run to preview migration
@@ -111,6 +139,9 @@ Examples:
 
   # Migrate all users in batches of 10
   node scripts/migrate-userdata-to-relational.js --batch-size=10
+
+  # Custom error log location
+  node scripts/migrate-userdata-to-relational.js --error-log=/var/log/migration-errors.json
   `);
 }
 
@@ -250,8 +281,8 @@ async function migrateUser(client, user, options) {
             user.id,
             deck.name,
             deck.description || null,
-            deck.createdAt ? new Date(deck.createdAt) : new Date(),
-            deck.updatedAt ? new Date(deck.updatedAt) : new Date()
+            safeParseDate(deck.createdAt),
+            safeParseDate(deck.updatedAt)
           ]
         );
         deckId = deckRows[0].id;
@@ -274,8 +305,8 @@ async function migrateUser(client, user, options) {
                   deckId,
                   card.front || '',
                   card.back || '',
-                  card.createdAt ? new Date(card.createdAt) : new Date(),
-                  card.updatedAt ? new Date(card.updatedAt) : new Date()
+                  safeParseDate(card.createdAt),
+                  safeParseDate(card.updatedAt)
                 ]
               );
               cardId = cardRows[0].id;
@@ -305,7 +336,13 @@ async function migrateUser(client, user, options) {
       const newCardId = cardIdMap.get(progress.cardId);
 
       if (!newCardId && !dryRun) {
-        result.errors.push(`No card mapping found for progress cardId: ${progress.cardId}`);
+        // Log orphaned progress separately for investigation
+        result.orphanedProgress = result.orphanedProgress || [];
+        result.orphanedProgress.push({
+          cardId: progress.cardId,
+          correctCount: progress.correctCount,
+          incorrectCount: progress.incorrectCount
+        });
         continue;
       }
 
@@ -316,7 +353,7 @@ async function migrateUser(client, user, options) {
           [
             user.id,
             newCardId,
-            progress.lastReviewed ? new Date(progress.lastReviewed) : null,
+            safeParseDate(progress.lastReviewed, null),
             progress.correctCount || 0,
             progress.incorrectCount || 0,
             progress.easeFactor !== undefined ? progress.easeFactor : 2.5,
@@ -361,8 +398,12 @@ async function main() {
     process.exit(1);
   }
 
+  // Configure connection pool for production load
   const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
+    max: 20,                    // Maximum number of clients in the pool
+    idleTimeoutMillis: 30000,   // Close idle clients after 30 seconds
+    connectionTimeoutMillis: 5000, // Timeout for new connections
   });
 
   // Track overall statistics
@@ -373,7 +414,9 @@ async function main() {
     totalDecks: 0,
     totalCards: 0,
     totalProgress: 0,
-    errors: []
+    totalOrphanedProgress: 0,
+    errors: [],
+    orphanedProgress: []
   };
 
   const startTime = Date.now();
@@ -441,6 +484,15 @@ async function main() {
             stats.totalCards += result.cardsCreated;
             stats.totalProgress += result.progressCreated;
 
+            // Track orphaned progress records separately
+            if (result.orphanedProgress && result.orphanedProgress.length > 0) {
+              stats.totalOrphanedProgress += result.orphanedProgress.length;
+              stats.orphanedProgress.push({
+                userId: user.id,
+                records: result.orphanedProgress
+              });
+            }
+
             // Log warnings for partial errors
             if (result.errors.length > 0) {
               stats.errors.push({
@@ -499,18 +551,31 @@ async function main() {
     console.log(`  Cards created:      ${stats.totalCards}`);
     console.log(`  Progress records:   ${stats.totalProgress}`);
 
-    // Write error log if there were errors
-    if (stats.errors.length > 0) {
-      const errorLogPath = path.join(__dirname, 'migration-errors.json');
+    // Report orphaned progress records
+    if (stats.totalOrphanedProgress > 0) {
+      console.log(`  Orphaned progress:  ${stats.totalOrphanedProgress} (referencing non-existent cards)`);
+    }
+
+    // Write error/orphan log if there were issues
+    const hasIssues = stats.errors.length > 0 || stats.orphanedProgress.length > 0;
+    if (hasIssues) {
+      const errorLogPath = args.errorLogPath || path.join(__dirname, 'migration-errors.json');
       const errorLog = {
         timestamp: new Date().toISOString(),
         dryRun: args.dryRun,
-        errors: stats.errors
+        errors: stats.errors,
+        orphanedProgress: stats.orphanedProgress
       };
 
       if (!args.dryRun) {
         fs.writeFileSync(errorLogPath, JSON.stringify(errorLog, null, 2));
-        console.log(`\n  ⚠️  ${stats.errors.length} users had errors. See: ${errorLogPath}`);
+        console.log(`\n  ⚠️  Issues logged to: ${errorLogPath}`);
+        if (stats.errors.length > 0) {
+          console.log(`      - ${stats.errors.length} users had errors`);
+        }
+        if (stats.orphanedProgress.length > 0) {
+          console.log(`      - ${stats.orphanedProgress.length} users had orphaned progress records`);
+        }
       } else {
         console.log(`\n  ⚠️  ${stats.errors.length} users would have errors`);
         if (args.verbose) {

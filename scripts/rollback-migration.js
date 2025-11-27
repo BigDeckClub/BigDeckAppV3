@@ -127,8 +127,12 @@ async function main() {
     process.exit(1);
   }
 
+  // Configure connection pool
   const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
+    max: 10,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 5000,
   });
 
   try {
@@ -166,12 +170,14 @@ async function main() {
       return;
     }
 
-    // Confirmation prompt
+    // Confirmation prompt with backup reminder
     if (!args.dryRun && !args.confirm) {
       console.log('⚠️  WARNING: This operation will DELETE data from the database!');
       console.log('   The original userData JSONB field will be preserved.\n');
+      console.log('📦 BACKUP REMINDER: Before proceeding, ensure you have a database backup:');
+      console.log('   pg_dump $DATABASE_URL > backup_$(date +%Y%m%d_%H%M%S).sql\n');
 
-      const confirmed = await promptConfirmation('Are you sure you want to proceed?');
+      const confirmed = await promptConfirmation('Have you backed up the database and want to proceed?');
       if (!confirmed) {
         console.log('\nRollback cancelled.\n');
         await pool.end();

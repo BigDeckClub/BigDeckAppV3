@@ -603,3 +603,76 @@ describe('userData Migration Sample Data', () => {
     expect(result.valid).toBe(true);
   });
 });
+
+// Safe date parsing function (replicated from migration script)
+function safeParseDate(dateValue, defaultValue = new Date()) {
+  if (!dateValue) {
+    return defaultValue;
+  }
+  try {
+    const parsed = new Date(dateValue);
+    if (isNaN(parsed.getTime())) {
+      return defaultValue;
+    }
+    return parsed;
+  } catch (e) {
+    return defaultValue;
+  }
+}
+
+describe('Safe Date Parsing', () => {
+  it('parses valid ISO date strings', () => {
+    const result = safeParseDate('2024-06-15T10:30:00Z');
+    expect(result.getTime()).toBe(new Date('2024-06-15T10:30:00Z').getTime());
+  });
+
+  it('parses valid date-only strings', () => {
+    const result = safeParseDate('2024-01-15');
+    expect(result).toBeInstanceOf(Date);
+    expect(isNaN(result.getTime())).toBe(false);
+  });
+
+  it('returns default for null input', () => {
+    const defaultDate = new Date('2020-01-01');
+    const result = safeParseDate(null, defaultDate);
+    expect(result).toBe(defaultDate);
+  });
+
+  it('returns default for undefined input', () => {
+    const defaultDate = new Date('2020-01-01');
+    const result = safeParseDate(undefined, defaultDate);
+    expect(result).toBe(defaultDate);
+  });
+
+  it('returns default for empty string', () => {
+    const defaultDate = new Date('2020-01-01');
+    const result = safeParseDate('', defaultDate);
+    expect(result).toBe(defaultDate);
+  });
+
+  it('returns default for invalid date string', () => {
+    const defaultDate = new Date('2020-01-01');
+    const result = safeParseDate('not a date', defaultDate);
+    expect(result).toBe(defaultDate);
+  });
+
+  it('returns default for invalid date format', () => {
+    const defaultDate = new Date('2020-01-01');
+    const result = safeParseDate('invalid-format-xyz', defaultDate);
+    expect(result).toBe(defaultDate);
+  });
+
+  it('handles Date objects as input', () => {
+    const inputDate = new Date('2024-03-15');
+    const result = safeParseDate(inputDate);
+    expect(result.getTime()).toBe(inputDate.getTime());
+  });
+
+  it('uses current date as default when not specified', () => {
+    const before = Date.now();
+    const result = safeParseDate(null);
+    const after = Date.now();
+    expect(result.getTime()).toBeGreaterThanOrEqual(before);
+    expect(result.getTime()).toBeLessThanOrEqual(after);
+  });
+});
