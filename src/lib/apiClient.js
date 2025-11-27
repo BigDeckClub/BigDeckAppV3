@@ -4,7 +4,7 @@
  */
 
 /**
- * @typedef {import('./api.js').ApiError} ApiError
+ * @typedef {import('../types/api.js').ApiError} ApiError
  */
 
 /**
