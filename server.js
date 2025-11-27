@@ -41,11 +41,6 @@ const priceLimiter = rateLimit({
 
 // PostgreSQL connection
 const dbUrl = process.env.DATABASE_URL;
-console.log('[DB] DATABASE_URL configured:', dbUrl ? '✓ YES' : '✗ NO');
-if (dbUrl && dbUrl.includes('helium')) {
-  console.log('[DB] ⚠️ WARNING: Using internal "helium" hostname - this won\'t work in production!');
-  console.log('[DB] For production deployment, set DATABASE_URL via Replit Database or environment variables.');
-}
 
 const pool = new Pool({
   connectionString: dbUrl,
@@ -76,7 +71,6 @@ async function initializeDatabase() {
     // Add missing columns for existing databases
     await pool.query(`ALTER TABLE inventory ADD COLUMN IF NOT EXISTS image_url TEXT`).catch(() => {});
     await pool.query(`ALTER TABLE inventory ADD COLUMN IF NOT EXISTS scryfall_id VARCHAR(255)`).catch(() => {});
-    console.log('[DB] ✓ inventory table ready');
 
     // Decklists table
     await pool.query(`
@@ -87,7 +81,6 @@ async function initializeDatabase() {
         created_at TIMESTAMP DEFAULT NOW()
       )
     `);
-    console.log('[DB] ✓ decklists table ready');
 
     // Containers table
     await pool.query(`
@@ -104,7 +97,6 @@ async function initializeDatabase() {
       ALTER TABLE containers 
       ADD COLUMN IF NOT EXISTS cards JSONB DEFAULT '[]'
     `).catch(() => {}); // Ignore if column already exists
-    console.log('[DB] ✓ containers table ready');
 
     // Container items table - relational storage for container contents
     await pool.query(`
@@ -118,7 +110,6 @@ async function initializeDatabase() {
     `);
     // Add printing_id column if it doesn't exist (for existing databases)
     await pool.query(`ALTER TABLE container_items ADD COLUMN IF NOT EXISTS printing_id INTEGER`).catch(() => {});
-    console.log('[DB] ✓ container_items table ready');
 
     // Deck items table - parsed decklist cards
     await pool.query(`
@@ -132,7 +123,6 @@ async function initializeDatabase() {
         is_sideboard BOOLEAN DEFAULT FALSE
       )
     `);
-    console.log('[DB] ✓ deck_items table ready');
 
     // Sales table
     await pool.query(`
@@ -147,7 +137,6 @@ async function initializeDatabase() {
         created_at TIMESTAMP DEFAULT NOW()
       )
     `);
-    console.log('[DB] ✓ sales table ready');
 
     // Settings table
     await pool.query(`
@@ -156,7 +145,6 @@ async function initializeDatabase() {
         value TEXT
       )
     `);
-    console.log('[DB] ✓ settings table ready');
 
     // Usage history table
     await pool.query(`
@@ -167,7 +155,6 @@ async function initializeDatabase() {
         created_at TIMESTAMP DEFAULT NOW()
       )
     `);
-    console.log('[DB] ✓ usage_history table ready');
 
     // Purchase history table
     await pool.query(`
@@ -180,9 +167,6 @@ async function initializeDatabase() {
         created_at TIMESTAMP DEFAULT NOW()
       )
     `);
-    console.log('[DB] ✓ purchase_history table ready');
-
-    console.log('[DB] ✓ All database tables initialized successfully');
   } catch (err) {
     console.error('[DB] ✗ Failed to initialize database:', err);
   }
@@ -852,7 +836,6 @@ async function recordActivity(action, details = null) {
        VALUES ($1, NOW(), $2)`,
       [action, details ? JSON.stringify(details) : null]
     );
-    console.log(`[ACTIVITY] ✅ Logged: ${action}`);
   } catch (err) {
     console.error(`[ACTIVITY] ❌ Error logging activity: ${err.message}`);
   }
@@ -899,31 +882,22 @@ app.get('/api/inventory', async (req, res) => {
 });
 
 app.post('/api/inventory', async (req, res) => {
-  console.log('[INVENTORY POST] ========== NEW REQUEST ==========');
-  console.log('[INVENTORY POST] Raw body:', JSON.stringify(req.body, null, 2));
-  
   const { name, set, set_name, quantity, purchase_price, purchase_date, image_url, reorder_type } = req.body;
-  
-  console.log('[INVENTORY POST] Extracted fields:', { name, set, set_name, quantity, purchase_price, purchase_date, image_url, reorder_type });
   
   try {
     // Validate required field: name
     if (!name || typeof name !== 'string' || name.trim() === '') {
-      console.warn('[INVENTORY POST] Missing or invalid name');
       return res.status(400).json({ error: 'Card name is required' });
     }
     
     // VALIDATION: Parse and validate quantity as positive integer
     const parsedQuantity = parseInt(quantity, 10);
     if (isNaN(parsedQuantity) || parsedQuantity <= 0) {
-      console.warn(`[INVENTORY POST] Invalid quantity received: ${quantity}. Rejecting request.`);
       return res.status(400).json({ 
         error: 'Quantity must be a positive integer',
         received: quantity 
       });
     }
-    
-    console.log(`[INVENTORY POST] Inserting card: name="${name}", set="${set}", quantity=${parsedQuantity}, price=${purchase_price}, date=${purchase_date}`);
     
     const result = await pool.query(
       `INSERT INTO inventory 
@@ -944,8 +918,6 @@ app.post('/api/inventory', async (req, res) => {
     
     const inventoryId = result.rows[0].id;
     
-    console.log(`[INVENTORY] Database insert successful: id=${inventoryId}, saved_quantity=${result.rows[0].quantity}`);
-    
     // Log activity
     await recordActivity(
       `Added ${parsedQuantity}x ${name} (${set}) to inventory`,
@@ -963,8 +935,6 @@ app.post('/api/inventory', async (req, res) => {
 app.delete('/api/inventory/:id', async (req, res) => {
   const inventoryId = parseInt(req.params.id, 10);
   
-  console.log(`[DELETE] Inventory deletion requested for id=${inventoryId}`);
-  
   try {
     // Check if this inventory item is involved in actual sales (via containers that were sold)
     const salesCheck = await pool.query(
@@ -977,7 +947,6 @@ app.delete('/api/inventory/:id', async (req, res) => {
     const salesCount = parseInt(salesCheck.rows[0].count, 10);
     
     if (salesCount > 0) {
-      console.warn(`[DELETE] BLOCKED: Cannot delete inventory id=${inventoryId} - involved in ${salesCount} sales transactions.`);
       return res.status(400).json({ 
         error: 'Cannot delete inventory item that has been sold. Sales history must be preserved.',
         salesCount
@@ -986,20 +955,17 @@ app.delete('/api/inventory/:id', async (req, res) => {
     
     // First, clean up any orphaned purchase_history records (from legacy data)
     await pool.query('DELETE FROM purchase_history WHERE inventory_id = $1', [inventoryId]);
-    console.log(`[DELETE] Cleaned up purchase_history for inventory id=${inventoryId}`);
     
     // Then delete the inventory item
     const result = await pool.query('DELETE FROM inventory WHERE id = $1 RETURNING id', [inventoryId]);
     
     if (result.rows.length === 0) {
-      console.warn(`[DELETE] Inventory id=${inventoryId} not found`);
       return res.status(404).json({ error: 'Inventory not found' });
     }
     
     // Log activity
     await recordActivity(`Deleted inventory item id=${inventoryId}`, { inventory_id: inventoryId });
     
-    console.log(`[DELETE] Successfully deleted inventory id=${inventoryId}`);
     res.json({ success: true, id: inventoryId });
   } catch (err) {
     console.error(`[DELETE] Error deleting inventory id=${inventoryId}:`, err.message);
@@ -1013,13 +979,10 @@ app.put('/api/inventory/:id', async (req, res) => {
   const { quantity, purchase_price, purchase_date, reorder_type } = req.body;
   
   try {
-    console.log(`[UPDATE] Inventory update requested: id=${inventoryId}, quantity=${quantity}, price=${purchase_price}, date=${purchase_date}, reorder=${reorder_type}`);
-    
     // Validate quantity
     if (quantity !== undefined) {
       const parsedQty = parseInt(quantity, 10);
       if (isNaN(parsedQty) || parsedQty < 0) {
-        console.warn(`[UPDATE] Invalid quantity: ${quantity}`);
         return res.status(400).json({ 
           error: 'Quantity must be a non-negative integer',
           received: quantity
@@ -1031,7 +994,6 @@ app.put('/api/inventory/:id', async (req, res) => {
     if (purchase_price !== undefined) {
       const parsedPrice = parseFloat(purchase_price);
       if (isNaN(parsedPrice) || parsedPrice < 0) {
-        console.warn(`[UPDATE] Invalid purchase_price: ${purchase_price}`);
         return res.status(400).json({ 
           error: 'Purchase price must be a non-negative number',
           received: purchase_price
@@ -1108,12 +1070,10 @@ app.put('/api/inventory/:id', async (req, res) => {
     const result = await pool.query(updateQuery, values);
     
     if (result.rows.length === 0) {
-      console.warn(`[UPDATE] Update returned no rows: id=${inventoryId}`);
       return res.status(500).json({ error: 'Update failed: no rows returned' });
     }
     
     const updatedItem = result.rows[0];
-    console.log(`[UPDATE] ✅ Inventory updated: id=${inventoryId}, new_quantity=${updatedItem.quantity}, new_price=${updatedItem.purchase_price}`);
     
     // Log activity
     await recordActivity(
@@ -1124,7 +1084,6 @@ app.put('/api/inventory/:id', async (req, res) => {
     res.json(updatedItem);
   } catch (err) {
     console.error(`[UPDATE] Error updating inventory id=${inventoryId}:`, err.message);
-    console.error(`[UPDATE] Error stack:`, err.stack);
     handleDbError(err, res);
   }
 });
@@ -1133,7 +1092,6 @@ app.put('/api/inventory/:id', async (req, res) => {
 app.get('/api/usage-history', async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 50;
-    console.log(`[ACTIVITY] Fetching ${limit} recent activity records...`);
     
     const result = await pool.query(
       `SELECT id, action, created_at, details
@@ -1143,7 +1101,6 @@ app.get('/api/usage-history', async (req, res) => {
       [limit]
     );
     
-    console.log(`[ACTIVITY] ✅ Retrieved ${result.rows.length} activity records`);
     res.json(result.rows);
   } catch (err) {
     console.error('[ACTIVITY] ❌ Query error:', err.message);
@@ -1166,7 +1123,6 @@ app.post('/api/usage-history', async (req, res) => {
       [action, details ? JSON.stringify(details) : null]
     );
     
-    console.log(`[ACTIVITY] ✅ Activity recorded: ${action}`);
     res.status(201).json(result.rows[0]);
   } catch (err) {
     console.error('[ACTIVITY] ❌ Error:', err.message);
