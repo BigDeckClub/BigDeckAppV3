@@ -9,9 +9,12 @@
  */
 
 import pkg from 'pg';
+import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+
+dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -19,7 +22,8 @@ const __dirname = path.dirname(__filename);
 const { Pool } = pkg;
 
 const DRY_RUN = process.argv.includes('--dry-run');
-const SCRYFALL_DELAY = 200; // ms between API calls (Scryfall rate limit is 50-100 req/s, being conservative)
+const SCRYFALL_DELAY = 100; // ms between API calls (Scryfall limit: ~10 req/sec)
+const MAX_RETRIES = 3;
 
 // Normalize card name for matching
 function normalizeCardName(name) {
@@ -37,19 +41,49 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// Fetch card data from Scryfall API
-async function fetchCardFromScryfall(cardName) {
+// Fetch card data from Scryfall API with retry logic
+async function fetchCardFromScryfall(cardName, retryCount = 0) {
   try {
     const url = `https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(cardName)}`;
-    const response = await fetch(url);
+    let response;
+    
+    try {
+      response = await fetch(url);
+    } catch (networkErr) {
+      if (retryCount < MAX_RETRIES) {
+        const backoffMs = Math.pow(2, retryCount) * 1000; // Exponential backoff
+        console.warn(`  Network error, retrying in ${backoffMs}ms...`);
+        await sleep(backoffMs);
+        return fetchCardFromScryfall(cardName, retryCount + 1);
+      }
+      console.error(`  Network error fetching ${cardName}:`, networkErr.message);
+      return null;
+    }
+    
+    // Handle rate limiting with exponential backoff
+    if (response.status === 429) {
+      if (retryCount < MAX_RETRIES) {
+        const backoffMs = Math.pow(2, retryCount) * 2000; // Longer backoff for rate limits
+        console.warn(`  Rate limited by Scryfall, retrying in ${backoffMs}ms...`);
+        await sleep(backoffMs);
+        return fetchCardFromScryfall(cardName, retryCount + 1);
+      }
+      console.error(`  Rate limit exceeded for ${cardName} after ${MAX_RETRIES} retries`);
+      return null;
+    }
     
     if (!response.ok) {
       return null;
     }
     
-    return await response.json();
+    try {
+      return await response.json();
+    } catch (parseErr) {
+      console.error(`  Failed to parse response for ${cardName}:`, parseErr.message);
+      return null;
+    }
   } catch (err) {
-    console.error(`  Error fetching ${cardName}:`, err.message);
+    console.error(`  Unexpected error fetching ${cardName}:`, err.message);
     return null;
   }
 }
@@ -65,15 +99,17 @@ async function main() {
     process.exit(1);
   }
 
-  const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-  });
-
-  const client = await pool.connect();
+  let pool = null;
+  let client = null;
   const mappings = [];
   const unmapped = [];
 
   try {
+    pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+    });
+
+    client = await pool.connect();
     // Get unique card names from inventory
     const { rows: uniqueCards } = await client.query(`
       SELECT DISTINCT LOWER(name) as name 
@@ -226,9 +262,10 @@ async function main() {
   } catch (err) {
     console.error('\n❌ Error:', err.message);
     console.error(err.stack);
+    process.exit(1);
   } finally {
-    client.release();
-    await pool.end();
+    if (client) client.release();
+    if (pool) await pool.end();
   }
 }
 

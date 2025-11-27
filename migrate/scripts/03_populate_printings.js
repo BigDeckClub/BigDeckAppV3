@@ -9,9 +9,12 @@
  */
 
 import pkg from 'pg';
+import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+
+dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -19,7 +22,8 @@ const __dirname = path.dirname(__filename);
 const { Pool } = pkg;
 
 const DRY_RUN = process.argv.includes('--dry-run');
-const SCRYFALL_DELAY = 200; // ms between API calls (conservative rate limiting)
+const SCRYFALL_DELAY = 100; // ms between API calls (Scryfall limit: ~10 req/sec)
+const MAX_RETRIES = 3;
 
 // Normalize card name for matching
 function normalizeCardName(name) {
@@ -37,8 +41,8 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// Fetch printing data from Scryfall API
-async function fetchPrintingFromScryfall(cardName, setCode) {
+// Fetch printing data from Scryfall API with retry logic
+async function fetchPrintingFromScryfall(cardName, setCode, retryCount = 0) {
   try {
     // Try exact match first
     const url = `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(cardName)}&set=${setCode.toLowerCase()}`;
@@ -47,15 +51,26 @@ async function fetchPrintingFromScryfall(cardName, setCode) {
     try {
       response = await fetch(url);
     } catch (networkErr) {
+      if (retryCount < MAX_RETRIES) {
+        const backoffMs = Math.pow(2, retryCount) * 1000;
+        console.warn(`  Network error, retrying in ${backoffMs}ms...`);
+        await sleep(backoffMs);
+        return fetchPrintingFromScryfall(cardName, setCode, retryCount + 1);
+      }
       console.error(`  Network error fetching ${cardName} (${setCode}):`, networkErr.message);
       return null;
     }
     
-    // Check for rate limiting
+    // Check for rate limiting with exponential backoff
     if (response.status === 429) {
-      console.warn(`  Rate limited by Scryfall - waiting 5 seconds...`);
-      await sleep(5000);
-      response = await fetch(url);
+      if (retryCount < MAX_RETRIES) {
+        const backoffMs = Math.pow(2, retryCount) * 2000;
+        console.warn(`  Rate limited by Scryfall, retrying in ${backoffMs}ms...`);
+        await sleep(backoffMs);
+        return fetchPrintingFromScryfall(cardName, setCode, retryCount + 1);
+      }
+      console.error(`  Rate limit exceeded for ${cardName} (${setCode}) after ${MAX_RETRIES} retries`);
+      return null;
     }
     
     if (response.ok) {
@@ -111,21 +126,23 @@ async function main() {
     process.exit(1);
   }
 
-  const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-  });
-
-  const client = await pool.connect();
+  let pool = null;
+  let client = null;
   const mappings = [];
   const unmapped = [];
 
   try {
+    pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+    });
+
+    client = await pool.connect();
+
     // Get unique (name, set) combinations from inventory
     const { rows: uniquePrintings } = await client.query(`
       SELECT DISTINCT 
         LOWER(name) as name, 
-        UPPER(set) as set_code,
-        MAX(set_name) as set_name
+        UPPER(set) as set_code
       FROM inventory 
       WHERE name IS NOT NULL AND name != ''
         AND set IS NOT NULL AND set != ''
@@ -308,9 +325,10 @@ async function main() {
   } catch (err) {
     console.error('\n❌ Error:', err.message);
     console.error(err.stack);
+    process.exit(1);
   } finally {
-    client.release();
-    await pool.end();
+    if (client) client.release();
+    if (pool) await pool.end();
   }
 }
 

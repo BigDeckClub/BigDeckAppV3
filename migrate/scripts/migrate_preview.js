@@ -4,6 +4,7 @@
  * 
  * Simulates the migration process and prints counts without writing to the database.
  * Use this to estimate migration scope and identify potential issues.
+ * This script is read-only and performs no writes to the database.
  * 
  * Usage: node migrate/scripts/migrate_preview.js
  */
@@ -28,9 +29,6 @@ if (fs.existsSync(envPath)) {
 
 const { Pool } = pkg;
 
-// Dry run mode - no writes
-const DRY_RUN = true;
-
 async function main() {
   console.log('\n========================================');
   console.log('   BigDeck.app Migration Preview');
@@ -45,11 +43,11 @@ async function main() {
     process.exit(1);
   }
 
-  console.log(`Mode: ${DRY_RUN ? 'DRY RUN (no writes)' : 'LIVE'}`);
-  console.log(`Database: Configured\n`);
+  console.log('Mode: READ-ONLY PREVIEW (no writes)');
+  console.log('Database: Configured\n');
 
-  let pool;
-  let client;
+  let pool = null;
+  let client = null;
   
   try {
     pool = new Pool({
@@ -62,6 +60,7 @@ async function main() {
     console.error('❌ Failed to connect to database:', err.message);
     console.error('');
     console.error('Please verify your DATABASE_URL is correct and the database is accessible.');
+    if (pool) await pool.end();
     process.exit(1);
   }
 
@@ -252,17 +251,15 @@ async function main() {
     console.log('   Preview Complete');
     console.log('========================================\n');
 
-    if (DRY_RUN) {
-      console.log('This was a DRY RUN. No changes were made to the database.\n');
-      console.log('To proceed with migration, use the actual migration scripts.\n');
-    }
+    console.log('This was a READ-ONLY preview. No changes were made to the database.\n');
+    console.log('To proceed with migration, use the actual migration scripts.\n');
 
   } catch (err) {
     console.error('❌ Error during preview:', err.message);
     console.error(err.stack);
   } finally {
-    client.release();
-    await pool.end();
+    if (client) client.release();
+    if (pool) await pool.end();
   }
 }
 
