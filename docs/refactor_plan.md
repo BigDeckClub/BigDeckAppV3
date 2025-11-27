@@ -278,32 +278,32 @@ migrate/
 **Script:** `migrate/scripts/01_backup_tables.sql`
 
 ```sql
--- Create backup schema
-CREATE SCHEMA IF NOT EXISTS backup_20251126;
+-- Create backup schema (replace YYYYMMDD with actual date, e.g., 20251127)
+CREATE SCHEMA IF NOT EXISTS backup_YYYYMMDD;
 
 -- Backup all affected tables
-CREATE TABLE backup_20251126.inventory AS SELECT * FROM inventory;
-CREATE TABLE backup_20251126.containers AS SELECT * FROM containers;
-CREATE TABLE backup_20251126.container_items AS SELECT * FROM container_items;
-CREATE TABLE backup_20251126.decklists AS SELECT * FROM decklists;
-CREATE TABLE backup_20251126.sales AS SELECT * FROM sales;
-CREATE TABLE backup_20251126.purchase_history AS SELECT * FROM purchase_history;
+CREATE TABLE backup_YYYYMMDD.inventory AS SELECT * FROM inventory;
+CREATE TABLE backup_YYYYMMDD.containers AS SELECT * FROM containers;
+CREATE TABLE backup_YYYYMMDD.container_items AS SELECT * FROM container_items;
+CREATE TABLE backup_YYYYMMDD.decklists AS SELECT * FROM decklists;
+CREATE TABLE backup_YYYYMMDD.sales AS SELECT * FROM sales;
+CREATE TABLE backup_YYYYMMDD.purchase_history AS SELECT * FROM purchase_history;
 
 -- Verify row counts
-SELECT 'inventory' as table_name, COUNT(*) as rows FROM backup_20251126.inventory
+SELECT 'inventory' as table_name, COUNT(*) as rows FROM backup_YYYYMMDD.inventory
 UNION ALL
-SELECT 'containers', COUNT(*) FROM backup_20251126.containers
+SELECT 'containers', COUNT(*) FROM backup_YYYYMMDD.containers
 UNION ALL
-SELECT 'container_items', COUNT(*) FROM backup_20251126.container_items
+SELECT 'container_items', COUNT(*) FROM backup_YYYYMMDD.container_items
 UNION ALL
-SELECT 'decklists', COUNT(*) FROM backup_20251126.decklists
+SELECT 'decklists', COUNT(*) FROM backup_YYYYMMDD.decklists
 UNION ALL
-SELECT 'sales', COUNT(*) FROM backup_20251126.sales
+SELECT 'sales', COUNT(*) FROM backup_YYYYMMDD.sales
 UNION ALL
-SELECT 'purchase_history', COUNT(*) FROM backup_20251126.purchase_history;
+SELECT 'purchase_history', COUNT(*) FROM backup_YYYYMMDD.purchase_history;
 ```
 
-**Cleanup:** After verifying migration success, remove backup schema with `DROP SCHEMA backup_20251126 CASCADE;`
+**Cleanup:** After verifying migration success, remove backup schema with `DROP SCHEMA backup_YYYYMMDD CASCADE;`
 
 ### 3.3 Step 2: Populate Cards Table
 

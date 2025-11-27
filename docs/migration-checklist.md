@@ -11,7 +11,7 @@
 ### Environment Preparation
 
 - [ ] **Database backup created**
-  - Location: `backup_20251126` schema
+  - Location: `backup_YYYYMMDD` schema (replace YYYYMMDD with actual date)
   - Tables backed up: inventory, containers, container_items, decklists, sales, purchase_history
   - Verified by: _________________
   - Date: _________________
@@ -68,7 +68,7 @@
 - [ ] **Backup tables exist**
   ```sql
   SELECT table_name FROM information_schema.tables 
-  WHERE table_schema = 'backup_20251126';
+  WHERE table_schema = 'backup_YYYYMMDD';
   ```
 
 - [ ] **Row counts match**

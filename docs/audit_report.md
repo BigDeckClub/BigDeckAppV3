@@ -255,6 +255,8 @@ Cards accessed via:
 
 ## 5. Live Schema Modification Scripts
 
+> **Note:** Line numbers referenced below are accurate as of the audit date (2025-11-26) and may need to be re-verified before migration as the codebase evolves.
+
 ### 5.1 server.js Schema Modifications
 
 The `initializeDatabase()` function in `server.js` (lines 60-174) performs ad-hoc schema modifications:
@@ -474,6 +476,8 @@ The following scenarios would require manual review during migration:
 ---
 
 ## Appendices
+
+> **Note:** Line numbers referenced in this section are accurate as of the audit date (2025-11-26) and may need to be re-verified before migration as the codebase evolves.
 
 ### A. File References
 
