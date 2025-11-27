@@ -62,6 +62,10 @@ externalPort = 3001
 localPort = 45629
 externalPort = 6000
 
+[[ports]]
+localPort = 46119
+externalPort = 8080
+
 [agent]
 expertMode = true
 
@@ -92,6 +96,7 @@ outputType = "webview"
 [userenv]
 
 [userenv.shared]
+CHECKPOINT_DISABLE = "1"
 
 [userenv.production]
 DATABASE_URL = "postgresql://neondb_owner:npg_Ah3YCkH5WXGi@ep-red-wave-ahuq4str.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require"
