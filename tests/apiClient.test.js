@@ -113,6 +113,7 @@ describe('API Client', () => {
       const responseData = { success: true };
       mockFetch.mockResolvedValueOnce({
         ok: true,
+        status: 200,
         json: () => Promise.resolve(responseData),
       });
 
@@ -122,6 +123,17 @@ describe('API Client', () => {
       expect(mockFetch).toHaveBeenCalledWith('/api/items/1', expect.objectContaining({
         method: 'DELETE',
       }));
+    });
+
+    it('handles 204 No Content response', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 204,
+      });
+
+      const result = await apiDelete('/api/items/1');
+
+      expect(result).toBeNull();
     });
   });
 
@@ -154,6 +166,11 @@ describe('API Client', () => {
       expect(isNetworkError(new Error('Other error'))).toBe(false);
     });
 
+    it('isNetworkError detects various network error messages', () => {
+      expect(isNetworkError(new TypeError('Network request failed'))).toBe(true);
+      expect(isNetworkError(new TypeError('A network error occurred'))).toBe(true);
+    });
+
     it('isValidationError detects 400 errors', () => {
       expect(isValidationError(new ApiRequestError('Bad request', 400))).toBe(true);
       expect(isValidationError(new ApiRequestError('Server error', 500))).toBe(false);
@@ -162,6 +179,28 @@ describe('API Client', () => {
     it('isNotFoundError detects 404 errors', () => {
       expect(isNotFoundError(new ApiRequestError('Not found', 404))).toBe(true);
       expect(isNotFoundError(new ApiRequestError('Bad request', 400))).toBe(false);
+    });
+  });
+
+  describe('custom headers', () => {
+    it('allows custom headers to be passed', async () => {
+      const mockData = { id: 1 };
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockData),
+      });
+
+      await apiGet('/api/test', {
+        headers: { Authorization: 'Bearer token123' }
+      });
+
+      expect(mockFetch).toHaveBeenCalledWith('/api/test', 
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            'Authorization': 'Bearer token123'
+          })
+        })
+      );
     });
   });
 });

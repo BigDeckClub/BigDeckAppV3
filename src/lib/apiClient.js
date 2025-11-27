@@ -113,7 +113,7 @@ export async function apiPut(url, body, options = {}) {
  * @template T
  * @param {string} url - API endpoint URL
  * @param {RequestInit} [options] - Additional fetch options
- * @returns {Promise<T>} Response data
+ * @returns {Promise<T|null>} Response data or null for 204 No Content
  * @throws {ApiRequestError} On API error
  */
 export async function apiDelete(url, options = {}) {
@@ -129,6 +129,11 @@ export async function apiDelete(url, options = {}) {
   if (!response.ok) {
     const error = await parseErrorResponse(response);
     throw new ApiRequestError(error.message, response.status, error.details);
+  }
+
+  // Handle 204 No Content responses
+  if (response.status === 204) {
+    return null;
   }
 
   return response.json();
@@ -179,7 +184,15 @@ export function formatApiError(error) {
  * @returns {boolean}
  */
 export function isNetworkError(error) {
-  return error instanceof TypeError && error.message === 'Failed to fetch';
+  if (!(error instanceof TypeError)) {
+    return false;
+  }
+  const message = error.message.toLowerCase();
+  return (
+    message === 'failed to fetch' ||
+    message.includes('network request failed') ||
+    message.includes('network error')
+  );
 }
 
 /**

@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { apiGet, apiPost, apiPut, apiDelete, formatApiError, isNetworkError } from '../lib/apiClient.js';
 
 /**
@@ -95,17 +95,29 @@ export function useFetch(url, options = {}) {
   const [data, setData] = useState(initialData);
   const [isLoading, setIsLoading] = useState(enabled);
   const [error, setError] = useState(null);
+  const abortControllerRef = useRef(null);
 
   const fetchData = useCallback(async () => {
     if (!url) return;
+    
+    // Abort any in-flight request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    
+    // Create new abort controller
+    abortControllerRef.current = new AbortController();
     
     setIsLoading(true);
     setError(null);
     
     try {
-      const result = await apiGet(url);
+      const result = await apiGet(url, { signal: abortControllerRef.current.signal });
       setData(result);
     } catch (err) {
+      // Don't set error if request was aborted
+      if (err.name === 'AbortError') return;
+      
       const errorMessage = isNetworkError(err) 
         ? 'Unable to connect to server. Please check your connection.'
         : formatApiError(err);
@@ -115,11 +127,19 @@ export function useFetch(url, options = {}) {
     }
   }, [url]);
 
-  // Fetch on mount if enabled
+  // Fetch on mount if enabled, cleanup on unmount
   useEffect(() => {
     if (enabled) {
       fetchData();
     }
+    
+    // Cleanup: abort any in-flight request when component unmounts
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
+    };
   }, [enabled, fetchData]);
 
   return {
