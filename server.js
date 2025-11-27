@@ -1657,18 +1657,47 @@ app.get('/api/price', async (req, res) => {
 app.get('/api/prices/:cardName/:setCode', priceLimiter, async (req, res) => {
   const { cardName, setCode } = req.params;
   
+  console.log(`[PRICES] Lookup request: card="${cardName}", set="${setCode}"`);
+  
   try {
-    // Scryfall TCG price
-    const scryfallUrl = `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(cardName)}&set=${setCode.toLowerCase()}`;
-    const scryfallRes = await fetchRetry(scryfallUrl);
-    
+    // Scryfall TCG price - try exact match first, then fuzzy search
     let tcgPrice = 'N/A';
-    if (scryfallRes.ok) {
-      const card = await scryfallRes.json();
-      const price = parseFloat(card.prices?.usd);
-      if (price > 0) {
-        tcgPrice = `$${price.toFixed(2)}`;
+    let scryfallRes = null;
+    
+    // Try exact match with set code if provided
+    if (setCode && setCode.length > 0) {
+      const exactUrl = `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(cardName)}&set=${setCode.toLowerCase()}`;
+      console.log(`[PRICES] Trying Scryfall exact match: ${exactUrl}`);
+      scryfallRes = await fetchRetry(exactUrl);
+      
+      if (!scryfallRes.ok) {
+        console.log(`[PRICES] Exact match failed (${scryfallRes.status}), trying fuzzy search...`);
+        scryfallRes = null;
       }
+    }
+    
+    // If exact match failed or no set code, try fuzzy search
+    if (!scryfallRes) {
+      const fuzzyUrl = `https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(cardName)}`;
+      console.log(`[PRICES] Trying Scryfall fuzzy search: ${fuzzyUrl}`);
+      scryfallRes = await fetchRetry(fuzzyUrl);
+    }
+    
+    if (scryfallRes && scryfallRes.ok) {
+      try {
+        const card = await scryfallRes.json();
+        const price = parseFloat(card.prices?.usd);
+        if (price > 0) {
+          tcgPrice = `$${price.toFixed(2)}`;
+          console.log(`[PRICES] ✓ TCG price found: ${tcgPrice} for ${cardName}`);
+        } else {
+          console.log(`[PRICES] ✗ TCG price not available or $0 for ${cardName}`);
+        }
+      } catch (parseErr) {
+        console.error(`[PRICES] ✗ Failed to parse Scryfall response:`, parseErr.message);
+      }
+    } else {
+      console.log(`[PRICES] ✗ Scryfall lookup failed for ${cardName}`);
     }
     
     // ==================== CARD KINGDOM SCRAPE ====================
