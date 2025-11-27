@@ -22,12 +22,14 @@ import DecklistCardPrice from "./components/DecklistCardPrice";
 import { normalizeCardName, normalizeSetCode } from "./lib/fetchCardPrices";
 import { FloatingDollarSigns } from "./components/FloatingDollarSigns";
 import ErrorBoundary from "./components/ErrorBoundary";
+import { useApi } from "./hooks/useApi";
 
 // Use relative path - Vite dev server will proxy to backend
 const API_BASE = "/api";
 
 function MTGInventoryTrackerContent() {
   const { getPrice } = usePriceCache();
+  const { get, post, put, del } = useApi();
   const [activeTab, setActiveTab] = useState("inventory");
   const [inventory, setInventory] = useState([]);
   const [decklists, setDecklists] = useState([]);
@@ -275,17 +277,15 @@ function MTGInventoryTrackerContent() {
       loadUsageHistory();
       const fetchTotalPurchases = async () => {
         try {
-          const response = await fetch(`${API_BASE}/analytics/total-purchases-60days`);
-          const data = await response.json();
+          const data = await get(`${API_BASE}/analytics/total-purchases-60days`);
           setTotalPurchased60Days(data.totalSpent || 0);
         } catch (err) {
-          console.error('Failed to fetch total purchases:', err);
           setTotalPurchased60Days(0);
         }
       };
       fetchTotalPurchases();
     }
-  }, [activeTab]);
+  }, [activeTab, get]);
 
   const loadAllSets = async () => {
     try {
@@ -322,36 +322,19 @@ function MTGInventoryTrackerContent() {
 
   const loadInventory = async () => {
     try {
-      const response = await fetch(`${API_BASE}/inventory`);
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-      const data = await response.json();
+      const data = await get(`${API_BASE}/inventory`);
       setInventory(data || []);
     } catch (error) {}
   };
 
   const addInventoryItem = async (item) => {
     try {
-      const response = await fetch(`${API_BASE}/inventory`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(item),
-      });
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('[ERROR] Inventory add failed:', errorText);
-        throw new Error(`HTTP ${response.status}: ${errorText}`);
-      }
-      
-      await response.json();
+      await post(`${API_BASE}/inventory`, item);
       await loadInventory();
       setSuccessMessage("Card added successfully!");
       setTimeout(() => setSuccessMessage(""), 3000);
       return true;
     } catch (error) {
-      console.error('[ERROR] Inventory add failed:', error);
       setSuccessMessage("Error adding card: " + error.message);
       setTimeout(() => setSuccessMessage(""), 3000);
       return false;
@@ -370,19 +353,14 @@ function MTGInventoryTrackerContent() {
 
   const updateInventoryItem = async (id) => {
     try {
-      const response = await fetch(`${API_BASE}/inventory/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          quantity: parseInt(editForm.quantity),
-          purchase_price: editForm.purchase_price
-            ? parseFloat(editForm.purchase_price)
-            : null,
-          purchase_date: editForm.purchase_date,
-          reorder_type: editForm.reorder_type,
-        }),
+      await put(`${API_BASE}/inventory/${id}`, {
+        quantity: parseInt(editForm.quantity),
+        purchase_price: editForm.purchase_price
+          ? parseFloat(editForm.purchase_price)
+          : null,
+        purchase_date: editForm.purchase_date,
+        reorder_type: editForm.reorder_type,
       });
-      if (!response.ok) throw new Error("Failed to update card");
       await loadInventory();
       setEditingId(null);
       alert("Card updated successfully!");
@@ -393,7 +371,6 @@ function MTGInventoryTrackerContent() {
 
   const deleteInventoryItem = async (id) => {
     if (!id) {
-      console.error('[ERROR] Delete failed: No ID provided');
       return;
     }
     
@@ -402,15 +379,11 @@ function MTGInventoryTrackerContent() {
     }
     
     try {
-      const response = await fetch(`${API_BASE}/inventory/${id}`, { method: "DELETE" });
-      if (!response.ok) {
-        throw new Error(`Failed to delete: ${response.status}`);
-      }
+      await del(`${API_BASE}/inventory/${id}`);
       await loadInventory();
       setSuccessMessage("Card deleted successfully!");
       setTimeout(() => setSuccessMessage(""), 3000);
     } catch (error) {
-      console.error('[ERROR] Delete failed:', error);
       setSuccessMessage("Error deleting card: " + error.message);
       setTimeout(() => setSuccessMessage(""), 3000);
     }
@@ -594,8 +567,7 @@ function MTGInventoryTrackerContent() {
 
   const loadDecklists = async () => {
     try {
-      const response = await fetch(`${API_BASE}/decklists`);
-      const data = await response.json();
+      const data = await get(`${API_BASE}/decklists`);
       setDecklists(data || []);
     } catch (error) {}
   };
@@ -703,12 +675,7 @@ function MTGInventoryTrackerContent() {
     }
 
     try {
-      const response = await fetch(`${API_BASE}/decklists`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: decklistName, decklist: decklistPaste }),
-      });
-      if (!response.ok) throw new Error("Failed to add decklist");
+      await post(`${API_BASE}/decklists`, { name: decklistName, decklist: decklistPaste });
       setDecklistName("");
       setDecklistPaste("");
       setShowDecklistForm(false);
@@ -721,15 +688,14 @@ function MTGInventoryTrackerContent() {
 
   const deleteDecklist = async (id) => {
     try {
-      await fetch(`${API_BASE}/decklists/${id}`, { method: "DELETE" });
+      await del(`${API_BASE}/decklists/${id}`);
       await loadDecklists();
     } catch (error) {}
   };
 
   const loadContainers = async () => {
     try {
-      const response = await fetch(`${API_BASE}/containers`);
-      const data = await response.json();
+      const data = await get(`${API_BASE}/containers`);
       setContainers(data || []);
 
       // Extract cards from container response
@@ -740,9 +706,7 @@ function MTGInventoryTrackerContent() {
         });
         setContainerItems(itemsMap);
       }
-    } catch (error) {
-      console.error('Load containers error:', error);
-    }
+    } catch (error) {}
   };
 
   const toggleContainerExpand = (containerId) => {
@@ -759,20 +723,10 @@ function MTGInventoryTrackerContent() {
     }
 
     try {
-      const response = await fetch(`${API_BASE}/containers`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: containerName,
-          decklist_id: parseInt(selectedDecklist),
-        }),
+      await post(`${API_BASE}/containers`, {
+        name: containerName,
+        decklist_id: parseInt(selectedDecklist),
       });
-      if (!response.ok) {
-        const error = await response.text();
-        console.error("Failed to add container:", response.status, error);
-        alert("Error creating container: " + error);
-        return;
-      }
       setContainerName("");
       setSelectedDecklist(null);
       setShowContainerForm(false);
@@ -780,22 +734,20 @@ function MTGInventoryTrackerContent() {
       setSuccessMessage("Container created successfully!");
       setTimeout(() => setSuccessMessage(""), 3000);
     } catch (error) {
-      console.error("Container creation error:", error);
       alert("Error: " + error.message);
     }
   };
 
   const deleteContainer = async (id) => {
     try {
-      await fetch(`${API_BASE}/containers/${id}`, { method: "DELETE" });
+      await del(`${API_BASE}/containers/${id}`);
       await loadContainers();
     } catch (error) {}
   };
 
   const loadSales = async () => {
     try {
-      const response = await fetch(`${API_BASE}/sales`);
-      const data = await response.json();
+      const data = await get(`${API_BASE}/sales`);
       setSales(data || []);
     } catch (error) {
       setSales([]);
@@ -851,15 +803,9 @@ function MTGInventoryTrackerContent() {
 
     try {
       const containerName = containers.find(c => c.id === selectedContainerForSale)?.name || 'Unknown';
-      const response = await fetch(`${API_BASE}/containers/${selectedContainerForSale}/sell`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          salePrice: priceToParse,
-        }),
+      await post(`${API_BASE}/containers/${selectedContainerForSale}/sell`, {
+        salePrice: priceToParse,
       });
-
-      if (!response.ok) throw new Error("Failed to record sale");
 
       await Promise.all([loadSales(), loadContainers(), loadInventory()]);
       
@@ -888,8 +834,7 @@ function MTGInventoryTrackerContent() {
 
   const loadReorderSettings = async () => {
     try {
-      const response = await fetch(`${API_BASE}/settings/reorder_thresholds`);
-      const data = await response.json();
+      const data = await get(`${API_BASE}/settings/reorder_thresholds`);
       if (data) {
         setReorderSettings(data);
       }
@@ -898,43 +843,26 @@ function MTGInventoryTrackerContent() {
 
   const saveReorderSettings = async () => {
     try {
-      await fetch(`${API_BASE}/settings/reorder_thresholds`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ value: reorderSettings }),
-      });
+      await post(`${API_BASE}/settings/reorder_thresholds`, { value: reorderSettings });
       setShowSettings(false);
     } catch (error) {}
   };
 
   const loadUsageHistory = async () => {
     try {
-      const response = await fetch(`${API_BASE}/usage-history?limit=50`);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      
-      const history = await response.json();
+      const history = await get(`${API_BASE}/usage-history?limit=50`);
       setUsageHistory(history);
     } catch (error) {
-      console.error('[ERROR] Failed to load usage history:', error.message);
       setUsageHistory([]);
     }
   };
 
   const recordUsage = async (action, details) => {
     try {
-      const response = await fetch(`${API_BASE}/usage-history`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, details })
-      });
-      
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      
+      await post(`${API_BASE}/usage-history`, { action, details });
       // Reload activity list
       await loadUsageHistory();
-    } catch (error) {
-      console.error('[ERROR] Failed to record activity:', error.message);
-    }
+    } catch (error) {}
   };
 
   const getReorderAlerts = () => {
