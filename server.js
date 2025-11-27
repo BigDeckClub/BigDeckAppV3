@@ -9,12 +9,6 @@ import Joi from 'joi';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-// Import modular route handlers
-import createContainerRoutes from './routes/containers.js';
-import createInventoryRoutes from './routes/inventory.js';
-import createDecklistRoutes from './routes/decklists.js';
-import createSalesRoutes from './routes/sales.js';
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 

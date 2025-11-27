@@ -1,8 +1,6 @@
 import express from 'express';
 import Joi from 'joi';
 
-const router = express.Router();
-
 // Regex patterns for parsing decklist card entries
 // Matches formats like: "Card Name (SET)" or "Card Name - SET" or "Card Name SET"
 const CARD_LINE_QTY_PATTERN = /^\s*(\d+)\s+(.+)$/;
@@ -179,6 +177,7 @@ async function deleteContainerItems(client, containerId) {
 
 // Factory function to create routes with pool dependency
 export default function createContainerRoutes(pool, recordActivity) {
+  const router = express.Router();
   
   // GET /api/containers - List all containers
   router.get('/', async (req, res, next) => {

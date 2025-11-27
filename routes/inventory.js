@@ -1,8 +1,6 @@
 import express from 'express';
 import Joi from 'joi';
 
-const router = express.Router();
-
 /**
  * Get today's date in ISO format (YYYY-MM-DD)
  * @returns {string}
@@ -48,6 +46,7 @@ const updateInventorySchema = Joi.object({
 
 // Factory function to create routes with pool dependency
 export default function createInventoryRoutes(pool, recordActivity) {
+  const router = express.Router();
   
   // GET /api/inventory - List all inventory items
   router.get('/', async (req, res, next) => {
