@@ -259,3 +259,347 @@ describe('Migration Data Validation', () => {
     expect(validPrinting.set_code.length).toBeLessThanOrEqual(10);
   });
 });
+
+// ============================================
+// userData to Relational Migration Tests
+// ============================================
+
+// Replicate functions from migrate-userdata-to-relational.js for testing
+function validateUserData(userData) {
+  const errors = [];
+
+  if (!userData || typeof userData !== 'object') {
+    return { valid: false, errors: ['userData is not an object'] };
+  }
+
+  // Validate decks array if present
+  if (userData.decks !== undefined) {
+    if (!Array.isArray(userData.decks)) {
+      errors.push('decks is not an array');
+    } else {
+      userData.decks.forEach((deck, index) => {
+        if (!deck.name || typeof deck.name !== 'string') {
+          errors.push(`decks[${index}] missing or invalid name`);
+        }
+        if (deck.cards !== undefined && !Array.isArray(deck.cards)) {
+          errors.push(`decks[${index}].cards is not an array`);
+        }
+      });
+    }
+  }
+
+  // Validate progress array if present
+  if (userData.progress !== undefined) {
+    if (!Array.isArray(userData.progress)) {
+      errors.push('progress is not an array');
+    } else {
+      userData.progress.forEach((prog, index) => {
+        if (!prog.cardId && prog.cardId !== 0) {
+          errors.push(`progress[${index}] missing cardId`);
+        }
+      });
+    }
+  }
+
+  return { valid: errors.length === 0, errors };
+}
+
+function parseUserData(userData) {
+  if (!userData) {
+    return { decks: [], progress: [] };
+  }
+
+  // Handle if stored as string
+  if (typeof userData === 'string') {
+    try {
+      userData = JSON.parse(userData);
+    } catch (e) {
+      return { decks: [], progress: [], parseError: e.message };
+    }
+  }
+
+  return {
+    decks: Array.isArray(userData.decks) ? userData.decks : [],
+    progress: Array.isArray(userData.progress) ? userData.progress : [],
+    raw: userData
+  };
+}
+
+describe('userData Validation', () => {
+  it('validates a complete userData object', () => {
+    const userData = {
+      decks: [
+        {
+          name: 'My Deck',
+          description: 'A test deck',
+          cards: [
+            { id: 1, front: 'Question 1', back: 'Answer 1' },
+            { id: 2, front: 'Question 2', back: 'Answer 2' }
+          ]
+        }
+      ],
+      progress: [
+        { cardId: 1, correctCount: 5, incorrectCount: 1 },
+        { cardId: 2, correctCount: 3, incorrectCount: 0 }
+      ]
+    };
+
+    const result = validateUserData(userData);
+    expect(result.valid).toBe(true);
+    expect(result.errors).toHaveLength(0);
+  });
+
+  it('returns error for null userData', () => {
+    const result = validateUserData(null);
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain('userData is not an object');
+  });
+
+  it('returns error for non-object userData', () => {
+    const result = validateUserData('string');
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain('userData is not an object');
+  });
+
+  it('returns error when decks is not an array', () => {
+    const result = validateUserData({ decks: 'not an array' });
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain('decks is not an array');
+  });
+
+  it('returns error when deck missing name', () => {
+    const result = validateUserData({
+      decks: [{ description: 'No name deck' }]
+    });
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain('decks[0] missing or invalid name');
+  });
+
+  it('returns error when deck.cards is not an array', () => {
+    const result = validateUserData({
+      decks: [{ name: 'Test', cards: 'not array' }]
+    });
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain('decks[0].cards is not an array');
+  });
+
+  it('returns error when progress is not an array', () => {
+    const result = validateUserData({
+      decks: [],
+      progress: 'not an array'
+    });
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain('progress is not an array');
+  });
+
+  it('returns error when progress item missing cardId', () => {
+    const result = validateUserData({
+      decks: [],
+      progress: [{ correctCount: 5 }]
+    });
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain('progress[0] missing cardId');
+  });
+
+  it('accepts cardId of 0', () => {
+    const result = validateUserData({
+      decks: [],
+      progress: [{ cardId: 0, correctCount: 5 }]
+    });
+    expect(result.valid).toBe(true);
+  });
+
+  it('validates empty userData as valid', () => {
+    const result = validateUserData({});
+    expect(result.valid).toBe(true);
+    expect(result.errors).toHaveLength(0);
+  });
+
+  it('validates userData with empty arrays', () => {
+    const result = validateUserData({ decks: [], progress: [] });
+    expect(result.valid).toBe(true);
+    expect(result.errors).toHaveLength(0);
+  });
+});
+
+describe('userData Parsing', () => {
+  it('parses null userData to empty arrays', () => {
+    const result = parseUserData(null);
+    expect(result.decks).toEqual([]);
+    expect(result.progress).toEqual([]);
+  });
+
+  it('parses undefined userData to empty arrays', () => {
+    const result = parseUserData(undefined);
+    expect(result.decks).toEqual([]);
+    expect(result.progress).toEqual([]);
+  });
+
+  it('parses valid object userData', () => {
+    const userData = {
+      decks: [{ name: 'Test Deck', cards: [] }],
+      progress: [{ cardId: 1, correctCount: 5 }]
+    };
+    const result = parseUserData(userData);
+    expect(result.decks).toHaveLength(1);
+    expect(result.progress).toHaveLength(1);
+    expect(result.decks[0].name).toBe('Test Deck');
+  });
+
+  it('parses JSON string userData', () => {
+    const userData = JSON.stringify({
+      decks: [{ name: 'String Deck', cards: [] }],
+      progress: []
+    });
+    const result = parseUserData(userData);
+    expect(result.decks).toHaveLength(1);
+    expect(result.decks[0].name).toBe('String Deck');
+  });
+
+  it('returns parseError for invalid JSON string', () => {
+    const result = parseUserData('not valid json');
+    expect(result.parseError).toBeDefined();
+    expect(result.decks).toEqual([]);
+    expect(result.progress).toEqual([]);
+  });
+
+  it('handles userData with missing decks property', () => {
+    const result = parseUserData({ progress: [{ cardId: 1 }] });
+    expect(result.decks).toEqual([]);
+    expect(result.progress).toHaveLength(1);
+  });
+
+  it('handles userData with missing progress property', () => {
+    const result = parseUserData({ decks: [{ name: 'Only Decks' }] });
+    expect(result.decks).toHaveLength(1);
+    expect(result.progress).toEqual([]);
+  });
+
+  it('handles userData with non-array decks', () => {
+    const result = parseUserData({ decks: 'not array', progress: [] });
+    expect(result.decks).toEqual([]);
+  });
+
+  it('preserves raw userData in result', () => {
+    const userData = { decks: [], progress: [], customField: 'test' };
+    const result = parseUserData(userData);
+    expect(result.raw).toEqual(userData);
+    expect(result.raw.customField).toBe('test');
+  });
+});
+
+describe('userData Migration Sample Data', () => {
+  const sampleUserData = {
+    decks: [
+      {
+        id: 1,
+        name: 'Spanish Vocabulary',
+        description: 'Basic Spanish words',
+        createdAt: '2024-01-01T00:00:00Z',
+        updatedAt: '2024-06-15T10:30:00Z',
+        cards: [
+          {
+            id: 101,
+            front: 'Hello',
+            back: 'Hola',
+            createdAt: '2024-01-01T00:00:00Z',
+            updatedAt: '2024-01-01T00:00:00Z'
+          },
+          {
+            id: 102,
+            front: 'Goodbye',
+            back: 'Adiós',
+            createdAt: '2024-01-02T00:00:00Z',
+            updatedAt: '2024-01-02T00:00:00Z'
+          }
+        ]
+      },
+      {
+        id: 2,
+        name: 'Math Formulas',
+        description: null,
+        cards: [
+          {
+            id: 201,
+            front: 'Area of circle',
+            back: 'πr²'
+          }
+        ]
+      }
+    ],
+    progress: [
+      {
+        cardId: 101,
+        lastReviewed: '2024-06-15T10:00:00Z',
+        correctCount: 15,
+        incorrectCount: 3,
+        easeFactor: 2.7,
+        interval: 14
+      },
+      {
+        cardId: 102,
+        lastReviewed: '2024-06-14T09:00:00Z',
+        correctCount: 8,
+        incorrectCount: 2,
+        easeFactor: 2.5,
+        interval: 7
+      }
+    ]
+  };
+
+  it('validates sample userData structure', () => {
+    const result = validateUserData(sampleUserData);
+    expect(result.valid).toBe(true);
+  });
+
+  it('parses sample userData correctly', () => {
+    const result = parseUserData(sampleUserData);
+    expect(result.decks).toHaveLength(2);
+    expect(result.progress).toHaveLength(2);
+  });
+
+  it('counts total cards across all decks', () => {
+    const totalCards = sampleUserData.decks.reduce(
+      (sum, deck) => sum + (deck.cards?.length || 0),
+      0
+    );
+    expect(totalCards).toBe(3);
+  });
+
+  it('extracts all card IDs for progress mapping', () => {
+    const cardIds = sampleUserData.decks
+      .flatMap(deck => deck.cards || [])
+      .map(card => card.id);
+    expect(cardIds).toEqual([101, 102, 201]);
+  });
+
+  it('calculates total progress statistics', () => {
+    const totalCorrect = sampleUserData.progress.reduce(
+      (sum, p) => sum + (p.correctCount || 0),
+      0
+    );
+    const totalIncorrect = sampleUserData.progress.reduce(
+      (sum, p) => sum + (p.incorrectCount || 0),
+      0
+    );
+    expect(totalCorrect).toBe(23);
+    expect(totalIncorrect).toBe(5);
+  });
+
+  it('handles deck with null description', () => {
+    const mathDeck = sampleUserData.decks.find(d => d.name === 'Math Formulas');
+    expect(mathDeck.description).toBeNull();
+    // Validation should still pass
+    const result = validateUserData(sampleUserData);
+    expect(result.valid).toBe(true);
+  });
+
+  it('handles card without timestamps', () => {
+    const mathCard = sampleUserData.decks[1].cards[0];
+    expect(mathCard.createdAt).toBeUndefined();
+    expect(mathCard.updatedAt).toBeUndefined();
+    // Should still be valid
+    const result = validateUserData(sampleUserData);
+    expect(result.valid).toBe(true);
+  });
+});
