@@ -174,9 +174,8 @@ export const InventoryTab = ({
         )}
         
         {isExpanded && (
-          <div className="col-span-full mt-2 mb-4">
-            <div className="bg-slate-800 rounded-lg border border-slate-600 p-4 shadow-lg">
-              <div className="flex flex-wrap gap-4">
+          <div className="bg-slate-800 rounded-lg border border-slate-600 p-4 shadow-lg">
+            <div className="flex flex-wrap gap-4">
                 {Object.values(
                   items.reduce((acc, item) => {
                     const setKey = `${item.set || 'unknown'}-${item.set_name || 'unknown'}`;
@@ -242,7 +241,6 @@ export const InventoryTab = ({
                   );
                 })}
               </div>
-            </div>
           </div>
         )}
       </div>
