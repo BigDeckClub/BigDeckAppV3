@@ -3,7 +3,6 @@ import ViteExpress from 'vite-express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
 import pkg from 'pg';
-import { load } from 'cheerio';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import path from 'path';
