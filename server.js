@@ -51,7 +51,7 @@ const pool = new Pool({
 
 // ========== DATABASE SCHEMA INITIALIZATION ==========
 // Create all required tables if they don't exist
-async function initializeDatabase() {
+export async function initializeDatabase() {
   try {
     // Users table (for Replit Auth)
     await pool.query(`
@@ -204,11 +204,19 @@ async function initializeDatabase() {
   }
 }
 
-// Initialize database on startup
-initializeDatabase();
+// Initialize database and auth on startup
+async function startupApp() {
+  try {
+    await initializeDatabase();
+    await setupAuth(app, pool);
+    console.log('[APP] ✓ Database and auth initialized successfully');
+  } catch (err) {
+    console.error('[APP] ✗ Startup failed:', err);
+    process.exit(1);
+  }
+}
 
-// Setup Replit Auth
-await setupAuth(app, pool);
+startupApp();
 
 // ========== PARSER: Plain-text decklist to card objects ==========
 /**
@@ -1960,6 +1968,21 @@ app.get('/api/prices-test/:cardName/:setCode', priceLimiter, (req, res) => {
     source: "test-endpoint",
     timestamp: new Date().toISOString()
   });
+});
+
+// ========== AUTH ENDPOINT ==========
+app.get('/api/auth/user', isAuthenticated, async (req, res) => {
+  try {
+    const userId = req.user?.claims?.sub;
+    const result = await pool.query('SELECT id, email, first_name, last_name, profile_image_url FROM users WHERE id = $1', [userId]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('[AUTH] Error fetching user:', error);
+    res.status(500).json({ message: 'Failed to fetch user' });
+  }
 });
 
 // ========== HEALTH CHECK ENDPOINT ==========
