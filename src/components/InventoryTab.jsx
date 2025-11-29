@@ -486,6 +486,5 @@ InventoryTab.propTypes = {
   startEditingItem: PropTypes.func.isRequired,
   updateInventoryItem: PropTypes.func.isRequired,
   deleteInventoryItem: PropTypes.func.isRequired,
-  MarketPrices: PropTypes.func.isRequired,
   handleSearch: PropTypes.func.isRequired,
 };
