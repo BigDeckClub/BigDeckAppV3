@@ -4,18 +4,38 @@ import { BarChart3, TrendingUp, Package, DollarSign } from 'lucide-react';
 
 export const AnalyticsTab = ({ inventory }) => {
   const [marketValues, setMarketValues] = useState({ cardkingdom: 0, tcgplayer: 0 });
+  const [cardMetrics, setCardMetrics] = useState({
+    totalCards: 0,
+    totalAvailable: 0,
+    uniqueCards: 0,
+    totalSoldLast60d: 0,
+    totalPurchasedLast60d: 0,
+    lifetimeTotalCards: 0
+  });
 
   useEffect(() => {
-    const fetchMarketValues = async () => {
+    const fetchAnalytics = async () => {
       try {
-        const response = await fetch('/api/analytics/market-values');
-        const data = await response.json();
-        setMarketValues(data || { cardkingdom: 0, tcgplayer: 0 });
+        const [marketRes, metricsRes] = await Promise.all([
+          fetch('/api/analytics/market-values'),
+          fetch('/api/analytics/card-metrics')
+        ]);
+        const marketData = await marketRes.json();
+        const metricsData = await metricsRes.json();
+        setMarketValues(marketData || { cardkingdom: 0, tcgplayer: 0 });
+        setCardMetrics(metricsData || {
+          totalCards: 0,
+          totalAvailable: 0,
+          uniqueCards: 0,
+          totalSoldLast60d: 0,
+          totalPurchasedLast60d: 0,
+          lifetimeTotalCards: 0
+        });
       } catch (error) {
-        console.error('Failed to fetch market values:', error);
+        console.error('Failed to fetch analytics:', error);
       }
     };
-    fetchMarketValues();
+    fetchAnalytics();
   }, []);
 
   // Calculate analytics
@@ -54,18 +74,41 @@ export const AnalyticsTab = ({ inventory }) => {
         Analytics
       </h2>
 
-      {/* Key Metrics - Purchase & Market Values */}
+      {/* Key Metrics */}
       <div className="mb-8">
         <h3 className="text-sm font-semibold text-slate-400 mb-3">Purchase Value</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
+          {/* Card Metrics Box */}
           <div className="bg-slate-800 border border-slate-600 rounded-lg p-4">
-            <div className="text-slate-400 text-xs font-semibold mb-1">Total Cards</div>
-            <div className="text-2xl font-bold text-teal-300">{totalCards}</div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <div className="text-slate-400 text-xs font-semibold mb-1">Total Cards</div>
+                <div className="text-2xl font-bold text-teal-300">{cardMetrics.totalCards}</div>
+              </div>
+              <div>
+                <div className="text-slate-400 text-xs font-semibold mb-1">Available</div>
+                <div className="text-2xl font-bold text-blue-300">{cardMetrics.totalAvailable}</div>
+              </div>
+              <div>
+                <div className="text-slate-400 text-xs font-semibold mb-1">Unique Cards</div>
+                <div className="text-2xl font-bold text-cyan-300">{cardMetrics.uniqueCards}</div>
+              </div>
+              <div>
+                <div className="text-slate-400 text-xs font-semibold mb-1">Sold (60d)</div>
+                <div className="text-2xl font-bold text-red-300">{cardMetrics.totalSoldLast60d}</div>
+              </div>
+              <div>
+                <div className="text-slate-400 text-xs font-semibold mb-1">Purchased (60d)</div>
+                <div className="text-2xl font-bold text-green-300">{cardMetrics.totalPurchasedLast60d}</div>
+              </div>
+              <div>
+                <div className="text-slate-400 text-xs font-semibold mb-1">Lifetime Total</div>
+                <div className="text-2xl font-bold text-amber-300">{cardMetrics.lifetimeTotalCards}</div>
+              </div>
+            </div>
           </div>
-          <div className="bg-slate-800 border border-slate-600 rounded-lg p-4">
-            <div className="text-slate-400 text-xs font-semibold mb-1">Unique Cards</div>
-            <div className="text-2xl font-bold text-blue-300">{uniqueCards}</div>
-          </div>
+
+          {/* Value Metrics Box */}
           <div className="bg-slate-800 border border-slate-600 rounded-lg p-4">
             <div className="space-y-4">
               <div>

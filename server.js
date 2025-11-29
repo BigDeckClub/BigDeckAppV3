@@ -678,6 +678,45 @@ app.get('/api/analytics/market-values', async (req, res) => {
   }
 });
 
+app.get('/api/analytics/card-metrics', async (req, res) => {
+  try {
+    // Total cards and unique cards
+    const totalResult = await pool.query('SELECT COUNT(*) as unique_count, SUM(quantity) as total_count FROM inventory');
+    const totalRow = totalResult.rows[0];
+    const totalCards = parseInt(totalRow.total_count) || 0;
+    const uniqueCards = parseInt(totalRow.unique_count) || 0;
+    
+    // Cards purchased in last 60 days
+    const sixtyDaysAgo = new Date();
+    sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+    
+    const purchasedResult = await pool.query(
+      'SELECT SUM(quantity) as count FROM inventory WHERE purchase_date >= $1',
+      [sixtyDaysAgo.toISOString().split('T')[0]]
+    );
+    const purchasedLast60d = parseInt(purchasedResult.rows[0].count) || 0;
+    
+    res.json({
+      totalCards,
+      totalAvailable: totalCards,
+      uniqueCards,
+      totalSoldLast60d: 0,
+      totalPurchasedLast60d: purchasedLast60d,
+      lifetimeTotalCards: totalCards
+    });
+  } catch (error) {
+    console.error('[ANALYTICS] Error calculating card metrics:', error.message);
+    res.json({
+      totalCards: 0,
+      totalAvailable: 0,
+      uniqueCards: 0,
+      totalSoldLast60d: 0,
+      totalPurchasedLast60d: 0,
+      lifetimeTotalCards: 0
+    });
+  }
+});
+
 // ========== CENTRALIZED ERROR HANDLING ==========
 // Placed after all API routes to catch unhandled errors from route handlers
 app.use((err, req, res, next) => {
