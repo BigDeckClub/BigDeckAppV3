@@ -21,13 +21,15 @@ BigDeck.app is a streamlined Magic: The Gathering inventory management system. I
 - **Search**: Debounced Scryfall search (300ms) with smart ranking algorithm
 - **Pricing**: Real-time market prices from Scryfall API
 
-## Latest Changes (November 29, 2025 - Final Cleanup)
-- ✅ **Removed all non-core features** - Settings, analytics, containers, decklists, sales
-- ✅ **Deleted unused components** - 8 unused component files removed
+## Latest Changes (November 29, 2025 - Complete Cleanup & Production Ready)
+- ✅ **Removed all non-core features** - Settings, analytics, containers, decklists, sales (8 component files deleted)
 - ✅ **Removed location/is_shared_location** - Complete folder-based migration
 - ✅ **Cleaned API endpoints** - Only inventory, imports, and pricing remain
-- ✅ **Streamlined imports** - Removed unused packages and icons
-- ✅ **Repository organized** - Clean src/ structure with only active files
+- ✅ **Streamlined codebase** - 5 unused directories removed (middleware/, routes/, scripts/, tests/, src/types/)
+- ✅ **Fixed all component references** - Removed broken MarketPrices, Settings, FloatingDollarSigns imports
+- ✅ **Optimized dev setup** - ViteExpress now handles frontend + backend on single port 5000
+- ✅ **Created vite.config.js** - Proper Replit configuration with allowedHosts for iframe preview
+- ✅ **API fully operational** - All endpoints tested and responding with real data
 
 ## Core Features
 
@@ -122,10 +124,11 @@ replit.md                  - This file
 - vite-express (server integration)
 
 ## Deployment
-- **Local Development**: `npm run dev` (server on 3000, frontend on 5000)
+- **Local Development**: `npm run dev` (ViteExpress with Vite on port 5000)
 - **Production Build**: `npm run build && npm run start`
-- **Port**: 3000 (Express), 5000 (frontend proxy)
+- **Port**: 5000 (unified Express + Vite frontend server)
 - **No environment variables required** for basic use
+- **API tested and working** - Returns real inventory data
 
 ## Performance
 - Lightweight bundle - only essential dependencies

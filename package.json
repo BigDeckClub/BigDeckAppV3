@@ -4,7 +4,7 @@
   "type": "module",
   "description": "BigDeck.app - MTG Inventory Tracker using React and Vite",
   "scripts": {
-    "dev": "concurrently \"node server.js\" \"vite\"",
+    "dev": "node server.js",
     "build": "vite build",
     "preview": "vite preview",
     "start": "node server.js",
