@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { Plus, Trash2, X, ChevronDown, ChevronRight } from 'lucide-react';
+import { Plus, Trash2, X, ChevronDown, ChevronRight, Grid3X3, List } from 'lucide-react';
 import { usePriceCache } from "../context/PriceCacheContext";
 
 // Simple normalize functions
@@ -41,6 +41,7 @@ export const InventoryTab = ({
   const [selectedFolder, setSelectedFolder] = useState(null);
   const [activeTab, setActiveTab] = useState('all'); // 'all', 'unsorted', or folder name
   const [expandedSets, setExpandedSets] = useState({}); // Track expansion of individual sets within cards
+  const [viewMode, setViewMode] = useState('card'); // 'card' or 'list'
 
   // Load created folders from localStorage
   useEffect(() => {
@@ -114,8 +115,9 @@ export const InventoryTab = ({
     const isExpanded = expandedCards[cardName];
     
     return (
-      <div key={cardName} className="space-y-2">
-        {/* Card Name Thumbnail - Smaller */}
+      <div key={cardName} className={viewMode === 'card' ? 'space-y-2' : ''}>
+        {/* Card Name - Card View or List View */}
+        {viewMode === 'card' ? (
         <div 
           className="bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-slate-600 hover:border-teal-500 rounded p-2 transition-colors cursor-pointer flex flex-col justify-between h-36 hover:shadow-lg hover:shadow-teal-500/20" 
           onClick={() => setExpandedCards({...expandedCards, [cardName]: !isExpanded})}
@@ -146,6 +148,25 @@ export const InventoryTab = ({
             </div>
           </div>
         </div>
+        ) : (
+        /* List View */
+        <div className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 hover:border-teal-500 rounded p-3 transition-colors cursor-pointer hover:shadow-lg hover:shadow-teal-500/20">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              <h3 className="text-sm font-bold text-slate-100 break-words mb-1">{cardName}</h3>
+              <div className="flex gap-4 text-xs">
+                <div><span className="text-slate-500">Qty:</span> <span className={`${totalQty === 0 ? 'text-slate-500' : 'text-teal-300'} font-semibold`}>{totalQty}</span></div>
+                <div><span className="text-slate-500">Available:</span> <span className="text-green-300 font-semibold">{available}</span></div>
+                <div><span className="text-slate-500">Cost/ea:</span> <span className="text-blue-300 font-semibold">${avgPrice.toFixed(2)}</span></div>
+                <div><span className="text-slate-500">Total:</span> <span className="text-amber-400 font-semibold">${(totalQty * avgPrice).toFixed(2)}</span></div>
+              </div>
+            </div>
+            <div className="text-teal-400 text-sm flex-shrink-0">
+              {isExpanded ? '▼' : '▶'}
+            </div>
+          </div>
+        </div>
+        )}
         
         {isExpanded && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -436,50 +457,101 @@ export const InventoryTab = ({
 
       {/* RIGHT CONTENT - Cards */}
       <div className="flex-1 pb-6">
-        {/* Tabs */}
-        <div className="flex gap-2 mb-6 border-b border-slate-700 pb-4">
-          <button
-            onClick={() => setActiveTab('all')}
-            className={`px-4 py-2 font-medium transition-colors ${
-              activeTab === 'all'
-                ? 'text-teal-300 border-b-2 border-teal-400'
-                : 'text-slate-400 hover:text-slate-300'
-            }`}
-          >
-            All Cards
-          </button>
-          <button
-            onClick={() => setActiveTab('unsorted')}
-            className={`px-4 py-2 font-medium transition-colors ${
-              activeTab === 'unsorted'
-                ? 'text-teal-300 border-b-2 border-teal-400'
-                : 'text-slate-400 hover:text-slate-300'
-            }`}
-          >
-            Unsorted
-          </button>
+        {/* Tabs and View Mode */}
+        <div className="flex gap-4 mb-6 border-b border-slate-700 pb-4 items-center justify-between">
+          <div className="flex gap-2">
+            <button
+              onClick={() => setActiveTab('all')}
+              className={`px-4 py-2 font-medium transition-colors ${
+                activeTab === 'all'
+                  ? 'text-teal-300 border-b-2 border-teal-400'
+                  : 'text-slate-400 hover:text-slate-300'
+              }`}
+            >
+              All Cards
+            </button>
+            <button
+              onClick={() => setActiveTab('unsorted')}
+              className={`px-4 py-2 font-medium transition-colors ${
+                activeTab === 'unsorted'
+                  ? 'text-teal-300 border-b-2 border-teal-400'
+                  : 'text-slate-400 hover:text-slate-300'
+              }`}
+            >
+              Unsorted
+            </button>
+          </div>
+          
+          {/* View Mode Toggle */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => setViewMode('card')}
+              className={`p-2 rounded transition-colors ${
+                viewMode === 'card'
+                  ? 'bg-teal-600 text-white'
+                  : 'bg-slate-800 text-slate-400 hover:text-slate-300'
+              }`}
+              title="Card View"
+            >
+              <Grid3X3 className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={`p-2 rounded transition-colors ${
+                viewMode === 'list'
+                  ? 'bg-teal-600 text-white'
+                  : 'bg-slate-800 text-slate-400 hover:text-slate-300'
+              }`}
+              title="List View"
+            >
+              <List className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
-        <div className="space-y-4">
+        <div className={viewMode === 'card' ? 'space-y-4' : 'space-y-2'}>
           {activeTab === 'all' ? (
             /* Show all cards - masterlist */
             Object.keys(groupedInventory).length > 0 ? (
               <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-                  {inStockCards.map(renderCardGroup)}
-                </div>
-                {inStockCards.length > 0 && outOfStockCards.length > 0 && (
-                  <div className="border-t border-slate-700 pt-4">
-                    <h3 className="text-sm font-semibold text-slate-400 mb-3">Out of Stock</h3>
+                {viewMode === 'card' ? (
+                  <>
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-                      {outOfStockCards.map(renderCardGroup)}
+                      {inStockCards.map(renderCardGroup)}
                     </div>
-                  </div>
-                )}
-                {outOfStockCards.length > 0 && inStockCards.length === 0 && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-                    {outOfStockCards.map(renderCardGroup)}
-                  </div>
+                    {inStockCards.length > 0 && outOfStockCards.length > 0 && (
+                      <div className="border-t border-slate-700 pt-4">
+                        <h3 className="text-sm font-semibold text-slate-400 mb-3">Out of Stock</h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                          {outOfStockCards.map(renderCardGroup)}
+                        </div>
+                      </div>
+                    )}
+                    {outOfStockCards.length > 0 && inStockCards.length === 0 && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                        {outOfStockCards.map(renderCardGroup)}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <div className="space-y-2">
+                      {inStockCards.map(renderCardGroup)}
+                    </div>
+                    {inStockCards.length > 0 && outOfStockCards.length > 0 && (
+                      <div className="border-t border-slate-700 pt-4">
+                        <h3 className="text-sm font-semibold text-slate-400 mb-2">Out of Stock</h3>
+                        <div className="space-y-2">
+                          {outOfStockCards.map(renderCardGroup)}
+                        </div>
+                      </div>
+                    )}
+                    {outOfStockCards.length > 0 && inStockCards.length === 0 && (
+                      <div className="space-y-2">
+                        {outOfStockCards.map(renderCardGroup)}
+                      </div>
+                    )}
+                  </>
                 )}
               </>
             ) : (
@@ -488,18 +560,30 @@ export const InventoryTab = ({
           ) : activeTab === 'unsorted' ? (
             /* Show unsorted cards */
             groupedByFolder['Uncategorized'] && Object.keys(groupedByFolder['Uncategorized']).length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-                {Object.entries(groupedByFolder['Uncategorized']).map(renderCardGroup)}
-              </div>
+              viewMode === 'card' ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                  {Object.entries(groupedByFolder['Uncategorized']).map(renderCardGroup)}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {Object.entries(groupedByFolder['Uncategorized']).map(renderCardGroup)}
+                </div>
+              )
             ) : (
               <p className="text-slate-400 text-center py-12">No unsorted cards.</p>
             )
           ) : (
             /* Show selected folder's cards */
             groupedByFolder[selectedFolder] && Object.keys(groupedByFolder[selectedFolder]).length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-                {Object.entries(groupedByFolder[selectedFolder]).map(renderCardGroup)}
-              </div>
+              viewMode === 'card' ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                  {Object.entries(groupedByFolder[selectedFolder]).map(renderCardGroup)}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {Object.entries(groupedByFolder[selectedFolder]).map(renderCardGroup)}
+                </div>
+              )
             ) : (
               <p className="text-slate-400 text-center py-12">No cards in this folder yet.</p>
             )
