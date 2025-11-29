@@ -52,6 +52,15 @@ function getCachedPrice(key) {
 }
 
 function setCachedPrice(key, data) {
+  // Clean up expired entries when cache grows large to prevent memory leak
+  if (priceCache.size > 1000) {
+    const now = Date.now();
+    for (const [k, v] of priceCache.entries()) {
+      if (now - v.timestamp >= PRICE_CACHE_TTL) {
+        priceCache.delete(k);
+      }
+    }
+  }
   priceCache.set(key, { data, timestamp: Date.now() });
 }
 
@@ -68,8 +77,13 @@ const pool = new Pool({
 });
 
 // ========== DATABASE CONNECTION MONITORING ==========
-pool.on('error', (err) => {
+pool.on('error', (err, client) => {
   console.error('[DB] ✗ Unexpected pool error:', err.message);
+  console.error('[DB] Error code:', err.code);
+  console.error('[DB] Error stack:', err.stack);
+  if (client) {
+    console.error('[DB] Client details:', client);
+  }
 });
 
 pool.on('connect', () => {
@@ -292,7 +306,7 @@ async function fetchRetry(url, options = {}, retries = 2) {
 
 // ========== HEALTH CHECK ==========
 app.get('/health', async (req, res) => {
-  let dbStatus = 'unknown';
+  let dbStatus;
   try {
     await pool.query('SELECT 1');
     dbStatus = 'connected';
@@ -396,9 +410,9 @@ app.post('/api/inventory', async (req, res) => {
     return res.status(400).json({ error: 'Card name is required and must be a non-empty string' });
   }
   
-  // Quantity is optional but must be a positive integer when provided
-  if (quantity !== undefined && quantity !== null && (typeof quantity !== 'number' || quantity < 1 || !Number.isInteger(quantity))) {
-    return res.status(400).json({ error: 'Quantity must be a positive integer when provided' });
+  // Quantity is optional but must be a positive integer greater than zero when provided
+  if (quantity !== undefined && quantity !== null && (typeof quantity !== 'number' || quantity <= 0 || !Number.isInteger(quantity))) {
+    return res.status(400).json({ error: 'Quantity must be a positive integer greater than zero when provided' });
   }
   
   // Purchase price is optional but must be a non-negative number when provided
@@ -515,12 +529,12 @@ app.post('/api/imports', async (req, res) => {
   }
   
   const validSources = ['wholesale', 'tcgplayer', 'cardkingdom', 'local', 'other'];
-  if (source !== undefined && !validSources.includes(source)) {
+  if (source !== undefined && source !== null && !validSources.includes(source)) {
     return res.status(400).json({ error: `Source must be one of: ${validSources.join(', ')}` });
   }
   
   const validStatuses = ['pending', 'processing', 'completed', 'cancelled'];
-  if (status !== undefined && !validStatuses.includes(status)) {
+  if (status !== undefined && status !== null && !validStatuses.includes(status)) {
     return res.status(400).json({ error: `Status must be one of: ${validStatuses.join(', ')}` });
   }
 
@@ -627,6 +641,22 @@ app.patch('/api/imports/:id', async (req, res) => {
   }
 });
 
+// ========== CENTRALIZED ERROR HANDLING ==========
+// Placed after all API routes to catch unhandled errors from route handlers
+app.use((err, req, res, next) => {
+  console.error('[ERROR]', err.message);
+  console.error('[ERROR] Stack:', err.stack);
+  
+  // Don't expose internal error details in production
+  const statusCode = err.statusCode || 500;
+  const message = statusCode === 500 ? 'Internal server error' : err.message;
+  
+  res.status(statusCode).json({
+    error: message,
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+  });
+});
+
 // ========== STARTUP FUNCTION ==========
 async function startServer() {
   try {
@@ -635,21 +665,6 @@ async function startServer() {
 
     // ========== SERVE STATIC ASSETS ==========
     app.use(express.static('dist'));
-
-    // ========== CENTRALIZED ERROR HANDLING ==========
-    app.use((err, req, res, next) => {
-      console.error('[ERROR]', err.message);
-      console.error('[ERROR] Stack:', err.stack);
-      
-      // Don't expose internal error details in production
-      const statusCode = err.statusCode || 500;
-      const message = statusCode === 500 ? 'Internal server error' : err.message;
-      
-      res.status(statusCode).json({
-        error: message,
-        ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
-      });
-    });
 
     // ========== CATCH-ALL HANDLER - SPA ROUTING ==========
     app.use((req, res) => {
