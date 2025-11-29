@@ -133,6 +133,38 @@ function MTGInventoryTrackerContent() {
     } catch (error) {}
   };
 
+  // Score function for smart search ranking
+  const scoreCardMatch = (cardName, query) => {
+    const lowerName = cardName.toLowerCase();
+    const lowerQuery = query.toLowerCase();
+    
+    // Exact match (highest priority)
+    if (lowerName === lowerQuery) return 1000;
+    
+    // Starts with query (high priority)
+    if (lowerName.startsWith(lowerQuery)) return 500;
+    
+    // Word boundary match (e.g., "Black" in "Black Dragon")
+    const words = lowerName.split(/\s+/);
+    if (words.some(word => word.startsWith(lowerQuery))) return 400;
+    
+    // Contains query as substring (medium priority)
+    const containsIndex = lowerName.indexOf(lowerQuery);
+    if (containsIndex !== -1) {
+      // Prioritize matches closer to the start
+      return 200 - (containsIndex / lowerName.length) * 100;
+    }
+    
+    // Fuzzy match - each character of query found in order (low priority)
+    let matchPos = 0;
+    for (let i = 0; i < lowerQuery.length; i++) {
+      matchPos = lowerName.indexOf(lowerQuery[i], matchPos);
+      if (matchPos === -1) return 0;
+      matchPos++;
+    }
+    return 50;
+  };
+
   const handleSearch = async (query) => {
     if (!query || query.length < 2) {
       setSearchResults([]);
@@ -154,13 +186,20 @@ function MTGInventoryTrackerContent() {
 
       const data = await response.json();
 
-      const results = (data.data || []).map((card) => ({
+      let results = (data.data || []).map((card) => ({
         name: card.name,
         set: card.set.toUpperCase(),
         setName: card.set_name,
         rarity: card.rarity,
         imageUrl: card.image_uris?.small || card.card_faces?.[0]?.image_uris?.small,
       }));
+
+      // Sort by relevance score
+      results = results.sort((a, b) => {
+        const scoreA = scoreCardMatch(a.name, query);
+        const scoreB = scoreCardMatch(b.name, query);
+        return scoreB - scoreA; // Descending order
+      });
 
       setSearchResults(results);
       setShowDropdown(results.length > 0);
