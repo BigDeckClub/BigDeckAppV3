@@ -656,6 +656,28 @@ app.patch('/api/imports/:id', async (req, res) => {
   }
 });
 
+// ========== ANALYTICS ENDPOINTS ==========
+app.get('/api/analytics/market-values', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT scryfall_id, quantity FROM inventory WHERE scryfall_id IS NOT NULL');
+    const items = result.rows || [];
+    
+    let cardkingdomTotal = 0;
+    let tcgplayerTotal = 0;
+    
+    for (const item of items) {
+      const prices = mtgjsonService.getPricesByScryfallId(item.scryfall_id);
+      if (prices.cardkingdom) cardkingdomTotal += prices.cardkingdom * (item.quantity || 0);
+      if (prices.tcgplayer) tcgplayerTotal += prices.tcgplayer * (item.quantity || 0);
+    }
+    
+    res.json({ cardkingdom: cardkingdomTotal, tcgplayer: tcgplayerTotal });
+  } catch (error) {
+    console.error('[ANALYTICS] Error calculating market values:', error.message);
+    res.json({ cardkingdom: 0, tcgplayer: 0 });
+  }
+});
+
 // ========== CENTRALIZED ERROR HANDLING ==========
 // Placed after all API routes to catch unhandled errors from route handlers
 app.use((err, req, res, next) => {

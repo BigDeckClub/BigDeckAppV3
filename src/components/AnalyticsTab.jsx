@@ -1,8 +1,23 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { BarChart3, TrendingUp, Package, DollarSign } from 'lucide-react';
 
 export const AnalyticsTab = ({ inventory }) => {
+  const [marketValues, setMarketValues] = useState({ cardkingdom: 0, tcgplayer: 0 });
+
+  useEffect(() => {
+    const fetchMarketValues = async () => {
+      try {
+        const response = await fetch('/api/analytics/market-values');
+        const data = await response.json();
+        setMarketValues(data || { cardkingdom: 0, tcgplayer: 0 });
+      } catch (error) {
+        console.error('Failed to fetch market values:', error);
+      }
+    };
+    fetchMarketValues();
+  }, []);
+
   // Calculate analytics
   const totalCards = inventory.reduce((sum, item) => sum + (item.quantity || 0), 0);
   const totalValue = inventory.reduce((sum, item) => sum + ((item.quantity || 0) * (parseFloat(item.purchase_price) || 0)), 0);
@@ -39,23 +54,41 @@ export const AnalyticsTab = ({ inventory }) => {
         Analytics
       </h2>
 
-      {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <div className="bg-slate-800 border border-slate-600 rounded-lg p-4">
-          <div className="text-slate-400 text-xs font-semibold mb-1">Total Cards</div>
-          <div className="text-2xl font-bold text-teal-300">{totalCards}</div>
+      {/* Key Metrics - Purchase */}
+      <div className="mb-6">
+        <h3 className="text-sm font-semibold text-slate-400 mb-3">Purchase Value</h3>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+          <div className="bg-slate-800 border border-slate-600 rounded-lg p-4">
+            <div className="text-slate-400 text-xs font-semibold mb-1">Total Cards</div>
+            <div className="text-2xl font-bold text-teal-300">{totalCards}</div>
+          </div>
+          <div className="bg-slate-800 border border-slate-600 rounded-lg p-4">
+            <div className="text-slate-400 text-xs font-semibold mb-1">Unique Cards</div>
+            <div className="text-2xl font-bold text-blue-300">{uniqueCards}</div>
+          </div>
+          <div className="bg-slate-800 border border-slate-600 rounded-lg p-4">
+            <div className="text-slate-400 text-xs font-semibold mb-1">Total Paid</div>
+            <div className="text-2xl font-bold text-green-300">${totalValue.toFixed(2)}</div>
+          </div>
+          <div className="bg-slate-800 border border-slate-600 rounded-lg p-4">
+            <div className="text-slate-400 text-xs font-semibold mb-1">Avg Price/Card</div>
+            <div className="text-2xl font-bold text-amber-300">${avgPricePerCard}</div>
+          </div>
         </div>
-        <div className="bg-slate-800 border border-slate-600 rounded-lg p-4">
-          <div className="text-slate-400 text-xs font-semibold mb-1">Unique Cards</div>
-          <div className="text-2xl font-bold text-blue-300">{uniqueCards}</div>
-        </div>
-        <div className="bg-slate-800 border border-slate-600 rounded-lg p-4">
-          <div className="text-slate-400 text-xs font-semibold mb-1">Total Value</div>
-          <div className="text-2xl font-bold text-green-300">${totalValue.toFixed(2)}</div>
-        </div>
-        <div className="bg-slate-800 border border-slate-600 rounded-lg p-4">
-          <div className="text-slate-400 text-xs font-semibold mb-1">Avg Price/Card</div>
-          <div className="text-2xl font-bold text-amber-300">${avgPricePerCard}</div>
+      </div>
+
+      {/* Key Metrics - Market Values */}
+      <div className="mb-8">
+        <h3 className="text-sm font-semibold text-slate-400 mb-3">Current Market Value</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="bg-slate-800 border border-slate-600 rounded-lg p-4">
+            <div className="text-slate-400 text-xs font-semibold mb-1">Total Card Kingdom Value</div>
+            <div className="text-2xl font-bold text-purple-300">${marketValues.cardkingdom.toFixed(2)}</div>
+          </div>
+          <div className="bg-slate-800 border border-slate-600 rounded-lg p-4">
+            <div className="text-slate-400 text-xs font-semibold mb-1">Total TCGPlayer Value</div>
+            <div className="text-2xl font-bold text-pink-300">${marketValues.tcgplayer.toFixed(2)}</div>
+          </div>
         </div>
       </div>
 
