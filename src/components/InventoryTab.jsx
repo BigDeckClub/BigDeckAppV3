@@ -120,32 +120,30 @@ export const InventoryTab = ({
         {/* Card Name - Card View or List View */}
         {viewMode === 'card' ? (
         <div 
-          className="bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-slate-600 hover:border-teal-500 rounded p-2 transition-colors cursor-pointer flex flex-col justify-between h-36 hover:shadow-lg hover:shadow-teal-500/20" 
+          className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 hover:border-teal-500 rounded p-1.5 transition-colors cursor-pointer flex flex-col justify-between h-32 md:h-36 hover:shadow-lg hover:shadow-teal-500/20" 
           onClick={() => setExpandedCards({...expandedCards, [cardName]: !isExpanded})}
         >
-          <div className="text-center text-[8px] px-1">
-            <h3 className="text-xs font-bold text-slate-100 line-clamp-2 break-words">{cardName}</h3>
+          <div className="text-center px-1">
+            <h3 className="text-[10px] md:text-xs font-bold text-slate-100 line-clamp-2 break-words">{cardName}</h3>
           </div>
           
-          <div className="flex-1 flex items-center justify-center">
+          <div className="flex-1 flex items-center justify-center min-h-0">
             <div className="text-center">
-              <div className="text-slate-500 text-[8px] mb-0.5">Available</div>
-              <div className="text-3xl font-bold text-green-300">{available}</div>
+              <div className="text-slate-500 text-[7px] md:text-[8px]">Available</div>
+              <div className="text-2xl md:text-3xl font-bold text-green-300 leading-tight">{available}</div>
             </div>
           </div>
           
-          <div className="grid grid-cols-3 gap-2 w-full text-center">
-            <div className="min-w-0">
-              <div className="text-slate-500 text-[7px] leading-none mb-0.5">Qty</div>
-              <div className={`font-bold text-[9px] leading-tight ${totalQty === 0 ? 'text-slate-500' : 'text-teal-300'}`}>{totalQty}</div>
+          <div className="space-y-0.5 text-center text-[7px] md:text-[8px]">
+            <div className="flex justify-around gap-1">
+              <span className="text-slate-500">Qty</span>
+              <span className="text-slate-500">Cost</span>
+              <span className="text-slate-500">Total</span>
             </div>
-            <div className="min-w-0">
-              <div className="text-slate-500 text-[7px] leading-none mb-0.5">Cost/ea</div>
-              <div className="font-bold text-blue-300 text-[9px] leading-tight break-words">${avgPrice.toFixed(2)}</div>
-            </div>
-            <div className="min-w-0">
-              <div className="text-slate-500 text-[7px] leading-none mb-0.5">Total</div>
-              <div className="font-bold text-amber-400 text-[9px] leading-tight break-words">${(totalQty * avgPrice).toFixed(2)}</div>
+            <div className="flex justify-around gap-1">
+              <span className={`font-semibold ${totalQty === 0 ? 'text-slate-500' : 'text-teal-300'}`}>{totalQty}</span>
+              <span className="font-semibold text-blue-300">${avgPrice.toFixed(2)}</span>
+              <span className="font-semibold text-amber-400">${(totalQty * avgPrice).toFixed(2)}</span>
             </div>
           </div>
         </div>
@@ -538,19 +536,19 @@ export const InventoryTab = ({
               <>
                 {viewMode === 'card' ? (
                   <>
-                    <div className="grid grid-cols-4 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                    <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-3">
                       {inStockCards.map(renderCardGroup)}
                     </div>
                     {inStockCards.length > 0 && outOfStockCards.length > 0 && (
                       <div className="border-t border-slate-700 pt-4">
                         <h3 className="text-sm font-semibold text-slate-400 mb-3">Out of Stock</h3>
-                        <div className="grid grid-cols-4 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                        <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-3">
                           {outOfStockCards.map(renderCardGroup)}
                         </div>
                       </div>
                     )}
                     {outOfStockCards.length > 0 && inStockCards.length === 0 && (
-                      <div className="grid grid-cols-4 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                      <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-3">
                         {outOfStockCards.map(renderCardGroup)}
                       </div>
                     )}
@@ -583,7 +581,7 @@ export const InventoryTab = ({
             /* Show unsorted cards */
             groupedByFolder['Uncategorized'] && Object.keys(groupedByFolder['Uncategorized']).length > 0 ? (
               viewMode === 'card' ? (
-                <div className="grid grid-cols-4 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-3">
                   {Object.entries(groupedByFolder['Uncategorized']).map(renderCardGroup)}
                 </div>
               ) : (
@@ -598,7 +596,7 @@ export const InventoryTab = ({
             /* Show selected folder's cards */
             groupedByFolder[selectedFolder] && Object.keys(groupedByFolder[selectedFolder]).length > 0 ? (
               viewMode === 'card' ? (
-                <div className="grid grid-cols-4 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-3">
                   {Object.entries(groupedByFolder[selectedFolder]).map(renderCardGroup)}
                 </div>
               ) : (
