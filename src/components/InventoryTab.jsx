@@ -192,9 +192,9 @@ export const InventoryTab = ({
                 const isEditing = editingId === firstItem.id;
                 
                 return (
-                  <div key={`${firstItem.set}-${firstItem.id}`} className="bg-slate-800/80 border border-slate-500 rounded-lg transition-colors hover:border-teal-500">
+                  <div key={`${firstItem.set}-${firstItem.id}`} className="w-full bg-slate-800 border border-slate-600 rounded-lg p-4 hover:border-teal-500 transition-colors">
                     {isEditing ? (
-                      <div className="space-y-2 p-4">
+                      <div className="space-y-3">
                         <div className="text-sm font-semibold text-slate-100">{firstItem.set_name} ({firstItem.set})</div>
                         <div>
                           <label className="text-xs text-slate-400">Folder</label>
@@ -265,7 +265,7 @@ export const InventoryTab = ({
                         </div>
                       </div>
                     ) : (
-                      <div className="space-y-3 p-4">
+                      <div className="space-y-3">
                         <div 
                           className="cursor-pointer flex items-center gap-2"
                           onClick={() => setExpandedSets({...expandedSets, [`${firstItem.set}-${cardName}`]: !expandedSets[`${firstItem.set}-${cardName}`]})}
@@ -275,7 +275,7 @@ export const InventoryTab = ({
                           <span className="text-sm text-slate-500">({setItems.length})</span>
                         </div>
                         
-                        <div className="text-sm px-3 py-2 text-slate-300 bg-slate-900/50 rounded space-y-1">
+                        <div className="text-sm p-3 text-slate-300 bg-slate-700/30 rounded space-y-1">
                           <div><span className="text-slate-500">Qty:</span> <span className="text-teal-300 font-bold ml-2">{totalQtyInSet}</span></div>
                           <div><span className="text-slate-500">Price:</span> <span className="text-blue-300 font-bold ml-2">${(setItems.reduce((sum, item) => sum + (parseFloat(item.purchase_price) || 0), 0) / setItems.length).toFixed(2)}</span></div>
                         </div>
