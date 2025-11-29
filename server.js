@@ -332,19 +332,6 @@ app.get('/api/prices/:cardName/:setCode', priceLimiter, async (req, res) => {
       // Silent fail for CK scraping
     }
     
-    // If CK price not found, try MTGJSON as fallback
-    if (ckPrice === 'N/A') {
-      try {
-        // Try lookup by card name
-        const mtgjsonData = mtgjsonService.getPriceByName(cardName);
-        if (mtgjsonData?.ck) {
-          ckPrice = `$${mtgjsonData.ck}`;
-          console.log(`[PRICES] ✓ CK price from MTGJSON: ${ckPrice}`);
-        }
-      } catch (err) {
-        // Silent fail for MTGJSON fallback
-      }
-    }
     
     res.setHeader('Content-Type', 'application/json');
     res.status(200).json({ tcg: tcgPrice, ck: ckPrice });
@@ -354,15 +341,6 @@ app.get('/api/prices/:cardName/:setCode', priceLimiter, async (req, res) => {
   }
 });
 
-// ========== TEST ENDPOINT ==========
-app.get('/api/prices-test/:cardName/:setCode', (req, res) => {
-  res.json({ 
-    tcg: "$1.23", 
-    ck: "$2.34",
-    source: "test-endpoint",
-    timestamp: new Date().toISOString()
-  });
-});
 
 // ========== IMPORTS ENDPOINTS ==========
 app.get('/api/imports', async (req, res) => {
@@ -492,11 +470,6 @@ async function startServer() {
   try {
     console.log('[APP] Initializing database...');
     await initializeDatabase();
-    
-    console.log('[APP] Initializing MTGJSON price service...');
-    await mtgjsonService.initialize();
-    console.log('[APP] ✓ MTGJSON service ready');
-    
 
     // ========== CATCH-ALL HANDLER (AFTER all routes) ==========
     app.use((req, res) => {
