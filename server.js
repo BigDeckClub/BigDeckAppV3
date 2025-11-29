@@ -89,12 +89,16 @@ async function initializeDatabase() {
         reorder_type VARCHAR(20) DEFAULT 'Normal',
         image_url TEXT,
         scryfall_id VARCHAR(255),
+        location VARCHAR(255),
+        is_shared_location BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMP DEFAULT NOW()
       )
     `);
     await pool.query(`ALTER TABLE inventory ADD COLUMN IF NOT EXISTS image_url TEXT`).catch(() => {});
     await pool.query(`ALTER TABLE inventory ADD COLUMN IF NOT EXISTS scryfall_id VARCHAR(255)`).catch(() => {});
     await pool.query(`ALTER TABLE inventory ADD COLUMN IF NOT EXISTS user_id VARCHAR(255) REFERENCES users(id) ON DELETE CASCADE`).catch(() => {});
+    await pool.query(`ALTER TABLE inventory ADD COLUMN IF NOT EXISTS location VARCHAR(255)`).catch(() => {});
+    await pool.query(`ALTER TABLE inventory ADD COLUMN IF NOT EXISTS is_shared_location BOOLEAN DEFAULT FALSE`).catch(() => {});
 
     // Decklists table
     await pool.query(`
@@ -108,19 +112,21 @@ async function initializeDatabase() {
     `);
     await pool.query(`ALTER TABLE decklists ADD COLUMN IF NOT EXISTS user_id VARCHAR(255) REFERENCES users(id) ON DELETE CASCADE`).catch(() => {});
 
-    // Containers table
+    // Containers table (now represents collection boxes within locations)
     await pool.query(`
       CREATE TABLE IF NOT EXISTS containers (
         id SERIAL PRIMARY KEY,
         user_id VARCHAR(255) REFERENCES users(id) ON DELETE CASCADE,
         name VARCHAR(255) NOT NULL,
-        decklist_id INTEGER REFERENCES decklists(id) ON DELETE SET NULL,
+        location VARCHAR(255) NOT NULL,
         cards JSONB DEFAULT '[]',
         created_at TIMESTAMP DEFAULT NOW()
       )
     `);
     await pool.query(`ALTER TABLE containers ADD COLUMN IF NOT EXISTS user_id VARCHAR(255) REFERENCES users(id) ON DELETE CASCADE`).catch(() => {});
     await pool.query(`ALTER TABLE containers ADD COLUMN IF NOT EXISTS cards JSONB DEFAULT '[]'`).catch(() => {});
+    await pool.query(`ALTER TABLE containers ADD COLUMN IF NOT EXISTS location VARCHAR(255)`).catch(() => {});
+    await pool.query(`ALTER TABLE containers DROP COLUMN IF EXISTS decklist_id`).catch(() => {});
 
     // Container items table
     await pool.query(`
