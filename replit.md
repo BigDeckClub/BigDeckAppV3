@@ -1,119 +1,146 @@
 # BigDeck.app - MTG Card Manager
 
 ## Overview
-BigDeck.app is a streamlined Magic: The Gathering inventory management system. It enables users to track card inventory organized into custom folders. The app uses real-time market pricing from Scryfall and features a clean, modern interface with no authentication required.
+BigDeck.app is a streamlined Magic: The Gathering inventory management system. It enables users to track card inventory organized into custom folders with real-time market pricing from Scryfall. Clean, modern interface with no authentication required.
 
 ## Current Status
-✅ **PRODUCTION READY** - Clean, focused core features
-- Two-tab interface: **Inventory** (view/organize cards by folder) and **Imports** (add cards)
-- Folder-based card organization
-- Real-time pricing from Scryfall
-- Responsive design with mobile-optimized bottom navigation
-- PostgreSQL database with complete schema and API routes
-- Zero authentication overhead - fully accessible without login
-- Clean, optimized codebase with no dead code
+✅ **PRODUCTION READY** - Lean, focused core features
+- **Two-tab interface**: Inventory (view/organize cards) and Imports (add cards)
+- **Folder-based organization** - Custom card grouping (Modern, Standard, Casual, etc.)
+- **Real-time pricing** - Scryfall API integration for TCG market data
+- **Responsive design** - Mobile-optimized bottom navigation, desktop tabs
+- **PostgreSQL backend** - Clean schema with only active tables
+- **Zero authentication** - Fully accessible without login
+- **Cleaned codebase** - No dead code, only essential features
 
 ## Architecture
-- **Frontend**: React 18 + Vite with Tailwind CSS, glassmorphism UI, cyan/teal color palette
-- **Backend**: Express.js with PostgreSQL via native pg driver
+- **Frontend**: React 18 + Vite with Tailwind CSS (CDN), glassmorphism UI, cyan/teal palette
+- **Backend**: Express.js + PostgreSQL (native pg driver)
 - **Database**: PostgreSQL with folder-based card tracking
-- **Icons**: Lucide React
-- **Pricing**: Scryfall API for real-time TCG pricing
+- **Icons**: Lucide React (minimal icon set)
+- **Search**: Debounced Scryfall search (300ms) with smart ranking algorithm
+- **Pricing**: Real-time market prices from Scryfall API
 
-## Latest Changes (November 29, 2025)
-- ✅ Replaced location feature with folder feature - unified organization
-- ✅ Added folder dropdown to "Add Card" section in Imports
-- ✅ Folder thumbnails grid with expandable view
-- ✅ "Create New Folder" button to organize cards
-- ✅ Removed unused packages (@types/memoizee, memoizee)
-- ✅ Cleaned up unused imports
-- ✅ Streamlined component code
+## Latest Changes (November 29, 2025 - Final Cleanup)
+- ✅ **Removed all non-core features** - Settings, analytics, containers, decklists, sales
+- ✅ **Deleted unused components** - 8 unused component files removed
+- ✅ **Removed location/is_shared_location** - Complete folder-based migration
+- ✅ **Cleaned API endpoints** - Only inventory, imports, and pricing remain
+- ✅ **Streamlined imports** - Removed unused packages and icons
+- ✅ **Repository organized** - Clean src/ structure with only active files
 
 ## Core Features
-1. **Inventory Tab** - View all cards organized by folder with:
-   - Folder thumbnails with card count
-   - Expandable folders to browse cards
-   - Total quantity per card
-   - Average purchase price (last 60 days)
-   - Edit/delete individual entries
-   - Uncategorized section for cards without folders
 
-2. **Imports Tab** - Add cards to inventory with:
-   - Search Scryfall for cards
-   - Select set and folder
-   - Specify quantity and purchase price
-   - Create bulk import orders with status tracking
+### Inventory Tab
+- View all cards organized by folder
+- Folder thumbnails showing card count
+- Expandable folders with browsable cards
+- Quick folder creation
+- Edit quantity/price per card
+- Delete individual entries
+- Uncategorized section for unorganized cards
 
-## Database Tables
-- `inventory` - Card inventory with quantities, prices, images, folder
-- `imports` - Bulk import orders with status tracking
-- `decklists` - Saved decklists (legacy, not actively used)
-- `containers` - Collection boxes (legacy, not actively used)
-- `sales` - Sale records (legacy)
-- `users` - User profiles (schema preserved)
-- `sessions` - User session data (schema preserved)
+### Imports Tab
+- Search and add cards from Scryfall
+- Set selection per card
+- Folder assignment
+- Quantity and purchase price tracking
+- Bulk import orders with status tracking
+- Import completion marking
 
-## API Endpoints
-**Inventory:**
+## Database Schema
+```sql
+-- Active tables only:
+inventory (id, user_id, name, set, set_name, quantity, purchase_price, purchase_date, reorder_type, image_url, scryfall_id, folder)
+imports (id, user_id, title, description, card_list, source, status, created_at, updated_at)
+
+-- Legacy tables preserved (for schema compatibility):
+users, sessions, decklists, containers, sales
+```
+
+## API Endpoints (Production)
+
+### Inventory
 - `GET /api/inventory` - Fetch all cards
 - `POST /api/inventory` - Add new card
 - `PUT /api/inventory/:id` - Update card
 - `DELETE /api/inventory/:id` - Remove card
 
-**Imports:**
+### Imports
 - `GET /api/imports` - Fetch all import orders
-- `POST /api/imports` - Create new import order
-- `PATCH /api/imports/:id/complete` - Mark import as done
+- `POST /api/imports` - Create import order
+- `PATCH /api/imports/:id/complete` - Mark import complete
+- `PATCH /api/imports/:id` - Update import order
 - `DELETE /api/imports/:id` - Delete import order
 
-**Pricing:**
+### Pricing
 - `GET /api/prices/:cardName/:setCode` - Fetch market prices
 
-## User Preferences
-- No authentication layer - fully open access
-- Clean, streamlined two-tab interface for focused workflow
-- Folder-based card organization (e.g., "Modern", "Standard", "Casual")
-- Mobile-first responsive design
-- Scryfall search integration for card discovery
-
-## Project Structure
+## Project Structure (Cleaned)
 ```
 src/
   components/
-    InventoryTab.jsx       - View inventory, manage folders
+    InventoryTab.jsx       - View/manage cards by folder
     ImportTab.jsx          - Add cards & import orders
-    SettingsPanel.jsx      - Settings modal
-    PriceCacheContext.jsx   - Price caching
-    DecklistCardPrice.jsx   - Market price display
     ErrorBoundary.jsx      - Error handling
   context/
     PriceCacheContext.jsx  - Price data caching
   hooks/
-    useApi.js              - API utility functions
+    useApi.js              - API helper functions
   utils/
-    useDebounce.js         - Debounced search
+    useDebounce.js         - Search debouncing
   App.jsx                  - Main app & state management
-  main.jsx                 - Entry point
+  main.jsx                 - React entry point
   index.css                - Tailwind + custom styles
 
-server.js                  - Express server with all routes
+server.js                  - Express server & API routes
 package.json               - Dependencies (optimized)
+replit.md                  - This file
 ```
 
+## Removed Features
+- ❌ Settings panel (reorder thresholds)
+- ❌ Usage history tracking
+- ❌ Container/box management
+- ❌ Decklist management
+- ❌ Sales tracking
+- ❌ Sell modal & animations
+- ❌ Analytics dashboard
+- ❌ Location-based organization (replaced with folders)
+
+## Dependencies
+**Frontend:**
+- react, react-dom (18)
+- vite, @vitejs/plugin-react
+- lucide-react (icons)
+- prop-types (validation)
+
+**Backend:**
+- express, express-rate-limit, helmet, cors, body-parser
+- pg (PostgreSQL)
+- dotenv
+- vite-express (server integration)
+
 ## Deployment
-- App runs on port 3000 (Express) with Vite on port 5000
-- Frontend served via ViteExpress
-- Production: `npm run build && npm run start`
-- No special environment variables required for basic use
+- **Local Development**: `npm run dev` (server on 3000, frontend on 5000)
+- **Production Build**: `npm run build && npm run start`
+- **Port**: 3000 (Express), 5000 (frontend proxy)
+- **No environment variables required** for basic use
 
 ## Performance
-- Lightweight bundle with only essential dependencies
-- Price caching to minimize external API calls
-- Debounced card search (300ms)
-- Optimized React component structure
-- Mobile-responsive design
-- Clean codebase with no dead code or unused packages
+- Lightweight bundle - only essential dependencies
+- Price caching - minimizes Scryfall API calls
+- Debounced search (300ms) - reduces API pressure
+- Optimized React components - minimal re-renders
+- Mobile-responsive - bottom nav on mobile, tabs on desktop
+- Fast startup - cleaned codebase with no dead code
+
+## File Count
+- **Components**: 3 active (InventoryTab, ImportTab, ErrorBoundary)
+- **Total src files**: ~10 production files
+- **No unused imports** or dead code
 
 ---
 *Last updated: November 29, 2025*
-*Status: Production-ready, clean and optimized*
+*Status: Production-ready, fully optimized, and cleaned*
+*Ready for deployment*
