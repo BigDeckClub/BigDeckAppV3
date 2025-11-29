@@ -538,19 +538,19 @@ export const InventoryTab = ({
               <>
                 {viewMode === 'card' ? (
                   <>
-                    <div className="grid grid-cols-1 sm:grid-cols-5 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                    <div className="grid grid-cols-5 md:grid-cols-4 lg:grid-cols-6 gap-3">
                       {inStockCards.map(renderCardGroup)}
                     </div>
                     {inStockCards.length > 0 && outOfStockCards.length > 0 && (
                       <div className="border-t border-slate-700 pt-4">
                         <h3 className="text-sm font-semibold text-slate-400 mb-3">Out of Stock</h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-5 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                        <div className="grid grid-cols-5 md:grid-cols-4 lg:grid-cols-6 gap-3">
                           {outOfStockCards.map(renderCardGroup)}
                         </div>
                       </div>
                     )}
                     {outOfStockCards.length > 0 && inStockCards.length === 0 && (
-                      <div className="grid grid-cols-1 sm:grid-cols-5 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                      <div className="grid grid-cols-5 md:grid-cols-4 lg:grid-cols-6 gap-3">
                         {outOfStockCards.map(renderCardGroup)}
                       </div>
                     )}
@@ -583,7 +583,7 @@ export const InventoryTab = ({
             /* Show unsorted cards */
             groupedByFolder['Uncategorized'] && Object.keys(groupedByFolder['Uncategorized']).length > 0 ? (
               viewMode === 'card' ? (
-                <div className="grid grid-cols-1 sm:grid-cols-5 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                <div className="grid grid-cols-5 md:grid-cols-4 lg:grid-cols-6 gap-3">
                   {Object.entries(groupedByFolder['Uncategorized']).map(renderCardGroup)}
                 </div>
               ) : (
@@ -598,7 +598,7 @@ export const InventoryTab = ({
             /* Show selected folder's cards */
             groupedByFolder[selectedFolder] && Object.keys(groupedByFolder[selectedFolder]).length > 0 ? (
               viewMode === 'card' ? (
-                <div className="grid grid-cols-1 sm:grid-cols-5 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                <div className="grid grid-cols-5 md:grid-cols-4 lg:grid-cols-6 gap-3">
                   {Object.entries(groupedByFolder[selectedFolder]).map(renderCardGroup)}
                 </div>
               ) : (
