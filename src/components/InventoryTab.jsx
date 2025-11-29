@@ -115,27 +115,30 @@ export const InventoryTab = ({
     
     return (
       <div key={cardName} className="space-y-4">
-        {/* Card Name Card */}
-        <div className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 hover:border-teal-500 rounded-lg p-4 transition-colors cursor-pointer" onClick={() => setExpandedCards({...expandedCards, [cardName]: !isExpanded})}>
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg sm:text-xl font-bold text-slate-100 flex-1 pr-2">{cardName}</h3>
-            <div className="text-teal-400 text-sm">
+        {/* Card Name Thumbnail */}
+        <div 
+          className="bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-slate-600 hover:border-teal-500 rounded-lg p-6 transition-colors cursor-pointer flex flex-col items-center justify-center min-h-56 hover:shadow-lg hover:shadow-teal-500/20" 
+          onClick={() => setExpandedCards({...expandedCards, [cardName]: !isExpanded})}
+        >
+          <div className="text-center mb-6 flex-1 flex flex-col justify-center">
+            <h3 className="text-2xl sm:text-3xl font-bold text-slate-100 break-words">{cardName}</h3>
+            <div className="text-teal-400 text-lg mt-2">
               {isExpanded ? '▼' : '▶'}
             </div>
           </div>
           
-          <div className="grid grid-cols-3 gap-3">
-            <div>
-              <div className="text-[10px] sm:text-xs text-slate-400 mb-1">Total Copies</div>
-              <div className={`text-xl sm:text-2xl font-bold ${totalQty === 0 ? 'text-slate-500' : 'text-teal-300'}`}>{totalQty}</div>
+          <div className="grid grid-cols-3 gap-6 w-full">
+            <div className="text-center">
+              <div className="text-[10px] sm:text-xs text-slate-400 mb-2">Total Copies</div>
+              <div className={`text-2xl sm:text-3xl font-bold ${totalQty === 0 ? 'text-slate-500' : 'text-teal-300'}`}>{totalQty}</div>
             </div>
-            <div>
-              <div className="text-[10px] sm:text-xs text-slate-400 mb-1">Available</div>
-              <div className="text-xl sm:text-2xl font-bold text-green-300">{available}</div>
+            <div className="text-center">
+              <div className="text-[10px] sm:text-xs text-slate-400 mb-2">Available</div>
+              <div className="text-2xl sm:text-3xl font-bold text-green-300">{available}</div>
             </div>
-            <div>
-              <div className="text-[10px] sm:text-xs text-slate-400 mb-1">Avg Price (60d)</div>
-              <div className="text-xl sm:text-2xl font-bold text-blue-300">${avgPrice.toFixed(2)}</div>
+            <div className="text-center">
+              <div className="text-[10px] sm:text-xs text-slate-400 mb-2">Avg Price</div>
+              <div className="text-2xl sm:text-3xl font-bold text-blue-300">${avgPrice.toFixed(2)}</div>
             </div>
           </div>
         </div>
