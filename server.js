@@ -8,7 +8,6 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { setupAuth } from './server/replitAuth.js';
 import { mtgjsonService } from './server/mtgjsonPriceService.js';
 
 const __filename = fileURLToPath(import.meta.url);

@@ -1,4 +1,3 @@
-import fetch from 'node-fetch';
 import { gunzipSync } from 'zlib';
 import fs from 'fs';
 import path from 'path';
