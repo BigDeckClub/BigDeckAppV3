@@ -124,42 +124,40 @@ export const InventoryTab = ({
         {/* Card View */}
         {viewMode === 'card' ? (
         <div 
-          className={`bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 hover:border-teal-500 rounded p-1.5 transition-colors cursor-pointer ${isExpanded ? 'flex flex-col' : 'flex flex-col justify-between'} ${isExpanded ? 'h-auto' : 'h-32 md:h-36'} hover:shadow-lg hover:shadow-teal-500/20`} 
+          className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 hover:border-teal-500 rounded p-1.5 transition-colors flex flex-col h-32 md:h-36 hover:shadow-lg hover:shadow-teal-500/20" 
           onClick={() => setExpandedCards({...expandedCards, [cardName]: !isExpanded})}
         >
-          <div className="text-center px-1">
+          <div className="text-center px-1 cursor-pointer">
             <h3 className="text-[10px] md:text-xs font-bold text-slate-100 line-clamp-2 break-words">{cardName}</h3>
           </div>
           
-          {!isExpanded && (
-            <>
-              <div className="flex-1 flex items-center justify-center min-h-0">
-                <div className="text-center">
-                  <div className="text-slate-500 text-[7px] md:text-[8px]">Available</div>
-                  <div className="text-2xl md:text-3xl font-bold text-green-300 leading-tight">{available}</div>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-3 gap-1 text-center text-[7px] md:text-[8px]">
-                <div className="space-y-0.5">
-                  <div className="text-slate-500">Qty</div>
-                  <div className={`font-semibold ${totalQty === 0 ? 'text-slate-500' : 'text-teal-300'}`}>{totalQty}</div>
-                </div>
-                <div className="space-y-0.5">
-                  <div className="text-slate-500">Cost</div>
-                  <div className="font-semibold text-blue-300">${avgPrice.toFixed(2)}</div>
-                </div>
-                <div className="space-y-0.5">
-                  <div className="text-slate-500">Total</div>
-                  <div className="font-semibold text-amber-400">${formatTotal(totalValue)}</div>
-                </div>
-              </div>
-            </>
-          )}
+          <div className="flex-1 flex items-center justify-center min-h-0">
+            <div className="text-center">
+              <div className="text-slate-500 text-[7px] md:text-[8px]">Available</div>
+              <div className="text-2xl md:text-3xl font-bold text-green-300 leading-tight">{available}</div>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-3 gap-1 text-center text-[7px] md:text-[8px]">
+            <div className="space-y-0.5">
+              <div className="text-slate-500">Qty</div>
+              <div className={`font-semibold ${totalQty === 0 ? 'text-slate-500' : 'text-teal-300'}`}>{totalQty}</div>
+            </div>
+            <div className="space-y-0.5">
+              <div className="text-slate-500">Cost</div>
+              <div className="font-semibold text-blue-300">${avgPrice.toFixed(2)}</div>
+            </div>
+            <div className="space-y-0.5">
+              <div className="text-slate-500">Total</div>
+              <div className="font-semibold text-amber-400">${formatTotal(totalValue)}</div>
+            </div>
+          </div>
+        </div>
+        )}
 
-          {isExpanded && (
-            <div className="mt-3 pt-3 border-t border-slate-600">
-              <div className="flex flex-wrap gap-3">
+        {isExpanded && viewMode === 'card' && (
+          <div className="bg-slate-800 rounded-lg border border-slate-600 p-3 shadow-lg">
+            <div className="flex flex-wrap gap-3">
                 {Object.values(
                   items.reduce((acc, item) => {
                     const setKey = `${item.set || 'unknown'}-${item.set_name || 'unknown'}`;
@@ -229,25 +227,27 @@ export const InventoryTab = ({
           )}
         </div>
         ) : (
-        /* List View */
-        <div className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 hover:border-teal-500 rounded p-3 transition-colors cursor-pointer hover:shadow-lg hover:shadow-teal-500/20">
-          <div className="flex items-center justify-between gap-4" onClick={() => setExpandedCards({...expandedCards, [cardName]: !isExpanded})}>
-            <div className="flex-1 min-w-0">
-              <h3 className="text-sm font-bold text-slate-100 break-words mb-1">{cardName}</h3>
-              <div className="flex gap-4 text-xs">
-                <div><span className="text-slate-500">Qty:</span> <span className={`${totalQty === 0 ? 'text-slate-500' : 'text-teal-300'} font-semibold`}>{totalQty}</span></div>
-                <div><span className="text-slate-500">Available:</span> <span className="text-green-300 font-semibold">{available}</span></div>
-                <div><span className="text-slate-500">Cost/ea:</span> <span className="text-blue-300 font-semibold">${avgPrice.toFixed(2)}</span></div>
-                <div><span className="text-slate-500">Total:</span> <span className="text-amber-400 font-semibold">${formatTotal(totalValue)}</span></div>
+        <div>
+          {/* List View */}
+          <div className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 hover:border-teal-500 rounded p-3 transition-colors cursor-pointer hover:shadow-lg hover:shadow-teal-500/20">
+            <div className="flex items-center justify-between gap-4" onClick={() => setExpandedCards({...expandedCards, [cardName]: !isExpanded})}>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-sm font-bold text-slate-100 break-words mb-1">{cardName}</h3>
+                <div className="flex gap-4 text-xs">
+                  <div><span className="text-slate-500">Qty:</span> <span className={`${totalQty === 0 ? 'text-slate-500' : 'text-teal-300'} font-semibold`}>{totalQty}</span></div>
+                  <div><span className="text-slate-500">Available:</span> <span className="text-green-300 font-semibold">{available}</span></div>
+                  <div><span className="text-slate-500">Cost/ea:</span> <span className="text-blue-300 font-semibold">${avgPrice.toFixed(2)}</span></div>
+                  <div><span className="text-slate-500">Total:</span> <span className="text-amber-400 font-semibold">${formatTotal(totalValue)}</span></div>
+                </div>
               </div>
-            </div>
-            <div className="text-teal-400 text-sm flex-shrink-0">
-              {isExpanded ? '▼' : '▶'}
+              <div className="text-teal-400 text-sm flex-shrink-0">
+                {isExpanded ? '▼' : '▶'}
+              </div>
             </div>
           </div>
 
           {isExpanded && (
-            <div className="mt-3 pt-3 border-t border-slate-600">
+            <div className="bg-slate-800 rounded-lg border border-slate-600 p-3 shadow-lg mt-2">
               <div className="flex flex-wrap gap-3">
                 {Object.values(
                   items.reduce((acc, item) => {
