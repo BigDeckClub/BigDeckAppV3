@@ -397,22 +397,43 @@ export const InventoryTab = ({
 
       {/* RIGHT CONTENT - Cards */}
       <div className="flex-1 pb-6">
-        {selectedFolder ? (
-          <div className="space-y-4">
-            <h2 className="text-2xl font-bold text-teal-300 sticky top-4">📋 {selectedFolder}</h2>
-            {groupedByFolder[selectedFolder] && Object.keys(groupedByFolder[selectedFolder]).length > 0 ? (
+        <div className="space-y-4">
+          <h2 className="text-2xl font-bold text-teal-300 sticky top-4">
+            {selectedFolder ? `📋 ${selectedFolder}` : '📋 All Cards'}
+          </h2>
+          {selectedFolder ? (
+            /* Show selected folder's cards */
+            groupedByFolder[selectedFolder] && Object.keys(groupedByFolder[selectedFolder]).length > 0 ? (
               <div className="space-y-4">
                 {Object.entries(groupedByFolder[selectedFolder]).map(renderCardGroup)}
               </div>
             ) : (
               <p className="text-slate-400 text-center py-12">No cards in this folder yet.</p>
-            )}
-          </div>
-        ) : (
-          <div className="text-center py-12">
-            <p className="text-slate-400 text-lg">Select a folder to view cards</p>
-          </div>
-        )}
+            )
+          ) : (
+            /* Show all cards - masterlist */
+            Object.keys(groupedInventory).length > 0 ? (
+              <div className="space-y-4">
+                {inStockCards.map(renderCardGroup)}
+                {inStockCards.length > 0 && outOfStockCards.length > 0 && (
+                  <div className="border-t border-slate-700 pt-4">
+                    <h3 className="text-sm font-semibold text-slate-400 mb-3">Out of Stock</h3>
+                    <div className="space-y-4">
+                      {outOfStockCards.map(renderCardGroup)}
+                    </div>
+                  </div>
+                )}
+                {outOfStockCards.length > 0 && inStockCards.length === 0 && (
+                  <div className="space-y-4">
+                    {outOfStockCards.map(renderCardGroup)}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className="text-slate-400 text-center py-12">No cards in inventory yet. Add some from the Imports tab!</p>
+            )
+          )}
+        </div>
       </div>
     </div>
   );
