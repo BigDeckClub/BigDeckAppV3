@@ -39,6 +39,7 @@ export const InventoryTab = ({
   const [showCreateFolder, setShowCreateFolder] = useState(false);
   const [createdFolders, setCreatedFolders] = useState([]);
   const [selectedFolder, setSelectedFolder] = useState(null);
+  const [activeTab, setActiveTab] = useState('all'); // 'all', 'unsorted', or folder name
 
   // Load created folders from localStorage
   useEffect(() => {
@@ -328,38 +329,7 @@ export const InventoryTab = ({
 
         {/* Folder List */}
         <div className="rounded-lg p-4 border-2 border-teal-500/50 bg-gradient-to-br from-slate-900/50 to-slate-800/50 space-y-2 max-h-96 overflow-y-auto">
-          <h3 className="text-sm font-semibold text-teal-300 mb-3">📁 Views</h3>
-          
-          {/* All Cards View */}
-          <button
-            onClick={() => setSelectedFolder(null)}
-            className={`w-full text-left p-3 rounded-lg transition-colors ${
-              selectedFolder === null
-                ? 'bg-teal-600/40 border-l-4 border-teal-400'
-                : 'bg-slate-800 border-l-4 border-transparent hover:bg-slate-700'
-            }`}
-          >
-            <div className="font-medium text-sm text-slate-100">All Cards</div>
-            <div className="text-xs text-teal-300">Complete inventory</div>
-          </button>
-
-          {/* Uncategorized View */}
-          {groupedByFolder['Uncategorized'] && (
-            <button
-              onClick={() => setSelectedFolder('Uncategorized')}
-              className={`w-full text-left p-3 rounded-lg transition-colors ${
-                selectedFolder === 'Uncategorized'
-                  ? 'bg-slate-600/40 border-l-4 border-slate-400'
-                  : 'bg-slate-800 border-l-4 border-transparent hover:bg-slate-700'
-              }`}
-            >
-              <div className="font-medium text-sm text-slate-100">Uncategorized</div>
-              <div className="text-xs text-slate-400">{Object.keys(groupedByFolder['Uncategorized']).length} cards</div>
-            </button>
-          )}
-
-          <div className="border-t border-slate-700 my-2"></div>
-          <h3 className="text-xs font-semibold text-slate-400 mt-3 mb-2">Custom Folders</h3>
+          <h3 className="text-sm font-semibold text-teal-300 mb-3">📁 Folders</h3>
           
           {/* Created Folders */}
           {createdFolders.map((folderName) => {
@@ -413,23 +383,35 @@ export const InventoryTab = ({
 
       {/* RIGHT CONTENT - Cards */}
       <div className="flex-1 pb-6">
+        {/* Tabs */}
+        <div className="flex gap-2 mb-6 border-b border-slate-700 pb-4">
+          <button
+            onClick={() => setActiveTab('all')}
+            className={`px-4 py-2 font-medium transition-colors ${
+              activeTab === 'all'
+                ? 'text-teal-300 border-b-2 border-teal-400'
+                : 'text-slate-400 hover:text-slate-300'
+            }`}
+          >
+            All Cards
+          </button>
+          <button
+            onClick={() => setActiveTab('unsorted')}
+            className={`px-4 py-2 font-medium transition-colors ${
+              activeTab === 'unsorted'
+                ? 'text-teal-300 border-b-2 border-teal-400'
+                : 'text-slate-400 hover:text-slate-300'
+            }`}
+          >
+            Unsorted
+          </button>
+        </div>
+
         <div className="space-y-4">
-          <h2 className="text-2xl font-bold text-teal-300 sticky top-4">
-            {selectedFolder ? `📋 ${selectedFolder}` : '📋 All Cards'}
-          </h2>
-          {selectedFolder ? (
-            /* Show selected folder's cards */
-            groupedByFolder[selectedFolder] && Object.keys(groupedByFolder[selectedFolder]).length > 0 ? (
-              <div className="space-y-4">
-                {Object.entries(groupedByFolder[selectedFolder]).map(renderCardGroup)}
-              </div>
-            ) : (
-              <p className="text-slate-400 text-center py-12">No cards in this folder yet.</p>
-            )
-          ) : (
+          {activeTab === 'all' ? (
             /* Show all cards - masterlist */
             Object.keys(groupedInventory).length > 0 ? (
-              <div className="space-y-4">
+              <>
                 {inStockCards.map(renderCardGroup)}
                 {inStockCards.length > 0 && outOfStockCards.length > 0 && (
                   <div className="border-t border-slate-700 pt-4">
@@ -440,13 +422,31 @@ export const InventoryTab = ({
                   </div>
                 )}
                 {outOfStockCards.length > 0 && inStockCards.length === 0 && (
-                  <div className="space-y-4">
+                  <>
                     {outOfStockCards.map(renderCardGroup)}
-                  </div>
+                  </>
                 )}
-              </div>
+              </>
             ) : (
               <p className="text-slate-400 text-center py-12">No cards in inventory yet. Add some from the Imports tab!</p>
+            )
+          ) : activeTab === 'unsorted' ? (
+            /* Show unsorted cards */
+            groupedByFolder['Uncategorized'] && Object.keys(groupedByFolder['Uncategorized']).length > 0 ? (
+              <div className="space-y-4">
+                {Object.entries(groupedByFolder['Uncategorized']).map(renderCardGroup)}
+              </div>
+            ) : (
+              <p className="text-slate-400 text-center py-12">No unsorted cards.</p>
+            )
+          ) : (
+            /* Show selected folder's cards */
+            groupedByFolder[selectedFolder] && Object.keys(groupedByFolder[selectedFolder]).length > 0 ? (
+              <div className="space-y-4">
+                {Object.entries(groupedByFolder[selectedFolder]).map(renderCardGroup)}
+              </div>
+            ) : (
+              <p className="text-slate-400 text-center py-12">No cards in this folder yet.</p>
             )
           )}
         </div>
