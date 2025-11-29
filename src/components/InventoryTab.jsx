@@ -49,6 +49,11 @@ export const InventoryTab = ({
     }
   }, []);
 
+  // Collapse all cards when switching tabs or folders
+  useEffect(() => {
+    setExpandedCards({});
+  }, [activeTab, selectedFolder]);
+
   // Save created folders to localStorage
   const addCreatedFolder = (folderName) => {
     const trimmedName = folderName.trim();
