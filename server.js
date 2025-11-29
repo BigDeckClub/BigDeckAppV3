@@ -120,7 +120,7 @@ async function initializeDatabase() {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS inventory (
         id SERIAL PRIMARY KEY,
-        user_id VARCHAR(255) REFERENCES users(id) ON DELETE CASCADE,
+        user_id VARCHAR(255),
         name VARCHAR(255) NOT NULL,
         set VARCHAR(20),
         set_name VARCHAR(255),

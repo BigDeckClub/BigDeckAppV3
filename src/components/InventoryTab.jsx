@@ -91,8 +91,7 @@ export const InventoryTab = ({
   
   const renderCardGroup = ([cardName, items]) => {
     const totalQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
-    const available = items.reduce((sum, item) => sum + item.quantity_available, 0);
-    const totalInContainers = items.reduce((sum, item) => sum + (parseInt(item.quantity_in_containers) || 0), 0);
+    const available = totalQty;
     
     const sixtyDaysAgo = new Date();
     sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
