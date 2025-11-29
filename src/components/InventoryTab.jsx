@@ -138,7 +138,7 @@ export const InventoryTab = ({
         </div>
         
         {isExpanded && (
-          <div className="border-t border-teal-600/50 pt-3 sm:pt-4 space-y-2">
+          <div className="border-t border-teal-600/50 pt-3 sm:pt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {Object.values(
               items.reduce((acc, item) => {
                 const setKey = `${item.set || 'unknown'}-${item.set_name || 'unknown'}`;
@@ -154,7 +154,7 @@ export const InventoryTab = ({
               const isEditing = editingId === firstItem.id;
               
               return (
-                <div key={`${firstItem.set}-${firstItem.id}`} className="card border border-slate-600 rounded p-3">
+                <div key={`${firstItem.set}-${firstItem.id}`} className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 hover:border-teal-500 rounded-lg p-4 transition-colors">
                   {isEditing ? (
                     <div className="space-y-2">
                       <div className="text-sm font-semibold text-slate-100">{firstItem.set_name} ({firstItem.set})</div>
