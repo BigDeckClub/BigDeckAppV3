@@ -44,6 +44,10 @@ function MTGInventoryTrackerContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [totalPurchased60Days, setTotalPurchased60Days] = useState(0);
 
+  const [showSellModal, setShowSellModal] = useState(false);
+  const [selectedContainerForSale, setSelectedContainerForSale] = useState(null);
+  const [salePrice, setSalePrice] = useState("");
+
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
