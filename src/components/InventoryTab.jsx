@@ -266,35 +266,13 @@ export const InventoryTab = ({
                       </div>
                     ) : (
                       <div className="space-y-3 p-4">
-                        <div className="flex items-center justify-between">
-                          <div 
-                            className="flex-1 cursor-pointer flex items-center gap-2"
-                            onClick={() => setExpandedSets({...expandedSets, [`${firstItem.set}-${cardName}`]: !expandedSets[`${firstItem.set}-${cardName}`]})}
-                          >
-                            <span className="text-slate-400">{expandedSets[`${firstItem.set}-${cardName}`] ? '▼' : '▶'}</span>
-                            <span className="text-base font-bold text-slate-100">{firstItem.set.toUpperCase()}</span>
-                            <span className="text-sm text-slate-500">({setItems.length})</span>
-                          </div>
-                          <div className="flex gap-2">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                startEditingItem(firstItem);
-                              }}
-                              className="bg-blue-600 hover:bg-blue-700 rounded px-3 py-1.5 text-sm text-white font-semibold"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                deleteInventoryItem(firstItem.id);
-                              }}
-                              className="bg-red-600 hover:bg-red-700 rounded px-3 py-1.5"
-                            >
-                              <Trash2 className="w-4 h-4 text-white" />
-                            </button>
-                          </div>
+                        <div 
+                          className="cursor-pointer flex items-center gap-2"
+                          onClick={() => setExpandedSets({...expandedSets, [`${firstItem.set}-${cardName}`]: !expandedSets[`${firstItem.set}-${cardName}`]})}
+                        >
+                          <span className="text-slate-400">{expandedSets[`${firstItem.set}-${cardName}`] ? '▼' : '▶'}</span>
+                          <span className="text-base font-bold text-slate-100">{firstItem.set.toUpperCase()}</span>
+                          <span className="text-sm text-slate-500">({setItems.length})</span>
                         </div>
                         
                         <div className="text-sm px-3 py-2 text-slate-300 bg-slate-900/50 rounded space-y-1">
