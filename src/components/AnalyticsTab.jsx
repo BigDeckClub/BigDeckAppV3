@@ -57,7 +57,7 @@ export const AnalyticsTab = ({ inventory }) => {
       {/* Key Metrics - Purchase & Market Values */}
       <div className="mb-8">
         <h3 className="text-sm font-semibold text-slate-400 mb-3">Purchase Value</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           <div className="bg-slate-800 border border-slate-600 rounded-lg p-4">
             <div className="text-slate-400 text-xs font-semibold mb-1">Total Cards</div>
             <div className="text-2xl font-bold text-teal-300">{totalCards}</div>
@@ -67,20 +67,16 @@ export const AnalyticsTab = ({ inventory }) => {
             <div className="text-2xl font-bold text-blue-300">{uniqueCards}</div>
           </div>
           <div className="bg-slate-800 border border-slate-600 rounded-lg p-4">
-            <div className="text-slate-400 text-xs font-semibold mb-1">Total Paid</div>
-            <div className="text-2xl font-bold text-green-300">${totalValue.toFixed(2)}</div>
-          </div>
-          <div className="bg-slate-800 border border-slate-600 rounded-lg p-4">
-            <div className="text-slate-400 text-xs font-semibold mb-1">Avg Price/Card</div>
-            <div className="text-2xl font-bold text-amber-300">${avgPricePerCard}</div>
-          </div>
-          <div className="bg-slate-800 border border-slate-600 rounded-lg p-4">
-            <div className="space-y-3">
+            <div className="space-y-4">
               <div>
+                <div className="text-slate-400 text-xs font-semibold mb-1">Total Paid</div>
+                <div className="text-2xl font-bold text-green-300">${totalValue.toFixed(2)}</div>
+              </div>
+              <div className="border-t border-slate-600 pt-4">
                 <div className="text-slate-400 text-xs font-semibold mb-1">Card Kingdom Value</div>
                 <div className="text-2xl font-bold text-purple-300">${marketValues.cardkingdom.toFixed(2)}</div>
               </div>
-              <div className="border-t border-slate-600 pt-3">
+              <div className="border-t border-slate-600 pt-4">
                 <div className="text-slate-400 text-xs font-semibold mb-1">TCGPlayer Value</div>
                 <div className="text-2xl font-bold text-pink-300">${marketValues.tcgplayer.toFixed(2)}</div>
               </div>
