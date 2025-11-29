@@ -22,6 +22,14 @@ export async function setupAuth(app) {
 
   console.log('[AUTH] Registering auth routes...');
 
+  // Login endpoint (GET) - handles browser navigation to /api/login
+  app.get('/api/login', (req, res) => {
+    console.log('[AUTH] GET /api/login called');
+    // Redirect to home - the frontend will check if user is authenticated via /api/auth/user
+    res.redirect('/');
+  });
+  console.log('[AUTH]   ✓ GET /api/login');
+
   // Get current user
   app.get('/api/auth/user', (req, res) => {
     console.log('[AUTH] GET /api/auth/user - User:', req.session.user ? 'Authenticated' : 'Not authenticated');
