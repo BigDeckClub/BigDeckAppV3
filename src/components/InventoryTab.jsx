@@ -114,31 +114,31 @@ export const InventoryTab = ({
     const isExpanded = expandedCards[cardName];
     
     return (
-      <div key={cardName} className="space-y-3">
+      <div key={cardName} className="space-y-2">
         {/* Card Name Thumbnail - Smaller */}
         <div 
-          className="bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-slate-600 hover:border-teal-500 rounded-lg p-3 transition-colors cursor-pointer flex flex-col items-center justify-center min-h-40 hover:shadow-lg hover:shadow-teal-500/20" 
+          className="bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-slate-600 hover:border-teal-500 rounded p-2 transition-colors cursor-pointer flex flex-col justify-between h-36 hover:shadow-lg hover:shadow-teal-500/20" 
           onClick={() => setExpandedCards({...expandedCards, [cardName]: !isExpanded})}
         >
-          <div className="text-center mb-2 flex-1 flex flex-col justify-center">
-            <h3 className="text-sm sm:text-base font-bold text-slate-100 break-words line-clamp-2">{cardName}</h3>
-            <div className="text-teal-400 text-xs mt-1">
+          <div className="text-center flex-1 flex flex-col justify-center min-w-0">
+            <h3 className="text-xs font-bold text-slate-100 line-clamp-2 break-words px-1">{cardName}</h3>
+            <div className="text-teal-400 text-xs mt-0.5">
               {isExpanded ? '▼' : '▶'}
             </div>
           </div>
           
-          <div className="grid grid-cols-3 gap-2 w-full text-center">
+          <div className="grid grid-cols-3 gap-1 w-full text-center text-[10px]">
             <div>
-              <div className="text-[8px] text-slate-400 mb-0.5">Copies</div>
-              <div className={`text-base sm:text-lg font-bold ${totalQty === 0 ? 'text-slate-500' : 'text-teal-300'}`}>{totalQty}</div>
+              <div className="text-slate-500 text-[7px]">C</div>
+              <div className={`font-bold ${totalQty === 0 ? 'text-slate-500' : 'text-teal-300'}`}>{totalQty}</div>
             </div>
             <div>
-              <div className="text-[8px] text-slate-400 mb-0.5">Avail</div>
-              <div className="text-base sm:text-lg font-bold text-green-300">{available}</div>
+              <div className="text-slate-500 text-[7px]">A</div>
+              <div className="font-bold text-green-300">{available}</div>
             </div>
             <div>
-              <div className="text-[8px] text-slate-400 mb-0.5">Price</div>
-              <div className="text-base sm:text-lg font-bold text-blue-300">${avgPrice.toFixed(2)}</div>
+              <div className="text-slate-500 text-[7px]">P</div>
+              <div className="font-bold text-blue-300">${avgPrice.toFixed(2)}</div>
             </div>
           </div>
         </div>
@@ -235,48 +235,51 @@ export const InventoryTab = ({
                   ) : (
                     <>
                       <div 
-                        className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 cursor-pointer"
+                        className="flex flex-col gap-2 cursor-pointer hover:bg-slate-800/50 p-2 rounded transition-colors"
                         onClick={() => setExpandedSets({...expandedSets, [`${firstItem.set}-${cardName}`]: !expandedSets[`${firstItem.set}-${cardName}`]})}
                       >
-                        <div className="flex-1">
-                          <div className="text-sm font-semibold text-slate-100 flex items-center gap-2">
-                            {expandedSets[`${firstItem.set}-${cardName}`] ? '▼' : '▶'} {firstItem.set_name} ({setItems.length} {setItems.length === 1 ? 'copy' : 'copies'})
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="text-xs font-semibold text-slate-100 flex items-center gap-1">
+                              <span>{expandedSets[`${firstItem.set}-${cardName}`] ? '▼' : '▶'}</span>
+                              <span className="line-clamp-2 break-words">{firstItem.set_name} ({setItems.length})</span>
+                            </div>
+                            <div className="flex gap-3 mt-1 text-xs">
+                              <div><span className="text-slate-500">Qty:</span> <span className="text-teal-300 font-semibold">{totalQtyInSet}</span></div>
+                              <div><span className="text-slate-500">Price:</span> <span className="text-blue-300 font-semibold">${(setItems.reduce((sum, item) => sum + (parseFloat(item.purchase_price) || 0), 0) / setItems.length).toFixed(2)}</span></div>
+                            </div>
                           </div>
-                          <div className="grid grid-cols-2 gap-2 sm:gap-3 mt-1 text-xs">
-                            <div><span className="text-slate-400">Total Qty:</span> <span className="text-white font-semibold">{totalQtyInSet}</span></div>
-                            <div><span className="text-slate-400">Avg Price:</span> <span className="text-white font-semibold">${(setItems.reduce((sum, item) => sum + (parseFloat(item.purchase_price) || 0), 0) / setItems.length).toFixed(2)}</span></div>
+                          <div className="flex gap-1 flex-shrink-0">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                startEditingItem(firstItem);
+                              }}
+                              className="bg-blue-600 hover:bg-blue-700 rounded px-2 py-1 text-xs"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deleteInventoryItem(firstItem.id);
+                              }}
+                              className="bg-red-600 hover:bg-red-700 rounded px-2 py-1"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
                           </div>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2 sm:gap-4 sm:ml-4">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              startEditingItem(firstItem);
-                            }}
-                            className="bg-blue-600 hover:bg-blue-700 rounded px-3 py-2 sm:px-2 sm:py-1 text-sm min-h-[36px] sm:min-h-0"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              deleteInventoryItem(firstItem.id);
-                            }}
-                            className="bg-red-600 hover:bg-red-700 rounded px-3 py-2 sm:px-2 sm:py-1 min-h-[36px] sm:min-h-0"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
                         </div>
                       </div>
 
                       {expandedSets[`${firstItem.set}-${cardName}`] && (
-                        <div className="mt-2 pt-2 border-t border-slate-700 space-y-2">
+                        <div className="ml-2 pt-1 border-l border-slate-700 space-y-1">
                           {setItems.map((item) => (
-                            <div key={item.id} className="bg-slate-900/40 rounded p-2 text-xs space-y-1">
+                            <div key={item.id} className="bg-slate-900/40 rounded p-1.5 text-xs space-y-0.5">
                               <div className="text-slate-100">
-                                <span className="text-slate-400">Qty:</span> {item.quantity} • <span className="text-slate-400">Price:</span> ${parseFloat(item.purchase_price || 0).toFixed(2)}
+                                <span className="text-slate-500">Qty:</span> {item.quantity} | <span className="text-slate-500">$</span>{parseFloat(item.purchase_price || 0).toFixed(2)}
                               </div>
-                              <div className="text-slate-400">
+                              <div className="text-slate-500 text-[10px]">
                                 {new Date(item.purchase_date).toLocaleDateString()}
                               </div>
                             </div>
