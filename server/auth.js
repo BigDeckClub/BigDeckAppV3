@@ -8,8 +8,27 @@ import session from 'express-session';
 import connectPg from 'connect-pg-simple';
 import pkg from 'pg';
 import bcrypt from 'bcryptjs';
+import rateLimit from 'express-rate-limit';
 
 const { Pool } = pkg;
+
+// Rate limiter for auth endpoints
+const authRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: { error: 'Too many requests, please try again later' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Stricter rate limiter for registration
+const registerRateLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 10, // limit each IP to 10 registrations per hour
+  message: { error: 'Too many registration attempts, please try again later' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 // Get session store using PostgreSQL
 function getSessionStore() {
@@ -285,7 +304,7 @@ export async function setupAuth(app) {
     });
 
     // Get current user (compatibility endpoint)
-    app.get('/api/auth/user', async (req, res) => {
+    app.get('/api/auth/user', authRateLimiter, async (req, res) => {
       try {
         // Get session token from cookie
         const cookies = req.headers.cookie?.split(';').reduce((acc, cookie) => {
@@ -332,7 +351,7 @@ export async function setupAuth(app) {
     });
 
     // Register new user with email/password
-    app.post('/api/auth/register', async (req, res) => {
+    app.post('/api/auth/register', registerRateLimiter, async (req, res) => {
       try {
         const { email, password, name } = req.body;
 
