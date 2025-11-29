@@ -1,5 +1,4 @@
 import express from 'express';
-import ViteExpress from 'vite-express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
 import pkg from 'pg';
@@ -23,7 +22,8 @@ app.use(helmet({
   contentSecurityPolicy: false
 }));
 
-// CORS handler - allow all origins in development/production
+// CORS handler - allow all origins for development and Replit deployment
+// This is intentional: the app has no authentication and is designed for open access
 app.use(cors({
   origin: '*',
   credentials: false,
@@ -39,6 +39,34 @@ const priceLimiter = rateLimit({
   max: 100
 });
 
+// ========== PRICE CACHING ==========
+const priceCache = new Map();
+const PRICE_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+function getCachedPrice(key) {
+  const cached = priceCache.get(key);
+  if (cached && Date.now() - cached.timestamp < PRICE_CACHE_TTL) {
+    return cached.data;
+  }
+  return null;
+}
+
+function setCachedPrice(key, data) {
+  // Clean up expired entries when cache grows large to prevent memory leak
+  if (priceCache.size > 1000) {
+    const now = Date.now();
+    for (const [k, v] of priceCache.entries()) {
+      if (now - v.timestamp >= PRICE_CACHE_TTL) {
+        priceCache.delete(k);
+      }
+    }
+  }
+  priceCache.set(key, { data, timestamp: Date.now() });
+}
+
+// ========== SERVER TRACKING ==========
+const serverStartTime = Date.now();
+
 // PostgreSQL connection
 const dbUrl = process.env.DATABASE_URL;
 
@@ -46,6 +74,20 @@ const pool = new Pool({
   connectionString: dbUrl,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 5000
+});
+
+// ========== DATABASE CONNECTION MONITORING ==========
+pool.on('error', (err, client) => {
+  console.error('[DB] ✗ Unexpected pool error:', err.message);
+  console.error('[DB] Error code:', err.code);
+  console.error('[DB] Error stack:', err.stack);
+  if (client) {
+    console.error('[DB] Client details:', client);
+  }
+});
+
+pool.on('connect', () => {
+  console.log('[DB] ✓ New client connected to pool');
 });
 
 // ========== DATABASE INITIALIZATION ==========
@@ -78,7 +120,7 @@ async function initializeDatabase() {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS inventory (
         id SERIAL PRIMARY KEY,
-        user_id VARCHAR(255) REFERENCES users(id) ON DELETE CASCADE,
+        user_id VARCHAR(255),
         name VARCHAR(255) NOT NULL,
         set VARCHAR(20),
         set_name VARCHAR(255),
@@ -264,17 +306,36 @@ async function fetchRetry(url, options = {}, retries = 2) {
 
 // ========== HEALTH CHECK ==========
 app.get('/health', async (req, res) => {
+  let dbStatus = 'disconnected'; // Default to disconnected for safety
   try {
     await pool.query('SELECT 1');
-    res.json({ ok: true });
-  } catch {
-    res.status(500).json({ ok: false });
+    dbStatus = 'connected';
+  } catch (err) {
+    dbStatus = 'disconnected';
   }
+  
+  const uptimeSeconds = Math.floor((Date.now() - serverStartTime) / 1000);
+  const response = {
+    ok: dbStatus === 'connected',
+    database: dbStatus,
+    uptime: uptimeSeconds,
+    timestamp: new Date().toISOString()
+  };
+  
+  res.status(response.ok ? 200 : 500).json(response);
 });
 
 // ========== PRICES ENDPOINT ==========
 app.get('/api/prices/:cardName/:setCode', priceLimiter, async (req, res) => {
   const { cardName, setCode } = req.params;
+  const cacheKey = `${cardName.toLowerCase()}_${(setCode || '').toLowerCase()}`;
+  
+  // Check cache first
+  const cachedResult = getCachedPrice(cacheKey);
+  if (cachedResult) {
+    console.log(`[PRICES] Cache hit for: card="${cardName}", set="${setCode}"`);
+    return res.status(200).json(cachedResult);
+  }
   
   console.log(`[PRICES] Lookup request: card="${cardName}", set="${setCode}"`);
   
@@ -334,7 +395,7 @@ app.get('/api/prices/:cardName/:setCode', priceLimiter, async (req, res) => {
     }
     
     res.setHeader('Content-Type', 'application/json');
-    res.status(200).json({ tcg: tcgPrice, ck: ckPrice });
+    res.status(200).json(result);
   } catch (error) {
     res.setHeader('Content-Type', 'application/json');
     res.status(500).json({ tcg: 'N/A', ck: 'N/A' });
@@ -359,8 +420,19 @@ app.get('/api/inventory', async (req, res) => {
 app.post('/api/inventory', async (req, res) => {
   const { name, set, set_name, quantity, purchase_price, purchase_date, reorder_type, image_url, folder } = req.body;
   
-  if (!name) {
-    return res.status(400).json({ error: 'Card name is required' });
+  // Input validation
+  if (!name || typeof name !== 'string' || name.trim().length === 0) {
+    return res.status(400).json({ error: 'Card name is required and must be a non-empty string' });
+  }
+  
+  // Quantity is optional but must be a positive integer greater than zero when provided
+  if (quantity !== undefined && quantity !== null && (typeof quantity !== 'number' || quantity <= 0 || !Number.isInteger(quantity))) {
+    return res.status(400).json({ error: 'Quantity must be a positive integer greater than zero when provided' });
+  }
+  
+  // Purchase price is optional but must be a non-negative number when provided
+  if (purchase_price !== undefined && purchase_price !== null && (typeof purchase_price !== 'number' || purchase_price < 0)) {
+    return res.status(400).json({ error: 'Purchase price must be a non-negative number when provided' });
   }
 
   try {
@@ -462,8 +534,23 @@ app.get('/api/imports', async (req, res) => {
 app.post('/api/imports', async (req, res) => {
   const { title, description, cardList, source, status } = req.body;
   
-  if (!title || !cardList) {
-    return res.status(400).json({ error: 'Title and card list are required' });
+  // Input validation
+  if (!title || typeof title !== 'string' || title.trim().length === 0) {
+    return res.status(400).json({ error: 'Title is required and must be a non-empty string' });
+  }
+  
+  if (!cardList || typeof cardList !== 'string' || cardList.trim().length === 0) {
+    return res.status(400).json({ error: 'Card list is required and must be a non-empty string' });
+  }
+  
+  const validSources = ['wholesale', 'tcgplayer', 'cardkingdom', 'local', 'other'];
+  if (source !== undefined && source !== null && !validSources.includes(source)) {
+    return res.status(400).json({ error: `Source must be one of: ${validSources.join(', ')}` });
+  }
+  
+  const validStatuses = ['pending', 'processing', 'completed', 'cancelled'];
+  if (status !== undefined && status !== null && !validStatuses.includes(status)) {
+    return res.status(400).json({ error: `Status must be one of: ${validStatuses.join(', ')}` });
   }
 
   try {
@@ -567,6 +654,22 @@ app.patch('/api/imports/:id', async (req, res) => {
     console.error('[IMPORTS] Error updating import:', error.message);
     res.status(500).json({ error: 'Failed to update import' });
   }
+});
+
+// ========== CENTRALIZED ERROR HANDLING ==========
+// Placed after all API routes to catch unhandled errors from route handlers
+app.use((err, req, res, next) => {
+  console.error('[ERROR]', err.message);
+  console.error('[ERROR] Stack:', err.stack);
+  
+  // Don't expose internal error details in production
+  const statusCode = err.statusCode || 500;
+  const message = statusCode === 500 ? 'Internal server error' : err.message;
+  
+  res.status(statusCode).json({
+    error: message,
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+  });
 });
 
 // ========== STARTUP FUNCTION ==========

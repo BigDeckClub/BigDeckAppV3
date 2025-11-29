@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { Plus, Trash2, X, ChevronDown, ChevronRight } from 'lucide-react';
+import { Plus, Trash2, X, ChevronDown, ChevronRight, Grid3X3, List, Menu } from 'lucide-react';
 import { usePriceCache } from "../context/PriceCacheContext";
 
 // Simple normalize functions
@@ -38,6 +38,11 @@ export const InventoryTab = ({
   const [newFolderName, setNewFolderName] = useState('');
   const [showCreateFolder, setShowCreateFolder] = useState(false);
   const [createdFolders, setCreatedFolders] = useState([]);
+  const [selectedFolder, setSelectedFolder] = useState(null);
+  const [activeTab, setActiveTab] = useState('all'); // 'all', 'unsorted', or folder name
+  const [expandedSets, setExpandedSets] = useState({}); // Track expansion of individual sets within cards
+  const [viewMode, setViewMode] = useState('card'); // 'card' or 'list'
+  const [sidebarOpen, setSidebarOpen] = useState(false); // Mobile sidebar toggle
 
   // Load created folders from localStorage
   useEffect(() => {
@@ -46,6 +51,11 @@ export const InventoryTab = ({
       setCreatedFolders(JSON.parse(savedFolders));
     }
   }, []);
+
+  // Collapse all cards when switching tabs or folders
+  useEffect(() => {
+    setExpandedCards({});
+  }, [activeTab, selectedFolder]);
 
   // Save created folders to localStorage
   const addCreatedFolder = (folderName) => {
@@ -91,8 +101,7 @@ export const InventoryTab = ({
   
   const renderCardGroup = ([cardName, items]) => {
     const totalQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
-    const available = items.reduce((sum, item) => sum + item.quantity_available, 0);
-    const totalInContainers = items.reduce((sum, item) => sum + (parseInt(item.quantity_in_containers) || 0), 0);
+    const available = totalQty;
     
     const sixtyDaysAgo = new Date();
     sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
@@ -104,160 +113,190 @@ export const InventoryTab = ({
       avgPrice = totalPrice / itemsForAvg.length;
     }
     
+    const totalValue = totalQty * avgPrice;
+    const formatTotal = (value) => {
+      return value >= 100 ? value.toFixed(0) : value.toFixed(2);
+    };
+    
     const isExpanded = expandedCards[cardName];
     
     return (
-      <div key={cardName} className={`bg-slate-800 border rounded-lg p-3 sm:p-4 ${totalQty === 0 ? 'border-slate-700 opacity-75' : 'border-slate-600'}`}>
-        <div className="flex justify-between items-center mb-2 sm:mb-3 cursor-pointer" onClick={() => setExpandedCards({...expandedCards, [cardName]: !isExpanded})}>
-          <h3 className="text-base sm:text-lg font-bold text-slate-100 flex-1 pr-2">{cardName}</h3>
-          <div className="text-teal-400 text-sm">
-            {isExpanded ? '▼' : '▶'}
+      <div key={cardName} className={viewMode === 'card' ? 'space-y-2' : ''}>
+        {/* Card Name - Card View or List View */}
+        {viewMode === 'card' ? (
+        <div 
+          className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 hover:border-teal-500 rounded p-1.5 transition-colors cursor-pointer flex flex-col justify-between h-32 md:h-36 hover:shadow-lg hover:shadow-teal-500/20" 
+          onClick={() => setExpandedCards({...expandedCards, [cardName]: !isExpanded})}
+        >
+          <div className="text-center px-1">
+            <h3 className="text-[10px] md:text-xs font-bold text-slate-100 line-clamp-2 break-words">{cardName}</h3>
+          </div>
+          
+          <div className="flex-1 flex items-center justify-center min-h-0">
+            <div className="text-center">
+              <div className="text-slate-500 text-[7px] md:text-[8px]">Available</div>
+              <div className="text-2xl md:text-3xl font-bold text-green-300 leading-tight">{available}</div>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-3 gap-1 text-center text-[7px] md:text-[8px]">
+            <div className="space-y-0.5">
+              <div className="text-slate-500">Qty</div>
+              <div className={`font-semibold ${totalQty === 0 ? 'text-slate-500' : 'text-teal-300'}`}>{totalQty}</div>
+            </div>
+            <div className="space-y-0.5">
+              <div className="text-slate-500">Cost</div>
+              <div className="font-semibold text-blue-300">${avgPrice.toFixed(2)}</div>
+            </div>
+            <div className="space-y-0.5">
+              <div className="text-slate-500">Total</div>
+              <div className="font-semibold text-amber-400">${formatTotal(totalValue)}</div>
+            </div>
           </div>
         </div>
-        
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2 sm:mb-3">
-          <div className="bg-slate-800 bg-opacity-50 rounded p-2 sm:p-2 border border-slate-700">
-            <div className="text-[10px] sm:text-xs text-slate-400">Total Copies</div>
-            <div className={`text-lg sm:text-xl font-bold ${totalQty === 0 ? 'text-slate-500' : 'text-teal-300'}`}>{totalQty}</div>
-          </div>
-          <div className="bg-slate-800 bg-opacity-50 rounded p-2 sm:p-2 border border-slate-700">
-            <div className="text-[10px] sm:text-xs text-slate-400">Available</div>
-            <div className="text-lg sm:text-xl font-bold text-green-300">{available}</div>
-          </div>
-          <div className="bg-slate-800 bg-opacity-50 rounded p-2 sm:p-2 border border-slate-700">
-            <div className="text-[10px] sm:text-xs text-slate-400">In Containers</div>
-            <div className="text-lg sm:text-xl font-bold text-pink-300">{totalInContainers}</div>
-          </div>
-          <div className="bg-slate-800 bg-opacity-50 rounded p-2 sm:p-2 border border-slate-700">
-            <div className="text-[10px] sm:text-xs text-slate-400">Avg Price (60d)</div>
-            <div className="text-lg sm:text-xl font-bold text-blue-300">${avgPrice.toFixed(2)}</div>
+        ) : (
+        /* List View */
+        <div className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 hover:border-teal-500 rounded p-3 transition-colors cursor-pointer hover:shadow-lg hover:shadow-teal-500/20">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              <h3 className="text-sm font-bold text-slate-100 break-words mb-1">{cardName}</h3>
+              <div className="flex gap-4 text-xs">
+                <div><span className="text-slate-500">Qty:</span> <span className={`${totalQty === 0 ? 'text-slate-500' : 'text-teal-300'} font-semibold`}>{totalQty}</span></div>
+                <div><span className="text-slate-500">Available:</span> <span className="text-green-300 font-semibold">{available}</span></div>
+                <div><span className="text-slate-500">Cost/ea:</span> <span className="text-blue-300 font-semibold">${avgPrice.toFixed(2)}</span></div>
+                <div><span className="text-slate-500">Total:</span> <span className="text-amber-400 font-semibold">${formatTotal(totalValue)}</span></div>
+              </div>
+            </div>
+            <div className="text-teal-400 text-sm flex-shrink-0">
+              {isExpanded ? '▼' : '▶'}
+            </div>
           </div>
         </div>
+        )}
         
         {isExpanded && (
-          <div className="border-t border-teal-600/50 pt-3 sm:pt-4 space-y-2">
-            {items.map((item) => {
-              const isEditing = editingId === item.id;
-              return (
-                <div key={item.id} className="card border border-slate-600 rounded p-3">
-                  {isEditing ? (
-                    <div className="space-y-2">
-                      <div className="text-sm font-semibold text-slate-100">{item.set_name} ({item.set})</div>
-                      <div>
-                        <label className="text-xs text-slate-400">Folder</label>
-                        <input
-                          type="text"
-                          placeholder="e.g. Modern, Standard, Bulk"
-                          value={editForm.folder || ''}
-                          onChange={(e) => setEditForm({...editForm, folder: e.target.value || 'Uncategorized'})}
-                          className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-sm mb-2"
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
+          <div className="mt-4 pt-4 border-t border-slate-700">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {Object.values(
+                items.reduce((acc, item) => {
+                  const setKey = `${item.set || 'unknown'}-${item.set_name || 'unknown'}`;
+                  if (!acc[setKey]) {
+                    acc[setKey] = [];
+                  }
+                  acc[setKey].push(item);
+                  return acc;
+                }, {})
+              ).map((setItems) => {
+                const firstItem = setItems[0];
+                const totalQtyInSet = setItems.reduce((sum, item) => sum + (item.quantity || 0), 0);
+                const isEditing = editingId === firstItem.id;
+                
+                return (
+                  <div key={`${firstItem.set}-${firstItem.id}`} className="bg-slate-800/80 border border-slate-500 rounded-lg transition-colors hover:border-teal-500">
+                    {isEditing ? (
+                      <div className="space-y-2 p-4">
+                        <div className="text-sm font-semibold text-slate-100">{firstItem.set_name} ({firstItem.set})</div>
                         <div>
-                          <label className="text-xs text-slate-400">Qty</label>
-                          <input
-                            type="number"
-                            min="1"
-                            value={editForm.quantity}
-                            onChange={(e) => setEditForm({...editForm, quantity: e.target.value})}
-                            className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-sm"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-xs text-slate-400">Price</label>
-                          <input
-                            type="number"
-                            step="0.01"
-                            value={editForm.purchase_price}
-                            onChange={(e) => setEditForm({...editForm, purchase_price: e.target.value})}
-                            className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-sm"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-xs text-slate-400">Date</label>
-                          <input
-                            type="date"
-                            value={editForm.purchase_date}
-                            onChange={(e) => setEditForm({...editForm, purchase_date: e.target.value})}
-                            className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-sm"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-xs text-slate-400">Type</label>
-                          <select
-                            value={editForm.reorder_type}
-                            onChange={(e) => setEditForm({...editForm, reorder_type: e.target.value})}
-                            className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-sm"
-                          >
-                            <option value="normal">Normal</option>
-                            <option value="land">Land</option>
-                            <option value="bulk">Bulk</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label className="text-xs text-slate-400">Location</label>
+                          <label className="text-xs text-slate-400">Folder</label>
                           <input
                             type="text"
-                            value={editForm.location || ""}
-                            onChange={(e) => setEditForm({...editForm, location: e.target.value})}
-                            className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-sm"
-                            placeholder="e.g. Shelf A"
+                            placeholder="e.g. Modern, Standard, Bulk"
+                            value={editForm.folder || ''}
+                            onChange={(e) => setEditForm({...editForm, folder: e.target.value || 'Uncategorized'})}
+                            className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-sm mb-2"
                           />
                         </div>
-                      </div>
-                      <div className="flex gap-2 pt-2">
-                        <button
-                          onClick={() => updateInventoryItem(item.id)}
-                          className="flex-1 bg-green-600 hover:bg-green-700 rounded px-3 py-1 text-sm font-semibold"
-                        >
-                          Save
-                        </button>
-                        <button
-                          onClick={() => setEditForm({})}
-                          className="flex-1 bg-gray-600 hover:bg-gray-700 rounded px-3 py-1 text-sm"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-                      <div className="flex-1">
-                        <div className="text-sm font-semibold text-slate-100">{item.set_name}</div>
-                        <div className="text-xs text-teal-300 mb-1">{item.location && `📍 ${item.location}`}{item.is_shared_location && ' (Shared)'}</div>
-                        <div className="grid grid-cols-3 gap-2 sm:gap-3 mt-1 text-xs">
-                          <div><span className="text-slate-400">Total:</span> <span className="text-white font-semibold">{item.quantity}</span></div>
-                          <div><span className="text-slate-400">In Cont:</span> <span className="text-white font-semibold">{item.quantity_in_containers || 0}</span></div>
-                          <div><span className="text-slate-400">Avail:</span> <span className="text-white font-semibold">{item.quantity_available || 0}</span></div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="text-xs text-slate-400">Qty</label>
+                            <input
+                              type="number"
+                              min="1"
+                              value={editForm.quantity}
+                              onChange={(e) => setEditForm({...editForm, quantity: e.target.value})}
+                              className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-sm"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs text-slate-400">Price</label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={editForm.purchase_price}
+                              onChange={(e) => setEditForm({...editForm, purchase_price: e.target.value})}
+                              className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-sm"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs text-slate-400">Date</label>
+                            <input
+                              type="date"
+                              value={editForm.purchase_date}
+                              onChange={(e) => setEditForm({...editForm, purchase_date: e.target.value})}
+                              className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-sm"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs text-slate-400">Type</label>
+                            <select
+                              value={editForm.reorder_type}
+                              onChange={(e) => setEditForm({...editForm, reorder_type: e.target.value})}
+                              className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-sm"
+                            >
+                              <option value="normal">Normal</option>
+                              <option value="land">Land</option>
+                              <option value="bulk">Bulk</option>
+                            </select>
+                          </div>
+                        </div>
+                        <div className="flex gap-2 pt-2">
+                          <button
+                            onClick={() => updateInventoryItem(firstItem.id)}
+                            className="flex-1 bg-green-600 hover:bg-green-700 rounded px-3 py-1 text-sm font-semibold"
+                          >
+                            Save
+                          </button>
+                          <button
+                            onClick={() => setEditForm({})}
+                            className="flex-1 bg-gray-600 hover:bg-gray-700 rounded px-3 py-1 text-sm"
+                          >
+                            Cancel
+                          </button>
                         </div>
                       </div>
-                      <div className="flex flex-wrap items-center gap-2 sm:gap-4 sm:ml-4">
-                        <MarketPrices cardName={item.name} setCode={item.set} />
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            startEditingItem(item);
-                          }}
-                          className="bg-blue-600 hover:bg-blue-700 rounded px-3 py-2 sm:px-2 sm:py-1 text-sm min-h-[36px] sm:min-h-0"
+                    ) : (
+                      <div className="space-y-3 p-4">
+                        <div 
+                          className="cursor-pointer flex items-center gap-2"
+                          onClick={() => setExpandedSets({...expandedSets, [`${firstItem.set}-${cardName}`]: !expandedSets[`${firstItem.set}-${cardName}`]})}
                         >
-                          Edit
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            deleteInventoryItem(item.id);
-                          }}
-                          className="bg-red-600 hover:bg-red-700 rounded px-3 py-2 sm:px-2 sm:py-1 min-h-[36px] sm:min-h-0"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                          <span className="text-slate-400">{expandedSets[`${firstItem.set}-${cardName}`] ? '▼' : '▶'}</span>
+                          <span className="text-base font-bold text-slate-100">{firstItem.set.toUpperCase()}</span>
+                          <span className="text-sm text-slate-500">({setItems.length})</span>
+                        </div>
+                        
+                        <div className="text-sm px-3 py-2 text-slate-300 bg-slate-900/50 rounded space-y-1">
+                          <div><span className="text-slate-500">Qty:</span> <span className="text-teal-300 font-bold ml-2">{totalQtyInSet}</span></div>
+                          <div><span className="text-slate-500">Price:</span> <span className="text-blue-300 font-bold ml-2">${(setItems.reduce((sum, item) => sum + (parseFloat(item.purchase_price) || 0), 0) / setItems.length).toFixed(2)}</span></div>
+                        </div>
+
+                        {expandedSets[`${firstItem.set}-${cardName}`] && (
+                          <div className="space-y-2 pt-2 border-t border-slate-700">
+                            {setItems.map((item) => (
+                              <div key={item.id} className="text-sm text-slate-300 space-y-0.5">
+                                <div><span className="text-slate-500">Qty:</span> <span className="font-semibold ml-2">{item.quantity}</span></div>
+                                <div><span className="text-slate-500">Price:</span> <span className="font-semibold ml-2">${parseFloat(item.purchase_price || 0).toFixed(2)}</span></div>
+                                <div className="text-xs text-slate-500">{new Date(item.purchase_date).toLocaleDateString()}</div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
       </div>
@@ -265,9 +304,9 @@ export const InventoryTab = ({
   };
   
   return (
-    <div className="space-y-6">
+    <div className="flex gap-6 min-h-screen bg-slate-900">
       {successMessage && successMessage.includes('Error') && (
-        <div className="rounded-lg p-4 border flex items-center justify-between bg-red-900 bg-opacity-30 border-red-500 text-red-200">
+        <div className="fixed top-4 right-4 z-50 rounded-lg p-4 border flex items-center justify-between bg-red-900 bg-opacity-30 border-red-500 text-red-200">
           <span>{successMessage}</span>
           <button
             onClick={() => setSuccessMessage('')}
@@ -278,177 +317,279 @@ export const InventoryTab = ({
         </div>
       )}
 
-      {/* Folder Thumbnails Grid */}
-      {createdFolders.length > 0 && (
-        <div className="rounded-lg p-4 sm:p-6 border-2 border-teal-500/50 bg-gradient-to-br from-slate-900/50 to-slate-800/50">
-          <h2 className="text-lg sm:text-xl font-bold mb-4 text-teal-300">📁 Folders</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {createdFolders.map((folderName) => {
-              const cardsByName = groupedByFolder[folderName] || {};
-              const cardsInFolder = Object.values(cardsByName).flat();
-              const totalCards = Object.keys(cardsByName).length;
-              const isFolderExpanded = expandedFolders[folderName];
-              
-              return (
-                <div key={folderName} className="flex flex-col">
-                  <button
-                    onClick={() => setExpandedFolders({...expandedFolders, [folderName]: !isFolderExpanded})}
-                    className="bg-gradient-to-br from-teal-900/40 to-teal-800/40 border-2 border-teal-600/50 hover:border-teal-400 rounded-lg p-6 flex flex-col items-center justify-center min-h-48 transition-all hover:from-teal-900/60 hover:to-teal-800/60"
-                  >
-                    <div className="text-4xl mb-3">📁</div>
-                    <h3 className="font-semibold text-slate-100 text-center text-sm">{folderName}</h3>
-                    <p className="text-xs text-teal-300 mt-2">{totalCards} {totalCards === 1 ? 'card' : 'cards'}</p>
-                  </button>
-                  
-                  {isFolderExpanded && (
-                    <div className="mt-2 p-4 bg-slate-900/50 border border-teal-600/30 rounded-lg">
-                      <div className="grid gap-4">
-                        {Object.entries(cardsByName).length > 0 ? (
-                          Object.entries(cardsByName).map(renderCardGroup)
-                        ) : (
-                          <p className="text-slate-400 text-sm text-center py-4">No cards in this folder yet.</p>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+      {/* Mobile Menu Button */}
+      <button
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+        className="fixed bottom-6 right-6 md:hidden z-40 bg-teal-600 hover:bg-teal-700 text-white p-3 rounded-full shadow-lg transition-colors"
+        title="Toggle Sidebar"
+      >
+        <Menu className="w-5 h-5" />
+      </button>
+
+      {/* LEFT SIDEBAR - Folders */}
+      <div className={`fixed md:static left-0 w-64 flex-shrink-0 space-y-4 h-full md:h-auto overflow-y-auto md:overflow-visible bg-slate-900 md:bg-transparent z-30 transition-transform duration-300 ${
+        sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+      }`}>
+        <div className="rounded-lg p-4 border-2 border-teal-600/60 bg-gradient-to-br from-teal-900/20 to-teal-800/10 sticky top-4">
+          {!showCreateFolder ? (
+            <button
+              onClick={() => setShowCreateFolder(true)}
+              className="flex items-center gap-2 text-teal-300 hover:text-teal-200 font-semibold transition-colors w-full"
+            >
+              <Plus className="w-4 h-4" />
+              New Folder
+            </button>
+          ) : (
+            <div className="flex flex-col gap-2">
+              <input
+                type="text"
+                placeholder="Folder name"
+                value={newFolderName}
+                onChange={(e) => setNewFolderName(e.target.value)}
+                className="w-full bg-slate-800 border border-teal-600 rounded px-3 py-2 text-white placeholder-gray-400 text-sm"
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && newFolderName.trim()) {
+                    addCreatedFolder(newFolderName);
+                    setNewFolderName('');
+                    setShowCreateFolder(false);
+                    setSelectedFolder(newFolderName.trim());
+                    setSuccessMessage(`Folder "${newFolderName.trim()}" created!`);
+                    setTimeout(() => setSuccessMessage(''), 3000);
+                  }
+                  if (e.key === 'Escape') {
+                    setNewFolderName('');
+                    setShowCreateFolder(false);
+                  }
+                }}
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    if (newFolderName.trim()) {
+                      addCreatedFolder(newFolderName);
+                      setNewFolderName('');
+                      setShowCreateFolder(false);
+                      setSelectedFolder(newFolderName.trim());
+                      setSuccessMessage(`Folder "${newFolderName.trim()}" created!`);
+                      setTimeout(() => setSuccessMessage(''), 3000);
+                    }
+                  }}
+                  className="flex-1 bg-teal-600 hover:bg-teal-700 text-white px-3 py-1 rounded text-xs font-semibold transition-colors"
+                >
+                  Create
+                </button>
+                <button
+                  onClick={() => {
+                    setNewFolderName('');
+                    setShowCreateFolder(false);
+                  }}
+                  className="bg-slate-700 hover:bg-slate-600 text-white px-2 py-1 rounded text-xs transition-colors"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
-      )}
 
-      {/* Create Folder Section */}
-      <div className="rounded-lg p-4 sm:p-6 border-2 border-teal-600/60 bg-gradient-to-br from-teal-900/20 to-teal-800/10">
-        {!showCreateFolder ? (
-          <button
-            onClick={() => setShowCreateFolder(true)}
-            className="flex items-center gap-2 text-teal-300 hover:text-teal-200 font-semibold transition-colors"
-          >
-            <Plus className="w-5 h-5" />
-            Create New Folder
-          </button>
-        ) : (
-          <div className="flex gap-2">
-            <input
-              type="text"
-              placeholder="Folder name (e.g., Modern, Standard)"
-              value={newFolderName}
-              onChange={(e) => setNewFolderName(e.target.value)}
-              className="flex-1 bg-slate-800 border border-teal-600 rounded px-4 py-2 text-white placeholder-gray-400 text-sm"
-              autoFocus
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && newFolderName.trim()) {
-                  addCreatedFolder(newFolderName);
-                  setNewFolderName('');
-                  setShowCreateFolder(false);
-                  setExpandedFolders({...expandedFolders, [newFolderName.trim()]: true});
-                  setSuccessMessage(`Folder "${newFolderName.trim()}" created!`);
-                  setTimeout(() => setSuccessMessage(''), 3000);
-                }
-                if (e.key === 'Escape') {
-                  setNewFolderName('');
-                  setShowCreateFolder(false);
-                }
-              }}
-            />
-            <button
-              onClick={() => {
-                if (newFolderName.trim()) {
-                  addCreatedFolder(newFolderName);
-                  setNewFolderName('');
-                  setShowCreateFolder(false);
-                  setExpandedFolders({...expandedFolders, [newFolderName.trim()]: true});
-                  setSuccessMessage(`Folder "${newFolderName.trim()}" created!`);
-                  setTimeout(() => setSuccessMessage(''), 3000);
-                }
-              }}
-              className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded text-sm font-semibold transition-colors"
-            >
-              Create
-            </button>
-            <button
-              onClick={() => {
-                setNewFolderName('');
-                setShowCreateFolder(false);
-              }}
-              className="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded text-sm transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        )}
-      </div>
+        {/* Folder List */}
+        <div className="rounded-lg p-4 border-2 border-teal-500/50 bg-gradient-to-br from-slate-900/50 to-slate-800/50 space-y-2 max-h-96 overflow-y-auto">
+          <h3 className="text-sm font-semibold text-teal-300 mb-3">📁 Folders</h3>
+          
+          {/* Created Folders */}
+          {createdFolders.map((folderName) => {
+            const cardsByName = groupedByFolder[folderName] || {};
+            const totalCards = Object.keys(cardsByName).length;
+            const isSelected = selectedFolder === folderName;
+            
+            return (
+              <button
+                key={folderName}
+                onClick={() => setSelectedFolder(isSelected ? null : folderName)}
+                className={`w-full text-left p-3 rounded-lg transition-colors ${
+                  isSelected
+                    ? 'bg-teal-600/40 border-l-4 border-teal-400'
+                    : 'bg-slate-800 border-l-4 border-transparent hover:bg-slate-700'
+                }`}
+              >
+                <div className="font-medium text-sm text-slate-100">{folderName}</div>
+                <div className="text-xs text-teal-300">{totalCards} {totalCards === 1 ? 'card' : 'cards'}</div>
+              </button>
+            );
+          })}
 
-
-      {/* My Folders Section (Legacy - for folders with cards but not explicitly created) */}
-      {Object.keys(groupedByFolder).some(f => f !== 'Uncategorized' && !createdFolders.includes(f)) && (
-        <div className="rounded-lg p-4 sm:p-6 border-2 border-teal-500/50 bg-gradient-to-br from-slate-900/50 to-slate-800/50">
-          <h2 className="text-lg sm:text-xl font-bold mb-4 text-teal-300">📁 Other Folders</h2>
-          <div className="space-y-3">
-            {Object.entries(groupedByFolder).filter(([folder]) => folder !== 'Uncategorized' && !createdFolders.includes(folder)).map(([folder, cardsByName]) => {
+          {/* Other Folders */}
+          {Object.entries(groupedByFolder)
+            .filter(([folder]) => folder !== 'Uncategorized' && !createdFolders.includes(folder))
+            .map(([folder, cardsByName]) => {
               const folderInStockCards = Object.entries(cardsByName).filter(([_, items]) => {
                 const totalQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
                 return totalQty > 0;
               });
-              
-              const folderOutOfStockCards = Object.entries(cardsByName).filter(([_, items]) => {
-                const totalQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
-                return totalQty === 0;
-              });
-              
-              const isFolderExpanded = expandedFolders[folder];
-              const totalInFolder = folderInStockCards.length;
+              const isSelected = selectedFolder === folder;
               
               return (
-                <div key={folder} className="bg-slate-800 border border-teal-600/30 rounded-lg overflow-hidden hover:border-teal-400/50 transition-colors">
-                  <button
-                    onClick={() => setExpandedFolders({...expandedFolders, [folder]: !isFolderExpanded})}
-                    className="w-full p-4 flex items-center justify-between hover:bg-slate-700 transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="text-teal-400 text-lg">{isFolderExpanded ? '▼' : '▶'}</span>
-                      <h3 className="font-semibold text-slate-100">{folder}</h3>
-                      <span className="bg-teal-900/40 text-teal-200 px-2 py-0.5 rounded text-xs font-medium">
-                        {totalInFolder} {totalInFolder === 1 ? 'card' : 'cards'}
-                      </span>
-                    </div>
-                  </button>
-                  
-                  {isFolderExpanded && (
-                    <div className="p-4 border-t border-teal-600/20 bg-slate-900/40">
-                      <div className="grid gap-4">
-                        {folderInStockCards.map(renderCardGroup)}
-                        {folderInStockCards.length === 0 && folderOutOfStockCards.length > 0 && (
-                          <p className="text-slate-400 text-sm">All cards in this folder are out of stock.</p>
-                        )}
-                        {folderOutOfStockCards.map(renderCardGroup)}
-                      </div>
-                    </div>
-                  )}
-                </div>
+                <button
+                  key={folder}
+                  onClick={() => setSelectedFolder(isSelected ? null : folder)}
+                  className={`w-full text-left p-3 rounded-lg transition-colors ${
+                    isSelected
+                      ? 'bg-teal-600/40 border-l-4 border-teal-400'
+                      : 'bg-slate-800 border-l-4 border-transparent hover:bg-slate-700'
+                  }`}
+                >
+                  <div className="font-medium text-sm text-slate-100">{folder}</div>
+                  <div className="text-xs text-teal-300">{folderInStockCards.length} {folderInStockCards.length === 1 ? 'card' : 'cards'}</div>
+                </button>
               );
             })}
+        </div>
+      </div>
+
+      {/* Overlay for mobile */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-20 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* RIGHT CONTENT - Cards */}
+      <div className="flex-1 pb-24 md:pb-6 px-2 md:px-0">
+        {/* Tabs and View Mode */}
+        <div className="flex flex-col md:flex-row gap-3 md:gap-4 mb-6 border-b border-slate-700 pb-4 items-start md:items-center justify-between">
+          <div className="flex gap-2 w-full md:w-auto">
+            <button
+              onClick={() => { setActiveTab('all'); setSidebarOpen(false); }}
+              className={`flex-1 md:flex-none px-3 md:px-4 py-2 text-sm md:text-base font-medium transition-colors ${
+                activeTab === 'all'
+                  ? 'text-teal-300 border-b-2 border-teal-400'
+                  : 'text-slate-400 hover:text-slate-300'
+              }`}
+            >
+              All Cards
+            </button>
+            <button
+              onClick={() => { setActiveTab('unsorted'); setSidebarOpen(false); }}
+              className={`flex-1 md:flex-none px-3 md:px-4 py-2 text-sm md:text-base font-medium transition-colors ${
+                activeTab === 'unsorted'
+                  ? 'text-teal-300 border-b-2 border-teal-400'
+                  : 'text-slate-400 hover:text-slate-300'
+              }`}
+            >
+              Unsorted
+            </button>
+          </div>
+          
+          {/* View Mode Toggle */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => setViewMode('card')}
+              className={`p-2 rounded transition-colors ${
+                viewMode === 'card'
+                  ? 'bg-teal-600 text-white'
+                  : 'bg-slate-800 text-slate-400 hover:text-slate-300'
+              }`}
+              title="Card View"
+            >
+              <Grid3X3 className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={`p-2 rounded transition-colors ${
+                viewMode === 'list'
+                  ? 'bg-teal-600 text-white'
+                  : 'bg-slate-800 text-slate-400 hover:text-slate-300'
+              }`}
+              title="List View"
+            >
+              <List className="w-4 h-4" />
+            </button>
           </div>
         </div>
-      )}
-      
-      {/* Inventory Section */}
-      {groupedByFolder['Uncategorized'] && (
-        <div className="rounded-lg p-4 sm:p-6 border-2 border-slate-600 bg-gradient-to-br from-slate-800/50 to-slate-700/50">
-          <h2 className="text-lg sm:text-xl font-bold mb-4 text-slate-300">📋 Inventory</h2>
-          <div className="space-y-4">
-            {Object.entries(groupedByFolder['Uncategorized']).map(renderCardGroup)}
-          </div>
+
+        <div className={viewMode === 'card' ? 'space-y-4' : 'space-y-2'}>
+          {activeTab === 'all' ? (
+            /* Show all cards - masterlist */
+            Object.keys(groupedInventory).length > 0 ? (
+              <>
+                {viewMode === 'card' ? (
+                  <>
+                    <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-3">
+                      {inStockCards.map(renderCardGroup)}
+                    </div>
+                    {inStockCards.length > 0 && outOfStockCards.length > 0 && (
+                      <div className="border-t border-slate-700 pt-4">
+                        <h3 className="text-sm font-semibold text-slate-400 mb-3">Out of Stock</h3>
+                        <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-3">
+                          {outOfStockCards.map(renderCardGroup)}
+                        </div>
+                      </div>
+                    )}
+                    {outOfStockCards.length > 0 && inStockCards.length === 0 && (
+                      <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-3">
+                        {outOfStockCards.map(renderCardGroup)}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <div className="space-y-2">
+                      {inStockCards.map(renderCardGroup)}
+                    </div>
+                    {inStockCards.length > 0 && outOfStockCards.length > 0 && (
+                      <div className="border-t border-slate-700 pt-4">
+                        <h3 className="text-sm font-semibold text-slate-400 mb-2">Out of Stock</h3>
+                        <div className="space-y-2">
+                          {outOfStockCards.map(renderCardGroup)}
+                        </div>
+                      </div>
+                    )}
+                    {outOfStockCards.length > 0 && inStockCards.length === 0 && (
+                      <div className="space-y-2">
+                        {outOfStockCards.map(renderCardGroup)}
+                      </div>
+                    )}
+                  </>
+                )}
+              </>
+            ) : (
+              <p className="text-slate-400 text-center py-12">No cards in inventory yet. Add some from the Imports tab!</p>
+            )
+          ) : activeTab === 'unsorted' ? (
+            /* Show unsorted cards */
+            groupedByFolder['Uncategorized'] && Object.keys(groupedByFolder['Uncategorized']).length > 0 ? (
+              viewMode === 'card' ? (
+                <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-3">
+                  {Object.entries(groupedByFolder['Uncategorized']).map(renderCardGroup)}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {Object.entries(groupedByFolder['Uncategorized']).map(renderCardGroup)}
+                </div>
+              )
+            ) : (
+              <p className="text-slate-400 text-center py-12">No unsorted cards.</p>
+            )
+          ) : (
+            /* Show selected folder's cards */
+            groupedByFolder[selectedFolder] && Object.keys(groupedByFolder[selectedFolder]).length > 0 ? (
+              viewMode === 'card' ? (
+                <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-3">
+                  {Object.entries(groupedByFolder[selectedFolder]).map(renderCardGroup)}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {Object.entries(groupedByFolder[selectedFolder]).map(renderCardGroup)}
+                </div>
+              )
+            ) : (
+              <p className="text-slate-400 text-center py-12">No cards in this folder yet.</p>
+            )
+          )}
         </div>
-      )}
-      
-      {Object.keys(groupedByFolder).length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-slate-400 text-lg">No cards in inventory yet. Add some from the Imports tab!</p>
-        </div>
-      )}
-      
+      </div>
     </div>
   );
 };
