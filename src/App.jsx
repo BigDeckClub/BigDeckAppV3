@@ -8,6 +8,7 @@ import {
   Settings,
   RefreshCw,
   LogOut,
+  Download,
 } from "lucide-react";
 import { useDebounce } from "./utils/useDebounce";
 import { InventoryTab } from "./components/InventoryTab";
@@ -15,6 +16,7 @@ import { DecklistTab } from "./components/DecklistTab";
 import { ContainersTab } from "./components/ContainersTab";
 import { SalesTab } from "./components/SalesTab";
 import { AnalyticsTab } from "./components/AnalyticsTab";
+import { ImportTab } from "./components/ImportTab";
 import { SettingsPanel } from "./components/SettingsPanel";
 import { SellModal } from "./components/SellModal";
 import { PriceCacheProvider, usePriceCache } from "./context/PriceCacheContext";
@@ -34,6 +36,7 @@ function MTGInventoryTrackerContent() {
   const [decklists, setDecklists] = useState([]);
   const [containers, setContainers] = useState([]);
   const [sales, setSales] = useState([]);
+  const [imports, setImports] = useState([]);
   const [reorderSettings, setReorderSettings] = useState({
     bulk: 12,
     land: 20,
@@ -119,6 +122,15 @@ function MTGInventoryTrackerContent() {
       setSales(data || []);
     } catch (error) {
       setSales([]);
+    }
+  };
+
+  const loadImports = async () => {
+    try {
+      const data = await get(`${API_BASE}/imports`);
+      setImports(data || []);
+    } catch (error) {
+      setImports([]);
     }
   };
 
@@ -376,6 +388,7 @@ function MTGInventoryTrackerContent() {
     { id: "inventory", icon: Layers, label: "Inventory" },
     { id: "decklists", icon: FileText, label: "Decks" },
     { id: "containers", icon: Package, label: "Boxes" },
+    { id: "imports", icon: Download, label: "Imports" },
     { id: "analytics", icon: TrendingUp, label: "Stats" },
     { id: "sales", icon: DollarSign, label: "Sales" },
   ];
@@ -419,6 +432,13 @@ function MTGInventoryTrackerContent() {
             >
               <TrendingUp className="w-5 h-5 inline mr-2" />
               Analytics
+            </button>
+            <button
+              onClick={() => setActiveTab("imports")}
+              className={`px-4 py-2 nav-tab inactive ${activeTab === "imports" ? "btn-primary" : "hover:shadow-lg"}`}
+            >
+              <Download className="w-5 h-5 inline mr-2" />
+              Imports
             </button>
             <button
               onClick={() => setActiveTab("sales")}
@@ -527,6 +547,16 @@ function MTGInventoryTrackerContent() {
             onLoadContainers={loadContainers}
             onLoadInventory={loadInventory}
             onOpenSellModal={openSellModal}
+            successMessage={successMessage}
+            setSuccessMessage={setSuccessMessage}
+          />
+        )}
+
+        {/* Imports Tab */}
+        {activeTab === "imports" && !isLoading && (
+          <ImportTab
+            imports={imports}
+            onLoadImports={loadImports}
             successMessage={successMessage}
             setSuccessMessage={setSuccessMessage}
           />
