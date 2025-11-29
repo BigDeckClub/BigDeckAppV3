@@ -134,18 +134,18 @@ export const InventoryTab = ({
             </div>
           </div>
           
-          <div className="grid grid-cols-3 gap-1 w-full text-center text-[8px]">
-            <div>
-              <div className="text-slate-500 text-[6px]">Qty</div>
-              <div className={`font-bold ${totalQty === 0 ? 'text-slate-500' : 'text-teal-300'}`}>{totalQty}</div>
+          <div className="grid grid-cols-3 gap-2 w-full text-center">
+            <div className="min-w-0">
+              <div className="text-slate-500 text-[7px] leading-none mb-0.5">Qty</div>
+              <div className={`font-bold text-[9px] leading-tight ${totalQty === 0 ? 'text-slate-500' : 'text-teal-300'}`}>{totalQty}</div>
             </div>
-            <div>
-              <div className="text-slate-500 text-[6px]">Cost/ea</div>
-              <div className="font-bold text-blue-300">${avgPrice.toFixed(2)}</div>
+            <div className="min-w-0">
+              <div className="text-slate-500 text-[7px] leading-none mb-0.5">Cost/ea</div>
+              <div className="font-bold text-blue-300 text-[9px] leading-tight break-words">${avgPrice.toFixed(2)}</div>
             </div>
-            <div>
-              <div className="text-slate-500 text-[6px]">Total $</div>
-              <div className="font-bold text-amber-400">${(totalQty * avgPrice).toFixed(2)}</div>
+            <div className="min-w-0">
+              <div className="text-slate-500 text-[7px] leading-none mb-0.5">Total</div>
+              <div className="font-bold text-amber-400 text-[9px] leading-tight break-words">${(totalQty * avgPrice).toFixed(2)}</div>
             </div>
           </div>
         </div>
