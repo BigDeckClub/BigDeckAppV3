@@ -9,6 +9,8 @@ const CACHE_FILE = path.join(__dirname, '..', '.mtgjson-cache.json');
 const MTGJSON_PRICES_URL = 'https://mtgjson.com/api/v5/AllPricesToday.json';
 const MTGJSON_IDENTIFIERS_URL = 'https://mtgjson.com/api/v5/AllIdentifiers.json';
 const CACHE_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours
+const PRICES_TIMEOUT_MS = 120000; // 2 minutes for price data
+const IDENTIFIERS_TIMEOUT_MS = 300000; // 5 minutes for larger identifiers file
 
 class MtgjsonPriceService {
   constructor() {
@@ -105,7 +107,7 @@ class MtgjsonPriceService {
   /**
    * Fetch data from a URL with timeout
    */
-  async _fetchWithTimeout(url, timeoutMs = 120000) {
+  async _fetchWithTimeout(url, timeoutMs = PRICES_TIMEOUT_MS) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
     
@@ -117,11 +119,9 @@ class MtgjsonPriceService {
           'Accept-Encoding': 'gzip, deflate'
         }
       });
-      clearTimeout(timeoutId);
       return response;
-    } catch (err) {
+    } finally {
       clearTimeout(timeoutId);
-      throw err;
     }
   }
 
@@ -146,7 +146,7 @@ class MtgjsonPriceService {
     console.log('[MTGJSON] Fetching price data from API...');
     
     try {
-      const response = await this._fetchWithTimeout(MTGJSON_PRICES_URL, 120000);
+      const response = await this._fetchWithTimeout(MTGJSON_PRICES_URL, PRICES_TIMEOUT_MS);
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -176,7 +176,7 @@ class MtgjsonPriceService {
     console.log('[MTGJSON] Fetching identifiers data from API (this may take a while)...');
     
     try {
-      const response = await this._fetchWithTimeout(MTGJSON_IDENTIFIERS_URL, 300000);
+      const response = await this._fetchWithTimeout(MTGJSON_IDENTIFIERS_URL, IDENTIFIERS_TIMEOUT_MS);
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -238,7 +238,8 @@ class MtgjsonPriceService {
       const ckPrices = priceEntry.paper?.cardkingdom?.retail?.normal;
       if (ckPrices && typeof ckPrices === 'object') {
         // Get the most recent price (last date in the object)
-        const dates = Object.keys(ckPrices).sort();
+        // MTGJSON uses ISO date format (YYYY-MM-DD) which sorts lexicographically correctly
+        const dates = Object.keys(ckPrices).sort((a, b) => new Date(a) - new Date(b));
         if (dates.length > 0) {
           const latestDate = dates[dates.length - 1];
           const price = parseFloat(ckPrices[latestDate]);
@@ -248,7 +249,7 @@ class MtgjsonPriceService {
         }
       }
     } catch (err) {
-      // Price lookup failed, return null
+      console.debug('[MTGJSON] Price parsing error:', err.message);
     }
 
     return null;
