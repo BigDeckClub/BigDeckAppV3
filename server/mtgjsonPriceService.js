@@ -44,7 +44,8 @@ class MTGJSONPriceService {
         throw new Error(`HTTP ${response.status}`);
       }
 
-      const buffer = await response.buffer();
+      const arrayBuffer = await response.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
       const decompressed = gunzipSync(buffer);
       const json = JSON.parse(decompressed.toString('utf-8'));
 
