@@ -138,13 +138,25 @@ export const InventoryTab = ({
         
         {isExpanded && (
           <div className="border-t border-teal-600/50 pt-3 sm:pt-4 space-y-2">
-            {items.map((item) => {
-              const isEditing = editingId === item.id;
+            {Object.values(
+              items.reduce((acc, item) => {
+                const setKey = `${item.set || 'unknown'}-${item.set_name || 'unknown'}`;
+                if (!acc[setKey]) {
+                  acc[setKey] = [];
+                }
+                acc[setKey].push(item);
+                return acc;
+              }, {})
+            ).map((setItems) => {
+              const firstItem = setItems[0];
+              const totalQtyInSet = setItems.reduce((sum, item) => sum + (item.quantity || 0), 0);
+              const isEditing = editingId === firstItem.id;
+              
               return (
-                <div key={item.id} className="card border border-slate-600 rounded p-3">
+                <div key={`${firstItem.set}-${firstItem.id}`} className="card border border-slate-600 rounded p-3">
                   {isEditing ? (
                     <div className="space-y-2">
-                      <div className="text-sm font-semibold text-slate-100">{item.set_name} ({item.set})</div>
+                      <div className="text-sm font-semibold text-slate-100">{firstItem.set_name} ({firstItem.set})</div>
                       <div>
                         <label className="text-xs text-slate-400">Folder</label>
                         <input
@@ -200,7 +212,7 @@ export const InventoryTab = ({
                         </div>
                       <div className="flex gap-2 pt-2">
                         <button
-                          onClick={() => updateInventoryItem(item.id)}
+                          onClick={() => updateInventoryItem(firstItem.id)}
                           className="flex-1 bg-green-600 hover:bg-green-700 rounded px-3 py-1 text-sm font-semibold"
                         >
                           Save
@@ -216,17 +228,17 @@ export const InventoryTab = ({
                   ) : (
                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
                       <div className="flex-1">
-                        <div className="text-sm font-semibold text-slate-100">{item.set_name}</div>
+                        <div className="text-sm font-semibold text-slate-100">{firstItem.set_name} ({setItems.length} {setItems.length === 1 ? 'copy' : 'copies'})</div>
                         <div className="grid grid-cols-2 gap-2 sm:gap-3 mt-1 text-xs">
-                          <div><span className="text-slate-400">Qty:</span> <span className="text-white font-semibold">{item.quantity || 0}</span></div>
-                          <div><span className="text-slate-400">Price:</span> <span className="text-white font-semibold">${parseFloat(item.purchase_price || 0).toFixed(2)}</span></div>
+                          <div><span className="text-slate-400">Total Qty:</span> <span className="text-white font-semibold">{totalQtyInSet}</span></div>
+                          <div><span className="text-slate-400">Avg Price:</span> <span className="text-white font-semibold">${(setItems.reduce((sum, item) => sum + (parseFloat(item.purchase_price) || 0), 0) / setItems.length).toFixed(2)}</span></div>
                         </div>
                       </div>
                       <div className="flex flex-wrap items-center gap-2 sm:gap-4 sm:ml-4">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            startEditingItem(item);
+                            startEditingItem(firstItem);
                           }}
                           className="bg-blue-600 hover:bg-blue-700 rounded px-3 py-2 sm:px-2 sm:py-1 text-sm min-h-[36px] sm:min-h-0"
                         >
@@ -235,7 +247,7 @@ export const InventoryTab = ({
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            deleteInventoryItem(item.id);
+                            deleteInventoryItem(firstItem.id);
                           }}
                           className="bg-red-600 hover:bg-red-700 rounded px-3 py-2 sm:px-2 sm:py-1 min-h-[36px] sm:min-h-0"
                         >
