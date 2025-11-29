@@ -6,7 +6,10 @@ const API_BASE = '/api';
 
 export const DeckTab = () => {
   const [decks, setDecks] = useState([]);
-  const [showCreateDeck, setShowCreateDeck] = useState(false);
+  const [showImportDecklist, setShowImportDecklist] = useState(false);
+  const [showBuildDeck, setShowBuildDeck] = useState(false);
+  const [buildDeckName, setBuildDeckName] = useState('');
+  const [buildDeckFormat, setBuildDeckFormat] = useState('Standard');
   const [newDeckName, setNewDeckName] = useState('');
   const [newDeckFormat, setNewDeckFormat] = useState('Standard');
   const [deckListText, setDeckListText] = useState('');
@@ -227,8 +230,39 @@ export const DeckTab = () => {
       setNewDeckName('');
       setDeckListText('');
       setNewDeckFormat('Standard');
-      setShowCreateDeck(false);
+      setShowImportDecklist(false);
       setSuccessMessage(`Deck created with ${cards.length} cards!`);
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (error) {
+      console.error('Failed to create deck:', error);
+      alert('Error creating deck');
+    }
+  };
+
+  const createEmptyDeck = async () => {
+    if (!buildDeckName.trim()) {
+      alert('Please enter a deck name');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE}/decks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: buildDeckName,
+          format: buildDeckFormat,
+          description: ''
+        })
+      });
+
+      if (!response.ok) throw new Error('Failed to create deck');
+
+      await loadDecks();
+      setBuildDeckName('');
+      setBuildDeckFormat('Standard');
+      setShowBuildDeck(false);
+      setSuccessMessage('Empty deck created!');
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error) {
       console.error('Failed to create deck:', error);
@@ -327,11 +361,18 @@ export const DeckTab = () => {
                 Import from Archidekt
               </button>
               <button
-                onClick={() => setShowCreateDeck(true)}
+                onClick={() => setShowImportDecklist(true)}
+                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+              >
+                <Download className="w-4 h-4" />
+                Import Decklist
+              </button>
+              <button
+                onClick={() => setShowBuildDeck(true)}
                 className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
               >
                 <Plus className="w-4 h-4" />
-                New Deck
+                Build Deck
               </button>
             </div>
           </div>
@@ -377,9 +418,9 @@ export const DeckTab = () => {
             </div>
           )}
 
-          {showCreateDeck && (
-            <div className="bg-slate-800 rounded-lg border border-teal-500/50 p-4 mb-4">
-              <h3 className="text-lg font-semibold text-teal-300 mb-4">Import Deck from Text</h3>
+          {showImportDecklist && (
+            <div className="bg-slate-800 rounded-lg border border-purple-500/50 p-4 mb-4">
+              <h3 className="text-lg font-semibold text-purple-300 mb-4">Import Deck from Text</h3>
               <div className="space-y-3">
                 <div>
                   <label className="block text-sm text-slate-400 mb-1">Deck Name</label>
@@ -418,16 +459,66 @@ export const DeckTab = () => {
                 <div className="flex gap-2 pt-2">
                   <button
                     onClick={importFromTextDeck}
-                    className="flex-1 bg-teal-600 hover:bg-teal-700 text-white px-3 py-2 rounded font-semibold transition-colors"
+                    className="flex-1 bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded font-semibold transition-colors"
                   >
                     Import
                   </button>
                   <button
                     onClick={() => {
-                      setShowCreateDeck(false);
+                      setShowImportDecklist(false);
                       setNewDeckName('');
                       setDeckListText('');
                       setNewDeckFormat('Standard');
+                    }}
+                    className="flex-1 bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {showBuildDeck && (
+            <div className="bg-slate-800 rounded-lg border border-teal-500/50 p-4 mb-4">
+              <h3 className="text-lg font-semibold text-teal-300 mb-4">Build New Deck</h3>
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm text-slate-400 mb-1">Deck Name</label>
+                  <input
+                    type="text"
+                    placeholder="e.g., Mono Red Aggro"
+                    value={buildDeckName}
+                    onChange={(e) => setBuildDeckName(e.target.value)}
+                    className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white placeholder-slate-500"
+                    onKeyDown={(e) => e.key === 'Enter' && createEmptyDeck()}
+                    autoFocus
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-slate-400 mb-1">Format</label>
+                  <select
+                    value={buildDeckFormat}
+                    onChange={(e) => setBuildDeckFormat(e.target.value)}
+                    className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white"
+                  >
+                    {formats.map(fmt => (
+                      <option key={fmt} value={fmt}>{fmt}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex gap-2 pt-2">
+                  <button
+                    onClick={createEmptyDeck}
+                    className="flex-1 bg-teal-600 hover:bg-teal-700 text-white px-3 py-2 rounded font-semibold transition-colors"
+                  >
+                    Create
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowBuildDeck(false);
+                      setBuildDeckName('');
+                      setBuildDeckFormat('Standard');
                     }}
                     className="flex-1 bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded transition-colors"
                   >
