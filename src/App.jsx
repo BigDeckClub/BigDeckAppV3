@@ -2,10 +2,12 @@ import React, { useState, useEffect } from "react";
 import {
   Layers,
   Download,
+  BookOpen,
 } from "lucide-react";
 import { useDebounce } from "./utils/useDebounce";
 import { InventoryTab } from "./components/InventoryTab";
 import { ImportTab } from "./components/ImportTab";
+import { DecksTab } from "./components/DecksTab";
 import { PriceCacheProvider, usePriceCache } from "./context/PriceCacheContext";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { useApi } from "./hooks/useApi";
@@ -253,6 +255,7 @@ function MTGInventoryTrackerContent() {
   const navItems = [
     { id: "inventory", icon: Layers, label: "Inventory" },
     { id: "imports", icon: Download, label: "Imports" },
+    { id: "decks", icon: BookOpen, label: "Decks" },
   ];
 
   return (
@@ -275,6 +278,13 @@ function MTGInventoryTrackerContent() {
             >
               <Download className="w-5 h-5 inline mr-2" />
               Imports
+            </button>
+            <button
+              onClick={() => setActiveTab("decks")}
+              className={`px-4 py-2 nav-tab inactive ${activeTab === "decks" ? "btn-primary" : "hover:shadow-lg"}`}
+            >
+              <BookOpen className="w-5 h-5 inline mr-2" />
+              Decks
             </button>
           </div>
         </div>
@@ -359,6 +369,14 @@ function MTGInventoryTrackerContent() {
             selectCard={selectCard}
             addCard={addCard}
             handleSearch={handleSearch}
+          />
+        )}
+
+        {/* Decks Tab */}
+        {activeTab === "decks" && !isLoading && (
+          <DecksTab
+            successMessage={successMessage}
+            setSuccessMessage={setSuccessMessage}
           />
         )}
 

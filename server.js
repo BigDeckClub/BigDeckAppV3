@@ -234,6 +234,34 @@ async function initializeDatabase() {
       )
     `);
 
+    // Decks table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS decks (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        description TEXT,
+        source VARCHAR(50),
+        source_id VARCHAR(100),
+        source_url TEXT,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    // Deck cards table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS deck_cards (
+        id SERIAL PRIMARY KEY,
+        deck_id INTEGER REFERENCES decks(id) ON DELETE CASCADE,
+        card_name VARCHAR(255) NOT NULL,
+        quantity INTEGER DEFAULT 1,
+        category VARCHAR(100),
+        set_code VARCHAR(10),
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_deck_cards_deck_id ON deck_cards(deck_id)`).catch(() => {});
+
     console.log('[DB] ✓ Database initialized successfully');
   } catch (err) {
     console.error('[DB] ✗ Failed to initialize database:', err);
@@ -653,6 +681,329 @@ app.patch('/api/imports/:id', async (req, res) => {
   } catch (error) {
     console.error('[IMPORTS] Error updating import:', error.message);
     res.status(500).json({ error: 'Failed to update import' });
+  }
+});
+
+// ========== DECKS ENDPOINTS ==========
+
+// Helper function to parse manual decklist text
+function parseManualDecklist(decklistText) {
+  if (!decklistText || typeof decklistText !== 'string') return [];
+  
+  const lines = decklistText.split(/\r?\n/);
+  const cards = [];
+  let currentCategory = null;
+  
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line) continue;
+    
+    // Check if line is a category header (starts with // or contains no digits)
+    if (line.startsWith('//') || line.startsWith('#')) {
+      currentCategory = line.replace(/^[/#]+\s*/, '').trim();
+      continue;
+    }
+    
+    // Try to match "quantity cardname" or "quantityx cardname" patterns
+    const match = line.match(/^(\d+)\s*x?\s+(.+)$/i);
+    if (match) {
+      const quantity = parseInt(match[1], 10) || 1;
+      const cardName = match[2].trim();
+      cards.push({
+        card_name: cardName,
+        quantity,
+        category: currentCategory || 'Main Deck',
+        set_code: null
+      });
+    } else if (!/^\d+$/.test(line)) {
+      // Line without quantity - treat as single card
+      cards.push({
+        card_name: line,
+        quantity: 1,
+        category: currentCategory || 'Main Deck',
+        set_code: null
+      });
+    }
+  }
+  
+  return cards;
+}
+
+// GET /api/decks - List all saved decks
+app.get('/api/decks', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT d.*, 
+             COALESCE(SUM(dc.quantity), 0) as card_count
+      FROM decks d
+      LEFT JOIN deck_cards dc ON d.id = dc.deck_id
+      GROUP BY d.id
+      ORDER BY d.created_at DESC
+    `);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('[DECKS] Error fetching decks:', error.message);
+    res.status(500).json({ error: 'Failed to fetch decks' });
+  }
+});
+
+// GET /api/decks/:id - Get a specific deck with its cards
+app.get('/api/decks/:id', async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    const deckResult = await pool.query(
+      'SELECT * FROM decks WHERE id = $1',
+      [id]
+    );
+    
+    if (deckResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Deck not found' });
+    }
+    
+    const cardsResult = await pool.query(
+      'SELECT * FROM deck_cards WHERE deck_id = $1 ORDER BY category, card_name',
+      [id]
+    );
+    
+    res.json({
+      ...deckResult.rows[0],
+      cards: cardsResult.rows
+    });
+  } catch (error) {
+    console.error('[DECKS] Error fetching deck:', error.message);
+    res.status(500).json({ error: 'Failed to fetch deck' });
+  }
+});
+
+// POST /api/decks - Create a new deck (manual import)
+app.post('/api/decks', async (req, res) => {
+  const { name, description, decklist } = req.body;
+  
+  // Input validation
+  if (!name || typeof name !== 'string' || name.trim().length === 0) {
+    return res.status(400).json({ error: 'Deck name is required and must be a non-empty string' });
+  }
+  
+  if (!decklist || typeof decklist !== 'string' || decklist.trim().length === 0) {
+    return res.status(400).json({ error: 'Decklist is required and must be a non-empty string' });
+  }
+  
+  const client = await pool.connect();
+  
+  try {
+    await client.query('BEGIN');
+    
+    // Create the deck
+    const deckResult = await client.query(
+      `INSERT INTO decks (name, description, source, created_at, updated_at)
+       VALUES ($1, $2, 'manual', NOW(), NOW())
+       RETURNING *`,
+      [name.trim(), description || null]
+    );
+    
+    const deck = deckResult.rows[0];
+    
+    // Parse and insert cards
+    const cards = parseManualDecklist(decklist);
+    
+    for (const card of cards) {
+      await client.query(
+        `INSERT INTO deck_cards (deck_id, card_name, quantity, category, set_code, created_at)
+         VALUES ($1, $2, $3, $4, $5, NOW())`,
+        [deck.id, card.card_name, card.quantity, card.category, card.set_code]
+      );
+    }
+    
+    await client.query('COMMIT');
+    
+    // Return the deck with cards
+    const cardsResult = await pool.query(
+      'SELECT * FROM deck_cards WHERE deck_id = $1 ORDER BY category, card_name',
+      [deck.id]
+    );
+    
+    res.status(201).json({
+      ...deck,
+      cards: cardsResult.rows
+    });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('[DECKS] Error creating deck:', error.message);
+    res.status(500).json({ error: 'Failed to create deck' });
+  } finally {
+    client.release();
+  }
+});
+
+// POST /api/decks/import/archidekt - Import deck from Archidekt URL
+app.post('/api/decks/import/archidekt', async (req, res) => {
+  const { url } = req.body;
+  
+  // Input validation
+  if (!url || typeof url !== 'string' || url.trim().length === 0) {
+    return res.status(400).json({ error: 'Archidekt URL is required' });
+  }
+  
+  // Parse deck ID from URL
+  // Supports formats like:
+  // https://archidekt.com/decks/365563
+  // https://archidekt.com/decks/365563/deck-name
+  // https://www.archidekt.com/decks/365563/deck-name
+  const deckIdMatch = url.match(/archidekt\.com\/decks\/(\d+)/i);
+  
+  if (!deckIdMatch) {
+    return res.status(400).json({ error: 'Invalid Archidekt URL. Expected format: https://archidekt.com/decks/{deckId}' });
+  }
+  
+  const archidektDeckId = deckIdMatch[1];
+  
+  try {
+    // Fetch deck data from Archidekt API
+    const archidektApiUrl = `https://archidekt.com/api/decks/${archidektDeckId}/`;
+    console.log(`[DECKS] Fetching Archidekt deck: ${archidektApiUrl}`);
+    
+    const response = await fetch(archidektApiUrl, {
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'BigDeck.app/1.0'
+      }
+    });
+    
+    if (!response.ok) {
+      if (response.status === 404) {
+        return res.status(404).json({ error: 'Deck not found on Archidekt. Make sure the deck is public.' });
+      }
+      throw new Error(`Archidekt API returned status ${response.status}`);
+    }
+    
+    const archidektData = await response.json();
+    
+    if (!archidektData || !archidektData.name) {
+      return res.status(400).json({ error: 'Invalid response from Archidekt API' });
+    }
+    
+    const client = await pool.connect();
+    
+    try {
+      await client.query('BEGIN');
+      
+      // Create the deck
+      const deckResult = await client.query(
+        `INSERT INTO decks (name, description, source, source_id, source_url, created_at, updated_at)
+         VALUES ($1, $2, 'archidekt', $3, $4, NOW(), NOW())
+         RETURNING *`,
+        [archidektData.name, archidektData.description || null, archidektDeckId, url.trim()]
+      );
+      
+      const deck = deckResult.rows[0];
+      
+      // Parse and insert cards from Archidekt response
+      const archidektCards = archidektData.cards || [];
+      
+      for (const cardEntry of archidektCards) {
+        const cardName = cardEntry.card?.oracleCard?.name || cardEntry.card?.name;
+        if (!cardName) continue;
+        
+        const quantity = cardEntry.quantity || 1;
+        const categories = cardEntry.categories || [];
+        const category = categories.length > 0 ? categories[0] : 'Main Deck';
+        const setCode = cardEntry.card?.edition?.editioncode || null;
+        
+        await client.query(
+          `INSERT INTO deck_cards (deck_id, card_name, quantity, category, set_code, created_at)
+           VALUES ($1, $2, $3, $4, $5, NOW())`,
+          [deck.id, cardName, quantity, category, setCode]
+        );
+      }
+      
+      await client.query('COMMIT');
+      
+      // Return the deck with cards
+      const cardsResult = await pool.query(
+        'SELECT * FROM deck_cards WHERE deck_id = $1 ORDER BY category, card_name',
+        [deck.id]
+      );
+      
+      console.log(`[DECKS] Successfully imported Archidekt deck: ${deck.name} (${cardsResult.rows.length} cards)`);
+      
+      res.status(201).json({
+        ...deck,
+        cards: cardsResult.rows
+      });
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  } catch (error) {
+    console.error('[DECKS] Error importing from Archidekt:', error.message);
+    res.status(500).json({ error: 'Failed to import deck from Archidekt' });
+  }
+});
+
+// PUT /api/decks/:id - Update a deck
+app.put('/api/decks/:id', async (req, res) => {
+  const { id } = req.params;
+  const { name, description } = req.body;
+  
+  try {
+    const updates = [];
+    const values = [];
+    let paramCount = 1;
+    
+    if (name !== undefined) {
+      if (typeof name !== 'string' || name.trim().length === 0) {
+        return res.status(400).json({ error: 'Deck name must be a non-empty string' });
+      }
+      updates.push(`name = $${paramCount++}`);
+      values.push(name.trim());
+    }
+    if (description !== undefined) {
+      updates.push(`description = $${paramCount++}`);
+      values.push(description);
+    }
+    
+    if (updates.length === 0) {
+      return res.status(400).json({ error: 'No fields to update' });
+    }
+    
+    updates.push('updated_at = NOW()');
+    values.push(id);
+    
+    const query = `UPDATE decks SET ${updates.join(', ')} WHERE id = $${paramCount} RETURNING *`;
+    const result = await pool.query(query, values);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Deck not found' });
+    }
+    
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('[DECKS] Error updating deck:', error.message);
+    res.status(500).json({ error: 'Failed to update deck' });
+  }
+});
+
+// DELETE /api/decks/:id - Delete a deck
+app.delete('/api/decks/:id', async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    const result = await pool.query(
+      'DELETE FROM decks WHERE id = $1 RETURNING *',
+      [id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Deck not found' });
+    }
+    
+    res.json({ message: 'Deck deleted', deck: result.rows[0] });
+  } catch (error) {
+    console.error('[DECKS] Error deleting deck:', error.message);
+    res.status(500).json({ error: 'Failed to delete deck' });
   }
 });
 

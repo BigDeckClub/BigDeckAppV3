@@ -46,4 +46,12 @@ describe('App', () => {
       expect(importsButtons.length).toBeGreaterThan(0);
     });
   });
+
+  it('renders the Decks tab button', async () => {
+    render(<App />);
+    await waitFor(() => {
+      const decksButtons = screen.getAllByText('Decks');
+      expect(decksButtons.length).toBeGreaterThan(0);
+    });
+  });
 });
