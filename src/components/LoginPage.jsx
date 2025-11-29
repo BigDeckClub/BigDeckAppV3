@@ -1,38 +1,14 @@
 import React, { useState } from 'react';
 import { LogIn, Zap, TrendingUp, Layers } from 'lucide-react';
+import LoginModal from './LoginModal';
 
 export const LoginPage = () => {
   const [isHovering, setIsHovering] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   const handleSignIn = () => {
-    setIsLoading(true);
-    setTimeout(() => {
-      window.location.href = '/api/login';
-    }, 600);
+    setShowLoginModal(true);
   };
-
-  if (isLoading) {
-    return (
-      <div style={{ background: '#0f172a' }} className="min-h-screen relative overflow-hidden flex items-center justify-center">
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950"></div>
-        <div className="relative z-10 text-center space-y-6">
-          <div className="inline-block">
-            <div className="text-6xl mb-4 animate-bounce">🎴</div>
-          </div>
-          <div className="space-y-2">
-            <h2 className="text-2xl font-black text-cyan-400">Connecting...</h2>
-            <p className="text-slate-400 text-sm">Redirecting to secure authentication</p>
-          </div>
-          <div className="flex justify-center gap-2 pt-4">
-            <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
-            <div className="w-2 h-2 bg-teal-400 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-            <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div style={{ background: '#0f172a' }} className="min-h-screen relative overflow-hidden">
@@ -117,20 +93,10 @@ export const LoginPage = () => {
                 onClick={handleSignIn}
                 onMouseEnter={() => setIsHovering(true)}
                 onMouseLeave={() => setIsHovering(false)}
-                disabled={isLoading}
-                className="w-full py-4 px-6 font-bold flex items-center justify-center gap-3 text-lg rounded-xl transition-all duration-300 hover:scale-105 active:scale-95 disabled:opacity-75 disabled:cursor-wait bg-gradient-to-r from-cyan-500 via-teal-500 to-cyan-400 hover:from-cyan-400 hover:via-teal-400 hover:to-cyan-300 text-slate-900 shadow-2xl shadow-cyan-500/50 hover:shadow-3xl hover:shadow-cyan-500/70 uppercase font-black tracking-wide"
+                className="w-full py-4 px-6 font-bold flex items-center justify-center gap-3 text-lg rounded-xl transition-all duration-300 hover:scale-105 active:scale-95 bg-gradient-to-r from-cyan-500 via-teal-500 to-cyan-400 hover:from-cyan-400 hover:via-teal-400 hover:to-cyan-300 text-slate-900 shadow-2xl shadow-cyan-500/50 hover:shadow-3xl hover:shadow-cyan-500/70 uppercase font-black tracking-wide"
               >
-                {isLoading ? (
-                  <>
-                    <div className="w-5 h-5 border-2 border-slate-900/30 border-t-slate-900 rounded-full animate-spin" />
-                    Signing in...
-                  </>
-                ) : (
-                  <>
-                    <LogIn className="w-6 h-6" />
-                    Sign In Now
-                  </>
-                )}
+                <LogIn className="w-6 h-6" />
+                Sign In Now
               </button>
 
               <div className="space-y-2">
@@ -156,6 +122,8 @@ export const LoginPage = () => {
         </div>
       </div>
 
+      {/* Login Modal */}
+      <LoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} />
     </div>
   );
 };
