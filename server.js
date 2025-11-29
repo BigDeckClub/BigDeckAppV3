@@ -396,12 +396,14 @@ app.post('/api/inventory', async (req, res) => {
     return res.status(400).json({ error: 'Card name is required and must be a non-empty string' });
   }
   
-  if (quantity !== undefined && (typeof quantity !== 'number' || quantity < 1 || !Number.isInteger(quantity))) {
-    return res.status(400).json({ error: 'Quantity must be a positive integer' });
+  // Quantity is optional but must be a positive integer when provided
+  if (quantity !== undefined && quantity !== null && (typeof quantity !== 'number' || quantity < 1 || !Number.isInteger(quantity))) {
+    return res.status(400).json({ error: 'Quantity must be a positive integer when provided' });
   }
   
+  // Purchase price is optional but must be a non-negative number when provided
   if (purchase_price !== undefined && purchase_price !== null && (typeof purchase_price !== 'number' || purchase_price < 0)) {
-    return res.status(400).json({ error: 'Purchase price must be a non-negative number' });
+    return res.status(400).json({ error: 'Purchase price must be a non-negative number when provided' });
   }
 
   try {
