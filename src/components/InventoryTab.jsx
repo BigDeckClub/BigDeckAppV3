@@ -259,89 +259,74 @@ export const InventoryTab = ({
         </div>
       )}
 
-      {/* Inventory List - By Folder */}
-      <div className="card rounded-lg p-4 sm:p-6 border border-slate-700">
-        <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">Card Inventory</h2>
-        <div className="space-y-4">
-          {Object.entries(groupedByFolder).map(([folder, cardsByName]) => {
-            const folderInStockCards = Object.entries(cardsByName).filter(([_, items]) => {
-              const totalQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
-              return totalQty > 0;
-            });
-            
-            const folderOutOfStockCards = Object.entries(cardsByName).filter(([_, items]) => {
-              const totalQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
-              return totalQty === 0;
-            });
-            
-            const isFolderExpanded = expandedFolders[folder];
-            const totalInFolder = folderInStockCards.length;
-            
-            return (
-              <div key={folder} className="bg-slate-900 border border-slate-700 rounded-lg overflow-hidden">
-                <button
-                  onClick={() => setExpandedFolders({...expandedFolders, [folder]: !isFolderExpanded})}
-                  className="w-full p-4 flex items-center justify-between hover:bg-slate-800 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-teal-400">{isFolderExpanded ? '▼' : '▶'}</span>
-                    <h3 className="font-semibold text-slate-100">{folder}</h3>
-                    <span className="bg-slate-700 text-slate-300 px-2 py-0.5 rounded text-xs">
-                      {totalInFolder} {totalInFolder === 1 ? 'card' : 'cards'}
-                    </span>
-                  </div>
-                </button>
-                
-                {isFolderExpanded && (
-                  <div className="p-4 border-t border-slate-700 bg-slate-800/30">
-                    <div className="grid gap-4">
-                      {folderInStockCards.map(renderCardGroup)}
-                      {folderInStockCards.length === 0 && folderOutOfStockCards.length > 0 && (
-                        <p className="text-slate-400 text-sm">All cards in this folder are out of stock.</p>
-                      )}
-                      {folderOutOfStockCards.map(renderCardGroup)}
+      {/* My Folders Section */}
+      {Object.keys(groupedByFolder).some(f => f !== 'Uncategorized') && (
+        <div className="rounded-lg p-4 sm:p-6 border-2 border-teal-500/50 bg-gradient-to-br from-slate-900/50 to-slate-800/50">
+          <h2 className="text-lg sm:text-xl font-bold mb-4 text-teal-300">📁 My Folders</h2>
+          <div className="space-y-3">
+            {Object.entries(groupedByFolder).filter(([folder]) => folder !== 'Uncategorized').map(([folder, cardsByName]) => {
+              const folderInStockCards = Object.entries(cardsByName).filter(([_, items]) => {
+                const totalQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
+                return totalQty > 0;
+              });
+              
+              const folderOutOfStockCards = Object.entries(cardsByName).filter(([_, items]) => {
+                const totalQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
+                return totalQty === 0;
+              });
+              
+              const isFolderExpanded = expandedFolders[folder];
+              const totalInFolder = folderInStockCards.length;
+              
+              return (
+                <div key={folder} className="bg-slate-800 border border-teal-600/30 rounded-lg overflow-hidden hover:border-teal-400/50 transition-colors">
+                  <button
+                    onClick={() => setExpandedFolders({...expandedFolders, [folder]: !isFolderExpanded})}
+                    className="w-full p-4 flex items-center justify-between hover:bg-slate-700 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-teal-400 text-lg">{isFolderExpanded ? '▼' : '▶'}</span>
+                      <h3 className="font-semibold text-slate-100">{folder}</h3>
+                      <span className="bg-teal-900/40 text-teal-200 px-2 py-0.5 rounded text-xs font-medium">
+                        {totalInFolder} {totalInFolder === 1 ? 'card' : 'cards'}
+                      </span>
                     </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-          {Object.keys(groupedByFolder).length === 0 && (
-            <p className="text-slate-400">No cards in inventory yet.</p>
-          )}
-        </div>
-      </div>
-      
-      {/* Out of Stock Section - Collapsible */}
-      {outOfStockCards.length > 0 && (
-        <div className="card rounded-lg border border-slate-700 overflow-hidden">
-          <button
-            onClick={() => setShowOutOfStock(!showOutOfStock)}
-            className="w-full p-4 sm:p-6 flex items-center justify-between bg-slate-800/50 hover:bg-slate-800/70 transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <Package className="w-5 h-5 text-slate-400" />
-              <h2 className="text-lg sm:text-xl font-bold text-slate-300">Out of Stock</h2>
-              <span className="bg-slate-700 text-slate-300 px-2 py-0.5 rounded-full text-sm">
-                {outOfStockCards.length} {outOfStockCards.length === 1 ? 'item' : 'items'}
-              </span>
-            </div>
-            {showOutOfStock ? (
-              <ChevronDown className="w-5 h-5 text-slate-400" />
-            ) : (
-              <ChevronRight className="w-5 h-5 text-slate-400" />
-            )}
-          </button>
-          
-          {showOutOfStock && (
-            <div className="p-4 sm:p-6 pt-0 sm:pt-0 border-t border-slate-700">
-              <div className="grid gap-4 mt-4">
-                {outOfStockCards.map(renderCardGroup)}
-              </div>
-            </div>
-          )}
+                  </button>
+                  
+                  {isFolderExpanded && (
+                    <div className="p-4 border-t border-teal-600/20 bg-slate-900/40">
+                      <div className="grid gap-4">
+                        {folderInStockCards.map(renderCardGroup)}
+                        {folderInStockCards.length === 0 && folderOutOfStockCards.length > 0 && (
+                          <p className="text-slate-400 text-sm">All cards in this folder are out of stock.</p>
+                        )}
+                        {folderOutOfStockCards.map(renderCardGroup)}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
+      
+      {/* Uncategorized Cards Section */}
+      {groupedByFolder['Uncategorized'] && (
+        <div className="rounded-lg p-4 sm:p-6 border-2 border-slate-600 bg-gradient-to-br from-slate-800/50 to-slate-700/50">
+          <h2 className="text-lg sm:text-xl font-bold mb-4 text-slate-300">📋 Uncategorized Cards</h2>
+          <div className="space-y-4">
+            {Object.entries(groupedByFolder['Uncategorized']).map(renderCardGroup)}
+          </div>
+        </div>
+      )}
+      
+      {Object.keys(groupedByFolder).length === 0 && (
+        <div className="text-center py-12">
+          <p className="text-slate-400 text-lg">No cards in inventory yet. Add some from the Imports tab!</p>
+        </div>
+      )}
+      
     </div>
   );
 };
