@@ -38,6 +38,7 @@ export const InventoryTab = ({
   const [newFolderName, setNewFolderName] = useState('');
   const [showCreateFolder, setShowCreateFolder] = useState(false);
   const [createdFolders, setCreatedFolders] = useState([]);
+  const [selectedFolder, setSelectedFolder] = useState(null);
 
   // Load created folders from localStorage
   useEffect(() => {
@@ -247,9 +248,9 @@ export const InventoryTab = ({
   };
   
   return (
-    <div className="space-y-6">
+    <div className="flex gap-6 min-h-screen">
       {successMessage && successMessage.includes('Error') && (
-        <div className="rounded-lg p-4 border flex items-center justify-between bg-red-900 bg-opacity-30 border-red-500 text-red-200">
+        <div className="fixed top-4 right-4 z-50 rounded-lg p-4 border flex items-center justify-between bg-red-900 bg-opacity-30 border-red-500 text-red-200">
           <span>{successMessage}</span>
           <button
             onClick={() => setSuccessMessage('')}
@@ -260,177 +261,159 @@ export const InventoryTab = ({
         </div>
       )}
 
-      {/* Folder Thumbnails Grid */}
-      {createdFolders.length > 0 && (
-        <div className="rounded-lg p-4 sm:p-6 border-2 border-teal-500/50 bg-gradient-to-br from-slate-900/50 to-slate-800/50">
-          <h2 className="text-lg sm:text-xl font-bold mb-4 text-teal-300">📁 Folders</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {createdFolders.map((folderName) => {
-              const cardsByName = groupedByFolder[folderName] || {};
-              const cardsInFolder = Object.values(cardsByName).flat();
-              const totalCards = Object.keys(cardsByName).length;
-              const isFolderExpanded = expandedFolders[folderName];
-              
-              return (
-                <div key={folderName} className="flex flex-col">
-                  <button
-                    onClick={() => setExpandedFolders({...expandedFolders, [folderName]: !isFolderExpanded})}
-                    className="bg-gradient-to-br from-teal-900/40 to-teal-800/40 border-2 border-teal-600/50 hover:border-teal-400 rounded-lg p-6 flex flex-col items-center justify-center min-h-48 transition-all hover:from-teal-900/60 hover:to-teal-800/60"
-                  >
-                    <div className="text-4xl mb-3">📁</div>
-                    <h3 className="font-semibold text-slate-100 text-center text-sm">{folderName}</h3>
-                    <p className="text-xs text-teal-300 mt-2">{totalCards} {totalCards === 1 ? 'card' : 'cards'}</p>
-                  </button>
-                  
-                  {isFolderExpanded && (
-                    <div className="mt-2 p-4 bg-slate-900/50 border border-teal-600/30 rounded-lg">
-                      <div className="grid gap-4">
-                        {Object.entries(cardsByName).length > 0 ? (
-                          Object.entries(cardsByName).map(renderCardGroup)
-                        ) : (
-                          <p className="text-slate-400 text-sm text-center py-4">No cards in this folder yet.</p>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+      {/* LEFT SIDEBAR - Folders */}
+      <div className="w-64 flex-shrink-0 space-y-4">
+        <div className="rounded-lg p-4 border-2 border-teal-600/60 bg-gradient-to-br from-teal-900/20 to-teal-800/10 sticky top-4">
+          {!showCreateFolder ? (
+            <button
+              onClick={() => setShowCreateFolder(true)}
+              className="flex items-center gap-2 text-teal-300 hover:text-teal-200 font-semibold transition-colors w-full"
+            >
+              <Plus className="w-4 h-4" />
+              New Folder
+            </button>
+          ) : (
+            <div className="flex flex-col gap-2">
+              <input
+                type="text"
+                placeholder="Folder name"
+                value={newFolderName}
+                onChange={(e) => setNewFolderName(e.target.value)}
+                className="w-full bg-slate-800 border border-teal-600 rounded px-3 py-2 text-white placeholder-gray-400 text-sm"
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && newFolderName.trim()) {
+                    addCreatedFolder(newFolderName);
+                    setNewFolderName('');
+                    setShowCreateFolder(false);
+                    setSelectedFolder(newFolderName.trim());
+                    setSuccessMessage(`Folder "${newFolderName.trim()}" created!`);
+                    setTimeout(() => setSuccessMessage(''), 3000);
+                  }
+                  if (e.key === 'Escape') {
+                    setNewFolderName('');
+                    setShowCreateFolder(false);
+                  }
+                }}
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    if (newFolderName.trim()) {
+                      addCreatedFolder(newFolderName);
+                      setNewFolderName('');
+                      setShowCreateFolder(false);
+                      setSelectedFolder(newFolderName.trim());
+                      setSuccessMessage(`Folder "${newFolderName.trim()}" created!`);
+                      setTimeout(() => setSuccessMessage(''), 3000);
+                    }
+                  }}
+                  className="flex-1 bg-teal-600 hover:bg-teal-700 text-white px-3 py-1 rounded text-xs font-semibold transition-colors"
+                >
+                  Create
+                </button>
+                <button
+                  onClick={() => {
+                    setNewFolderName('');
+                    setShowCreateFolder(false);
+                  }}
+                  className="bg-slate-700 hover:bg-slate-600 text-white px-2 py-1 rounded text-xs transition-colors"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
-      )}
 
-      {/* Create Folder Section */}
-      <div className="rounded-lg p-4 sm:p-6 border-2 border-teal-600/60 bg-gradient-to-br from-teal-900/20 to-teal-800/10">
-        {!showCreateFolder ? (
-          <button
-            onClick={() => setShowCreateFolder(true)}
-            className="flex items-center gap-2 text-teal-300 hover:text-teal-200 font-semibold transition-colors"
-          >
-            <Plus className="w-5 h-5" />
-            Create New Folder
-          </button>
-        ) : (
-          <div className="flex gap-2">
-            <input
-              type="text"
-              placeholder="Folder name (e.g., Modern, Standard)"
-              value={newFolderName}
-              onChange={(e) => setNewFolderName(e.target.value)}
-              className="flex-1 bg-slate-800 border border-teal-600 rounded px-4 py-2 text-white placeholder-gray-400 text-sm"
-              autoFocus
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && newFolderName.trim()) {
-                  addCreatedFolder(newFolderName);
-                  setNewFolderName('');
-                  setShowCreateFolder(false);
-                  setExpandedFolders({...expandedFolders, [newFolderName.trim()]: true});
-                  setSuccessMessage(`Folder "${newFolderName.trim()}" created!`);
-                  setTimeout(() => setSuccessMessage(''), 3000);
-                }
-                if (e.key === 'Escape') {
-                  setNewFolderName('');
-                  setShowCreateFolder(false);
-                }
-              }}
-            />
-            <button
-              onClick={() => {
-                if (newFolderName.trim()) {
-                  addCreatedFolder(newFolderName);
-                  setNewFolderName('');
-                  setShowCreateFolder(false);
-                  setExpandedFolders({...expandedFolders, [newFolderName.trim()]: true});
-                  setSuccessMessage(`Folder "${newFolderName.trim()}" created!`);
-                  setTimeout(() => setSuccessMessage(''), 3000);
-                }
-              }}
-              className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded text-sm font-semibold transition-colors"
-            >
-              Create
-            </button>
-            <button
-              onClick={() => {
-                setNewFolderName('');
-                setShowCreateFolder(false);
-              }}
-              className="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded text-sm transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        )}
-      </div>
+        {/* Folder List */}
+        <div className="rounded-lg p-4 border-2 border-teal-500/50 bg-gradient-to-br from-slate-900/50 to-slate-800/50 space-y-2 max-h-96 overflow-y-auto">
+          <h3 className="text-sm font-semibold text-teal-300 mb-3">📁 Folders</h3>
+          
+          {/* Created Folders */}
+          {createdFolders.map((folderName) => {
+            const cardsByName = groupedByFolder[folderName] || {};
+            const totalCards = Object.keys(cardsByName).length;
+            const isSelected = selectedFolder === folderName;
+            
+            return (
+              <button
+                key={folderName}
+                onClick={() => setSelectedFolder(isSelected ? null : folderName)}
+                className={`w-full text-left p-3 rounded-lg transition-colors ${
+                  isSelected
+                    ? 'bg-teal-600/40 border-l-4 border-teal-400'
+                    : 'bg-slate-800 border-l-4 border-transparent hover:bg-slate-700'
+                }`}
+              >
+                <div className="font-medium text-sm text-slate-100">{folderName}</div>
+                <div className="text-xs text-teal-300">{totalCards} {totalCards === 1 ? 'card' : 'cards'}</div>
+              </button>
+            );
+          })}
 
-
-      {/* My Folders Section (Legacy - for folders with cards but not explicitly created) */}
-      {Object.keys(groupedByFolder).some(f => f !== 'Uncategorized' && !createdFolders.includes(f)) && (
-        <div className="rounded-lg p-4 sm:p-6 border-2 border-teal-500/50 bg-gradient-to-br from-slate-900/50 to-slate-800/50">
-          <h2 className="text-lg sm:text-xl font-bold mb-4 text-teal-300">📁 Other Folders</h2>
-          <div className="space-y-3">
-            {Object.entries(groupedByFolder).filter(([folder]) => folder !== 'Uncategorized' && !createdFolders.includes(folder)).map(([folder, cardsByName]) => {
+          {/* Other Folders */}
+          {Object.entries(groupedByFolder)
+            .filter(([folder]) => folder !== 'Uncategorized' && !createdFolders.includes(folder))
+            .map(([folder, cardsByName]) => {
               const folderInStockCards = Object.entries(cardsByName).filter(([_, items]) => {
                 const totalQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
                 return totalQty > 0;
               });
-              
-              const folderOutOfStockCards = Object.entries(cardsByName).filter(([_, items]) => {
-                const totalQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
-                return totalQty === 0;
-              });
-              
-              const isFolderExpanded = expandedFolders[folder];
-              const totalInFolder = folderInStockCards.length;
+              const isSelected = selectedFolder === folder;
               
               return (
-                <div key={folder} className="bg-slate-800 border border-teal-600/30 rounded-lg overflow-hidden hover:border-teal-400/50 transition-colors">
-                  <button
-                    onClick={() => setExpandedFolders({...expandedFolders, [folder]: !isFolderExpanded})}
-                    className="w-full p-4 flex items-center justify-between hover:bg-slate-700 transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="text-teal-400 text-lg">{isFolderExpanded ? '▼' : '▶'}</span>
-                      <h3 className="font-semibold text-slate-100">{folder}</h3>
-                      <span className="bg-teal-900/40 text-teal-200 px-2 py-0.5 rounded text-xs font-medium">
-                        {totalInFolder} {totalInFolder === 1 ? 'card' : 'cards'}
-                      </span>
-                    </div>
-                  </button>
-                  
-                  {isFolderExpanded && (
-                    <div className="p-4 border-t border-teal-600/20 bg-slate-900/40">
-                      <div className="grid gap-4">
-                        {folderInStockCards.map(renderCardGroup)}
-                        {folderInStockCards.length === 0 && folderOutOfStockCards.length > 0 && (
-                          <p className="text-slate-400 text-sm">All cards in this folder are out of stock.</p>
-                        )}
-                        {folderOutOfStockCards.map(renderCardGroup)}
-                      </div>
-                    </div>
-                  )}
-                </div>
+                <button
+                  key={folder}
+                  onClick={() => setSelectedFolder(isSelected ? null : folder)}
+                  className={`w-full text-left p-3 rounded-lg transition-colors ${
+                    isSelected
+                      ? 'bg-teal-600/40 border-l-4 border-teal-400'
+                      : 'bg-slate-800 border-l-4 border-transparent hover:bg-slate-700'
+                  }`}
+                >
+                  <div className="font-medium text-sm text-slate-100">{folder}</div>
+                  <div className="text-xs text-teal-300">{folderInStockCards.length} {folderInStockCards.length === 1 ? 'card' : 'cards'}</div>
+                </button>
               );
             })}
-          </div>
+
+          {/* Uncategorized */}
+          {groupedByFolder['Uncategorized'] && (
+            <button
+              onClick={() => setSelectedFolder(selectedFolder === 'Uncategorized' ? null : 'Uncategorized')}
+              className={`w-full text-left p-3 rounded-lg transition-colors ${
+                selectedFolder === 'Uncategorized'
+                  ? 'bg-slate-600/40 border-l-4 border-slate-400'
+                  : 'bg-slate-800 border-l-4 border-transparent hover:bg-slate-700'
+              }`}
+            >
+              <div className="font-medium text-sm text-slate-100">Uncategorized</div>
+              <div className="text-xs text-slate-400">{Object.keys(groupedByFolder['Uncategorized']).length} cards</div>
+            </button>
+          )}
         </div>
-      )}
-      
-      {/* Inventory Section */}
-      {groupedByFolder['Uncategorized'] && (
-        <div className="rounded-lg p-4 sm:p-6 border-2 border-slate-600 bg-gradient-to-br from-slate-800/50 to-slate-700/50">
-          <h2 className="text-lg sm:text-xl font-bold mb-4 text-slate-300">📋 Inventory</h2>
+      </div>
+
+      {/* RIGHT CONTENT - Cards */}
+      <div className="flex-1 pb-6">
+        {selectedFolder ? (
           <div className="space-y-4">
-            {Object.entries(groupedByFolder['Uncategorized']).map(renderCardGroup)}
+            <h2 className="text-2xl font-bold text-teal-300 sticky top-4">📋 {selectedFolder}</h2>
+            {groupedByFolder[selectedFolder] && Object.keys(groupedByFolder[selectedFolder]).length > 0 ? (
+              <div className="space-y-4">
+                {Object.entries(groupedByFolder[selectedFolder]).map(renderCardGroup)}
+              </div>
+            ) : (
+              <p className="text-slate-400 text-center py-12">No cards in this folder yet.</p>
+            )}
           </div>
-        </div>
-      )}
-      
-      {Object.keys(groupedByFolder).length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-slate-400 text-lg">No cards in inventory yet. Add some from the Imports tab!</p>
-        </div>
-      )}
-      
+        ) : (
+          <div className="text-center py-12">
+            <p className="text-slate-400 text-lg">Select a folder to view cards</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
