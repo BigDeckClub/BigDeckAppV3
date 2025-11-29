@@ -113,6 +113,11 @@ export const InventoryTab = ({
       avgPrice = totalPrice / itemsForAvg.length;
     }
     
+    const totalValue = totalQty * avgPrice;
+    const formatTotal = (value) => {
+      return value >= 100 ? value.toFixed(0) : value.toFixed(2);
+    };
+    
     const isExpanded = expandedCards[cardName];
     
     return (
@@ -145,7 +150,7 @@ export const InventoryTab = ({
             </div>
             <div className="space-y-0.5">
               <div className="text-slate-500">Total</div>
-              <div className="font-semibold text-amber-400">${(totalQty * avgPrice).toFixed(2)}</div>
+              <div className="font-semibold text-amber-400">${formatTotal(totalValue)}</div>
             </div>
           </div>
         </div>
@@ -159,7 +164,7 @@ export const InventoryTab = ({
                 <div><span className="text-slate-500">Qty:</span> <span className={`${totalQty === 0 ? 'text-slate-500' : 'text-teal-300'} font-semibold`}>{totalQty}</span></div>
                 <div><span className="text-slate-500">Available:</span> <span className="text-green-300 font-semibold">{available}</span></div>
                 <div><span className="text-slate-500">Cost/ea:</span> <span className="text-blue-300 font-semibold">${avgPrice.toFixed(2)}</span></div>
-                <div><span className="text-slate-500">Total:</span> <span className="text-amber-400 font-semibold">${(totalQty * avgPrice).toFixed(2)}</span></div>
+                <div><span className="text-slate-500">Total:</span> <span className="text-amber-400 font-semibold">${formatTotal(totalValue)}</span></div>
               </div>
             </div>
             <div className="text-teal-400 text-sm flex-shrink-0">
