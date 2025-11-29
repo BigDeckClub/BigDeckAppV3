@@ -101,14 +101,14 @@ export const ContainersTab = ({
             className="w-full bg-slate-800 border border-slate-600 px-4 py-2 text-white mb-4"
           />
           <select
-            value={selectedDecklist || ''}
-            onChange={(e) => setSelectedDecklist(e.target.value)}
+            value={selectedLocation || ''}
+            onChange={(e) => setSelectedLocation(e.target.value)}
             className="w-full bg-slate-800 border border-slate-600 px-4 py-2 text-white mb-4"
           >
-            <option value="">Select a Decklist</option>
-            {decklists.map((deck) => (
-              <option key={deck.id} value={deck.id}>
-                {deck.name}
+            <option value="">Select a Location</option>
+            {locations.map((loc) => (
+              <option key={loc} value={loc}>
+                {loc}
               </option>
             ))}
           </select>
@@ -139,8 +139,8 @@ export const ContainersTab = ({
                 <div className="flex justify-between items-start mb-3">
                   <div className="flex-1">
                     <div className="font-semibold">{container.name}</div>
-                    <div className="text-sm text-slate-300">
-                      Decklist ID: {container.decklist_id}
+                    <div className="text-sm text-teal-300">
+                      📍 {container.location}
                     </div>
                     <div className="grid grid-cols-3 gap-2 text-xs mt-2 text-slate-400">
                       <div className="text-orange-300 bg-slate-800 bg-opacity-50 p-2 rounded">
