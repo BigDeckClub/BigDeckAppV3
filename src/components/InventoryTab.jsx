@@ -120,21 +120,24 @@ export const InventoryTab = ({
           className="bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-slate-600 hover:border-teal-500 rounded p-2 transition-colors cursor-pointer flex flex-col justify-between h-36 hover:shadow-lg hover:shadow-teal-500/20" 
           onClick={() => setExpandedCards({...expandedCards, [cardName]: !isExpanded})}
         >
-          <div className="text-center flex-1 flex flex-col justify-center min-w-0">
-            <h3 className="text-xs font-bold text-slate-100 line-clamp-2 break-words px-1">{cardName}</h3>
+          <div className="text-center text-[8px] px-1">
+            <h3 className="text-xs font-bold text-slate-100 line-clamp-2 break-words">{cardName}</h3>
           </div>
           
-          <div className="grid grid-cols-3 gap-1 w-full text-center text-[10px]">
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center">
+              <div className="text-slate-500 text-[8px] mb-0.5">Available</div>
+              <div className="text-3xl font-bold text-green-300">{available}</div>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-2 w-full text-center text-[9px]">
             <div>
-              <div className="text-slate-500 text-[7px]">C</div>
+              <div className="text-slate-500 text-[7px]">Total</div>
               <div className={`font-bold ${totalQty === 0 ? 'text-slate-500' : 'text-teal-300'}`}>{totalQty}</div>
             </div>
             <div>
-              <div className="text-slate-500 text-[7px]">A</div>
-              <div className="font-bold text-green-300">{available}</div>
-            </div>
-            <div>
-              <div className="text-slate-500 text-[7px]">P</div>
+              <div className="text-slate-500 text-[7px]">Price</div>
               <div className="font-bold text-blue-300">${avgPrice.toFixed(2)}</div>
             </div>
           </div>
