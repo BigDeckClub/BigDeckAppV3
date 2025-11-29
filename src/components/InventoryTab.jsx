@@ -266,11 +266,7 @@ export const InventoryTab = ({
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        <div 
-                          className="cursor-pointer flex items-center gap-2"
-                          onClick={() => setExpandedSets({...expandedSets, [`${firstItem.set}-${cardName}`]: !expandedSets[`${firstItem.set}-${cardName}`]})}
-                        >
-                          <span className="text-slate-400">{expandedSets[`${firstItem.set}-${cardName}`] ? '▼' : '▶'}</span>
+                        <div className="flex items-center gap-2">
                           <span className="text-base font-bold text-slate-100">{firstItem.set.toUpperCase()}</span>
                           <span className="text-sm text-slate-500">({setItems.length})</span>
                         </div>
@@ -280,17 +276,15 @@ export const InventoryTab = ({
                           <div><span className="text-slate-500">Price:</span> <span className="text-blue-300 font-bold ml-2">${(setItems.reduce((sum, item) => sum + (parseFloat(item.purchase_price) || 0), 0) / setItems.length).toFixed(2)}</span></div>
                         </div>
 
-                        {expandedSets[`${firstItem.set}-${cardName}`] && (
-                          <div className="space-y-2 pt-2 border-t border-slate-700">
-                            {setItems.map((item) => (
-                              <div key={item.id} className="text-sm text-slate-300 space-y-0.5">
-                                <div><span className="text-slate-500">Qty:</span> <span className="font-semibold ml-2">{item.quantity}</span></div>
-                                <div><span className="text-slate-500">Price:</span> <span className="font-semibold ml-2">${parseFloat(item.purchase_price || 0).toFixed(2)}</span></div>
-                                <div className="text-xs text-slate-500">{new Date(item.purchase_date).toLocaleDateString()}</div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
+                        <div className="space-y-2 pt-2 border-t border-slate-700">
+                          {setItems.map((item) => (
+                            <div key={item.id} className="text-sm text-slate-300 space-y-0.5">
+                              <div><span className="text-slate-500">Qty:</span> <span className="font-semibold ml-2">{item.quantity}</span></div>
+                              <div><span className="text-slate-500">Price:</span> <span className="font-semibold ml-2">${parseFloat(item.purchase_price || 0).toFixed(2)}</span></div>
+                              <div className="text-xs text-slate-500">{new Date(item.purchase_date).toLocaleDateString()}</div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>
