@@ -2,10 +2,12 @@ import React, { useState, useEffect } from "react";
 import {
   Layers,
   Download,
+  BarChart3,
 } from "lucide-react";
 import { useDebounce } from "./utils/useDebounce";
 import { InventoryTab } from "./components/InventoryTab";
 import { ImportTab } from "./components/ImportTab";
+import { AnalyticsTab } from "./components/AnalyticsTab";
 import { PriceCacheProvider, usePriceCache } from "./context/PriceCacheContext";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { useApi } from "./hooks/useApi";
@@ -253,6 +255,7 @@ function MTGInventoryTrackerContent() {
   const navItems = [
     { id: "inventory", icon: Layers, label: "Inventory" },
     { id: "imports", icon: Download, label: "Imports" },
+    { id: "analytics", icon: BarChart3, label: "Analytics" },
   ];
 
   return (
@@ -275,6 +278,13 @@ function MTGInventoryTrackerContent() {
             >
               <Download className="w-5 h-5 inline mr-2" />
               Imports
+            </button>
+            <button
+              onClick={() => setActiveTab("analytics")}
+              className={`px-4 py-2 nav-tab inactive ${activeTab === "analytics" ? "btn-primary" : "hover:shadow-lg"}`}
+            >
+              <BarChart3 className="w-5 h-5 inline mr-2" />
+              Analytics
             </button>
           </div>
         </div>
@@ -360,6 +370,11 @@ function MTGInventoryTrackerContent() {
             addCard={addCard}
             handleSearch={handleSearch}
           />
+        )}
+
+        {/* Analytics Tab */}
+        {activeTab === "analytics" && !isLoading && (
+          <AnalyticsTab inventory={inventory} />
         )}
 
       </main>
