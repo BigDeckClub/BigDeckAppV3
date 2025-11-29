@@ -114,31 +114,34 @@ export const InventoryTab = ({
     const isExpanded = expandedCards[cardName];
     
     return (
-      <div key={cardName} className={`bg-slate-800 border rounded-lg p-3 sm:p-4 ${totalQty === 0 ? 'border-slate-700 opacity-75' : 'border-slate-600'}`}>
-        <div className="flex justify-between items-center mb-2 sm:mb-3 cursor-pointer" onClick={() => setExpandedCards({...expandedCards, [cardName]: !isExpanded})}>
-          <h3 className="text-base sm:text-lg font-bold text-slate-100 flex-1 pr-2">{cardName}</h3>
-          <div className="text-teal-400 text-sm">
-            {isExpanded ? '▼' : '▶'}
+      <div key={cardName} className="space-y-4">
+        {/* Card Name Card */}
+        <div className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 hover:border-teal-500 rounded-lg p-4 transition-colors cursor-pointer" onClick={() => setExpandedCards({...expandedCards, [cardName]: !isExpanded})}>
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg sm:text-xl font-bold text-slate-100 flex-1 pr-2">{cardName}</h3>
+            <div className="text-teal-400 text-sm">
+              {isExpanded ? '▼' : '▶'}
+            </div>
           </div>
-        </div>
-        
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-2 sm:mb-3">
-          <div className="bg-slate-800 bg-opacity-50 rounded p-2 sm:p-2 border border-slate-700">
-            <div className="text-[10px] sm:text-xs text-slate-400">Total Copies</div>
-            <div className={`text-lg sm:text-xl font-bold ${totalQty === 0 ? 'text-slate-500' : 'text-teal-300'}`}>{totalQty}</div>
-          </div>
-          <div className="bg-slate-800 bg-opacity-50 rounded p-2 sm:p-2 border border-slate-700">
-            <div className="text-[10px] sm:text-xs text-slate-400">Available</div>
-            <div className="text-lg sm:text-xl font-bold text-green-300">{available}</div>
-          </div>
-          <div className="bg-slate-800 bg-opacity-50 rounded p-2 sm:p-2 border border-slate-700">
-            <div className="text-[10px] sm:text-xs text-slate-400">Avg Price (60d)</div>
-            <div className="text-lg sm:text-xl font-bold text-blue-300">${avgPrice.toFixed(2)}</div>
+          
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <div className="text-[10px] sm:text-xs text-slate-400 mb-1">Total Copies</div>
+              <div className={`text-xl sm:text-2xl font-bold ${totalQty === 0 ? 'text-slate-500' : 'text-teal-300'}`}>{totalQty}</div>
+            </div>
+            <div>
+              <div className="text-[10px] sm:text-xs text-slate-400 mb-1">Available</div>
+              <div className="text-xl sm:text-2xl font-bold text-green-300">{available}</div>
+            </div>
+            <div>
+              <div className="text-[10px] sm:text-xs text-slate-400 mb-1">Avg Price (60d)</div>
+              <div className="text-xl sm:text-2xl font-bold text-blue-300">${avgPrice.toFixed(2)}</div>
+            </div>
           </div>
         </div>
         
         {isExpanded && (
-          <div className="border-t border-teal-600/50 pt-3 sm:pt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {Object.values(
               items.reduce((acc, item) => {
                 const setKey = `${item.set || 'unknown'}-${item.set_name || 'unknown'}`;
