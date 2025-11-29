@@ -1,5 +1,49 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { apiGet, apiPost, apiPut, apiDelete, formatApiError, isNetworkError } from '../lib/apiClient.js';
+
+const isNetworkError = (err) => {
+  return err instanceof TypeError || err.message.includes('Failed to fetch');
+};
+
+const formatApiError = (err) => {
+  if (err.response?.statusText) {
+    return err.response.statusText;
+  }
+  return err.message || 'An error occurred';
+};
+
+const apiGet = async (url, options = {}) => {
+  const response = await fetch(url, { method: 'GET', ...options });
+  if (!response.ok) throw new Error(response.statusText);
+  return response.json();
+};
+
+const apiPost = async (url, body, options = {}) => {
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+    ...options
+  });
+  if (!response.ok) throw new Error(response.statusText);
+  return response.json();
+};
+
+const apiPut = async (url, body, options = {}) => {
+  const response = await fetch(url, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+    ...options
+  });
+  if (!response.ok) throw new Error(response.statusText);
+  return response.json();
+};
+
+const apiDelete = async (url, options = {}) => {
+  const response = await fetch(url, { method: 'DELETE', ...options });
+  if (!response.ok) throw new Error(response.statusText);
+  return response.json();
+};
 
 /**
  * @typedef {Object} UseApiState
