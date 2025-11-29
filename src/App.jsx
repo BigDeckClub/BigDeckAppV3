@@ -61,6 +61,8 @@ function MTGInventoryTrackerContent() {
     purchasePrice: "",
     reorderType: "normal",
     selectedSet: null,
+    location: "",
+    isSharedLocation: false,
   });
 
   const [containerItems, setContainerItems] = useState({});
@@ -302,6 +304,8 @@ function MTGInventoryTrackerContent() {
       purchase_price: newEntry.purchasePrice ? parseFloat(newEntry.purchasePrice) : null,
       reorder_type: newEntry.reorderType,
       image_url: newEntry.selectedSet.imageUrl,
+      location: newEntry.location || "Unspecified",
+      is_shared_location: newEntry.isSharedLocation,
     };
 
     if (await addInventoryItem(item)) {
@@ -311,6 +315,8 @@ function MTGInventoryTrackerContent() {
         purchasePrice: "",
         reorderType: "normal",
         selectedSet: null,
+        location: "",
+        isSharedLocation: false,
       });
     }
   };

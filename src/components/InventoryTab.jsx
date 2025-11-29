@@ -152,6 +152,16 @@ export const InventoryTab = ({
                             <option value="bulk">Bulk</option>
                           </select>
                         </div>
+                        <div>
+                          <label className="text-xs text-slate-400">Location</label>
+                          <input
+                            type="text"
+                            value={editForm.location || ""}
+                            onChange={(e) => setEditForm({...editForm, location: e.target.value})}
+                            className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-sm"
+                            placeholder="e.g. Shelf A"
+                          />
+                        </div>
                       </div>
                       <div className="flex gap-2 pt-2">
                         <button
@@ -172,6 +182,7 @@ export const InventoryTab = ({
                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
                       <div className="flex-1">
                         <div className="text-sm font-semibold text-slate-100">{item.set_name}</div>
+                        <div className="text-xs text-teal-300 mb-1">{item.location && `📍 ${item.location}`}{item.is_shared_location && ' (Shared)'}</div>
                         <div className="grid grid-cols-3 gap-2 sm:gap-3 mt-1 text-xs">
                           <div><span className="text-slate-400">Total:</span> <span className="text-white font-semibold">{item.quantity}</span></div>
                           <div><span className="text-slate-400">In Cont:</span> <span className="text-white font-semibold">{item.quantity_in_containers || 0}</span></div>
@@ -226,22 +237,43 @@ export const InventoryTab = ({
       <div className="card rounded-lg p-4 sm:p-6 border border-slate-700">
         <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">Add Card to Inventory</h2>
         <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-semibold mb-2">Preferred Set (optional):</label>
-            <select
-              value={defaultSearchSet}
-              onChange={(e) => {
-                setDefaultSearchSet(e.target.value);
-                localStorage.setItem('defaultSearchSet', e.target.value);
-              }}
-              className="w-full bg-slate-800 border border-slate-600 rounded px-4 py-2 text-white mb-4"
-            >
-              <option value="">Show most recent from inventory</option>
-              {allSets.map(set => (
-                <option key={set.code} value={set.code}>{set.code} - {set.name}</option>
-              ))}
-            </select>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold mb-2">Preferred Set (optional):</label>
+              <select
+                value={defaultSearchSet}
+                onChange={(e) => {
+                  setDefaultSearchSet(e.target.value);
+                  localStorage.setItem('defaultSearchSet', e.target.value);
+                }}
+                className="w-full bg-slate-800 border border-slate-600 rounded px-4 py-2 text-white"
+              >
+                <option value="">Show most recent from inventory</option>
+                {allSets.map(set => (
+                  <option key={set.code} value={set.code}>{set.code} - {set.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold mb-2">Location:</label>
+              <input
+                type="text"
+                placeholder="e.g. Shelf A, Box 1"
+                value={newEntry.location}
+                onChange={(e) => setNewEntry({...newEntry, location: e.target.value})}
+                className="w-full bg-slate-800 border border-slate-600 rounded px-4 py-2 text-white placeholder-gray-400"
+              />
+            </div>
           </div>
+          <label className="flex items-center gap-2 mt-4 text-slate-300 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={newEntry.isSharedLocation}
+              onChange={(e) => setNewEntry({...newEntry, isSharedLocation: e.target.checked})}
+              className="w-4 h-4 rounded"
+            />
+            <span className="text-sm">This is a shared location</span>
+          </label>
           <div className="relative">
             <input
               type="text"

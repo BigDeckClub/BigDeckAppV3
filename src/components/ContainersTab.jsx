@@ -22,8 +22,9 @@ export const ContainersTab = ({
   const { get, post, put, del } = useApi();
 
   const [containerName, setContainerName] = useState('');
-  const [selectedDecklist, setSelectedDecklist] = useState(null);
+  const [selectedLocation, setSelectedLocation] = useState('');
   const [showContainerForm, setShowContainerForm] = useState(false);
+  const locations = [...new Set(inventory.map(item => item.location).filter(Boolean))].sort();
   const [expandedContainers, setExpandedContainers] = useState({});
   const [containerPriceCache, setContainerPriceCache] = useState({});
   const [expandedCardCopies, setExpandedCardCopies] = useState({});
@@ -36,7 +37,7 @@ export const ContainersTab = ({
   };
 
   const addContainer = async () => {
-    if (!containerName || !selectedDecklist) {
+    if (!containerName || !selectedLocation) {
       alert('Please fill in all fields');
       return;
     }
@@ -44,10 +45,10 @@ export const ContainersTab = ({
     try {
       await post(`${API_BASE}/containers`, {
         name: containerName,
-        decklist_id: parseInt(selectedDecklist),
+        location: selectedLocation,
       });
       setContainerName('');
-      setSelectedDecklist(null);
+      setSelectedLocation('');
       setShowContainerForm(false);
       await Promise.all([onLoadContainers(), onLoadInventory()]);
       setSuccessMessage('Container created successfully!');
