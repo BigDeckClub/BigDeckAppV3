@@ -192,81 +192,80 @@ export const InventoryTab = ({
                 const isEditing = editingId === firstItem.id;
                 
                 return (
-                  <div key={`${firstItem.set}-${firstItem.id}`} className="bg-slate-900/60 border border-slate-600/50 hover:border-teal-500 rounded-lg p-2 transition-colors">
-                  {isEditing ? (
-                    <div className="space-y-2">
-                      <div className="text-sm font-semibold text-slate-100">{firstItem.set_name} ({firstItem.set})</div>
-                      <div>
-                        <label className="text-xs text-slate-400">Folder</label>
-                        <input
-                          type="text"
-                          placeholder="e.g. Modern, Standard, Bulk"
-                          value={editForm.folder || ''}
-                          onChange={(e) => setEditForm({...editForm, folder: e.target.value || 'Uncategorized'})}
-                          className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-sm mb-2"
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
+                  <div key={`${firstItem.set}-${firstItem.id}`} className="bg-slate-800/80 border border-slate-500 rounded-lg transition-colors hover:border-teal-500">
+                    {isEditing ? (
+                      <div className="space-y-2 p-4">
+                        <div className="text-sm font-semibold text-slate-100">{firstItem.set_name} ({firstItem.set})</div>
                         <div>
-                          <label className="text-xs text-slate-400">Qty</label>
+                          <label className="text-xs text-slate-400">Folder</label>
                           <input
-                            type="number"
-                            min="1"
-                            value={editForm.quantity}
-                            onChange={(e) => setEditForm({...editForm, quantity: e.target.value})}
-                            className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-sm"
+                            type="text"
+                            placeholder="e.g. Modern, Standard, Bulk"
+                            value={editForm.folder || ''}
+                            onChange={(e) => setEditForm({...editForm, folder: e.target.value || 'Uncategorized'})}
+                            className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-sm mb-2"
                           />
                         </div>
-                        <div>
-                          <label className="text-xs text-slate-400">Price</label>
-                          <input
-                            type="number"
-                            step="0.01"
-                            value={editForm.purchase_price}
-                            onChange={(e) => setEditForm({...editForm, purchase_price: e.target.value})}
-                            className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-sm"
-                          />
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="text-xs text-slate-400">Qty</label>
+                            <input
+                              type="number"
+                              min="1"
+                              value={editForm.quantity}
+                              onChange={(e) => setEditForm({...editForm, quantity: e.target.value})}
+                              className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-sm"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs text-slate-400">Price</label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={editForm.purchase_price}
+                              onChange={(e) => setEditForm({...editForm, purchase_price: e.target.value})}
+                              className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-sm"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs text-slate-400">Date</label>
+                            <input
+                              type="date"
+                              value={editForm.purchase_date}
+                              onChange={(e) => setEditForm({...editForm, purchase_date: e.target.value})}
+                              className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-sm"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs text-slate-400">Type</label>
+                            <select
+                              value={editForm.reorder_type}
+                              onChange={(e) => setEditForm({...editForm, reorder_type: e.target.value})}
+                              className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-sm"
+                            >
+                              <option value="normal">Normal</option>
+                              <option value="land">Land</option>
+                              <option value="bulk">Bulk</option>
+                            </select>
+                          </div>
                         </div>
-                        <div>
-                          <label className="text-xs text-slate-400">Date</label>
-                          <input
-                            type="date"
-                            value={editForm.purchase_date}
-                            onChange={(e) => setEditForm({...editForm, purchase_date: e.target.value})}
-                            className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-sm"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-xs text-slate-400">Type</label>
-                          <select
-                            value={editForm.reorder_type}
-                            onChange={(e) => setEditForm({...editForm, reorder_type: e.target.value})}
-                            className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-sm"
+                        <div className="flex gap-2 pt-2">
+                          <button
+                            onClick={() => updateInventoryItem(firstItem.id)}
+                            className="flex-1 bg-green-600 hover:bg-green-700 rounded px-3 py-1 text-sm font-semibold"
                           >
-                            <option value="normal">Normal</option>
-                            <option value="land">Land</option>
-                            <option value="bulk">Bulk</option>
-                          </select>
+                            Save
+                          </button>
+                          <button
+                            onClick={() => setEditForm({})}
+                            className="flex-1 bg-gray-600 hover:bg-gray-700 rounded px-3 py-1 text-sm"
+                          >
+                            Cancel
+                          </button>
                         </div>
                       </div>
-                      <div className="flex gap-2 pt-2">
-                        <button
-                          onClick={() => updateInventoryItem(firstItem.id)}
-                          className="flex-1 bg-green-600 hover:bg-green-700 rounded px-3 py-1 text-sm font-semibold"
-                        >
-                          Save
-                        </button>
-                        <button
-                          onClick={() => setEditForm({})}
-                          className="flex-1 bg-gray-600 hover:bg-gray-700 rounded px-3 py-1 text-sm"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="space-y-3 p-3">
+                    ) : (
+                      <div className="space-y-3 p-4">
                         <div className="flex items-center justify-between">
                           <div 
                             className="flex-1 cursor-pointer flex items-center gap-2"
@@ -315,8 +314,7 @@ export const InventoryTab = ({
                           </div>
                         )}
                       </div>
-                    </>
-                  )}
+                    )}
                   </div>
                 );
               })}
