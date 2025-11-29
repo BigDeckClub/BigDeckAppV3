@@ -234,8 +234,6 @@ export const InventoryTab = ({
           </button>
         </div>
       )}
-        </div>
-      </div>
 
       {/* Inventory List - In Stock */}
       <div className="card rounded-lg p-4 sm:p-6 border border-slate-700">
