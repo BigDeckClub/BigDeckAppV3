@@ -266,6 +266,65 @@ class MtgjsonPriceService {
 
     return null;
   }
+
+  /**
+   * Get numeric Card Kingdom price for a card by its MTGJSON UUID
+   * @param {string} uuid - The MTGJSON UUID of the card
+   * @returns {number|null} - The price as a number or null if not found
+   */
+  getCardKingdomPriceNumeric(uuid) {
+    if (!uuid) return null;
+    const priceEntry = this.priceData.get(uuid);
+    if (!priceEntry) return null;
+    try {
+      const ckPrices = priceEntry.paper?.cardkingdom?.retail?.normal;
+      if (ckPrices && typeof ckPrices === 'object') {
+        const dates = Object.keys(ckPrices).sort();
+        if (dates.length > 0) {
+          const price = parseFloat(ckPrices[dates[dates.length - 1]]);
+          return !isNaN(price) && price > 0 ? price : null;
+        }
+      }
+    } catch (err) {}
+    return null;
+  }
+
+  /**
+   * Get numeric TCGPlayer price for a card by its MTGJSON UUID
+   * @param {string} uuid - The MTGJSON UUID of the card
+   * @returns {number|null} - The price as a number or null if not found
+   */
+  getTCGPlayerPriceNumeric(uuid) {
+    if (!uuid) return null;
+    const priceEntry = this.priceData.get(uuid);
+    if (!priceEntry) return null;
+    try {
+      const tcgPrices = priceEntry.paper?.tcgplayer?.retail?.normal;
+      if (tcgPrices && typeof tcgPrices === 'object') {
+        const dates = Object.keys(tcgPrices).sort();
+        if (dates.length > 0) {
+          const price = parseFloat(tcgPrices[dates[dates.length - 1]]);
+          return !isNaN(price) && price > 0 ? price : null;
+        }
+      }
+    } catch (err) {}
+    return null;
+  }
+
+  /**
+   * Get Card Kingdom and TCGPlayer prices by Scryfall ID
+   * @param {string} scryfallId - The Scryfall UUID of the card
+   * @returns {object} - { cardkingdom: number|null, tcgplayer: number|null }
+   */
+  getPricesByScryfallId(scryfallId) {
+    if (!scryfallId) return { cardkingdom: null, tcgplayer: null };
+    const mtgjsonUuid = this.scryfallToMtgjsonMap.get(scryfallId);
+    if (!mtgjsonUuid) return { cardkingdom: null, tcgplayer: null };
+    return {
+      cardkingdom: this.getCardKingdomPriceNumeric(mtgjsonUuid),
+      tcgplayer: this.getTCGPlayerPriceNumeric(mtgjsonUuid)
+    };
+  }
 }
 
 // Export a singleton instance
