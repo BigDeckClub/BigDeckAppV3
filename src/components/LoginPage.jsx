@@ -84,7 +84,7 @@ export const LoginPage = () => {
                 onClick={() => (window.location.href = '/api/login')}
                 onMouseEnter={() => setIsHovering(true)}
                 onMouseLeave={() => setIsHovering(false)}
-                className="w-full py-4 px-6 font-semibold flex items-center justify-center gap-3 text-lg rounded-xl transition-all duration-300 hover:scale-105 active:scale-95 bg-gradient-to-r from-cyan-500 via-teal-500 to-cyan-400 hover:from-cyan-400 hover:via-teal-400 hover:to-cyan-300 text-white shadow-lg shadow-cyan-500/40 hover:shadow-xl hover:shadow-cyan-500/60"
+                className="w-full py-4 px-6 font-bold flex items-center justify-center gap-3 text-lg rounded-xl transition-all duration-300 hover:scale-105 active:scale-95 bg-gradient-to-r from-cyan-500 via-teal-500 to-cyan-400 hover:from-cyan-400 hover:via-teal-400 hover:to-cyan-300 text-slate-950 shadow-lg shadow-cyan-500/40 hover:shadow-xl hover:shadow-cyan-500/60"
               >
                 <LogIn className="w-6 h-6" />
                 Sign In Now
