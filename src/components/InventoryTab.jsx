@@ -32,7 +32,6 @@ export const InventoryTab = ({
   startEditingItem,
   updateInventoryItem,
   deleteInventoryItem,
-  MarketPrices,
   handleSearch
 }) => {
   const [expandedFolders, setExpandedFolders] = useState({});

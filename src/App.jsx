@@ -49,13 +49,6 @@ function MTGInventoryTrackerContent() {
       const data = await get(`${API_BASE}/inventory`);
       const sortedData = (data || []).sort((a, b) => a.name.localeCompare(b.name));
       setInventory(sortedData);
-      
-      const sixtyDaysAgo = new Date();
-      sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
-      const recentTotal = sortedData
-        .filter(item => new Date(item.purchase_date) >= sixtyDaysAgo)
-        .reduce((sum, item) => sum + ((parseFloat(item.purchase_price) || 0) * (item.quantity || 0)), 0);
-      setTotalPurchased60Days(recentTotal);
     } catch (error) {
       setInventory([]);
     }
