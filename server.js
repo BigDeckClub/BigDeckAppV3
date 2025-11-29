@@ -6,7 +6,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import path from 'path';
 import { fileURLToPath } from 'url';
-// import { mtgjsonService } from './server/mtgjsonPriceService.js';
+import { mtgjsonService } from './server/mtgjsonPriceService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -341,7 +341,9 @@ app.get('/api/prices/:cardName/:setCode', priceLimiter, async (req, res) => {
   
   try {
     let tcgPrice = 'N/A';
+    let ckPrice = 'N/A';
     let scryfallRes = null;
+    let cardData = null;
     
     if (setCode && setCode.length > 0) {
       const exactUrl = `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(cardName)}&set=${setCode.toLowerCase()}`;
@@ -362,8 +364,8 @@ app.get('/api/prices/:cardName/:setCode', priceLimiter, async (req, res) => {
     
     if (scryfallRes?.ok) {
       try {
-        const card = await scryfallRes.json();
-        const price = parseFloat(card.prices?.usd);
+        cardData = await scryfallRes.json();
+        const price = parseFloat(cardData.prices?.usd);
         if (price > 0) {
           tcgPrice = `$${price.toFixed(2)}`;
           console.log(`[PRICES] ✓ TCG price found: ${tcgPrice}`);
@@ -373,11 +375,24 @@ app.get('/api/prices/:cardName/:setCode', priceLimiter, async (req, res) => {
       }
     }
     
-    // Card Kingdom scraping removed - blocked by Cloudflare
-    const ckPrice = 'N/A';
-    
-    const result = { tcg: tcgPrice, ck: ckPrice };
-    setCachedPrice(cacheKey, result);
+    // Get Card Kingdom price from MTGJSON using the card's Scryfall ID
+    if (cardData) {
+      try {
+        // Scryfall returns the card's unique ID which we can use to look up MTGJSON prices
+        const scryfallId = cardData.id;
+        if (scryfallId) {
+          const ckPriceResult = mtgjsonService.getCardKingdomPriceByScryfallId(scryfallId);
+          if (ckPriceResult) {
+            ckPrice = ckPriceResult;
+            console.log(`[PRICES] ✓ CK price found via MTGJSON: ${ckPrice}`);
+          } else {
+            console.log(`[PRICES] No CK price found in MTGJSON for Scryfall ID: ${scryfallId}`);
+          }
+        }
+      } catch (err) {
+        console.error(`[PRICES] ✗ Failed to get CK price from MTGJSON:`, err.message);
+      }
+    }
     
     res.setHeader('Content-Type', 'application/json');
     res.status(200).json(result);
@@ -662,6 +677,14 @@ async function startServer() {
   try {
     console.log('[APP] Initializing database...');
     await initializeDatabase();
+
+    console.log('[APP] Initializing MTGJSON price service...');
+    try {
+      await mtgjsonService.initialize();
+    } catch (error) {
+      console.error('[APP] ✗ Failed to initialize MTGJSON price service:', error);
+      console.warn('[APP] Continuing startup without MTGJSON price service. Some features may be unavailable.');
+    }
 
     // ========== SERVE STATIC ASSETS ==========
     app.use(express.static('dist'));
