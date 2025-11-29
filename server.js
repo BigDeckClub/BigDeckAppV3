@@ -1,5 +1,4 @@
 import express from 'express';
-import ViteExpress from 'vite-express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
 import pkg from 'pg';
@@ -23,7 +22,8 @@ app.use(helmet({
   contentSecurityPolicy: false
 }));
 
-// CORS handler - allow all origins in development/production
+// CORS handler - allow all origins for development and Replit deployment
+// This is intentional: the app has no authentication and is designed for open access
 app.use(cors({
   origin: '*',
   credentials: false,
@@ -39,6 +39,25 @@ const priceLimiter = rateLimit({
   max: 100
 });
 
+// ========== PRICE CACHING ==========
+const priceCache = new Map();
+const PRICE_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+function getCachedPrice(key) {
+  const cached = priceCache.get(key);
+  if (cached && Date.now() - cached.timestamp < PRICE_CACHE_TTL) {
+    return cached.data;
+  }
+  return null;
+}
+
+function setCachedPrice(key, data) {
+  priceCache.set(key, { data, timestamp: Date.now() });
+}
+
+// ========== SERVER TRACKING ==========
+const serverStartTime = Date.now();
+
 // PostgreSQL connection
 const dbUrl = process.env.DATABASE_URL;
 
@@ -46,6 +65,15 @@ const pool = new Pool({
   connectionString: dbUrl,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 5000
+});
+
+// ========== DATABASE CONNECTION MONITORING ==========
+pool.on('error', (err) => {
+  console.error('[DB] ✗ Unexpected pool error:', err.message);
+});
+
+pool.on('connect', () => {
+  console.log('[DB] ✓ New client connected to pool');
 });
 
 // ========== DATABASE INITIALIZATION ==========
@@ -264,17 +292,36 @@ async function fetchRetry(url, options = {}, retries = 2) {
 
 // ========== HEALTH CHECK ==========
 app.get('/health', async (req, res) => {
+  let dbStatus = 'unknown';
   try {
     await pool.query('SELECT 1');
-    res.json({ ok: true });
-  } catch {
-    res.status(500).json({ ok: false });
+    dbStatus = 'connected';
+  } catch (err) {
+    dbStatus = 'disconnected';
   }
+  
+  const uptimeSeconds = Math.floor((Date.now() - serverStartTime) / 1000);
+  const response = {
+    ok: dbStatus === 'connected',
+    database: dbStatus,
+    uptime: uptimeSeconds,
+    timestamp: new Date().toISOString()
+  };
+  
+  res.status(response.ok ? 200 : 500).json(response);
 });
 
 // ========== PRICES ENDPOINT ==========
 app.get('/api/prices/:cardName/:setCode', priceLimiter, async (req, res) => {
   const { cardName, setCode } = req.params;
+  const cacheKey = `${cardName.toLowerCase()}_${(setCode || '').toLowerCase()}`;
+  
+  // Check cache first
+  const cachedResult = getCachedPrice(cacheKey);
+  if (cachedResult) {
+    console.log(`[PRICES] Cache hit for: card="${cardName}", set="${setCode}"`);
+    return res.status(200).json(cachedResult);
+  }
   
   console.log(`[PRICES] Lookup request: card="${cardName}", set="${setCode}"`);
   
@@ -312,33 +359,14 @@ app.get('/api/prices/:cardName/:setCode', priceLimiter, async (req, res) => {
       }
     }
     
-    let ckPrice = 'N/A';
-    try {
-      const ckSearchUrl = `https://www.cardkingdom.com/catalog/search?search=header&filter%5Bname%5D=${encodeURIComponent(cardName)}`;
-      const response = await fetchRetry(ckSearchUrl, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        }
-      });
-      
-      if (response?.ok) {
-        const html = await response.text();
-        if (html && html.length > 50 && !html.includes("captcha")) {
-          const $ = load(html);
-          const priceElement = $('[class*="price"]').first();
-          if (priceElement.length) {
-            const priceText = priceElement.text().trim();
-            if (priceText) ckPrice = priceText;
-          }
-        }
-      }
-    } catch (err) {
-      // Silent fail for CK scraping
-    }
+    // Card Kingdom scraping removed - blocked by Cloudflare
+    const ckPrice = 'N/A';
     
+    const result = { tcg: tcgPrice, ck: ckPrice };
+    setCachedPrice(cacheKey, result);
     
     res.setHeader('Content-Type', 'application/json');
-    res.status(200).json({ tcg: tcgPrice, ck: ckPrice });
+    res.status(200).json(result);
   } catch (error) {
     res.setHeader('Content-Type', 'application/json');
     res.status(500).json({ tcg: 'N/A', ck: 'N/A' });
@@ -363,8 +391,17 @@ app.get('/api/inventory', async (req, res) => {
 app.post('/api/inventory', async (req, res) => {
   const { name, set, set_name, quantity, purchase_price, purchase_date, reorder_type, image_url, folder } = req.body;
   
-  if (!name) {
-    return res.status(400).json({ error: 'Card name is required' });
+  // Input validation
+  if (!name || typeof name !== 'string' || name.trim().length === 0) {
+    return res.status(400).json({ error: 'Card name is required and must be a non-empty string' });
+  }
+  
+  if (quantity !== undefined && (typeof quantity !== 'number' || quantity < 1 || !Number.isInteger(quantity))) {
+    return res.status(400).json({ error: 'Quantity must be a positive integer' });
+  }
+  
+  if (purchase_price !== undefined && purchase_price !== null && (typeof purchase_price !== 'number' || purchase_price < 0)) {
+    return res.status(400).json({ error: 'Purchase price must be a non-negative number' });
   }
 
   try {
@@ -466,8 +503,23 @@ app.get('/api/imports', async (req, res) => {
 app.post('/api/imports', async (req, res) => {
   const { title, description, cardList, source, status } = req.body;
   
-  if (!title || !cardList) {
-    return res.status(400).json({ error: 'Title and card list are required' });
+  // Input validation
+  if (!title || typeof title !== 'string' || title.trim().length === 0) {
+    return res.status(400).json({ error: 'Title is required and must be a non-empty string' });
+  }
+  
+  if (!cardList || typeof cardList !== 'string' || cardList.trim().length === 0) {
+    return res.status(400).json({ error: 'Card list is required and must be a non-empty string' });
+  }
+  
+  const validSources = ['wholesale', 'tcgplayer', 'cardkingdom', 'local', 'other'];
+  if (source !== undefined && !validSources.includes(source)) {
+    return res.status(400).json({ error: `Source must be one of: ${validSources.join(', ')}` });
+  }
+  
+  const validStatuses = ['pending', 'processing', 'completed', 'cancelled'];
+  if (status !== undefined && !validStatuses.includes(status)) {
+    return res.status(400).json({ error: `Status must be one of: ${validStatuses.join(', ')}` });
   }
 
   try {
@@ -581,6 +633,21 @@ async function startServer() {
 
     // ========== SERVE STATIC ASSETS ==========
     app.use(express.static('dist'));
+
+    // ========== CENTRALIZED ERROR HANDLING ==========
+    app.use((err, req, res, next) => {
+      console.error('[ERROR]', err.message);
+      console.error('[ERROR] Stack:', err.stack);
+      
+      // Don't expose internal error details in production
+      const statusCode = err.statusCode || 500;
+      const message = statusCode === 500 ? 'Internal server error' : err.message;
+      
+      res.status(statusCode).json({
+        error: message,
+        ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+      });
+    });
 
     // ========== CATCH-ALL HANDLER - SPA ROUTING ==========
     app.use((req, res) => {
