@@ -39,6 +39,12 @@ const priceLimiter = rateLimit({
   max: 100
 });
 
+// Rate limiter for deck operations
+const deckLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60 // Allow 60 deck operations per minute
+});
+
 // ========== PRICE CACHING ==========
 const priceCache = new Map();
 const PRICE_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
@@ -715,8 +721,9 @@ function parseManualDecklist(decklistText) {
         category: currentCategory || 'Main Deck',
         set_code: null
       });
-    } else if (!/^\d+$/.test(line)) {
-      // Line without quantity - treat as single card
+    } else if (/[a-zA-Z]/.test(line)) {
+      // Line contains letters but no quantity prefix - treat as single card
+      // This excludes lines that are purely numeric (which are invalid)
       cards.push({
         card_name: line,
         quantity: 1,
@@ -724,13 +731,14 @@ function parseManualDecklist(decklistText) {
         set_code: null
       });
     }
+    // Lines that are purely numeric are skipped as they don't represent valid cards
   }
   
   return cards;
 }
 
 // GET /api/decks - List all saved decks
-app.get('/api/decks', async (req, res) => {
+app.get('/api/decks', deckLimiter, async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT d.*, 
@@ -748,7 +756,7 @@ app.get('/api/decks', async (req, res) => {
 });
 
 // GET /api/decks/:id - Get a specific deck with its cards
-app.get('/api/decks/:id', async (req, res) => {
+app.get('/api/decks/:id', deckLimiter, async (req, res) => {
   const { id } = req.params;
   
   try {
@@ -777,7 +785,7 @@ app.get('/api/decks/:id', async (req, res) => {
 });
 
 // POST /api/decks - Create a new deck (manual import)
-app.post('/api/decks', async (req, res) => {
+app.post('/api/decks', deckLimiter, async (req, res) => {
   const { name, description, decklist } = req.body;
   
   // Input validation
@@ -837,7 +845,7 @@ app.post('/api/decks', async (req, res) => {
 });
 
 // POST /api/decks/import/archidekt - Import deck from Archidekt URL
-app.post('/api/decks/import/archidekt', async (req, res) => {
+app.post('/api/decks/import/archidekt', deckLimiter, async (req, res) => {
   const { url } = req.body;
   
   // Input validation
@@ -902,7 +910,12 @@ app.post('/api/decks/import/archidekt', async (req, res) => {
       const archidektCards = archidektData.cards || [];
       
       for (const cardEntry of archidektCards) {
-        const cardName = cardEntry.card?.oracleCard?.name || cardEntry.card?.name;
+        // Archidekt API provides card name in different locations depending on response format
+        // Primary: card.oracleCard.name, Fallback: card.name
+        const oracleCardName = cardEntry.card?.oracleCard?.name;
+        const directCardName = cardEntry.card?.name;
+        const cardName = oracleCardName || directCardName;
+        
         if (!cardName) continue;
         
         const quantity = cardEntry.quantity || 1;
@@ -944,7 +957,7 @@ app.post('/api/decks/import/archidekt', async (req, res) => {
 });
 
 // PUT /api/decks/:id - Update a deck
-app.put('/api/decks/:id', async (req, res) => {
+app.put('/api/decks/:id', deckLimiter, async (req, res) => {
   const { id } = req.params;
   const { name, description } = req.body;
   
@@ -987,7 +1000,7 @@ app.put('/api/decks/:id', async (req, res) => {
 });
 
 // DELETE /api/decks/:id - Delete a deck
-app.delete('/api/decks/:id', async (req, res) => {
+app.delete('/api/decks/:id', deckLimiter, async (req, res) => {
   const { id } = req.params;
   
   try {
