@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
 import { usePriceCache } from "../context/PriceCacheContext";
-import { normalizeCardName, normalizeSetCode } from "../lib/fetchCardPrices";
+
+// Simple normalize functions
+const normalizeCardName = (name) => (name || "").trim();
+const normalizeSetCode = (code) => (code || "").trim().toUpperCase();
 
 /**
  * DecklistCardPrice Component

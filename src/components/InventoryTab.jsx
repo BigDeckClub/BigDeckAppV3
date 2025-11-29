@@ -2,7 +2,10 @@ import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { Plus, Trash2, X, ChevronDown, ChevronRight, Package } from 'lucide-react';
 import { usePriceCache } from "../context/PriceCacheContext";
-import { normalizeCardName, normalizeSetCode } from "../lib/fetchCardPrices";
+
+// Simple normalize functions
+const normalizeCardName = (name) => (name || "").trim();
+const normalizeSetCode = (code) => (code || "").trim().toUpperCase();
 
 export const InventoryTab = ({
   inventory,

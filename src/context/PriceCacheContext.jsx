@@ -1,8 +1,14 @@
 import { createContext, useState, useContext, useRef, useEffect } from "react";
 import PropTypes from "prop-types";
-import { fetchCardPrices } from "../lib/fetchCardPrices";
 
 const PriceCacheContext = createContext();
+
+// Helper function to fetch prices from API
+async function fetchCardPrices(name, setCode) {
+  const response = await fetch(`/api/prices/${encodeURIComponent(name)}/${encodeURIComponent(setCode)}`);
+  if (!response.ok) throw new Error(`Failed to fetch prices: ${response.statusText}`);
+  return response.json();
+}
 
 // Cache TTL configuration
 const SOFT_TTL_MS = 1000 * 60 * 10; // 10 minutes - return cached, refresh in background
