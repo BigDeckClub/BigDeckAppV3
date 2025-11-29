@@ -37,6 +37,8 @@ export const InventoryTab = ({
 }) => {
   const [showOutOfStock, setShowOutOfStock] = useState(false);
   const [expandedFolders, setExpandedFolders] = useState({});
+  const [newFolderName, setNewFolderName] = useState('');
+  const [showCreateFolder, setShowCreateFolder] = useState(false);
   
   // Group inventory by folder, then by card name
   const groupedByFolder = inventory.reduce((acc, item) => {
@@ -259,6 +261,64 @@ export const InventoryTab = ({
         </div>
       )}
 
+      {/* Create Folder Section */}
+      <div className="rounded-lg p-4 sm:p-6 border-2 border-teal-600/60 bg-gradient-to-br from-teal-900/20 to-teal-800/10">
+        {!showCreateFolder ? (
+          <button
+            onClick={() => setShowCreateFolder(true)}
+            className="flex items-center gap-2 text-teal-300 hover:text-teal-200 font-semibold transition-colors"
+          >
+            <Plus className="w-5 h-5" />
+            Create New Folder
+          </button>
+        ) : (
+          <div className="flex gap-2">
+            <input
+              type="text"
+              placeholder="Folder name (e.g., Modern, Standard)"
+              value={newFolderName}
+              onChange={(e) => setNewFolderName(e.target.value)}
+              className="flex-1 bg-slate-800 border border-teal-600 rounded px-4 py-2 text-white placeholder-gray-400 text-sm"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && newFolderName.trim()) {
+                  setNewFolderName('');
+                  setShowCreateFolder(false);
+                  setSuccessMessage(`Folder "${newFolderName.trim()}" created! Add cards to it from the Imports tab.`);
+                  setTimeout(() => setSuccessMessage(''), 3000);
+                }
+                if (e.key === 'Escape') {
+                  setNewFolderName('');
+                  setShowCreateFolder(false);
+                }
+              }}
+            />
+            <button
+              onClick={() => {
+                if (newFolderName.trim()) {
+                  setNewFolderName('');
+                  setShowCreateFolder(false);
+                  setSuccessMessage(`Folder "${newFolderName.trim()}" created! Add cards to it from the Imports tab.`);
+                  setTimeout(() => setSuccessMessage(''), 3000);
+                }
+              }}
+              className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded text-sm font-semibold transition-colors"
+            >
+              Create
+            </button>
+            <button
+              onClick={() => {
+                setNewFolderName('');
+                setShowCreateFolder(false);
+              }}
+              className="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded text-sm transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+      </div>
+
       {/* My Folders Section */}
       {Object.keys(groupedByFolder).some(f => f !== 'Uncategorized') && (
         <div className="rounded-lg p-4 sm:p-6 border-2 border-teal-500/50 bg-gradient-to-br from-slate-900/50 to-slate-800/50">
@@ -311,10 +371,10 @@ export const InventoryTab = ({
         </div>
       )}
       
-      {/* Uncategorized Cards Section */}
+      {/* Inventory Section */}
       {groupedByFolder['Uncategorized'] && (
         <div className="rounded-lg p-4 sm:p-6 border-2 border-slate-600 bg-gradient-to-br from-slate-800/50 to-slate-700/50">
-          <h2 className="text-lg sm:text-xl font-bold mb-4 text-slate-300">📋 Uncategorized Cards</h2>
+          <h2 className="text-lg sm:text-xl font-bold mb-4 text-slate-300">📋 Inventory</h2>
           <div className="space-y-4">
             {Object.entries(groupedByFolder['Uncategorized']).map(renderCardGroup)}
           </div>
