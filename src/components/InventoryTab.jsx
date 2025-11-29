@@ -40,6 +40,7 @@ export const InventoryTab = ({
   const [createdFolders, setCreatedFolders] = useState([]);
   const [selectedFolder, setSelectedFolder] = useState(null);
   const [activeTab, setActiveTab] = useState('all'); // 'all', 'unsorted', or folder name
+  const [expandedSets, setExpandedSets] = useState({}); // Track expansion of individual sets within cards
 
   // Load created folders from localStorage
   useEffect(() => {
@@ -226,35 +227,57 @@ export const InventoryTab = ({
                       </div>
                     </div>
                   ) : (
-                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-                      <div className="flex-1">
-                        <div className="text-sm font-semibold text-slate-100">{firstItem.set_name} ({setItems.length} {setItems.length === 1 ? 'copy' : 'copies'})</div>
-                        <div className="grid grid-cols-2 gap-2 sm:gap-3 mt-1 text-xs">
-                          <div><span className="text-slate-400">Total Qty:</span> <span className="text-white font-semibold">{totalQtyInSet}</span></div>
-                          <div><span className="text-slate-400">Avg Price:</span> <span className="text-white font-semibold">${(setItems.reduce((sum, item) => sum + (parseFloat(item.purchase_price) || 0), 0) / setItems.length).toFixed(2)}</span></div>
+                    <>
+                      <div 
+                        className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 cursor-pointer"
+                        onClick={() => setExpandedSets({...expandedSets, [`${firstItem.set}-${cardName}`]: !expandedSets[`${firstItem.set}-${cardName}`]})}
+                      >
+                        <div className="flex-1">
+                          <div className="text-sm font-semibold text-slate-100 flex items-center gap-2">
+                            {expandedSets[`${firstItem.set}-${cardName}`] ? '▼' : '▶'} {firstItem.set_name} ({setItems.length} {setItems.length === 1 ? 'copy' : 'copies'})
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 sm:gap-3 mt-1 text-xs">
+                            <div><span className="text-slate-400">Total Qty:</span> <span className="text-white font-semibold">{totalQtyInSet}</span></div>
+                            <div><span className="text-slate-400">Avg Price:</span> <span className="text-white font-semibold">${(setItems.reduce((sum, item) => sum + (parseFloat(item.purchase_price) || 0), 0) / setItems.length).toFixed(2)}</span></div>
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-4 sm:ml-4">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              startEditingItem(firstItem);
+                            }}
+                            className="bg-blue-600 hover:bg-blue-700 rounded px-3 py-2 sm:px-2 sm:py-1 text-sm min-h-[36px] sm:min-h-0"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteInventoryItem(firstItem.id);
+                            }}
+                            className="bg-red-600 hover:bg-red-700 rounded px-3 py-2 sm:px-2 sm:py-1 min-h-[36px] sm:min-h-0"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
                       </div>
-                      <div className="flex flex-wrap items-center gap-2 sm:gap-4 sm:ml-4">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            startEditingItem(firstItem);
-                          }}
-                          className="bg-blue-600 hover:bg-blue-700 rounded px-3 py-2 sm:px-2 sm:py-1 text-sm min-h-[36px] sm:min-h-0"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            deleteInventoryItem(firstItem.id);
-                          }}
-                          className="bg-red-600 hover:bg-red-700 rounded px-3 py-2 sm:px-2 sm:py-1 min-h-[36px] sm:min-h-0"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
+
+                      {expandedSets[`${firstItem.set}-${cardName}`] && (
+                        <div className="mt-2 pt-2 border-t border-slate-700 space-y-2">
+                          {setItems.map((item) => (
+                            <div key={item.id} className="bg-slate-900/40 rounded p-2 text-xs space-y-1">
+                              <div className="text-slate-100">
+                                <span className="text-slate-400">Qty:</span> {item.quantity} • <span className="text-slate-400">Price:</span> ${parseFloat(item.purchase_price || 0).toFixed(2)}
+                              </div>
+                              <div className="text-slate-400">
+                                {new Date(item.purchase_date).toLocaleDateString()}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               );
