@@ -589,7 +589,7 @@ async function startServer() {
     });
 
     // ========== START WITH VITE EXPRESS ==========
-    const PORT = process.env.PORT || 3000;
+    const PORT = process.env.PORT || 5000;
     ViteExpress.listen(app, PORT, () => {
       console.log(`[SERVER] ✓ Running on port ${PORT}`);
       console.log('[SERVER] ✓ All systems ready');
