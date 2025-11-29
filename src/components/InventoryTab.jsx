@@ -121,8 +121,7 @@ export const InventoryTab = ({
     
     return (
       <div key={cardName} className={viewMode === 'card' ? 'space-y-2' : ''}>
-        {/* Card Name - Card View or List View */}
-        {viewMode === 'card' ? (
+        {!isExpanded && (viewMode === 'card' ? (
         <div 
           className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 hover:border-teal-500 rounded p-1.5 transition-colors cursor-pointer flex flex-col justify-between h-32 md:h-36 hover:shadow-lg hover:shadow-teal-500/20" 
           onClick={() => setExpandedCards({...expandedCards, [cardName]: !isExpanded})}
@@ -155,7 +154,7 @@ export const InventoryTab = ({
         </div>
         ) : (
         /* List View */
-        <div className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 hover:border-teal-500 rounded p-3 transition-colors cursor-pointer hover:shadow-lg hover:shadow-teal-500/20">
+        <div className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 hover:border-teal-500 rounded p-3 transition-colors cursor-pointer hover:shadow-lg hover:shadow-teal-500/20" onClick={() => setExpandedCards({...expandedCards, [cardName]: !isExpanded})}>
           <div className="flex items-center justify-between gap-4">
             <div className="flex-1 min-w-0">
               <h3 className="text-sm font-bold text-slate-100 break-words mb-1">{cardName}</h3>
@@ -171,11 +170,11 @@ export const InventoryTab = ({
             </div>
           </div>
         </div>
-        )}
+        ))}
         
         {isExpanded && (
-          <div className="bg-slate-800 rounded-lg border border-slate-600 p-4 shadow-lg">
-            <div className="flex flex-wrap gap-4">
+          <div className="bg-slate-800 rounded-lg border border-slate-600 p-3 shadow-lg cursor-pointer" onClick={() => setExpandedCards({...expandedCards, [cardName]: false})}>
+            <div className="flex flex-wrap gap-3">
                 {Object.values(
                   items.reduce((acc, item) => {
                     const setKey = `${item.set || 'unknown'}-${item.set_name || 'unknown'}`;
