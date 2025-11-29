@@ -1,0 +1,114 @@
+import ReplitAuth from '@replit/replit-auth';
+import session from 'express-session';
+
+export async function setupAuth(app) {
+  const replId = process.env.REPL_ID;
+  const sessionSecret = process.env.SESSION_SECRET || 'your-secret-key-change-in-production';
+
+  console.log('Environment check:');
+  console.log(`  REPL_ID: ${replId ? 'SET' : 'MISSING'}`);
+  console.log(`  SESSION_SECRET: ${sessionSecret ? 'SET' : 'MISSING'}`);
+
+  if (!replId) {
+    console.warn('WARNING: REPL_ID not set. Authentication may not work correctly.');
+  }
+
+  // Session middleware
+  app.use(
+    session({
+      secret: sessionSecret,
+      resave: false,
+      saveUninitialized: false,
+      cookie: {
+        secure: process.env.NODE_ENV === 'production',
+        httpOnly: true,
+        maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      },
+    })
+  );
+
+  // Initialize Replit Auth
+  let replitAuth;
+  if (replId) {
+    try {
+      replitAuth = new ReplitAuth({ replId });
+      console.log('Replit Auth initialized successfully');
+    } catch (error) {
+      console.error('Failed to initialize Replit Auth:', error);
+    }
+  }
+
+  // Auth middleware to check if user is authenticated
+  const requireAuth = (req, res, next) => {
+    console.log(`Auth check for ${req.path}:`, req.session.user ? 'Authenticated' : 'Not authenticated');
+    if (req.session.user) {
+      return next();
+    }
+    res.status(401).json({ error: 'Unauthorized' });
+  };
+
+  // Register auth routes
+  console.log('Registering auth routes...');
+
+  // Get current user
+  app.get('/api/auth/user', (req, res) => {
+    console.log('GET /api/auth/user called');
+    console.log('Session user:', req.session.user);
+    if (req.session.user) {
+      res.json({ user: req.session.user });
+    } else {
+      res.json({ user: null });
+    }
+  });
+  console.log('  ✓ Registered GET /api/auth/user');
+
+  // Login endpoint
+  app.post('/api/login', async (req, res) => {
+    console.log('POST /api/login called');
+    try {
+      if (!replitAuth) {
+        console.log('Replit Auth not initialized, using fallback');
+        // Fallback for development
+        req.session.user = {
+          id: 'dev-user',
+          username: 'Developer',
+        };
+        return res.json({ success: true, user: req.session.user });
+      }
+
+      const userInfo = await replitAuth.getUserInfo(req);
+      if (userInfo) {
+        req.session.user = {
+          id: userInfo.id,
+          username: userInfo.name,
+        };
+        console.log('User logged in:', req.session.user);
+        res.json({ success: true, user: req.session.user });
+      } else {
+        console.log('Login failed: No user info');
+        res.status(401).json({ error: 'Authentication failed' });
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      res.status(500).json({ error: 'Login failed' });
+    }
+  });
+  console.log('  ✓ Registered POST /api/login');
+
+  // Logout endpoint
+  app.post('/api/logout', (req, res) => {
+    console.log('POST /api/logout called');
+    req.session.destroy((err) => {
+      if (err) {
+        console.error('Logout error:', err);
+        return res.status(500).json({ error: 'Logout failed' });
+      }
+      console.log('User logged out');
+      res.json({ success: true });
+    });
+  });
+  console.log('  ✓ Registered POST /api/logout');
+
+  console.log('Auth setup complete - all routes registered');
+  return { requireAuth };
+}

@@ -362,7 +362,7 @@ async function startServer() {
     await initializeDatabase();
     
     console.log('[APP] Setting up authentication...');
-    await setupAuth(app, pool);
+    await setupAuth(app);
     console.log('[APP] ✓ Authentication setup complete');
 
     // ========== CATCH-ALL HANDLER (AFTER all routes) ==========

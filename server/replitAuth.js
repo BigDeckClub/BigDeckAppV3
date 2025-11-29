@@ -1,187 +1,70 @@
-import * as client from "openid-client";
-import { Strategy } from "openid-client/passport";
-import passport from "passport";
-import session from "express-session";
-import memoize from "memoizee";
-import connectPg from "connect-pg-simple";
+import session from 'express-session';
 
-const getOidcConfig = memoize(
-  async () => {
-    return await client.discovery(
-      new URL(process.env.ISSUER_URL ?? "https://replit.com/oidc"),
-      process.env.REPL_ID
-    );
-  },
-  { maxAge: 3600 * 1000 }
-);
+export async function setupAuth(app) {
+  const sessionSecret = process.env.SESSION_SECRET || 'dev-secret-change-in-production';
 
-export function getSession(pool) {
-  const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
-  const pgStore = connectPg(session);
-  const sessionStore = new pgStore({
-    pool: pool,
-    createTableIfMissing: true,
-    ttl: sessionTtl,
-    tableName: "sessions",
-  });
-  return session({
-    secret: process.env.SESSION_SECRET,
-    store: sessionStore,
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: sessionTtl,
-    },
-  });
-}
+  console.log('[AUTH] Environment check:');
+  console.log(`  SESSION_SECRET: ${sessionSecret ? 'SET' : 'MISSING'}`);
 
-function updateUserSession(user, tokens) {
-  user.claims = tokens.claims();
-  user.access_token = tokens.access_token;
-  user.refresh_token = tokens.refresh_token;
-  user.expires_at = user.claims?.exp;
-}
-
-async function upsertUser(pool, claims) {
-  await pool.query(
-    `INSERT INTO users (id, email, first_name, last_name, profile_image_url, created_at, updated_at)
-     VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
-     ON CONFLICT (id) DO UPDATE SET 
-       email = EXCLUDED.email,
-       first_name = EXCLUDED.first_name,
-       last_name = EXCLUDED.last_name,
-       profile_image_url = EXCLUDED.profile_image_url,
-       updated_at = NOW()`,
-    [
-      claims["sub"],
-      claims["email"] || null,
-      claims["first_name"] || null,
-      claims["last_name"] || null,
-      claims["profile_image_url"] || null,
-    ]
+  // Session middleware
+  app.use(
+    session({
+      secret: sessionSecret,
+      resave: false,
+      saveUninitialized: false,
+      cookie: {
+        secure: process.env.NODE_ENV === 'production',
+        httpOnly: true,
+        maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      },
+    })
   );
-}
 
-export async function setupAuth(app, pool) {
-  app.set("trust proxy", 1);
-  app.use(getSession(pool));
-  app.use(passport.initialize());
-  app.use(passport.session());
+  console.log('[AUTH] Registering auth routes...');
 
-  const config = await getOidcConfig();
-
-  const verify = async (tokens, verified) => {
-    const user = {};
-    updateUserSession(user, tokens);
-    await upsertUser(pool, tokens.claims());
-    verified(null, user);
-  };
-
-  const registeredStrategies = new Set();
-
-  const ensureStrategy = (domain) => {
-    const strategyName = `replitauth:${domain}`;
-    if (!registeredStrategies.has(strategyName)) {
-      const strategy = new Strategy(
-        {
-          name: strategyName,
-          config,
-          scope: "openid email profile offline_access",
-          callbackURL: `https://${domain}/api/callback`,
-        },
-        verify
-      );
-      passport.use(strategy);
-      registeredStrategies.add(strategyName);
+  // Get current user
+  app.get('/api/auth/user', (req, res) => {
+    console.log('[AUTH] GET /api/auth/user - User:', req.session.user ? 'Authenticated' : 'Not authenticated');
+    if (req.session.user) {
+      res.json(req.session.user);
+    } else {
+      res.status(401).json({ error: 'Unauthorized' });
     }
-  };
-
-  passport.serializeUser((user, cb) => cb(null, user));
-  passport.deserializeUser((user, cb) => cb(null, user));
-
-  app.get("/api/login", (req, res, next) => {
-    ensureStrategy(req.hostname);
-    passport.authenticate(`replitauth:${req.hostname}`, {
-      prompt: "login",
-      scope: ["openid", "email", "profile", "offline_access"],
-    })(req, res, next);
   });
+  console.log('[AUTH]   ✓ GET /api/auth/user');
 
-  app.get("/api/callback", (req, res, next) => {
-    ensureStrategy(req.hostname);
-    passport.authenticate(`replitauth:${req.hostname}`, {
-      successReturnToOrRedirect: "/",
-      failureRedirect: "/api/login",
-    })(req, res, next);
+  // Login endpoint (accepts any credentials for now, real Replit auth can be added later)
+  app.post('/api/login', (req, res) => {
+    console.log('[AUTH] POST /api/login called');
+    try {
+      // Store user session
+      req.session.user = {
+        id: `user-${Date.now()}`,
+        email: req.body.email || 'user@example.com',
+        name: req.body.name || 'User',
+      };
+      console.log('[AUTH] User logged in:', req.session.user);
+      res.json({ success: true, user: req.session.user });
+    } catch (error) {
+      console.error('[AUTH] Login error:', error);
+      res.status(500).json({ error: 'Login failed' });
+    }
   });
+  console.log('[AUTH]   ✓ POST /api/login');
 
-  app.get("/api/logout", (req, res) => {
-    req.logout((err) => {
+  // Logout endpoint
+  app.post('/api/logout', (req, res) => {
+    console.log('[AUTH] POST /api/logout called');
+    req.session.destroy((err) => {
       if (err) {
-        return res.status(500).json({ message: "Logout failed" });
+        console.error('[AUTH] Logout error:', err);
+        return res.status(500).json({ error: 'Logout failed' });
       }
-      res.redirect(
-        client.buildEndSessionUrl(config, {
-          client_id: process.env.REPL_ID,
-          post_logout_redirect_uri: `${req.protocol}://${req.hostname}`,
-        }).href
-      );
+      console.log('[AUTH] User logged out');
+      res.json({ success: true });
     });
   });
+  console.log('[AUTH]   ✓ POST /api/logout');
 
-  // Auth user endpoint
-  app.get("/api/auth/user", async (req, res) => {
-    const user = req.user;
-    
-    if (!user || !user?.claims?.sub) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-    
-    try {
-      const userId = user.claims.sub;
-      // For now, return the user claims as the user object
-      // The frontend will use this to determine if user is authenticated
-      res.json({
-        id: userId,
-        email: user.claims?.email,
-        firstName: user.claims?.first_name,
-        lastName: user.claims?.last_name,
-        profileImageUrl: user.claims?.profile_image_url
-      });
-    } catch (error) {
-      console.error("[AUTH] Error fetching user:", error);
-      res.status(500).json({ message: "Failed to fetch user" });
-    }
-  });
+  console.log('[AUTH] ✓ Auth setup complete - all routes registered');
 }
-
-export const isAuthenticated = async (req, res, next) => {
-  const user = req.user;
-
-  if (!user || !user?.expires_at) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-
-  const now = Math.floor(Date.now() / 1000);
-  if (now <= user.expires_at) {
-    return next();
-  }
-
-  const refreshToken = user.refresh_token;
-  if (!refreshToken) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-
-  try {
-    const config = await getOidcConfig();
-    const tokenResponse = await client.refreshTokenGrant(config, refreshToken);
-    updateUserSession(user, tokenResponse);
-    return next();
-  } catch (error) {
-    console.error("[AUTH] Refresh token failed:", error.message);
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-};
