@@ -328,7 +328,38 @@ export const InventoryTab = ({
 
         {/* Folder List */}
         <div className="rounded-lg p-4 border-2 border-teal-500/50 bg-gradient-to-br from-slate-900/50 to-slate-800/50 space-y-2 max-h-96 overflow-y-auto">
-          <h3 className="text-sm font-semibold text-teal-300 mb-3">📁 Folders</h3>
+          <h3 className="text-sm font-semibold text-teal-300 mb-3">📁 Views</h3>
+          
+          {/* All Cards View */}
+          <button
+            onClick={() => setSelectedFolder(null)}
+            className={`w-full text-left p-3 rounded-lg transition-colors ${
+              selectedFolder === null
+                ? 'bg-teal-600/40 border-l-4 border-teal-400'
+                : 'bg-slate-800 border-l-4 border-transparent hover:bg-slate-700'
+            }`}
+          >
+            <div className="font-medium text-sm text-slate-100">All Cards</div>
+            <div className="text-xs text-teal-300">Complete inventory</div>
+          </button>
+
+          {/* Uncategorized View */}
+          {groupedByFolder['Uncategorized'] && (
+            <button
+              onClick={() => setSelectedFolder('Uncategorized')}
+              className={`w-full text-left p-3 rounded-lg transition-colors ${
+                selectedFolder === 'Uncategorized'
+                  ? 'bg-slate-600/40 border-l-4 border-slate-400'
+                  : 'bg-slate-800 border-l-4 border-transparent hover:bg-slate-700'
+              }`}
+            >
+              <div className="font-medium text-sm text-slate-100">Uncategorized</div>
+              <div className="text-xs text-slate-400">{Object.keys(groupedByFolder['Uncategorized']).length} cards</div>
+            </button>
+          )}
+
+          <div className="border-t border-slate-700 my-2"></div>
+          <h3 className="text-xs font-semibold text-slate-400 mt-3 mb-2">Custom Folders</h3>
           
           {/* Created Folders */}
           {createdFolders.map((folderName) => {
@@ -377,21 +408,6 @@ export const InventoryTab = ({
                 </button>
               );
             })}
-
-          {/* Uncategorized */}
-          {groupedByFolder['Uncategorized'] && (
-            <button
-              onClick={() => setSelectedFolder(selectedFolder === 'Uncategorized' ? null : 'Uncategorized')}
-              className={`w-full text-left p-3 rounded-lg transition-colors ${
-                selectedFolder === 'Uncategorized'
-                  ? 'bg-slate-600/40 border-l-4 border-slate-400'
-                  : 'bg-slate-800 border-l-4 border-transparent hover:bg-slate-700'
-              }`}
-            >
-              <div className="font-medium text-sm text-slate-100">Uncategorized</div>
-              <div className="text-xs text-slate-400">{Object.keys(groupedByFolder['Uncategorized']).length} cards</div>
-            </button>
-          )}
         </div>
       </div>
 
