@@ -347,6 +347,169 @@ app.get('/api/prices/:cardName/:setCode', priceLimiter, async (req, res) => {
   }
 });
 
+// ========== INVENTORY ENDPOINTS ==========
+app.get('/api/inventory', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT id, name, set, set_name, quantity, purchase_price, purchase_date, 
+              reorder_type, image_url, scryfall_id, location, is_shared_location, created_at 
+       FROM inventory ORDER BY name ASC`
+    );
+    res.json(result.rows);
+  } catch (error) {
+    console.error('[INVENTORY] Error fetching:', error.message);
+    res.status(500).json({ error: 'Failed to fetch inventory' });
+  }
+});
+
+app.post('/api/inventory', async (req, res) => {
+  const { name, set, set_name, quantity, purchase_price, purchase_date, reorder_type, image_url, location, is_shared_location } = req.body;
+  
+  if (!name) {
+    return res.status(400).json({ error: 'Card name is required' });
+  }
+
+  try {
+    const result = await pool.query(
+      `INSERT INTO inventory (name, set, set_name, quantity, purchase_price, purchase_date, reorder_type, image_url, location, is_shared_location, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
+       RETURNING *`,
+      [name, set || null, set_name || null, quantity || 1, purchase_price || null, purchase_date || null, reorder_type || 'normal', image_url || null, location || 'Unspecified', is_shared_location || false]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error('[INVENTORY] Error creating:', error.message);
+    res.status(500).json({ error: 'Failed to create inventory item' });
+  }
+});
+
+app.put('/api/inventory/:id', async (req, res) => {
+  const { id } = req.params;
+  const { quantity, purchase_price, purchase_date, reorder_type, location, is_shared_location } = req.body;
+
+  try {
+    const updates = [];
+    const values = [];
+    let paramCount = 1;
+
+    if (quantity !== undefined) {
+      updates.push(`quantity = $${paramCount++}`);
+      values.push(quantity);
+    }
+    if (purchase_price !== undefined) {
+      updates.push(`purchase_price = $${paramCount++}`);
+      values.push(purchase_price);
+    }
+    if (purchase_date !== undefined) {
+      updates.push(`purchase_date = $${paramCount++}`);
+      values.push(purchase_date);
+    }
+    if (reorder_type !== undefined) {
+      updates.push(`reorder_type = $${paramCount++}`);
+      values.push(reorder_type);
+    }
+    if (location !== undefined) {
+      updates.push(`location = $${paramCount++}`);
+      values.push(location);
+    }
+    if (is_shared_location !== undefined) {
+      updates.push(`is_shared_location = $${paramCount++}`);
+      values.push(is_shared_location);
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ error: 'No fields to update' });
+    }
+
+    values.push(id);
+    const query = `UPDATE inventory SET ${updates.join(', ')} WHERE id = $${paramCount} RETURNING *`;
+    const result = await pool.query(query, values);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Inventory item not found' });
+    }
+    
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('[INVENTORY] Error updating:', error.message);
+    res.status(500).json({ error: 'Failed to update inventory item' });
+  }
+});
+
+app.delete('/api/inventory/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const result = await pool.query(
+      'DELETE FROM inventory WHERE id = $1 RETURNING *',
+      [id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Inventory item not found' });
+    }
+    
+    res.json({ message: 'Inventory item deleted', item: result.rows[0] });
+  } catch (error) {
+    console.error('[INVENTORY] Error deleting:', error.message);
+    res.status(500).json({ error: 'Failed to delete inventory item' });
+  }
+});
+
+// ========== CONTAINERS ENDPOINTS ==========
+app.get('/api/containers', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT id, name, location, cards, created_at 
+       FROM containers ORDER BY location ASC, name ASC`
+    );
+    res.json(result.rows);
+  } catch (error) {
+    console.error('[CONTAINERS] Error fetching:', error.message);
+    res.status(500).json({ error: 'Failed to fetch containers' });
+  }
+});
+
+app.post('/api/containers', async (req, res) => {
+  const { name, location } = req.body;
+  
+  if (!name || !location) {
+    return res.status(400).json({ error: 'Name and location are required' });
+  }
+
+  try {
+    const result = await pool.query(
+      `INSERT INTO containers (name, location, cards, created_at)
+       VALUES ($1, $2, '[]', NOW())
+       RETURNING *`,
+      [name, location]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error('[CONTAINERS] Error creating:', error.message);
+    res.status(500).json({ error: 'Failed to create container' });
+  }
+});
+
+app.delete('/api/containers/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const result = await pool.query(
+      'DELETE FROM containers WHERE id = $1 RETURNING *',
+      [id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Container not found' });
+    }
+    
+    res.json({ message: 'Container deleted', container: result.rows[0] });
+  } catch (error) {
+    console.error('[CONTAINERS] Error deleting:', error.message);
+    res.status(500).json({ error: 'Failed to delete container' });
+  }
+});
 
 // ========== IMPORTS ENDPOINTS ==========
 app.get('/api/imports', async (req, res) => {
