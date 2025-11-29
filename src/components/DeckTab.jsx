@@ -354,25 +354,46 @@ export const DeckTab = () => {
             </h2>
             <div className="flex gap-2">
               <button
-                onClick={() => setShowImportArchidekt(true)}
-                disabled={showImportDecklist || showBuildDeck}
-                className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+                onClick={() => {
+                  setShowImportArchidekt(!showImportArchidekt);
+                  setShowImportDecklist(false);
+                  setShowBuildDeck(false);
+                }}
+                className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors text-white ${
+                  showImportArchidekt
+                    ? 'bg-blue-500 shadow-lg shadow-blue-500/50'
+                    : 'bg-blue-600 hover:bg-blue-700'
+                }`}
               >
                 <Download className="w-4 h-4" />
                 Import from Archidekt
               </button>
               <button
-                onClick={() => setShowImportDecklist(true)}
-                disabled={showImportArchidekt || showBuildDeck}
-                className="bg-purple-600 hover:bg-purple-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+                onClick={() => {
+                  setShowImportDecklist(!showImportDecklist);
+                  setShowImportArchidekt(false);
+                  setShowBuildDeck(false);
+                }}
+                className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors text-white ${
+                  showImportDecklist
+                    ? 'bg-purple-500 shadow-lg shadow-purple-500/50'
+                    : 'bg-purple-600 hover:bg-purple-700'
+                }`}
               >
                 <Download className="w-4 h-4" />
                 Import Decklist
               </button>
               <button
-                onClick={() => setShowBuildDeck(true)}
-                disabled={showImportArchidekt || showImportDecklist}
-                className="bg-teal-600 hover:bg-teal-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+                onClick={() => {
+                  setShowBuildDeck(!showBuildDeck);
+                  setShowImportArchidekt(false);
+                  setShowImportDecklist(false);
+                }}
+                className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors text-white ${
+                  showBuildDeck
+                    ? 'bg-teal-500 shadow-lg shadow-teal-500/50'
+                    : 'bg-teal-600 hover:bg-teal-700'
+                }`}
               >
                 <Plus className="w-4 h-4" />
                 Build Deck
