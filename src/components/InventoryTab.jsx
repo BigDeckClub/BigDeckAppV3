@@ -37,15 +37,23 @@ export const InventoryTab = ({
 }) => {
   const [showOutOfStock, setShowOutOfStock] = useState(false);
   const [expandedFolders, setExpandedFolders] = useState({});
+  const [expandedLocations, setExpandedLocations] = useState({});
   const [newFolderName, setNewFolderName] = useState('');
   const [showCreateFolder, setShowCreateFolder] = useState(false);
   const [createdFolders, setCreatedFolders] = useState([]);
+  const [newLocationName, setNewLocationName] = useState('');
+  const [showCreateLocation, setShowCreateLocation] = useState(false);
+  const [createdLocations, setCreatedLocations] = useState([]);
 
-  // Load created folders from localStorage
+  // Load created folders and locations from localStorage
   useEffect(() => {
-    const saved = localStorage.getItem('createdFolders');
-    if (saved) {
-      setCreatedFolders(JSON.parse(saved));
+    const savedFolders = localStorage.getItem('createdFolders');
+    if (savedFolders) {
+      setCreatedFolders(JSON.parse(savedFolders));
+    }
+    const savedLocations = localStorage.getItem('createdLocations');
+    if (savedLocations) {
+      setCreatedLocations(JSON.parse(savedLocations));
     }
   }, []);
 
@@ -56,6 +64,16 @@ export const InventoryTab = ({
       const updated = [...createdFolders, trimmedName];
       setCreatedFolders(updated);
       localStorage.setItem('createdFolders', JSON.stringify(updated));
+    }
+  };
+
+  // Save created locations to localStorage
+  const addCreatedLocation = (locationName) => {
+    const trimmedName = locationName.trim();
+    if (!createdLocations.includes(trimmedName)) {
+      const updated = [...createdLocations, trimmedName];
+      setCreatedLocations(updated);
+      localStorage.setItem('createdLocations', JSON.stringify(updated));
     }
   };
   
@@ -341,9 +359,11 @@ export const InventoryTab = ({
               autoFocus
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && newFolderName.trim()) {
+                  addCreatedFolder(newFolderName);
                   setNewFolderName('');
                   setShowCreateFolder(false);
-                  setSuccessMessage(`Folder "${newFolderName.trim()}" created! Add cards to it from the Imports tab.`);
+                  setExpandedFolders({...expandedFolders, [newFolderName.trim()]: true});
+                  setSuccessMessage(`Folder "${newFolderName.trim()}" created!`);
                   setTimeout(() => setSuccessMessage(''), 3000);
                 }
                 if (e.key === 'Escape') {
@@ -359,7 +379,7 @@ export const InventoryTab = ({
                   setNewFolderName('');
                   setShowCreateFolder(false);
                   setExpandedFolders({...expandedFolders, [newFolderName.trim()]: true});
-                  setSuccessMessage(`Folder "${newFolderName.trim()}" created! Add cards to it from the Imports tab.`);
+                  setSuccessMessage(`Folder "${newFolderName.trim()}" created!`);
                   setTimeout(() => setSuccessMessage(''), 3000);
                 }
               }}
@@ -379,6 +399,112 @@ export const InventoryTab = ({
           </div>
         )}
       </div>
+
+      {/* Create Location Section */}
+      <div className="rounded-lg p-4 sm:p-6 border-2 border-blue-600/60 bg-gradient-to-br from-blue-900/20 to-blue-800/10">
+        {!showCreateLocation ? (
+          <button
+            onClick={() => setShowCreateLocation(true)}
+            className="flex items-center gap-2 text-blue-300 hover:text-blue-200 font-semibold transition-colors"
+          >
+            <Plus className="w-5 h-5" />
+            Create New Location
+          </button>
+        ) : (
+          <div className="flex gap-2">
+            <input
+              type="text"
+              placeholder="Location name (e.g., Shelf A, Box 1)"
+              value={newLocationName}
+              onChange={(e) => setNewLocationName(e.target.value)}
+              className="flex-1 bg-slate-800 border border-blue-600 rounded px-4 py-2 text-white placeholder-gray-400 text-sm"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && newLocationName.trim()) {
+                  addCreatedLocation(newLocationName);
+                  setNewLocationName('');
+                  setShowCreateLocation(false);
+                  setExpandedLocations({...expandedLocations, [newLocationName.trim()]: true});
+                  setSuccessMessage(`Location "${newLocationName.trim()}" created!`);
+                  setTimeout(() => setSuccessMessage(''), 3000);
+                }
+                if (e.key === 'Escape') {
+                  setNewLocationName('');
+                  setShowCreateLocation(false);
+                }
+              }}
+            />
+            <button
+              onClick={() => {
+                if (newLocationName.trim()) {
+                  addCreatedLocation(newLocationName);
+                  setNewLocationName('');
+                  setShowCreateLocation(false);
+                  setExpandedLocations({...expandedLocations, [newLocationName.trim()]: true});
+                  setSuccessMessage(`Location "${newLocationName.trim()}" created!`);
+                  setTimeout(() => setSuccessMessage(''), 3000);
+                }
+              }}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-semibold transition-colors"
+            >
+              Create
+            </button>
+            <button
+              onClick={() => {
+                setNewLocationName('');
+                setShowCreateLocation(false);
+              }}
+              className="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded text-sm transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Locations Grid */}
+      {createdLocations.length > 0 && (
+        <div className="rounded-lg p-4 sm:p-6 border-2 border-blue-500/50 bg-gradient-to-br from-slate-900/50 to-slate-800/50">
+          <h2 className="text-lg sm:text-xl font-bold mb-4 text-blue-300">📍 Locations</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {createdLocations.map((locationName) => {
+              const cardsAtLocation = inventory.filter(item => item.location === locationName);
+              const totalCards = cardsAtLocation.length;
+              const isLocationExpanded = expandedLocations[locationName];
+              
+              return (
+                <div key={locationName} className="flex flex-col">
+                  <button
+                    onClick={() => setExpandedLocations({...expandedLocations, [locationName]: !isLocationExpanded})}
+                    className="bg-gradient-to-br from-blue-900/40 to-blue-800/40 border-2 border-blue-600/50 hover:border-blue-400 rounded-lg p-6 flex flex-col items-center justify-center min-h-48 transition-all hover:from-blue-900/60 hover:to-blue-800/60"
+                  >
+                    <div className="text-4xl mb-3">📍</div>
+                    <h3 className="font-semibold text-slate-100 text-center text-sm">{locationName}</h3>
+                    <p className="text-xs text-blue-300 mt-2">{totalCards} {totalCards === 1 ? 'card' : 'cards'}</p>
+                  </button>
+                  
+                  {isLocationExpanded && (
+                    <div className="mt-2 p-4 bg-slate-900/50 border border-blue-600/30 rounded-lg">
+                      {totalCards > 0 ? (
+                        <div className="text-sm space-y-2 max-h-64 overflow-y-auto">
+                          {cardsAtLocation.map(card => (
+                            <div key={card.id} className="p-2 bg-slate-800 rounded border border-slate-600 text-slate-100">
+                              <div className="font-semibold text-xs">{card.name}</div>
+                              <div className="text-xs text-slate-400">Qty: {card.quantity}</div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-slate-400 text-sm text-center py-4">No cards at this location.</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* My Folders Section (Legacy - for folders with cards but not explicitly created) */}
       {Object.keys(groupedByFolder).some(f => f !== 'Uncategorized' && !createdFolders.includes(f)) && (

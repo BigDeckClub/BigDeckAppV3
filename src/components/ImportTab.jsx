@@ -22,6 +22,16 @@ export const ImportTab = ({
   handleSearch
 }) => {
   const [showImportForm, setShowImportForm] = useState(false);
+  const [createdFolders, setCreatedFolders] = useState([]);
+  const [createdLocations, setCreatedLocations] = useState([]);
+
+  // Load folders and locations from localStorage
+  React.useEffect(() => {
+    const savedFolders = localStorage.getItem('createdFolders');
+    if (savedFolders) setCreatedFolders(JSON.parse(savedFolders));
+    const savedLocations = localStorage.getItem('createdLocations');
+    if (savedLocations) setCreatedLocations(JSON.parse(savedLocations));
+  }, []);
   const [importForm, setImportForm] = useState({
     title: '',
     description: '',
@@ -115,23 +125,29 @@ export const ImportTab = ({
             </div>
             <div>
               <label className="block text-sm font-semibold mb-2">Folder:</label>
-              <input
-                type="text"
-                placeholder="e.g. Modern, Standard"
+              <select
                 value={newEntry.folder || 'Uncategorized'}
                 onChange={(e) => setNewEntry({...newEntry, folder: e.target.value || 'Uncategorized'})}
-                className="w-full bg-slate-800 border border-slate-600 rounded px-4 py-2 text-white placeholder-gray-400 text-sm"
-              />
+                className="w-full bg-slate-800 border border-slate-600 rounded px-4 py-2 text-white text-sm"
+              >
+                <option value="Uncategorized">Uncategorized</option>
+                {createdFolders.map(folder => (
+                  <option key={folder} value={folder}>{folder}</option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="block text-sm font-semibold mb-2">Location:</label>
-              <input
-                type="text"
-                placeholder="e.g. Shelf A, Box 1"
-                value={newEntry.location}
+              <select
+                value={newEntry.location || ''}
                 onChange={(e) => setNewEntry({...newEntry, location: e.target.value})}
-                className="w-full bg-slate-800 border border-slate-600 rounded px-4 py-2 text-white placeholder-gray-400 text-sm"
-              />
+                className="w-full bg-slate-800 border border-slate-600 rounded px-4 py-2 text-white text-sm"
+              >
+                <option value="">Select a location</option>
+                {createdLocations.map(location => (
+                  <option key={location} value={location}>{location}</option>
+                ))}
+              </select>
             </div>
           </div>
           <label className="flex items-center gap-2 mt-4 text-slate-300 cursor-pointer">
