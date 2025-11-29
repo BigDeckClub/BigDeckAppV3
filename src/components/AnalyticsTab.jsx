@@ -80,14 +80,16 @@ export const AnalyticsTab = ({ inventory }) => {
       {/* Key Metrics - Market Values */}
       <div className="mb-8">
         <h3 className="text-sm font-semibold text-slate-400 mb-3">Current Market Value</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-slate-800 border border-slate-600 rounded-lg p-4">
-            <div className="text-slate-400 text-xs font-semibold mb-1">Total Card Kingdom Value</div>
-            <div className="text-2xl font-bold text-purple-300">${marketValues.cardkingdom.toFixed(2)}</div>
-          </div>
-          <div className="bg-slate-800 border border-slate-600 rounded-lg p-4">
-            <div className="text-slate-400 text-xs font-semibold mb-1">Total TCGPlayer Value</div>
-            <div className="text-2xl font-bold text-pink-300">${marketValues.tcgplayer.toFixed(2)}</div>
+        <div className="bg-slate-800 border border-slate-600 rounded-lg p-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <div className="text-slate-400 text-xs font-semibold mb-2">Card Kingdom Value</div>
+              <div className="text-2xl font-bold text-purple-300">${marketValues.cardkingdom.toFixed(2)}</div>
+            </div>
+            <div>
+              <div className="text-slate-400 text-xs font-semibold mb-2">TCGPlayer Value</div>
+              <div className="text-2xl font-bold text-pink-300">${marketValues.tcgplayer.toFixed(2)}</div>
+            </div>
           </div>
         </div>
       </div>
