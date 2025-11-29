@@ -192,7 +192,7 @@ export const InventoryTab = ({
                 const isEditing = editingId === firstItem.id;
                 
                 return (
-                  <div key={`${firstItem.set}-${firstItem.id}`} className="bg-slate-900/60 border border-slate-600/50 hover:border-teal-500 rounded-lg p-3 transition-colors">
+                  <div key={`${firstItem.set}-${firstItem.id}`} className="bg-slate-900/60 border border-slate-600/50 hover:border-teal-500 rounded-lg p-2 transition-colors">
                   {isEditing ? (
                     <div className="space-y-2">
                       <div className="text-sm font-semibold text-slate-100">{firstItem.set_name} ({firstItem.set})</div>
@@ -248,7 +248,7 @@ export const InventoryTab = ({
                             <option value="bulk">Bulk</option>
                           </select>
                         </div>
-                        </div>
+                      </div>
                       <div className="flex gap-2 pt-2">
                         <button
                           onClick={() => updateInventoryItem(firstItem.id)}
@@ -267,18 +267,14 @@ export const InventoryTab = ({
                   ) : (
                     <>
                       <div 
-                        className="flex flex-col gap-2 cursor-pointer hover:bg-slate-800/50 p-2 rounded transition-colors"
+                        className="cursor-pointer hover:bg-slate-800/30 p-1 rounded transition-colors"
                         onClick={() => setExpandedSets({...expandedSets, [`${firstItem.set}-${cardName}`]: !expandedSets[`${firstItem.set}-${cardName}`]})}
                       >
-                        <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center justify-between gap-2 mb-1">
                           <div className="flex-1 min-w-0">
                             <div className="text-xs font-semibold text-slate-100 flex items-center gap-1">
                               <span>{expandedSets[`${firstItem.set}-${cardName}`] ? '▼' : '▶'}</span>
-                              <span className="line-clamp-2 break-words">{firstItem.set_name} ({setItems.length})</span>
-                            </div>
-                            <div className="flex gap-3 mt-1 text-xs">
-                              <div><span className="text-slate-500">Qty:</span> <span className="text-teal-300 font-semibold">{totalQtyInSet}</span></div>
-                              <div><span className="text-slate-500">Price:</span> <span className="text-blue-300 font-semibold">${(setItems.reduce((sum, item) => sum + (parseFloat(item.purchase_price) || 0), 0) / setItems.length).toFixed(2)}</span></div>
+                              <span className="truncate">{firstItem.set_name} ({setItems.length})</span>
                             </div>
                           </div>
                           <div className="flex gap-1 flex-shrink-0">
@@ -287,7 +283,7 @@ export const InventoryTab = ({
                                 e.stopPropagation();
                                 startEditingItem(firstItem);
                               }}
-                              className="bg-blue-600 hover:bg-blue-700 rounded px-2 py-1 text-xs"
+                              className="bg-blue-600 hover:bg-blue-700 rounded px-2 py-0.5 text-[11px] whitespace-nowrap"
                             >
                               Edit
                             </button>
@@ -296,11 +292,15 @@ export const InventoryTab = ({
                                 e.stopPropagation();
                                 deleteInventoryItem(firstItem.id);
                               }}
-                              className="bg-red-600 hover:bg-red-700 rounded px-2 py-1"
+                              className="bg-red-600 hover:bg-red-700 rounded px-2 py-0.5"
                             >
                               <Trash2 className="w-3 h-3" />
                             </button>
                           </div>
+                        </div>
+                        <div className="flex gap-3 text-[10px] ml-4">
+                          <div><span className="text-slate-500">Qty:</span> <span className="text-teal-300 font-semibold">{totalQtyInSet}</span></div>
+                          <div><span className="text-slate-500">Price:</span> <span className="text-blue-300 font-semibold">${(setItems.reduce((sum, item) => sum + (parseFloat(item.purchase_price) || 0), 0) / setItems.length).toFixed(2)}</span></div>
                         </div>
                       </div>
 
