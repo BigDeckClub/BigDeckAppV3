@@ -153,8 +153,6 @@ export const InventoryTab = ({
             </div>
           </div>
         </div>
-        {isExpanded && viewMode === 'card' && (
-          <div className="bg-slate-800 rounded-lg border border-slate-600 p-3 shadow-lg mt-2">
             <div className="flex flex-wrap gap-3">
               {Object.values(
                 items.reduce((acc, item) => {
