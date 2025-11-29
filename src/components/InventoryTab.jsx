@@ -194,17 +194,7 @@ export const InventoryTab = ({
                             <option value="bulk">Bulk</option>
                           </select>
                         </div>
-                        <div>
-                          <label className="text-xs text-slate-400">Location</label>
-                          <input
-                            type="text"
-                            value={editForm.location || ""}
-                            onChange={(e) => setEditForm({...editForm, location: e.target.value})}
-                            className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-sm"
-                            placeholder="e.g. Shelf A"
-                          />
                         </div>
-                      </div>
                       <div className="flex gap-2 pt-2">
                         <button
                           onClick={() => updateInventoryItem(item.id)}
@@ -224,15 +214,12 @@ export const InventoryTab = ({
                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
                       <div className="flex-1">
                         <div className="text-sm font-semibold text-slate-100">{item.set_name}</div>
-                        <div className="text-xs text-teal-300 mb-1">{item.location && `📍 ${item.location}`}{item.is_shared_location && ' (Shared)'}</div>
-                        <div className="grid grid-cols-3 gap-2 sm:gap-3 mt-1 text-xs">
-                          <div><span className="text-slate-400">Total:</span> <span className="text-white font-semibold">{item.quantity}</span></div>
-                          <div><span className="text-slate-400">In Cont:</span> <span className="text-white font-semibold">{item.quantity_in_containers || 0}</span></div>
-                          <div><span className="text-slate-400">Avail:</span> <span className="text-white font-semibold">{item.quantity_available || 0}</span></div>
+                        <div className="grid grid-cols-2 gap-2 sm:gap-3 mt-1 text-xs">
+                          <div><span className="text-slate-400">Qty:</span> <span className="text-white font-semibold">{item.quantity || 0}</span></div>
+                          <div><span className="text-slate-400">Price:</span> <span className="text-white font-semibold">${parseFloat(item.purchase_price || 0).toFixed(2)}</span></div>
                         </div>
                       </div>
                       <div className="flex flex-wrap items-center gap-2 sm:gap-4 sm:ml-4">
-                        <MarketPrices cardName={item.name} setCode={item.set} />
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
