@@ -379,15 +379,6 @@ async function startServer() {
     ViteExpress.listen(app, PORT, () => {
       console.log(`[SERVER] ✓ Running on port ${PORT}`);
       console.log('[SERVER] ✓ All systems ready');
-      
-      // Debug: List all registered routes
-      console.log('[ROUTES] Registered API routes:');
-      app._router.stack.forEach((middleware) => {
-        if (middleware.route) {
-          const methods = Object.keys(middleware.route.methods).map(m => m.toUpperCase()).join(',');
-          console.log(`  [${methods}] ${middleware.route.path}`);
-        }
-      });
     });
   } catch (error) {
     console.error('[APP] ✗ Failed to start server:', error);
