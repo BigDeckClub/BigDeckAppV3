@@ -314,19 +314,19 @@ app.get('/api/prices/:cardName/:setCode', priceLimiter, async (req, res) => {
       }
     }
     
-    // Get Card Kingdom price from MTGJSON using the card's UUID
+    // Get Card Kingdom price from MTGJSON using the card's Scryfall ID
     if (cardData) {
       try {
-        // Scryfall provides MTGJSON UUID in the identifiers object
-        const mtgjsonUuid = cardData.identifiers?.mtgjsonV4Id;
-        if (mtgjsonUuid) {
-          const ckPriceResult = mtgjsonService.getCardKingdomPrice(mtgjsonUuid);
+        // Scryfall returns the card's unique ID which we can use to look up MTGJSON prices
+        const scryfallId = cardData.id;
+        if (scryfallId) {
+          const ckPriceResult = mtgjsonService.getCardKingdomPriceByScryfallId(scryfallId);
           if (ckPriceResult) {
             ckPrice = ckPriceResult;
             console.log(`[PRICES] ✓ CK price found via MTGJSON: ${ckPrice}`);
+          } else {
+            console.log(`[PRICES] No CK price found in MTGJSON for Scryfall ID: ${scryfallId}`);
           }
-        } else {
-          console.log(`[PRICES] No MTGJSON UUID found for card`);
         }
       } catch (err) {
         console.error(`[PRICES] ✗ Failed to get CK price from MTGJSON:`, err.message);
