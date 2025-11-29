@@ -7,7 +7,6 @@ import {
   DollarSign,
   Settings,
   RefreshCw,
-  LogOut,
   Download,
 } from "lucide-react";
 import { useDebounce } from "./utils/useDebounce";
