@@ -9,6 +9,7 @@ import rateLimit from 'express-rate-limit';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { setupAuth } from './server/replitAuth.js';
+import { mtgjsonService } from './server/mtgjsonPriceService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -334,7 +335,21 @@ app.get('/api/prices/:cardName/:setCode', priceLimiter, async (req, res) => {
         }
       }
     } catch (err) {
-      // Silent fail
+      // Silent fail for CK scraping
+    }
+    
+    // If CK price not found, try MTGJSON as fallback
+    if (ckPrice === 'N/A') {
+      try {
+        // Try lookup by card name
+        const mtgjsonData = mtgjsonService.getPriceByName(cardName);
+        if (mtgjsonData?.ck) {
+          ckPrice = `$${mtgjsonData.ck}`;
+          console.log(`[PRICES] ✓ CK price from MTGJSON: ${ckPrice}`);
+        }
+      } catch (err) {
+        // Silent fail for MTGJSON fallback
+      }
     }
     
     res.setHeader('Content-Type', 'application/json');
@@ -360,6 +375,10 @@ async function startServer() {
   try {
     console.log('[APP] Initializing database...');
     await initializeDatabase();
+    
+    console.log('[APP] Initializing MTGJSON price service...');
+    await mtgjsonService.initialize();
+    console.log('[APP] ✓ MTGJSON service ready');
     
     console.log('[APP] Setting up authentication...');
     await setupAuth(app);
