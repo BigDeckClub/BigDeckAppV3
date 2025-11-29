@@ -383,11 +383,7 @@ function MTGInventoryTrackerContent() {
 
   const navItems = [
     { id: "inventory", icon: Layers, label: "Inventory" },
-    { id: "decklists", icon: FileText, label: "Decks" },
-    { id: "containers", icon: Package, label: "Locations" },
     { id: "imports", icon: Download, label: "Imports" },
-    { id: "analytics", icon: TrendingUp, label: "Stats" },
-    { id: "sales", icon: DollarSign, label: "Sales" },
   ];
 
   return (
@@ -410,39 +406,11 @@ function MTGInventoryTrackerContent() {
               Inventory
             </button>
             <button
-              onClick={() => setActiveTab("decklists")}
-              className={`px-4 py-2 nav-tab inactive ${activeTab === "decklists" ? "btn-primary" : "hover:shadow-lg"}`}
-            >
-              <FileText className="w-5 h-5 inline mr-2" />
-              Decklists
-            </button>
-            <button
-              onClick={() => setActiveTab("containers")}
-              className={`px-4 py-2 nav-tab inactive ${activeTab === "containers" ? "btn-primary" : "hover:shadow-lg"}`}
-            >
-              <Package className="w-5 h-5 inline mr-2" />
-              Containers
-            </button>
-            <button
-              onClick={() => setActiveTab("analytics")}
-              className={`px-4 py-2 nav-tab inactive ${activeTab === "analytics" ? "btn-primary" : "hover:shadow-lg"}`}
-            >
-              <TrendingUp className="w-5 h-5 inline mr-2" />
-              Analytics
-            </button>
-            <button
               onClick={() => setActiveTab("imports")}
               className={`px-4 py-2 nav-tab inactive ${activeTab === "imports" ? "btn-primary" : "hover:shadow-lg"}`}
             >
               <Download className="w-5 h-5 inline mr-2" />
               Imports
-            </button>
-            <button
-              onClick={() => setActiveTab("sales")}
-              className={`px-4 py-2 nav-tab inactive ${activeTab === "sales" ? "btn-primary" : "hover:shadow-lg"}`}
-            >
-              <DollarSign className="w-5 h-5 inline mr-2" />
-              Sales
             </button>
             <button
               onClick={() => setShowSettings(!showSettings)}
@@ -520,35 +488,6 @@ function MTGInventoryTrackerContent() {
           />
         )}
 
-        {/* Decklists Tab */}
-        {activeTab === "decklists" && !isLoading && (
-          <DecklistTab
-            decklists={decklists}
-            inventory={inventory}
-            defaultSearchSet={defaultSearchSet}
-            lastUsedSets={lastUsedSets}
-            setLastUsedSets={setLastUsedSets}
-            onLoadDecklists={loadDecklists}
-            successMessage={successMessage}
-            setSuccessMessage={setSuccessMessage}
-          />
-        )}
-
-        {/* Containers Tab */}
-        {activeTab === "containers" && !isLoading && (
-          <ContainersTab
-            containers={containers}
-            containerItems={containerItems}
-            decklists={decklists}
-            inventory={inventory}
-            onLoadContainers={loadContainers}
-            onLoadInventory={loadInventory}
-            onOpenSellModal={openSellModal}
-            successMessage={successMessage}
-            setSuccessMessage={setSuccessMessage}
-          />
-        )}
-
         {/* Imports Tab */}
         {activeTab === "imports" && !isLoading && (
           <ImportTab
@@ -556,28 +495,6 @@ function MTGInventoryTrackerContent() {
             onLoadImports={loadImports}
             successMessage={successMessage}
             setSuccessMessage={setSuccessMessage}
-          />
-        )}
-
-        {/* Sales Tab */}
-        {activeTab === "sales" && !isLoading && (
-          <SalesTab
-            sales={sales}
-            containers={containers}
-            decklists={decklists}
-            inventory={inventory}
-            calculateDeckCOGS={calculateDeckCOGS}
-          />
-        )}
-
-        {/* Analytics Tab */}
-        {activeTab === "analytics" && !isLoading && (
-          <AnalyticsTab
-            inventory={inventory}
-            containerItems={containerItems}
-            usageHistory={usageHistory}
-            reorderSettings={reorderSettings}
-            totalPurchased60Days={totalPurchased60Days}
           />
         )}
 
