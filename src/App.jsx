@@ -386,6 +386,20 @@ function MTGInventoryTrackerContent() {
             onLoadImports={loadImports}
             successMessage={successMessage}
             setSuccessMessage={setSuccessMessage}
+            newEntry={newEntry}
+            setNewEntry={setNewEntry}
+            selectedCardSets={selectedCardSets}
+            allSets={allSets}
+            defaultSearchSet={defaultSearchSet}
+            setDefaultSearchSet={setDefaultSearchSet}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            searchResults={searchResults}
+            showDropdown={showDropdown}
+            setShowDropdown={setShowDropdown}
+            selectCard={selectCard}
+            addCard={addCard}
+            handleSearch={handleSearch}
           />
         )}
 

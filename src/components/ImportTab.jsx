@@ -1,7 +1,26 @@
 import React, { useState } from 'react';
-import { Download, Plus, Trash2, CheckCircle, Clock } from 'lucide-react';
+import { Download, Plus, Trash2, CheckCircle, Clock, Layers, X } from 'lucide-react';
 
-export const ImportTab = ({ imports, onLoadImports, successMessage, setSuccessMessage }) => {
+export const ImportTab = ({ 
+  imports, 
+  onLoadImports, 
+  successMessage, 
+  setSuccessMessage,
+  newEntry,
+  setNewEntry,
+  selectedCardSets,
+  allSets,
+  defaultSearchSet,
+  setDefaultSearchSet,
+  searchQuery,
+  setSearchQuery,
+  searchResults,
+  showDropdown,
+  setShowDropdown,
+  selectCard,
+  addCard,
+  handleSearch
+}) => {
   const [showImportForm, setShowImportForm] = useState(false);
   const [importForm, setImportForm] = useState({
     title: '',
@@ -70,6 +89,171 @@ export const ImportTab = ({ imports, onLoadImports, successMessage, setSuccessMe
 
   return (
     <div className="space-y-6">
+      {/* Add Card Section */}
+      <div className="card rounded-lg p-4 sm:p-6 border border-slate-700">
+        <div className="flex items-center gap-3 mb-4">
+          <Layers className="w-6 h-6 text-teal-400" />
+          <h2 className="text-lg sm:text-xl font-bold">Add Card to Inventory</h2>
+        </div>
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold mb-2">Preferred Set (optional):</label>
+              <select
+                value={defaultSearchSet}
+                onChange={(e) => {
+                  setDefaultSearchSet(e.target.value);
+                  localStorage.setItem('defaultSearchSet', e.target.value);
+                }}
+                className="w-full bg-slate-800 border border-slate-600 rounded px-4 py-2 text-white"
+              >
+                <option value="">Show most recent from inventory</option>
+                {allSets.map(set => (
+                  <option key={set.code} value={set.code}>{set.code} - {set.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold mb-2">Location:</label>
+              <input
+                type="text"
+                placeholder="e.g. Shelf A, Box 1"
+                value={newEntry.location}
+                onChange={(e) => setNewEntry({...newEntry, location: e.target.value})}
+                className="w-full bg-slate-800 border border-slate-600 rounded px-4 py-2 text-white placeholder-gray-400"
+              />
+            </div>
+          </div>
+          <label className="flex items-center gap-2 mt-4 text-slate-300 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={newEntry.isSharedLocation}
+              onChange={(e) => setNewEntry({...newEntry, isSharedLocation: e.target.checked})}
+              className="w-4 h-4 rounded"
+            />
+            <span className="text-sm">This is a shared location</span>
+          </label>
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search for a card..."
+              value={searchQuery}
+              onChange={handleSearch}
+              onFocus={() => setShowDropdown(true)}
+              className="w-full bg-slate-800 border border-slate-600 rounded px-4 py-2 text-white placeholder-gray-400"
+            />
+            
+            {showDropdown && searchResults.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-slate-900 border border-slate-600 rounded-lg shadow-xl max-h-60 overflow-y-auto z-20">
+                {(() => {
+                  const seen = new Set();
+                  return searchResults
+                    .filter(card => {
+                      if (seen.has(card.name)) return false;
+                      seen.add(card.name);
+                      return true;
+                    })
+                    .map((card) => (
+                      <div
+                        key={card.id}
+                        onClick={() => selectCard(card)}
+                        className="px-4 py-3 hover:bg-teal-600/30 cursor-pointer border-b border-slate-700 last:border-b-0 active:bg-teal-600/50"
+                      >
+                        <div className="font-semibold text-sm sm:text-base">{card.name}</div>
+                      </div>
+                    ));
+                })()}
+              </div>
+            )}
+          </div>
+
+          {newEntry.selectedSet && (
+            <div className="space-y-2">
+              <div className="bg-slate-800 border border-slate-600 rounded p-3">
+                <div className="font-semibold">{newEntry.selectedSet.name}</div>
+                <div className="text-sm text-slate-300">{newEntry.selectedSet.setName} ({newEntry.selectedSet.set})</div>
+              </div>
+              {selectedCardSets.length > 1 && (
+                <div>
+                  <label className="block text-sm font-semibold mb-2">Change Set (if available):</label>
+                  <select
+                    value={`${newEntry.selectedSet.set}|${newEntry.selectedSet.name}`}
+                    onChange={(e) => {
+                      const selectedCard = selectedCardSets.find(c => `${c.set}|${c.name}` === e.target.value);
+                      if (selectedCard) selectCard(selectedCard);
+                    }}
+                    className="w-full bg-slate-800 border border-slate-600 rounded px-4 py-2 text-white"
+                  >
+                    {(() => {
+                      const seen = new Set();
+                      return selectedCardSets
+                        .filter(card => {
+                          if (seen.has(card.set)) return false;
+                          seen.add(card.set);
+                          return true;
+                        })
+                        .sort((a, b) => a.set.localeCompare(b.set))
+                        .map((card) => (
+                          <option key={`${card.id}`} value={`${card.set}|${card.name}`}>
+                            {card.set} - {card.setName}
+                          </option>
+                        ));
+                    })()}
+                  </select>
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            <input
+              type="number"
+              min="1"
+              value={newEntry.quantity}
+              onChange={(e) => setNewEntry({...newEntry, quantity: parseInt(e.target.value)})}
+              placeholder="Quantity"
+              className="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-3 text-white text-base"
+            />
+            <input
+              type="date"
+              value={newEntry.purchaseDate}
+              max={new Date().toISOString().split("T")[0]}
+              onChange={(e) => setNewEntry({...newEntry, purchaseDate: e.target.value})}
+              className="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-3 text-white text-base"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            <input
+              type="number"
+              step="0.01"
+              value={newEntry.purchasePrice}
+              onChange={(e) => setNewEntry({...newEntry, purchasePrice: e.target.value})}
+              placeholder="Purchase Price ($)"
+              className="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-3 text-white text-base"
+            />
+            <select
+              value={newEntry.reorderType}
+              onChange={(e) => setNewEntry({...newEntry, reorderType: e.target.value})}
+              className="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-3 text-white text-base"
+            >
+              <option value="normal">Normal</option>
+              <option value="land">Land</option>
+              <option value="bulk">Bulk</option>
+            </select>
+          </div>
+
+          <button
+            onClick={addCard}
+            disabled={!newEntry.selectedSet}
+            className="w-full btn-primary disabled:bg-gray-600 disabled:from-gray-600 disabled:to-gray-600 rounded-lg px-4 py-3 font-semibold transition"
+          >
+            <Plus className="w-5 h-5 inline mr-2" />
+            Add Card
+          </button>
+        </div>
+      </div>
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
