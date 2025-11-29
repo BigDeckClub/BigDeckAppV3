@@ -234,6 +234,22 @@ async function initializeDatabase() {
       )
     `);
 
+    // Decks table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS decks (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        format VARCHAR(50) DEFAULT 'Casual',
+        description TEXT,
+        cards JSONB DEFAULT '[]',
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    await pool.query(`ALTER TABLE decks ADD COLUMN IF NOT EXISTS cards JSONB DEFAULT '[]'`).catch(() => {});
+    await pool.query(`ALTER TABLE decks ADD COLUMN IF NOT EXISTS description TEXT`).catch(() => {});
+    await pool.query(`ALTER TABLE decks ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP`).catch(() => {});
+
     console.log('[DB] ✓ Database initialized successfully');
   } catch (err) {
     console.error('[DB] ✗ Failed to initialize database:', err);
