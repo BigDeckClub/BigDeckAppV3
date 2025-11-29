@@ -8,9 +8,49 @@ export const LoginModal = ({ isOpen, onClose }) => {
 
   const handleProceed = () => {
     setIsLoading(true);
-    setTimeout(() => {
+    // Open Replit login in a popup window instead of full page redirect
+    const width = 500;
+    const height = 600;
+    const left = window.innerWidth / 2 - width / 2;
+    const top = window.innerHeight / 2 - height / 2;
+    
+    const popup = window.open(
+      '/api/login',
+      'replitLogin',
+      `width=${width},height=${height},left=${left},top=${top},popup=yes`
+    );
+    
+    // Poll for redirect/success
+    if (popup) {
+      const checkInterval = setInterval(() => {
+        try {
+          // Check if popup was closed or redirected
+          if (popup.closed) {
+            clearInterval(checkInterval);
+            // Verify if user is now authenticated
+            fetch('/api/auth/user')
+              .then(res => {
+                if (res.ok) {
+                  // User is authenticated, redirect
+                  window.location.href = '/';
+                } else {
+                  setIsLoading(false);
+                }
+              })
+              .catch(() => setIsLoading(false));
+          }
+        } catch (e) {
+          // Ignore cross-origin errors
+        }
+      }, 500);
+      
+      // Auto-close checking after 5 minutes
+      setTimeout(() => clearInterval(checkInterval), 5 * 60 * 1000);
+    } else {
+      // Popup blocked, fallback to redirect
+      setIsLoading(false);
       window.location.href = '/api/login';
-    }, 600);
+    }
   };
 
   if (!isOpen) return null;
