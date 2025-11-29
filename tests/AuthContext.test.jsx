@@ -135,8 +135,6 @@ describe('AuthContext', () => {
   it('should handle fetch errors gracefully', async () => {
     mockFetch.mockRejectedValueOnce(new Error('Network error'));
 
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
     const wrapper = ({ children }) => <AuthProvider>{children}</AuthProvider>;
     const { result } = renderHook(() => useAuth(), { wrapper });
 
@@ -146,8 +144,6 @@ describe('AuthContext', () => {
 
     expect(result.current.user).toBe(null);
     expect(result.current.isAuthenticated).toBe(false);
-    
-    consoleSpy.mockRestore();
   });
 
   it('should throw error when useAuth is used outside provider', () => {

@@ -1,6 +1,21 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { LogIn, LogOut, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+
+/**
+ * Validates that a URL is a safe image URL (https or relative)
+ * @param {string|null|undefined} url
+ * @returns {boolean}
+ */
+function isValidImageUrl(url) {
+  if (!url || typeof url !== 'string') return false;
+  try {
+    const parsed = new URL(url, window.location.origin);
+    return parsed.protocol === 'https:' || parsed.protocol === 'http:';
+  } catch {
+    return false;
+  }
+}
 
 /**
  * User authentication button component
@@ -8,6 +23,7 @@ import { useAuth } from '../context/AuthContext';
  */
 export function UserAuth() {
   const { user, isLoading, isAuthenticated, login, logout } = useAuth();
+  const [imageError, setImageError] = useState(false);
 
   if (isLoading) {
     return (
@@ -30,14 +46,17 @@ export function UserAuth() {
     );
   }
 
+  const showDefaultAvatar = !user.profileImage || imageError || !isValidImageUrl(user.profileImage);
+
   return (
     <div className="flex items-center gap-3">
       <div className="flex items-center gap-2">
-        {user.profileImage ? (
+        {!showDefaultAvatar ? (
           <img
             src={user.profileImage}
-            alt={user.firstName || user.email}
+            alt={user.firstName || user.email || 'User avatar'}
             className="w-8 h-8 rounded-full"
+            onError={() => setImageError(true)}
           />
         ) : (
           <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center">

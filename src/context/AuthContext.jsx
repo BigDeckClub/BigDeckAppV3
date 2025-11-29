@@ -42,8 +42,8 @@ export function AuthProvider({ children }) {
       } else {
         setUser(null);
       }
-    } catch (error) {
-      console.error('[AUTH] Failed to fetch user:', error);
+    } catch {
+      // Failed to fetch user - user is not authenticated
       setUser(null);
     } finally {
       setIsLoading(false);
