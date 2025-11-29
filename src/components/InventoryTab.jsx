@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { Plus, Trash2, X, ChevronDown, ChevronRight, Grid3X3, List } from 'lucide-react';
+import { Plus, Trash2, X, ChevronDown, ChevronRight, Grid3X3, List, Menu } from 'lucide-react';
 import { usePriceCache } from "../context/PriceCacheContext";
 
 // Simple normalize functions
@@ -42,6 +42,7 @@ export const InventoryTab = ({
   const [activeTab, setActiveTab] = useState('all'); // 'all', 'unsorted', or folder name
   const [expandedSets, setExpandedSets] = useState({}); // Track expansion of individual sets within cards
   const [viewMode, setViewMode] = useState('card'); // 'card' or 'list'
+  const [sidebarOpen, setSidebarOpen] = useState(false); // Mobile sidebar toggle
 
   // Load created folders from localStorage
   useEffect(() => {
@@ -170,7 +171,7 @@ export const InventoryTab = ({
         
         {isExpanded && (
           <div className="mt-4 pt-4 border-t border-slate-700">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {Object.values(
                 items.reduce((acc, item) => {
                   const setKey = `${item.set || 'unknown'}-${item.set_name || 'unknown'}`;
@@ -325,7 +326,7 @@ export const InventoryTab = ({
   };
   
   return (
-    <div className="flex gap-6 min-h-screen">
+    <div className="flex gap-6 min-h-screen bg-slate-900">
       {successMessage && successMessage.includes('Error') && (
         <div className="fixed top-4 right-4 z-50 rounded-lg p-4 border flex items-center justify-between bg-red-900 bg-opacity-30 border-red-500 text-red-200">
           <span>{successMessage}</span>
@@ -338,8 +339,19 @@ export const InventoryTab = ({
         </div>
       )}
 
+      {/* Mobile Menu Button */}
+      <button
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+        className="fixed bottom-6 right-6 md:hidden z-40 bg-teal-600 hover:bg-teal-700 text-white p-3 rounded-full shadow-lg transition-colors"
+        title="Toggle Sidebar"
+      >
+        <Menu className="w-5 h-5" />
+      </button>
+
       {/* LEFT SIDEBAR - Folders */}
-      <div className="w-64 flex-shrink-0 space-y-4">
+      <div className={`fixed md:static w-64 flex-shrink-0 space-y-4 h-full md:h-auto overflow-y-auto md:overflow-visible bg-slate-900 md:bg-transparent z-30 transition-transform duration-300 ${
+        sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+      }`}>
         <div className="rounded-lg p-4 border-2 border-teal-600/60 bg-gradient-to-br from-teal-900/20 to-teal-800/10 sticky top-4">
           {!showCreateFolder ? (
             <button
@@ -457,14 +469,22 @@ export const InventoryTab = ({
         </div>
       </div>
 
+      {/* Overlay for mobile */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-20 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* RIGHT CONTENT - Cards */}
-      <div className="flex-1 pb-6">
+      <div className="flex-1 pb-24 md:pb-6 px-2 md:px-0">
         {/* Tabs and View Mode */}
-        <div className="flex gap-4 mb-6 border-b border-slate-700 pb-4 items-center justify-between">
-          <div className="flex gap-2">
+        <div className="flex flex-col md:flex-row gap-3 md:gap-4 mb-6 border-b border-slate-700 pb-4 items-start md:items-center justify-between">
+          <div className="flex gap-2 w-full md:w-auto">
             <button
-              onClick={() => setActiveTab('all')}
-              className={`px-4 py-2 font-medium transition-colors ${
+              onClick={() => { setActiveTab('all'); setSidebarOpen(false); }}
+              className={`flex-1 md:flex-none px-3 md:px-4 py-2 text-sm md:text-base font-medium transition-colors ${
                 activeTab === 'all'
                   ? 'text-teal-300 border-b-2 border-teal-400'
                   : 'text-slate-400 hover:text-slate-300'
@@ -473,8 +493,8 @@ export const InventoryTab = ({
               All Cards
             </button>
             <button
-              onClick={() => setActiveTab('unsorted')}
-              className={`px-4 py-2 font-medium transition-colors ${
+              onClick={() => { setActiveTab('unsorted'); setSidebarOpen(false); }}
+              className={`flex-1 md:flex-none px-3 md:px-4 py-2 text-sm md:text-base font-medium transition-colors ${
                 activeTab === 'unsorted'
                   ? 'text-teal-300 border-b-2 border-teal-400'
                   : 'text-slate-400 hover:text-slate-300'
@@ -518,19 +538,19 @@ export const InventoryTab = ({
               <>
                 {viewMode === 'card' ? (
                   <>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
                       {inStockCards.map(renderCardGroup)}
                     </div>
                     {inStockCards.length > 0 && outOfStockCards.length > 0 && (
                       <div className="border-t border-slate-700 pt-4">
                         <h3 className="text-sm font-semibold text-slate-400 mb-3">Out of Stock</h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
                           {outOfStockCards.map(renderCardGroup)}
                         </div>
                       </div>
                     )}
                     {outOfStockCards.length > 0 && inStockCards.length === 0 && (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
                         {outOfStockCards.map(renderCardGroup)}
                       </div>
                     )}
@@ -563,7 +583,7 @@ export const InventoryTab = ({
             /* Show unsorted cards */
             groupedByFolder['Uncategorized'] && Object.keys(groupedByFolder['Uncategorized']).length > 0 ? (
               viewMode === 'card' ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
                   {Object.entries(groupedByFolder['Uncategorized']).map(renderCardGroup)}
                 </div>
               ) : (
@@ -578,7 +598,7 @@ export const InventoryTab = ({
             /* Show selected folder's cards */
             groupedByFolder[selectedFolder] && Object.keys(groupedByFolder[selectedFolder]).length > 0 ? (
               viewMode === 'card' ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
                   {Object.entries(groupedByFolder[selectedFolder]).map(renderCardGroup)}
                 </div>
               ) : (
