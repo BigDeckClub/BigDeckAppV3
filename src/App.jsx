@@ -1,17 +1,12 @@
 import React, { useState, useEffect } from "react";
 import {
   Layers,
-  Settings,
-  RefreshCw,
   Download,
 } from "lucide-react";
 import { useDebounce } from "./utils/useDebounce";
 import { InventoryTab } from "./components/InventoryTab";
 import { ImportTab } from "./components/ImportTab";
-import { SettingsPanel } from "./components/SettingsPanel";
 import { PriceCacheProvider, usePriceCache } from "./context/PriceCacheContext";
-import DecklistCardPrice from "./components/DecklistCardPrice";
-import { FloatingDollarSigns } from "./components/FloatingDollarSigns";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { useApi } from "./hooks/useApi";
 
@@ -24,14 +19,7 @@ function MTGInventoryTrackerContent() {
   const [activeTab, setActiveTab] = useState("inventory");
   const [inventory, setInventory] = useState([]);
   const [imports, setImports] = useState([]);
-  const [reorderSettings, setReorderSettings] = useState({
-    bulk: 12,
-    land: 20,
-    normal: 4,
-  });
-  const [usageHistory, setUsageHistory] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [totalPurchased60Days, setTotalPurchased60Days] = useState(0);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
@@ -50,11 +38,9 @@ function MTGInventoryTrackerContent() {
   const [allSets, setAllSets] = useState([]);
   const [successMessage, setSuccessMessage] = useState("");
   const [lastUsedSets, setLastUsedSets] = useState({});
-  const [showSettings, setShowSettings] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [expandedCards, setExpandedCards] = useState({});
-  const [showSaleAnimation, setShowSaleAnimation] = useState(false);
 
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
@@ -84,38 +70,6 @@ function MTGInventoryTrackerContent() {
     } catch (error) {
       setImports([]);
     }
-  };
-
-  const loadReorderSettings = async () => {
-    try {
-      const data = await get(`${API_BASE}/settings/reorder_thresholds`);
-      if (data) {
-        setReorderSettings(data);
-      }
-    } catch (error) {}
-  };
-
-  const saveReorderSettings = async () => {
-    try {
-      await post(`${API_BASE}/settings/reorder_thresholds`, { value: reorderSettings });
-      setShowSettings(false);
-    } catch (error) {}
-  };
-
-  const loadUsageHistory = async () => {
-    try {
-      const history = await get(`${API_BASE}/usage-history?limit=50`);
-      setUsageHistory(history);
-    } catch (error) {
-      setUsageHistory([]);
-    }
-  };
-
-  const recordUsage = async (action, details) => {
-    try {
-      await post(`${API_BASE}/usage-history`, { action, details });
-      await loadUsageHistory();
-    } catch (error) {}
   };
 
   const loadAllSets = async () => {
