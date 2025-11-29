@@ -96,11 +96,11 @@ export const AnalyticsTab = ({ inventory }) => {
         </div>
       </div>
 
-      {/* Cards by Set */}
+      {/* Value by Set */}
       <div className="bg-slate-800 border border-slate-600 rounded-lg p-4">
         <h3 className="text-lg font-semibold text-slate-100 mb-4 flex items-center gap-2">
           <DollarSign className="w-4 h-4 text-blue-300" />
-          By Set
+          Value by Set
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
           {Object.entries(bySet)
