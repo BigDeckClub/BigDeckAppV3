@@ -33,6 +33,7 @@ function MTGInventoryTrackerContent() {
   const [activeTab, setActiveTab] = useState("inventory");
   const [inventory, setInventory] = useState([]);
   const [decklists, setDecklists] = useState([]);
+  const [containers, setContainers] = useState([]);
   const [sales, setSales] = useState([]);
   const [imports, setImports] = useState([]);
   const [reorderSettings, setReorderSettings] = useState({
@@ -99,6 +100,14 @@ function MTGInventoryTrackerContent() {
     } catch (error) {}
   };
 
+  const loadContainers = async () => {
+    try {
+      const data = await get(`${API_BASE}/containers`);
+      setContainers(data || []);
+    } catch (error) {
+      setContainers([]);
+    }
+  };
 
   const loadSales = async () => {
     try {
@@ -214,6 +223,7 @@ function MTGInventoryTrackerContent() {
       await Promise.all([
         loadInventory(),
         loadDecklists(),
+        loadContainers(),
         loadSales(),
         loadReorderSettings(),
         loadUsageHistory(),
