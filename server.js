@@ -147,6 +147,26 @@ async function initializeDatabase() {
     `);
     await pool.query(`ALTER TABLE sales ADD COLUMN IF NOT EXISTS user_id VARCHAR(255) REFERENCES users(id) ON DELETE CASCADE`).catch(() => {});
 
+    // Imports table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS imports (
+        id SERIAL PRIMARY KEY,
+        user_id VARCHAR(255) REFERENCES users(id) ON DELETE CASCADE,
+        title VARCHAR(255) NOT NULL,
+        description TEXT,
+        card_list TEXT,
+        source VARCHAR(50),
+        status VARCHAR(50) DEFAULT 'pending',
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    await pool.query(`ALTER TABLE imports ADD COLUMN IF NOT EXISTS user_id VARCHAR(255) REFERENCES users(id) ON DELETE CASCADE`).catch(() => {});
+    await pool.query(`ALTER TABLE imports ADD COLUMN IF NOT EXISTS card_list TEXT`).catch(() => {});
+    await pool.query(`ALTER TABLE imports ADD COLUMN IF NOT EXISTS source VARCHAR(50)`).catch(() => {});
+    await pool.query(`ALTER TABLE imports ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'pending'`).catch(() => {});
+    await pool.query(`ALTER TABLE imports ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP`).catch(() => {});
+
     // Usage history table
     await pool.query(`
       CREATE TABLE IF NOT EXISTS usage_history (
@@ -343,6 +363,129 @@ app.get('/api/prices-test/:cardName/:setCode', (req, res) => {
     source: "test-endpoint",
     timestamp: new Date().toISOString()
   });
+});
+
+// ========== IMPORTS ENDPOINTS ==========
+app.get('/api/imports', async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT * FROM imports ORDER BY created_at DESC'
+    );
+    res.json(result.rows);
+  } catch (error) {
+    console.error('[IMPORTS] Error fetching imports:', error.message);
+    res.status(500).json({ error: 'Failed to fetch imports' });
+  }
+});
+
+app.post('/api/imports', async (req, res) => {
+  const { title, description, cardList, source, status } = req.body;
+  
+  if (!title || !cardList) {
+    return res.status(400).json({ error: 'Title and card list are required' });
+  }
+
+  try {
+    const result = await pool.query(
+      `INSERT INTO imports (title, description, card_list, source, status, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+       RETURNING *`,
+      [title, description || null, cardList, source || 'wholesale', status || 'pending']
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error('[IMPORTS] Error creating import:', error.message);
+    res.status(500).json({ error: 'Failed to create import' });
+  }
+});
+
+app.delete('/api/imports/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const result = await pool.query(
+      'DELETE FROM imports WHERE id = $1 RETURNING *',
+      [id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Import not found' });
+    }
+    
+    res.json({ message: 'Import deleted', import: result.rows[0] });
+  } catch (error) {
+    console.error('[IMPORTS] Error deleting import:', error.message);
+    res.status(500).json({ error: 'Failed to delete import' });
+  }
+});
+
+app.patch('/api/imports/:id/complete', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const result = await pool.query(
+      `UPDATE imports SET status = 'completed', updated_at = NOW()
+       WHERE id = $1
+       RETURNING *`,
+      [id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Import not found' });
+    }
+    
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('[IMPORTS] Error updating import:', error.message);
+    res.status(500).json({ error: 'Failed to update import' });
+  }
+});
+
+app.patch('/api/imports/:id', async (req, res) => {
+  const { id } = req.params;
+  const { title, description, cardList, source, status } = req.body;
+
+  try {
+    const updates = [];
+    const values = [];
+    let paramCount = 1;
+
+    if (title !== undefined) {
+      updates.push(`title = $${paramCount++}`);
+      values.push(title);
+    }
+    if (description !== undefined) {
+      updates.push(`description = $${paramCount++}`);
+      values.push(description);
+    }
+    if (cardList !== undefined) {
+      updates.push(`card_list = $${paramCount++}`);
+      values.push(cardList);
+    }
+    if (source !== undefined) {
+      updates.push(`source = $${paramCount++}`);
+      values.push(source);
+    }
+    if (status !== undefined) {
+      updates.push(`status = $${paramCount++}`);
+      values.push(status);
+    }
+
+    updates.push('updated_at = NOW()');
+    values.push(id);
+
+    const query = `UPDATE imports SET ${updates.join(', ')} WHERE id = $${paramCount} RETURNING *`;
+    const result = await pool.query(query, values);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Import not found' });
+    }
+    
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('[IMPORTS] Error updating import:', error.message);
+    res.status(500).json({ error: 'Failed to update import' });
+  }
 });
 
 // ========== STARTUP FUNCTION ==========
