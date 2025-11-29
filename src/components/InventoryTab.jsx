@@ -266,23 +266,23 @@ export const InventoryTab = ({
                     </div>
                   ) : (
                     <>
-                      <div className="space-y-2">
+                      <div className="space-y-3 p-3">
                         <div className="flex items-center justify-between">
                           <div 
                             className="flex-1 cursor-pointer flex items-center gap-2"
                             onClick={() => setExpandedSets({...expandedSets, [`${firstItem.set}-${cardName}`]: !expandedSets[`${firstItem.set}-${cardName}`]})}
                           >
-                            <span className="text-slate-400 text-sm">{expandedSets[`${firstItem.set}-${cardName}`] ? '▼' : '▶'}</span>
-                            <span className="text-sm font-semibold text-slate-100">{firstItem.set.toUpperCase()}</span>
-                            <span className="text-xs text-slate-500">({setItems.length})</span>
+                            <span className="text-slate-400">{expandedSets[`${firstItem.set}-${cardName}`] ? '▼' : '▶'}</span>
+                            <span className="text-base font-bold text-slate-100">{firstItem.set.toUpperCase()}</span>
+                            <span className="text-sm text-slate-500">({setItems.length})</span>
                           </div>
-                          <div className="flex gap-1">
+                          <div className="flex gap-2">
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 startEditingItem(firstItem);
                               }}
-                              className="bg-blue-600 hover:bg-blue-700 rounded px-2 py-1 text-xs text-white"
+                              className="bg-blue-600 hover:bg-blue-700 rounded px-3 py-1.5 text-sm text-white font-semibold"
                             >
                               Edit
                             </button>
@@ -291,25 +291,25 @@ export const InventoryTab = ({
                                 e.stopPropagation();
                                 deleteInventoryItem(firstItem.id);
                               }}
-                              className="bg-red-600 hover:bg-red-700 rounded px-2 py-1"
+                              className="bg-red-600 hover:bg-red-700 rounded px-3 py-1.5"
                             >
-                              <Trash2 className="w-3 h-3 text-white" />
+                              <Trash2 className="w-4 h-4 text-white" />
                             </button>
                           </div>
                         </div>
                         
-                        <div className="text-xs px-2 py-1 text-slate-300 bg-slate-900/40 rounded">
-                          <span className="text-slate-500">Qty:</span> <span className="text-teal-300 font-semibold">{totalQtyInSet}</span>
-                          <span className="text-slate-500 ml-3">Price:</span> <span className="text-blue-300 font-semibold">${(setItems.reduce((sum, item) => sum + (parseFloat(item.purchase_price) || 0), 0) / setItems.length).toFixed(2)}</span>
+                        <div className="text-sm px-3 py-2 text-slate-300 bg-slate-900/50 rounded space-y-1">
+                          <div><span className="text-slate-500">Qty:</span> <span className="text-teal-300 font-bold ml-2">{totalQtyInSet}</span></div>
+                          <div><span className="text-slate-500">Price:</span> <span className="text-blue-300 font-bold ml-2">${(setItems.reduce((sum, item) => sum + (parseFloat(item.purchase_price) || 0), 0) / setItems.length).toFixed(2)}</span></div>
                         </div>
 
                         {expandedSets[`${firstItem.set}-${cardName}`] && (
-                          <div className="space-y-1 px-2 py-1">
+                          <div className="space-y-2 pt-2 border-t border-slate-700">
                             {setItems.map((item) => (
-                              <div key={item.id} className="text-xs text-slate-400">
-                                <span className="text-slate-300">Qty {item.quantity}</span>
-                                <span className="text-slate-300 mx-2">• ${parseFloat(item.purchase_price || 0).toFixed(2)}</span>
-                                <span className="text-slate-500">{new Date(item.purchase_date).toLocaleDateString()}</span>
+                              <div key={item.id} className="text-sm text-slate-300 space-y-0.5">
+                                <div><span className="text-slate-500">Qty:</span> <span className="font-semibold ml-2">{item.quantity}</span></div>
+                                <div><span className="text-slate-500">Price:</span> <span className="font-semibold ml-2">${parseFloat(item.purchase_price || 0).toFixed(2)}</span></div>
+                                <div className="text-xs text-slate-500">{new Date(item.purchase_date).toLocaleDateString()}</div>
                               </div>
                             ))}
                           </div>
