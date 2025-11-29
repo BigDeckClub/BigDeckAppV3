@@ -114,31 +114,31 @@ export const InventoryTab = ({
     const isExpanded = expandedCards[cardName];
     
     return (
-      <div key={cardName} className="space-y-4">
-        {/* Card Name Thumbnail */}
+      <div key={cardName} className="space-y-3">
+        {/* Card Name Thumbnail - Smaller */}
         <div 
-          className="bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-slate-600 hover:border-teal-500 rounded-lg p-6 transition-colors cursor-pointer flex flex-col items-center justify-center min-h-56 hover:shadow-lg hover:shadow-teal-500/20" 
+          className="bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-slate-600 hover:border-teal-500 rounded-lg p-3 transition-colors cursor-pointer flex flex-col items-center justify-center min-h-40 hover:shadow-lg hover:shadow-teal-500/20" 
           onClick={() => setExpandedCards({...expandedCards, [cardName]: !isExpanded})}
         >
-          <div className="text-center mb-6 flex-1 flex flex-col justify-center">
-            <h3 className="text-2xl sm:text-3xl font-bold text-slate-100 break-words">{cardName}</h3>
-            <div className="text-teal-400 text-lg mt-2">
+          <div className="text-center mb-2 flex-1 flex flex-col justify-center">
+            <h3 className="text-sm sm:text-base font-bold text-slate-100 break-words line-clamp-2">{cardName}</h3>
+            <div className="text-teal-400 text-xs mt-1">
               {isExpanded ? '▼' : '▶'}
             </div>
           </div>
           
-          <div className="grid grid-cols-3 gap-6 w-full">
-            <div className="text-center">
-              <div className="text-[10px] sm:text-xs text-slate-400 mb-2">Total Copies</div>
-              <div className={`text-2xl sm:text-3xl font-bold ${totalQty === 0 ? 'text-slate-500' : 'text-teal-300'}`}>{totalQty}</div>
+          <div className="grid grid-cols-3 gap-2 w-full text-center">
+            <div>
+              <div className="text-[8px] text-slate-400 mb-0.5">Copies</div>
+              <div className={`text-base sm:text-lg font-bold ${totalQty === 0 ? 'text-slate-500' : 'text-teal-300'}`}>{totalQty}</div>
             </div>
-            <div className="text-center">
-              <div className="text-[10px] sm:text-xs text-slate-400 mb-2">Available</div>
-              <div className="text-2xl sm:text-3xl font-bold text-green-300">{available}</div>
+            <div>
+              <div className="text-[8px] text-slate-400 mb-0.5">Avail</div>
+              <div className="text-base sm:text-lg font-bold text-green-300">{available}</div>
             </div>
-            <div className="text-center">
-              <div className="text-[10px] sm:text-xs text-slate-400 mb-2">Avg Price</div>
-              <div className="text-2xl sm:text-3xl font-bold text-blue-300">${avgPrice.toFixed(2)}</div>
+            <div>
+              <div className="text-[8px] text-slate-400 mb-0.5">Price</div>
+              <div className="text-base sm:text-lg font-bold text-blue-300">${avgPrice.toFixed(2)}</div>
             </div>
           </div>
         </div>
@@ -458,19 +458,21 @@ export const InventoryTab = ({
             /* Show all cards - masterlist */
             Object.keys(groupedInventory).length > 0 ? (
               <>
-                {inStockCards.map(renderCardGroup)}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+                  {inStockCards.map(renderCardGroup)}
+                </div>
                 {inStockCards.length > 0 && outOfStockCards.length > 0 && (
                   <div className="border-t border-slate-700 pt-4">
                     <h3 className="text-sm font-semibold text-slate-400 mb-3">Out of Stock</h3>
-                    <div className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
                       {outOfStockCards.map(renderCardGroup)}
                     </div>
                   </div>
                 )}
                 {outOfStockCards.length > 0 && inStockCards.length === 0 && (
-                  <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
                     {outOfStockCards.map(renderCardGroup)}
-                  </>
+                  </div>
                 )}
               </>
             ) : (
@@ -479,7 +481,7 @@ export const InventoryTab = ({
           ) : activeTab === 'unsorted' ? (
             /* Show unsorted cards */
             groupedByFolder['Uncategorized'] && Object.keys(groupedByFolder['Uncategorized']).length > 0 ? (
-              <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
                 {Object.entries(groupedByFolder['Uncategorized']).map(renderCardGroup)}
               </div>
             ) : (
@@ -488,7 +490,7 @@ export const InventoryTab = ({
           ) : (
             /* Show selected folder's cards */
             groupedByFolder[selectedFolder] && Object.keys(groupedByFolder[selectedFolder]).length > 0 ? (
-              <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
                 {Object.entries(groupedByFolder[selectedFolder]).map(renderCardGroup)}
               </div>
             ) : (
