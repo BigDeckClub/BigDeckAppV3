@@ -99,7 +99,8 @@ export const InventoryTab = ({
     return totalQty === 0;
   });
   
-  const renderCardGroup = ([cardName, items]) => {
+  // Helper function to calculate card stats
+  const getCardStats = (items) => {
     const totalQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
     const available = totalQty;
     
@@ -118,45 +119,198 @@ export const InventoryTab = ({
       return value >= 100 ? value.toFixed(0) : value.toFixed(2);
     };
     
+    return { totalQty, available, avgPrice, totalValue, formatTotal };
+  };
+
+  // Render just the card tile (for grid placement)
+  const renderCardTile = ([cardName, items]) => {
+    const { totalQty, available, avgPrice, totalValue, formatTotal } = getCardStats(items);
     const isExpanded = expandedCards[cardName];
     
     return (
-      <div key={cardName} className={viewMode === 'card' ? 'space-y-2' : ''}>
-        {/* Card Name - Card View or List View */}
-        {viewMode === 'card' ? (
-        <div 
-          className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 hover:border-teal-500 rounded p-1.5 transition-colors cursor-pointer flex flex-col justify-between h-32 md:h-36 hover:shadow-lg hover:shadow-teal-500/20" 
-          onClick={() => setExpandedCards({...expandedCards, [cardName]: !isExpanded})}
-        >
-          <div className="text-center px-1">
-            <h3 className="text-[10px] md:text-xs font-bold text-slate-100 line-clamp-2 break-words">{cardName}</h3>
-          </div>
-          
-          <div className="flex-1 flex items-center justify-center min-h-0">
-            <div className="text-center">
-              <div className="text-slate-500 text-[7px] md:text-[8px]">Available</div>
-              <div className="text-2xl md:text-3xl font-bold text-green-300 leading-tight">{available}</div>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-3 gap-1 text-center text-[7px] md:text-[8px]">
-            <div className="space-y-0.5">
-              <div className="text-slate-500">Qty</div>
-              <div className={`font-semibold ${totalQty === 0 ? 'text-slate-500' : 'text-teal-300'}`}>{totalQty}</div>
-            </div>
-            <div className="space-y-0.5">
-              <div className="text-slate-500">Cost</div>
-              <div className="font-semibold text-blue-300">${avgPrice.toFixed(2)}</div>
-            </div>
-            <div className="space-y-0.5">
-              <div className="text-slate-500">Total</div>
-              <div className="font-semibold text-amber-400">${formatTotal(totalValue)}</div>
-            </div>
+      <div 
+        key={cardName}
+        className={`bg-gradient-to-br from-slate-800 to-slate-900 border ${isExpanded ? 'border-teal-500 ring-2 ring-teal-500/50' : 'border-slate-600 hover:border-teal-500'} rounded p-1.5 transition-colors cursor-pointer flex flex-col justify-between h-32 md:h-36 hover:shadow-lg hover:shadow-teal-500/20`}
+        onClick={() => setExpandedCards({...expandedCards, [cardName]: !isExpanded})}
+      >
+        <div className="text-center px-1">
+          <h3 className="text-[10px] md:text-xs font-bold text-slate-100 line-clamp-2 break-words">{cardName}</h3>
+        </div>
+        
+        <div className="flex-1 flex items-center justify-center min-h-0">
+          <div className="text-center">
+            <div className="text-slate-500 text-[7px] md:text-[8px]">Available</div>
+            <div className="text-2xl md:text-3xl font-bold text-green-300 leading-tight">{available}</div>
           </div>
         </div>
-        ) : (
-        /* List View */
-        <div className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 hover:border-teal-500 rounded p-3 transition-colors cursor-pointer hover:shadow-lg hover:shadow-teal-500/20">
+        
+        <div className="grid grid-cols-3 gap-1 text-center text-[7px] md:text-[8px]">
+          <div className="space-y-0.5">
+            <div className="text-slate-500">Qty</div>
+            <div className={`font-semibold ${totalQty === 0 ? 'text-slate-500' : 'text-teal-300'}`}>{totalQty}</div>
+          </div>
+          <div className="space-y-0.5">
+            <div className="text-slate-500">Cost</div>
+            <div className="font-semibold text-blue-300">${avgPrice.toFixed(2)}</div>
+          </div>
+          <div className="space-y-0.5">
+            <div className="text-slate-500">Total</div>
+            <div className="font-semibold text-amber-400">${formatTotal(totalValue)}</div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Render expanded content for a card (displayed outside grid at full width)
+  const renderExpandedContent = ([cardName, items]) => {
+    return (
+      <div key={`expanded-${cardName}`} className="mt-4 pt-4 border-t border-slate-700 bg-slate-900/50 rounded-lg p-4">
+        <div className="flex items-center justify-between mb-4">
+          <h4 className="text-lg font-bold text-teal-300">{cardName}</h4>
+          <button 
+            onClick={() => setExpandedCards({...expandedCards, [cardName]: false})}
+            className="text-slate-400 hover:text-slate-200 text-sm"
+          >
+            ✕ Close
+          </button>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {Object.values(
+            items.reduce((acc, item) => {
+              const setKey = `${item.set || 'unknown'}-${item.set_name || 'unknown'}`;
+              if (!acc[setKey]) {
+                acc[setKey] = [];
+              }
+              acc[setKey].push(item);
+              return acc;
+            }, {})
+          ).map((setItems) => {
+            const firstItem = setItems[0];
+            const totalQtyInSet = setItems.reduce((sum, item) => sum + (item.quantity || 0), 0);
+            const isEditing = editingId === firstItem.id;
+            
+            return (
+              <div key={`${firstItem.set}-${firstItem.id}`} className="bg-slate-800/80 border border-slate-500 rounded-lg transition-colors hover:border-teal-500">
+                {isEditing ? (
+                  <div className="space-y-2 p-4">
+                    <div className="text-sm font-semibold text-slate-100">{firstItem.set_name} ({firstItem.set})</div>
+                    <div>
+                      <label className="text-xs text-slate-400">Folder</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Modern, Standard, Bulk"
+                        value={editForm.folder || ''}
+                        onChange={(e) => setEditForm({...editForm, folder: e.target.value || 'Uncategorized'})}
+                        className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-sm mb-2"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-xs text-slate-400">Qty</label>
+                        <input
+                          type="number"
+                          min="1"
+                          value={editForm.quantity}
+                          onChange={(e) => setEditForm({...editForm, quantity: e.target.value})}
+                          className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-slate-400">Price</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={editForm.purchase_price}
+                          onChange={(e) => setEditForm({...editForm, purchase_price: e.target.value})}
+                          className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-slate-400">Date</label>
+                        <input
+                          type="date"
+                          value={editForm.purchase_date}
+                          onChange={(e) => setEditForm({...editForm, purchase_date: e.target.value})}
+                          className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-slate-400">Type</label>
+                        <select
+                          value={editForm.reorder_type}
+                          onChange={(e) => setEditForm({...editForm, reorder_type: e.target.value})}
+                          className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-sm"
+                        >
+                          <option value="normal">Normal</option>
+                          <option value="land">Land</option>
+                          <option value="bulk">Bulk</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 pt-2">
+                      <button
+                        onClick={() => updateInventoryItem(firstItem.id)}
+                        className="flex-1 bg-green-600 hover:bg-green-700 rounded px-3 py-1 text-sm font-semibold"
+                      >
+                        Save
+                      </button>
+                      <button
+                        onClick={() => setEditForm({})}
+                        className="flex-1 bg-gray-600 hover:bg-gray-700 rounded px-3 py-1 text-sm"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3 p-4">
+                    <div 
+                      className="cursor-pointer flex items-center gap-2"
+                      onClick={() => setExpandedSets({...expandedSets, [`${firstItem.set}-${cardName}`]: !expandedSets[`${firstItem.set}-${cardName}`]})}
+                    >
+                      <span className="text-slate-400">{expandedSets[`${firstItem.set}-${cardName}`] ? '▼' : '▶'}</span>
+                      <span className="text-base font-bold text-slate-100">{firstItem.set.toUpperCase()}</span>
+                      <span className="text-sm text-slate-500">({setItems.length})</span>
+                    </div>
+                    
+                    <div className="text-sm px-3 py-2 text-slate-300 bg-slate-900/50 rounded space-y-1">
+                      <div><span className="text-slate-500">Qty:</span> <span className="text-teal-300 font-bold ml-2">{totalQtyInSet}</span></div>
+                      <div><span className="text-slate-500">Price:</span> <span className="text-blue-300 font-bold ml-2">${(setItems.reduce((sum, item) => sum + (parseFloat(item.purchase_price) || 0), 0) / setItems.length).toFixed(2)}</span></div>
+                    </div>
+
+                    {expandedSets[`${firstItem.set}-${cardName}`] && (
+                      <div className="space-y-2 pt-2 border-t border-slate-700">
+                        {setItems.map((item) => (
+                          <div key={item.id} className="text-sm text-slate-300 space-y-0.5">
+                            <div><span className="text-slate-500">Qty:</span> <span className="font-semibold ml-2">{item.quantity}</span></div>
+                            <div><span className="text-slate-500">Price:</span> <span className="font-semibold ml-2">${parseFloat(item.purchase_price || 0).toFixed(2)}</span></div>
+                            <div className="text-xs text-slate-500">{new Date(item.purchase_date).toLocaleDateString()}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  // Render list view item with expandable content inline (since list is not constrained)
+  const renderListItem = ([cardName, items]) => {
+    const { totalQty, available, avgPrice, totalValue, formatTotal } = getCardStats(items);
+    const isExpanded = expandedCards[cardName];
+    
+    return (
+      <div key={cardName} className="space-y-2">
+        <div 
+          className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 hover:border-teal-500 rounded p-3 transition-colors cursor-pointer hover:shadow-lg hover:shadow-teal-500/20"
+          onClick={() => setExpandedCards({...expandedCards, [cardName]: !isExpanded})}
+        >
           <div className="flex items-center justify-between gap-4">
             <div className="flex-1 min-w-0">
               <h3 className="text-sm font-bold text-slate-100 break-words mb-1">{cardName}</h3>
@@ -172,10 +326,9 @@ export const InventoryTab = ({
             </div>
           </div>
         </div>
-        )}
         
         {isExpanded && (
-          <div className="mt-4 pt-4 border-t border-slate-700">
+          <div className="ml-4 pt-2 border-l-2 border-teal-500/50 pl-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {Object.values(
                 items.reduce((acc, item) => {
@@ -300,6 +453,21 @@ export const InventoryTab = ({
           </div>
         )}
       </div>
+    );
+  };
+
+  // Helper to render a card grid with expanded content below
+  const renderCardGridWithExpanded = (cards, groupedData = null) => {
+    // Find expanded card from this set of cards
+    const expandedCard = cards.find(([cardName]) => expandedCards[cardName]);
+    
+    return (
+      <>
+        <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-3">
+          {cards.map(renderCardTile)}
+        </div>
+        {expandedCard && renderExpandedContent(expandedCard)}
+      </>
     );
   };
   
@@ -516,39 +684,33 @@ export const InventoryTab = ({
               <>
                 {viewMode === 'card' ? (
                   <>
-                    <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-3">
-                      {inStockCards.map(renderCardGroup)}
-                    </div>
+                    {renderCardGridWithExpanded(inStockCards)}
                     {inStockCards.length > 0 && outOfStockCards.length > 0 && (
                       <div className="border-t border-slate-700 pt-4">
                         <h3 className="text-sm font-semibold text-slate-400 mb-3">Out of Stock</h3>
-                        <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-3">
-                          {outOfStockCards.map(renderCardGroup)}
-                        </div>
+                        {renderCardGridWithExpanded(outOfStockCards)}
                       </div>
                     )}
                     {outOfStockCards.length > 0 && inStockCards.length === 0 && (
-                      <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-3">
-                        {outOfStockCards.map(renderCardGroup)}
-                      </div>
+                      renderCardGridWithExpanded(outOfStockCards)
                     )}
                   </>
                 ) : (
                   <>
                     <div className="space-y-2">
-                      {inStockCards.map(renderCardGroup)}
+                      {inStockCards.map(renderListItem)}
                     </div>
                     {inStockCards.length > 0 && outOfStockCards.length > 0 && (
                       <div className="border-t border-slate-700 pt-4">
                         <h3 className="text-sm font-semibold text-slate-400 mb-2">Out of Stock</h3>
                         <div className="space-y-2">
-                          {outOfStockCards.map(renderCardGroup)}
+                          {outOfStockCards.map(renderListItem)}
                         </div>
                       </div>
                     )}
                     {outOfStockCards.length > 0 && inStockCards.length === 0 && (
                       <div className="space-y-2">
-                        {outOfStockCards.map(renderCardGroup)}
+                        {outOfStockCards.map(renderListItem)}
                       </div>
                     )}
                   </>
@@ -561,12 +723,10 @@ export const InventoryTab = ({
             /* Show unsorted cards */
             groupedByFolder['Uncategorized'] && Object.keys(groupedByFolder['Uncategorized']).length > 0 ? (
               viewMode === 'card' ? (
-                <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-3">
-                  {Object.entries(groupedByFolder['Uncategorized']).map(renderCardGroup)}
-                </div>
+                renderCardGridWithExpanded(Object.entries(groupedByFolder['Uncategorized']))
               ) : (
                 <div className="space-y-2">
-                  {Object.entries(groupedByFolder['Uncategorized']).map(renderCardGroup)}
+                  {Object.entries(groupedByFolder['Uncategorized']).map(renderListItem)}
                 </div>
               )
             ) : (
@@ -576,12 +736,10 @@ export const InventoryTab = ({
             /* Show selected folder's cards */
             groupedByFolder[selectedFolder] && Object.keys(groupedByFolder[selectedFolder]).length > 0 ? (
               viewMode === 'card' ? (
-                <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-3">
-                  {Object.entries(groupedByFolder[selectedFolder]).map(renderCardGroup)}
-                </div>
+                renderCardGridWithExpanded(Object.entries(groupedByFolder[selectedFolder]))
               ) : (
                 <div className="space-y-2">
-                  {Object.entries(groupedByFolder[selectedFolder]).map(renderCardGroup)}
+                  {Object.entries(groupedByFolder[selectedFolder]).map(renderListItem)}
                 </div>
               )
             ) : (
