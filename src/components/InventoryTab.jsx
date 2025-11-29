@@ -245,6 +245,76 @@ export const InventoryTab = ({
           )}
         </div>
         )}
+        {isExpanded && viewMode === 'card' && (
+          <div className="bg-slate-800 rounded-lg border border-slate-600 p-3 shadow-lg mt-2">
+            <div className="flex flex-wrap gap-3">
+              {Object.values(
+                items.reduce((acc, item) => {
+                  const setKey = `${item.set || 'unknown'}-${item.set_name || 'unknown'}`;
+                  if (!acc[setKey]) {
+                    acc[setKey] = [];
+                  }
+                  acc[setKey].push(item);
+                  return acc;
+                }, {})
+              ).map((setItems) => {
+                const firstItem = setItems[0];
+                const totalQtyInSet = setItems.reduce((sum, item) => sum + (item.quantity || 0), 0);
+                const avgPrice = setItems.reduce((sum, item) => sum + (parseFloat(item.purchase_price) || 0), 0) / setItems.length;
+                const isEditing = editingId === firstItem.id;
+                
+                return (
+                  <div key={`${firstItem.set}-${firstItem.id}`} className="flex-1 min-w-[160px] bg-slate-700 rounded-lg p-2 border border-slate-500">
+                    {isEditing ? (
+                      <div className="space-y-1.5">
+                        <div className="text-xs font-bold text-teal-300 mb-1">{firstItem.set?.toUpperCase() || 'N/A'}</div>
+                        <div className="space-y-1">
+                          <input type="text" placeholder="Folder" value={editForm.folder || ''} onChange={(e) => setEditForm({...editForm, folder: e.target.value || 'Uncategorized'})} className="w-full bg-slate-600 border border-slate-500 rounded px-2 py-0.5 text-white text-xs" />
+                          <div className="flex gap-1">
+                            <input type="number" min="1" placeholder="Qty" value={editForm.quantity} onChange={(e) => setEditForm({...editForm, quantity: e.target.value})} className="w-1/2 bg-slate-600 border border-slate-500 rounded px-2 py-0.5 text-white text-xs" />
+                            <input type="number" step="0.01" placeholder="$" value={editForm.purchase_price} onChange={(e) => setEditForm({...editForm, purchase_price: e.target.value})} className="w-1/2 bg-slate-600 border border-slate-500 rounded px-2 py-0.5 text-white text-xs" />
+                          </div>
+                          <input type="date" value={editForm.purchase_date} onChange={(e) => setEditForm({...editForm, purchase_date: e.target.value})} className="w-full bg-slate-600 border border-slate-500 rounded px-2 py-0.5 text-white text-xs" />
+                        </div>
+                        <div className="flex gap-1 mt-1">
+                          <button onClick={() => updateInventoryItem(firstItem.id)} className="flex-1 bg-green-600 hover:bg-green-700 rounded px-2 py-0.5 text-xs font-semibold">Save</button>
+                          <button onClick={() => setEditForm({})} className="flex-1 bg-slate-500 hover:bg-slate-400 rounded px-2 py-0.5 text-xs">Cancel</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-1">
+                        <div className="flex justify-between items-center pb-1 border-b border-slate-500">
+                          <span className="text-xs font-bold text-teal-300">{firstItem.set?.toUpperCase() || 'N/A'}</span>
+                          <span className="text-[9px] text-slate-400 bg-slate-600 px-1 py-0.5 rounded">{setItems.length}</span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <div><span className="text-slate-400">Qty: </span><span className="text-teal-300 font-bold">{totalQtyInSet}</span></div>
+                          <div><span className="text-slate-400">Avg: </span><span className="text-green-300 font-bold">${avgPrice.toFixed(2)}</span></div>
+                        </div>
+                        {setItems.length > 1 && (
+                          <div className="space-y-0.5 max-h-16 overflow-y-auto">
+                            {setItems.map((item) => (
+                              <div key={item.id} className="text-[9px] text-slate-300 bg-slate-600/50 rounded px-1.5 py-0.5 flex justify-between">
+                                <span>{item.quantity}x @ ${parseFloat(item.purchase_price || 0).toFixed(2)}</span>
+                                <span className="text-slate-400">{new Date(item.purchase_date).toLocaleDateString()}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); startEditingItem(firstItem); }}
+                          className="w-full text-[9px] text-teal-400 hover:text-teal-300 hover:bg-slate-600 py-0.5 rounded border border-slate-500"
+                        >
+                          Edit
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
     );
   };
