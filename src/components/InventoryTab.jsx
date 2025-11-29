@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { Plus, Trash2, X, ChevronDown, ChevronRight, Grid3X3, List, Menu } from 'lucide-react';
-import { usePriceCache } from "../context/PriceCacheContext";
 
 // Simple normalize functions
 const normalizeCardName = (name) => (name || "").trim();
