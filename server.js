@@ -8,6 +8,7 @@ import rateLimit from 'express-rate-limit';
 import Joi from 'joi';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { setupAuth, isAuthenticated } from './server/replitAuth.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -52,10 +53,34 @@ const pool = new Pool({
 // Create all required tables if they don't exist
 async function initializeDatabase() {
   try {
+    // Users table (for Replit Auth)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id VARCHAR(255) PRIMARY KEY,
+        email VARCHAR(255) UNIQUE,
+        first_name VARCHAR(255),
+        last_name VARCHAR(255),
+        profile_image_url TEXT,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    // Sessions table (for Replit Auth)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS sessions (
+        sid VARCHAR(255) PRIMARY KEY,
+        sess JSONB NOT NULL,
+        expire TIMESTAMP NOT NULL
+      )
+    `);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_sessions_expire ON sessions(expire)`).catch(() => {});
+
     // Inventory table
     await pool.query(`
       CREATE TABLE IF NOT EXISTS inventory (
         id SERIAL PRIMARY KEY,
+        user_id VARCHAR(255) REFERENCES users(id) ON DELETE CASCADE,
         name VARCHAR(255) NOT NULL,
         set VARCHAR(20),
         set_name VARCHAR(255),
@@ -71,27 +96,32 @@ async function initializeDatabase() {
     // Add missing columns for existing databases
     await pool.query(`ALTER TABLE inventory ADD COLUMN IF NOT EXISTS image_url TEXT`).catch(() => {});
     await pool.query(`ALTER TABLE inventory ADD COLUMN IF NOT EXISTS scryfall_id VARCHAR(255)`).catch(() => {});
+    await pool.query(`ALTER TABLE inventory ADD COLUMN IF NOT EXISTS user_id VARCHAR(255) REFERENCES users(id) ON DELETE CASCADE`).catch(() => {});
 
     // Decklists table
     await pool.query(`
       CREATE TABLE IF NOT EXISTS decklists (
         id SERIAL PRIMARY KEY,
+        user_id VARCHAR(255) REFERENCES users(id) ON DELETE CASCADE,
         name VARCHAR(255) NOT NULL,
         decklist TEXT,
         created_at TIMESTAMP DEFAULT NOW()
       )
     `);
+    await pool.query(`ALTER TABLE decklists ADD COLUMN IF NOT EXISTS user_id VARCHAR(255) REFERENCES users(id) ON DELETE CASCADE`).catch(() => {});
 
     // Containers table
     await pool.query(`
       CREATE TABLE IF NOT EXISTS containers (
         id SERIAL PRIMARY KEY,
+        user_id VARCHAR(255) REFERENCES users(id) ON DELETE CASCADE,
         name VARCHAR(255) NOT NULL,
         decklist_id INTEGER REFERENCES decklists(id) ON DELETE SET NULL,
         cards JSONB DEFAULT '[]',
         created_at TIMESTAMP DEFAULT NOW()
       )
     `);
+    await pool.query(`ALTER TABLE containers ADD COLUMN IF NOT EXISTS user_id VARCHAR(255) REFERENCES users(id) ON DELETE CASCADE`).catch(() => {});
     // Add cards column if it doesn't exist (for existing databases)
     await pool.query(`
       ALTER TABLE containers 
@@ -128,6 +158,7 @@ async function initializeDatabase() {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS sales (
         id SERIAL PRIMARY KEY,
+        user_id VARCHAR(255) REFERENCES users(id) ON DELETE CASCADE,
         container_id INTEGER,
         decklist_id INTEGER,
         decklist_name VARCHAR(255),
@@ -137,6 +168,7 @@ async function initializeDatabase() {
         created_at TIMESTAMP DEFAULT NOW()
       )
     `);
+    await pool.query(`ALTER TABLE sales ADD COLUMN IF NOT EXISTS user_id VARCHAR(255) REFERENCES users(id) ON DELETE CASCADE`).catch(() => {});
 
     // Settings table
     await pool.query(`
@@ -174,6 +206,9 @@ async function initializeDatabase() {
 
 // Initialize database on startup
 initializeDatabase();
+
+// Setup Replit Auth
+await setupAuth(app, pool);
 
 // ========== PARSER: Plain-text decklist to card objects ==========
 /**
