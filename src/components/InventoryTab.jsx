@@ -266,54 +266,47 @@ export const InventoryTab = ({
                     </div>
                   ) : (
                     <>
-                      <div 
-                        className="cursor-pointer hover:bg-slate-800/30 p-1 rounded transition-colors"
-                        onClick={() => setExpandedSets({...expandedSets, [`${firstItem.set}-${cardName}`]: !expandedSets[`${firstItem.set}-${cardName}`]})}
-                      >
-                        <div className="flex items-center justify-between gap-2 mb-1">
-                          <div className="flex-1 min-w-0">
-                            <div className="text-xs font-semibold text-slate-100 flex items-center gap-1">
-                              <span>{expandedSets[`${firstItem.set}-${cardName}`] ? '▼' : '▶'}</span>
-                              <span className="truncate">{firstItem.set_name} ({setItems.length})</span>
-                            </div>
+                      <div className="flex items-start justify-between gap-2">
+                        <div 
+                          className="flex-1 cursor-pointer hover:bg-slate-800/30 p-1 rounded transition-colors"
+                          onClick={() => setExpandedSets({...expandedSets, [`${firstItem.set}-${cardName}`]: !expandedSets[`${firstItem.set}-${cardName}`]})}
+                        >
+                          <div className="text-xs font-semibold text-slate-100 flex items-center gap-1">
+                            <span>{expandedSets[`${firstItem.set}-${cardName}`] ? '▼' : '▶'}</span>
+                            <span className="truncate">{firstItem.set_name}</span>
                           </div>
-                          <div className="flex gap-1 flex-shrink-0">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                startEditingItem(firstItem);
-                              }}
-                              className="bg-blue-600 hover:bg-blue-700 rounded px-2 py-0.5 text-[11px] whitespace-nowrap"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                deleteInventoryItem(firstItem.id);
-                              }}
-                              className="bg-red-600 hover:bg-red-700 rounded px-2 py-0.5"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </button>
+                          <div className="flex gap-3 text-[10px] ml-4 mt-0.5">
+                            <span><span className="text-slate-500">Qty:</span> <span className="text-teal-300 font-semibold">{totalQtyInSet}</span></span>
+                            <span><span className="text-slate-500">$</span><span className="text-blue-300 font-semibold">{(setItems.reduce((sum, item) => sum + (parseFloat(item.purchase_price) || 0), 0) / setItems.length).toFixed(2)}</span></span>
                           </div>
                         </div>
-                        <div className="flex gap-3 text-[10px] ml-4">
-                          <div><span className="text-slate-500">Qty:</span> <span className="text-teal-300 font-semibold">{totalQtyInSet}</span></div>
-                          <div><span className="text-slate-500">Price:</span> <span className="text-blue-300 font-semibold">${(setItems.reduce((sum, item) => sum + (parseFloat(item.purchase_price) || 0), 0) / setItems.length).toFixed(2)}</span></div>
+                        <div className="flex gap-1 flex-shrink-0">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              startEditingItem(firstItem);
+                            }}
+                            className="bg-blue-600 hover:bg-blue-700 rounded px-1.5 py-0.5 text-[10px]"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteInventoryItem(firstItem.id);
+                            }}
+                            className="bg-red-600 hover:bg-red-700 rounded px-1.5 py-0.5"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
                         </div>
                       </div>
 
                       {expandedSets[`${firstItem.set}-${cardName}`] && (
-                        <div className="ml-2 pt-1 border-l border-slate-700 space-y-1">
+                        <div className="mt-1 ml-4 pt-1 border-l border-slate-700 space-y-0.5">
                           {setItems.map((item) => (
-                            <div key={item.id} className="bg-slate-900/40 rounded p-1.5 text-xs space-y-0.5">
-                              <div className="text-slate-100">
-                                <span className="text-slate-500">Qty:</span> {item.quantity} | <span className="text-slate-500">$</span>{parseFloat(item.purchase_price || 0).toFixed(2)}
-                              </div>
-                              <div className="text-slate-500 text-[10px]">
-                                {new Date(item.purchase_date).toLocaleDateString()}
-                              </div>
+                            <div key={item.id} className="text-[9px] text-slate-300">
+                              <div>Qty: {item.quantity} • ${parseFloat(item.purchase_price || 0).toFixed(2)} • {new Date(item.purchase_date).toLocaleDateString()}</div>
                             </div>
                           ))}
                         </div>
