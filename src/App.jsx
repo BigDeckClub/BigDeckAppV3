@@ -258,6 +258,7 @@ function MTGInventoryTrackerContent() {
     { id: "inventory", icon: Layers, label: "Inventory" },
     { id: "imports", icon: Download, label: "Imports" },
     { id: "analytics", icon: BarChart3, label: "Analytics" },
+    { id: "decks", icon: BookOpen, label: "Decks" },
   ];
 
   return (
@@ -287,6 +288,13 @@ function MTGInventoryTrackerContent() {
             >
               <BarChart3 className="w-5 h-5 inline mr-2" />
               Analytics
+            </button>
+            <button
+              onClick={() => setActiveTab("decks")}
+              className={`px-4 py-2 nav-tab inactive ${activeTab === "decks" ? "btn-primary" : "hover:shadow-lg"}`}
+            >
+              <BookOpen className="w-5 h-5 inline mr-2" />
+              Decks
             </button>
           </div>
         </div>
@@ -377,6 +385,11 @@ function MTGInventoryTrackerContent() {
         {/* Analytics Tab */}
         {activeTab === "analytics" && !isLoading && (
           <AnalyticsTab inventory={inventory} />
+        )}
+
+        {/* Decks Tab */}
+        {activeTab === "decks" && !isLoading && (
+          <DeckTab />
         )}
 
       </main>
