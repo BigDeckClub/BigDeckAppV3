@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { Plus, Trash2, X, ChevronDown, ChevronRight, Package } from 'lucide-react';
+import { Plus, Trash2, X, ChevronDown, ChevronRight } from 'lucide-react';
 import { usePriceCache } from "../context/PriceCacheContext";
 
 // Simple normalize functions

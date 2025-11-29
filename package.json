@@ -19,16 +19,13 @@
     "vite": "^5.0.0"
   },
   "dependencies": {
-    "@types/memoizee": "^0.4.12",
     "body-parser": "^2.2.0",
-    "cheerio": "^1.1.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^5.1.0",
     "express-rate-limit": "^8.2.1",
     "helmet": "^8.1.0",
     "lucide-react": "^0.554.0",
-    "memoizee": "^0.4.17",
     "pg": "^8.16.3",
     "prop-types": "^15.8.1",
     "react": "^18.2.0",

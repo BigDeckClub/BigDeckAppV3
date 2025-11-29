@@ -1,63 +1,64 @@
 # BigDeck.app - MTG Card Manager
 
 ## Overview
-BigDeck.app is a streamlined Magic: The Gathering inventory management system. It enables users to track card inventory with location-based organization and manage bulk import orders. The app uses real-time market pricing from Scryfall and features a clean, modern interface with no authentication required.
+BigDeck.app is a streamlined Magic: The Gathering inventory management system. It enables users to track card inventory organized into custom folders. The app uses real-time market pricing from Scryfall and features a clean, modern interface with no authentication required.
 
 ## Current Status
-✅ **PRODUCTION READY** - Streamlined core features fully implemented
-- Two-tab interface: **Inventory** (view/edit cards) and **Imports** (add cards + manage orders)
-- Location-based inventory system with shared location support
+✅ **PRODUCTION READY** - Clean, focused core features
+- Two-tab interface: **Inventory** (view/organize cards by folder) and **Imports** (add cards)
+- Folder-based card organization
 - Real-time pricing from Scryfall
 - Responsive design with mobile-optimized bottom navigation
 - PostgreSQL database with complete schema and API routes
 - Zero authentication overhead - fully accessible without login
+- Clean, optimized codebase with no dead code
 
 ## Architecture
-- **Frontend**: React 18 + Vite with Tailwind CSS, modern glassmorphism UI, cyan/teal color palette
+- **Frontend**: React 18 + Vite with Tailwind CSS, glassmorphism UI, cyan/teal color palette
 - **Backend**: Express.js with PostgreSQL via native pg driver
-- **Database**: PostgreSQL with inventory location tracking
+- **Database**: PostgreSQL with folder-based card tracking
 - **Icons**: Lucide React
 - **Pricing**: Scryfall API for real-time TCG pricing
 
 ## Latest Changes (November 29, 2025)
-- ✅ Removed unused tabs (Decklists, Containers, Sales, Analytics) - simplified to 2-tab interface
-- ✅ Moved "Add Card" feature from Inventory tab to Imports tab
-- ✅ Cleaned up 40+ lines of unused imports, state variables, and functions
-- ✅ Removed SellModal and all related dead code
-- ✅ Fixed all syntax errors and JSX warnings
-- ✅ Optimized component rendering with proper React keys
+- ✅ Replaced location feature with folder feature - unified organization
+- ✅ Added folder dropdown to "Add Card" section in Imports
+- ✅ Folder thumbnails grid with expandable view
+- ✅ "Create New Folder" button to organize cards
+- ✅ Removed unused packages (@types/memoizee, memoizee)
+- ✅ Cleaned up unused imports
+- ✅ Streamlined component code
 
 ## Core Features
-1. **Inventory Tab** - View all cards organized by name with:
+1. **Inventory Tab** - View all cards organized by folder with:
+   - Folder thumbnails with card count
+   - Expandable folders to browse cards
    - Total quantity per card
-   - Available copies (not in containers)
-   - Cards in containers
    - Average purchase price (last 60 days)
    - Edit/delete individual entries
-   - Expandable card groups
+   - Uncategorized section for cards without folders
 
-2. **Imports Tab** - Centralized card management with:
-   - Add card to inventory (search Scryfall, select set, enter quantity/price/location)
-   - Create bulk import orders (paste card lists, track status)
-   - Mark orders as complete
-   - Delete orders
+2. **Imports Tab** - Add cards to inventory with:
+   - Search Scryfall for cards
+   - Select set and folder
+   - Specify quantity and purchase price
+   - Create bulk import orders with status tracking
 
 ## Database Tables
-- `inventory` - Card inventory with quantities, prices, images, location, is_shared_location
+- `inventory` - Card inventory with quantities, prices, images, folder
 - `imports` - Bulk import orders with status tracking
 - `decklists` - Saved decklists (legacy, not actively used)
-- `containers` - Collection boxes organized by location (legacy, not actively used)
-- `container_items` - Cards in containers (legacy)
+- `containers` - Collection boxes (legacy, not actively used)
 - `sales` - Sale records (legacy)
 - `users` - User profiles (schema preserved)
 - `sessions` - User session data (schema preserved)
 
 ## API Endpoints
 **Inventory:**
-- `GET /api/inventory` - Fetch all cards with locations
-- `POST /api/inventory` - Add new card with location data
-- `PUT /api/inventory/:id` - Update card (quantity, price, location, shared status)
-- `DELETE /api/inventory/:id` - Remove card from inventory
+- `GET /api/inventory` - Fetch all cards
+- `POST /api/inventory` - Add new card
+- `PUT /api/inventory/:id` - Update card
+- `DELETE /api/inventory/:id` - Remove card
 
 **Imports:**
 - `GET /api/imports` - Fetch all import orders
@@ -71,7 +72,7 @@ BigDeck.app is a streamlined Magic: The Gathering inventory management system. I
 ## User Preferences
 - No authentication layer - fully open access
 - Clean, streamlined two-tab interface for focused workflow
-- Location-based card organization (e.g., "Shelf A", "Box 1")
+- Folder-based card organization (e.g., "Modern", "Standard", "Casual")
 - Mobile-first responsive design
 - Scryfall search integration for card discovery
 
@@ -79,8 +80,8 @@ BigDeck.app is a streamlined Magic: The Gathering inventory management system. I
 ```
 src/
   components/
-    InventoryTab.jsx       - View inventory, edit/delete cards
-    ImportTab.jsx          - Add cards & manage import orders
+    InventoryTab.jsx       - View inventory, manage folders
+    ImportTab.jsx          - Add cards & import orders
     SettingsPanel.jsx      - Settings modal
     PriceCacheContext.jsx   - Price caching
     DecklistCardPrice.jsx   - Market price display
@@ -104,7 +105,6 @@ package.json               - Dependencies (optimized)
 - Frontend served via ViteExpress
 - Production: `npm run build && npm run start`
 - No special environment variables required for basic use
-- Optional: Set DATABASE_URL for persistent storage
 
 ## Performance
 - Lightweight bundle with only essential dependencies
@@ -112,7 +112,8 @@ package.json               - Dependencies (optimized)
 - Debounced card search (300ms)
 - Optimized React component structure
 - Mobile-responsive design
+- Clean codebase with no dead code or unused packages
 
 ---
-*Last updated: November 29, 2025 - 2:10 PM*
-*Status: Production-ready, streamlined 2-tab interface*
+*Last updated: November 29, 2025*
+*Status: Production-ready, clean and optimized*
