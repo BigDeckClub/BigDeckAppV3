@@ -96,7 +96,7 @@ export const ImportTab = ({
           <h2 className="text-lg sm:text-xl font-bold">Add Card to Inventory</h2>
         </div>
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-semibold mb-2">Preferred Set (optional):</label>
               <select
@@ -105,13 +105,23 @@ export const ImportTab = ({
                   setDefaultSearchSet(e.target.value);
                   localStorage.setItem('defaultSearchSet', e.target.value);
                 }}
-                className="w-full bg-slate-800 border border-slate-600 rounded px-4 py-2 text-white"
+                className="w-full bg-slate-800 border border-slate-600 rounded px-4 py-2 text-white text-sm"
               >
-                <option value="">Show most recent from inventory</option>
+                <option value="">Show most recent</option>
                 {allSets.map(set => (
                   <option key={set.code} value={set.code}>{set.code} - {set.name}</option>
                 ))}
               </select>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold mb-2">Folder:</label>
+              <input
+                type="text"
+                placeholder="e.g. Modern, Standard"
+                value={newEntry.folder || 'Uncategorized'}
+                onChange={(e) => setNewEntry({...newEntry, folder: e.target.value || 'Uncategorized'})}
+                className="w-full bg-slate-800 border border-slate-600 rounded px-4 py-2 text-white placeholder-gray-400 text-sm"
+              />
             </div>
             <div>
               <label className="block text-sm font-semibold mb-2">Location:</label>
@@ -120,7 +130,7 @@ export const ImportTab = ({
                 placeholder="e.g. Shelf A, Box 1"
                 value={newEntry.location}
                 onChange={(e) => setNewEntry({...newEntry, location: e.target.value})}
-                className="w-full bg-slate-800 border border-slate-600 rounded px-4 py-2 text-white placeholder-gray-400"
+                className="w-full bg-slate-800 border border-slate-600 rounded px-4 py-2 text-white placeholder-gray-400 text-sm"
               />
             </div>
           </div>

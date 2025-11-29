@@ -36,8 +36,22 @@ export const InventoryTab = ({
   handleSearch
 }) => {
   const [showOutOfStock, setShowOutOfStock] = useState(false);
+  const [expandedFolders, setExpandedFolders] = useState({});
   
-  // Group inventory by card name and separate in-stock from out-of-stock
+  // Group inventory by folder, then by card name
+  const groupedByFolder = inventory.reduce((acc, item) => {
+    const folder = item.folder || 'Uncategorized';
+    if (!acc[folder]) {
+      acc[folder] = {};
+    }
+    if (!acc[folder][item.name]) {
+      acc[folder][item.name] = [];
+    }
+    acc[folder][item.name].push(item);
+    return acc;
+  }, {});
+  
+  // Legacy: group by card name for backwards compatibility
   const groupedInventory = inventory.reduce((acc, item) => {
     if (!acc[item.name]) {
       acc[item.name] = [];
@@ -110,6 +124,16 @@ export const InventoryTab = ({
                   {isEditing ? (
                     <div className="space-y-2">
                       <div className="text-sm font-semibold text-slate-100">{item.set_name} ({item.set})</div>
+                      <div>
+                        <label className="text-xs text-slate-400">Folder</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Modern, Standard, Bulk"
+                          value={editForm.folder || ''}
+                          onChange={(e) => setEditForm({...editForm, folder: e.target.value || 'Uncategorized'})}
+                          className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-sm mb-2"
+                        />
+                      </div>
                       <div className="grid grid-cols-2 gap-2">
                         <div>
                           <label className="text-xs text-slate-400">Qty</label>
@@ -235,19 +259,55 @@ export const InventoryTab = ({
         </div>
       )}
 
-      {/* Inventory List - In Stock */}
+      {/* Inventory List - By Folder */}
       <div className="card rounded-lg p-4 sm:p-6 border border-slate-700">
-        <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">
-          Card Inventory
-          {inStockCards.length > 0 && <span className="text-sm font-normal text-slate-400 ml-2">({inStockCards.length} items)</span>}
-        </h2>
-        <div className="grid gap-4">
-          {inStockCards.map(renderCardGroup)}
-          {inStockCards.length === 0 && outOfStockCards.length === 0 && (
+        <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">Card Inventory</h2>
+        <div className="space-y-4">
+          {Object.entries(groupedByFolder).map(([folder, cardsByName]) => {
+            const folderInStockCards = Object.entries(cardsByName).filter(([_, items]) => {
+              const totalQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
+              return totalQty > 0;
+            });
+            
+            const folderOutOfStockCards = Object.entries(cardsByName).filter(([_, items]) => {
+              const totalQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
+              return totalQty === 0;
+            });
+            
+            const isFolderExpanded = expandedFolders[folder];
+            const totalInFolder = folderInStockCards.length;
+            
+            return (
+              <div key={folder} className="bg-slate-900 border border-slate-700 rounded-lg overflow-hidden">
+                <button
+                  onClick={() => setExpandedFolders({...expandedFolders, [folder]: !isFolderExpanded})}
+                  className="w-full p-4 flex items-center justify-between hover:bg-slate-800 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-teal-400">{isFolderExpanded ? '▼' : '▶'}</span>
+                    <h3 className="font-semibold text-slate-100">{folder}</h3>
+                    <span className="bg-slate-700 text-slate-300 px-2 py-0.5 rounded text-xs">
+                      {totalInFolder} {totalInFolder === 1 ? 'card' : 'cards'}
+                    </span>
+                  </div>
+                </button>
+                
+                {isFolderExpanded && (
+                  <div className="p-4 border-t border-slate-700 bg-slate-800/30">
+                    <div className="grid gap-4">
+                      {folderInStockCards.map(renderCardGroup)}
+                      {folderInStockCards.length === 0 && folderOutOfStockCards.length > 0 && (
+                        <p className="text-slate-400 text-sm">All cards in this folder are out of stock.</p>
+                      )}
+                      {folderOutOfStockCards.map(renderCardGroup)}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+          {Object.keys(groupedByFolder).length === 0 && (
             <p className="text-slate-400">No cards in inventory yet.</p>
-          )}
-          {inStockCards.length === 0 && outOfStockCards.length > 0 && (
-            <p className="text-slate-400">All cards are out of stock. Check the section below.</p>
           )}
         </div>
       </div>
