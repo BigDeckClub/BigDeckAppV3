@@ -7,7 +7,6 @@ import {
   DollarSign,
   Settings,
   RefreshCw,
-  LogOut,
 } from "lucide-react";
 import { useDebounce } from "./utils/useDebounce";
 import { InventoryTab } from "./components/InventoryTab";
@@ -18,10 +17,12 @@ import { AnalyticsTab } from "./components/AnalyticsTab";
 import { SettingsPanel } from "./components/SettingsPanel";
 import { SellModal } from "./components/SellModal";
 import { PriceCacheProvider, usePriceCache } from "./context/PriceCacheContext";
+import { AuthProvider } from "./context/AuthContext";
 import DecklistCardPrice from "./components/DecklistCardPrice";
 import { FloatingDollarSigns } from "./components/FloatingDollarSigns";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { useApi } from "./hooks/useApi";
+import { UserAuth } from "./components/UserAuth";
 
 const API_BASE = "/api";
 
@@ -391,7 +392,7 @@ function MTGInventoryTrackerContent() {
       <nav className="bg-gradient-to-r from-slate-900 to-slate-800 border-b border-slate-700 sticky top-0 z-50 shadow-xl shadow-slate-900/50">
         <div className="max-w-7xl mx-auto px-4 py-4 app-header flex items-center justify-between">
           <h1 className="text-2xl font-bold text-teal-300">BigDeck.app</h1>
-          <div className="desktop-nav flex gap-2">
+          <div className="desktop-nav flex items-center gap-2">
             <button
               onClick={() => setActiveTab("inventory")}
               className={`px-4 py-2 nav-tab inactive ${activeTab === "inventory" ? "btn-primary" : "hover:shadow-lg"}`}
@@ -433,6 +434,9 @@ function MTGInventoryTrackerContent() {
             >
               <Settings className="w-5 h-5" />
             </button>
+            <div className="ml-4 border-l border-slate-600 pl-4">
+              <UserAuth />
+            </div>
           </div>
         </div>
       </nav>
@@ -584,9 +588,11 @@ function MTGInventoryTrackerContent() {
 function MTGInventoryTracker() {
   return (
     <ErrorBoundary>
-      <PriceCacheProvider>
-        <MTGInventoryTrackerContent />
-      </PriceCacheProvider>
+      <AuthProvider>
+        <PriceCacheProvider>
+          <MTGInventoryTrackerContent />
+        </PriceCacheProvider>
+      </AuthProvider>
     </ErrorBoundary>
   );
 }

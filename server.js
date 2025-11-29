@@ -8,7 +8,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import path from 'path';
 import { fileURLToPath } from 'url';
-// import { setupAuth } from './server/replitAuth.js';
+import { setupAuth } from './server/replitAuth.js';
 import { mtgjsonService } from './server/mtgjsonPriceService.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -355,9 +355,9 @@ async function startServer() {
     await mtgjsonService.initialize();
     console.log('[APP] ✓ MTGJSON service ready');
     
-    // console.log('[APP] Setting up authentication...');
-    // await setupAuth(app);
-    // console.log('[APP] ✓ Authentication setup complete');
+    console.log('[APP] Setting up authentication...');
+    await setupAuth(app);
+    console.log('[APP] ✓ Authentication setup complete');
 
     // ========== CATCH-ALL HANDLER (AFTER all routes) ==========
     app.use((req, res) => {
