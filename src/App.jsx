@@ -45,8 +45,6 @@ function MTGInventoryTrackerContent() {
     purchasePrice: "",
     reorderType: "normal",
     selectedSet: null,
-    location: "",
-    isSharedLocation: false,
   });
   const [defaultSearchSet, setDefaultSearchSet] = useState("");
   const [allSets, setAllSets] = useState([]);

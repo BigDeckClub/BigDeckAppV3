@@ -455,8 +455,8 @@ app.delete('/api/inventory/:id', async (req, res) => {
 app.get('/api/containers', async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT id, name, location, cards, created_at 
-       FROM containers ORDER BY location ASC, name ASC`
+      `SELECT id, name, cards, created_at 
+       FROM containers ORDER BY name ASC`
     );
     res.json(result.rows);
   } catch (error) {
@@ -466,18 +466,18 @@ app.get('/api/containers', async (req, res) => {
 });
 
 app.post('/api/containers', async (req, res) => {
-  const { name, location } = req.body;
+  const { name } = req.body;
   
-  if (!name || !location) {
-    return res.status(400).json({ error: 'Name and location are required' });
+  if (!name) {
+    return res.status(400).json({ error: 'Name is required' });
   }
 
   try {
     const result = await pool.query(
-      `INSERT INTO containers (name, location, cards, created_at)
-       VALUES ($1, $2, '[]', NOW())
+      `INSERT INTO containers (name, cards, created_at)
+       VALUES ($1, '[]', NOW())
        RETURNING *`,
-      [name, location]
+      [name]
     );
     res.status(201).json(result.rows[0]);
   } catch (error) {
