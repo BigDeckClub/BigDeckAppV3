@@ -120,62 +120,46 @@ export const InventoryTab = ({
     const isExpanded = expandedCards[cardName];
     
     return (
-      <div key={cardName} className={viewMode === 'card' ? 'space-y-2' : ''}>
-        {/* Card Name - Card View or List View */}
+      <div key={cardName}>
+        {/* Card View */}
         {viewMode === 'card' ? (
         <div 
-          className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 hover:border-teal-500 rounded p-1.5 transition-colors cursor-pointer flex flex-col justify-between h-32 md:h-36 hover:shadow-lg hover:shadow-teal-500/20" 
+          className={`bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 hover:border-teal-500 rounded p-1.5 transition-colors cursor-pointer ${isExpanded ? 'flex flex-col' : 'flex flex-col justify-between'} ${isExpanded ? 'h-auto' : 'h-32 md:h-36'} hover:shadow-lg hover:shadow-teal-500/20`} 
           onClick={() => setExpandedCards({...expandedCards, [cardName]: !isExpanded})}
         >
           <div className="text-center px-1">
             <h3 className="text-[10px] md:text-xs font-bold text-slate-100 line-clamp-2 break-words">{cardName}</h3>
           </div>
           
-          <div className="flex-1 flex items-center justify-center min-h-0">
-            <div className="text-center">
-              <div className="text-slate-500 text-[7px] md:text-[8px]">Available</div>
-              <div className="text-2xl md:text-3xl font-bold text-green-300 leading-tight">{available}</div>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-3 gap-1 text-center text-[7px] md:text-[8px]">
-            <div className="space-y-0.5">
-              <div className="text-slate-500">Qty</div>
-              <div className={`font-semibold ${totalQty === 0 ? 'text-slate-500' : 'text-teal-300'}`}>{totalQty}</div>
-            </div>
-            <div className="space-y-0.5">
-              <div className="text-slate-500">Cost</div>
-              <div className="font-semibold text-blue-300">${avgPrice.toFixed(2)}</div>
-            </div>
-            <div className="space-y-0.5">
-              <div className="text-slate-500">Total</div>
-              <div className="font-semibold text-amber-400">${formatTotal(totalValue)}</div>
-            </div>
-          </div>
-        </div>
-        ) : (
-        /* List View */
-        <div className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 hover:border-teal-500 rounded p-3 transition-colors cursor-pointer hover:shadow-lg hover:shadow-teal-500/20">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex-1 min-w-0">
-              <h3 className="text-sm font-bold text-slate-100 break-words mb-1">{cardName}</h3>
-              <div className="flex gap-4 text-xs">
-                <div><span className="text-slate-500">Qty:</span> <span className={`${totalQty === 0 ? 'text-slate-500' : 'text-teal-300'} font-semibold`}>{totalQty}</span></div>
-                <div><span className="text-slate-500">Available:</span> <span className="text-green-300 font-semibold">{available}</span></div>
-                <div><span className="text-slate-500">Cost/ea:</span> <span className="text-blue-300 font-semibold">${avgPrice.toFixed(2)}</span></div>
-                <div><span className="text-slate-500">Total:</span> <span className="text-amber-400 font-semibold">${formatTotal(totalValue)}</span></div>
+          {!isExpanded && (
+            <>
+              <div className="flex-1 flex items-center justify-center min-h-0">
+                <div className="text-center">
+                  <div className="text-slate-500 text-[7px] md:text-[8px]">Available</div>
+                  <div className="text-2xl md:text-3xl font-bold text-green-300 leading-tight">{available}</div>
+                </div>
               </div>
-            </div>
-            <div className="text-teal-400 text-sm flex-shrink-0">
-              {isExpanded ? '▼' : '▶'}
-            </div>
-          </div>
-        </div>
-        )}
-        
-        {isExpanded && (
-          <div className="bg-slate-800 rounded-lg border border-slate-600 p-4 shadow-lg">
-            <div className="flex flex-wrap gap-4">
+              
+              <div className="grid grid-cols-3 gap-1 text-center text-[7px] md:text-[8px]">
+                <div className="space-y-0.5">
+                  <div className="text-slate-500">Qty</div>
+                  <div className={`font-semibold ${totalQty === 0 ? 'text-slate-500' : 'text-teal-300'}`}>{totalQty}</div>
+                </div>
+                <div className="space-y-0.5">
+                  <div className="text-slate-500">Cost</div>
+                  <div className="font-semibold text-blue-300">${avgPrice.toFixed(2)}</div>
+                </div>
+                <div className="space-y-0.5">
+                  <div className="text-slate-500">Total</div>
+                  <div className="font-semibold text-amber-400">${formatTotal(totalValue)}</div>
+                </div>
+              </div>
+            </>
+          )}
+
+          {isExpanded && (
+            <div className="mt-3 pt-3 border-t border-slate-600">
+              <div className="flex flex-wrap gap-3">
                 {Object.values(
                   items.reduce((acc, item) => {
                     const setKey = `${item.set || 'unknown'}-${item.set_name || 'unknown'}`;
@@ -192,7 +176,7 @@ export const InventoryTab = ({
                   const isEditing = editingId === firstItem.id;
                   
                   return (
-                    <div key={`${firstItem.set}-${firstItem.id}`} className="flex-1 min-w-[200px] max-w-[300px] bg-slate-700 rounded-lg p-2 border border-slate-500">
+                    <div key={`${firstItem.set}-${firstItem.id}`} className="flex-1 min-w-[160px] bg-slate-700 rounded-lg p-2 border border-slate-500">
                       {isEditing ? (
                         <div className="space-y-1.5">
                           <div className="text-xs font-bold text-teal-300 mb-1">{firstItem.set?.toUpperCase() || 'N/A'}</div>
@@ -241,7 +225,98 @@ export const InventoryTab = ({
                   );
                 })}
               </div>
+            </div>
+          )}
+        </div>
+        ) : (
+        /* List View */
+        <div className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 hover:border-teal-500 rounded p-3 transition-colors cursor-pointer hover:shadow-lg hover:shadow-teal-500/20">
+          <div className="flex items-center justify-between gap-4" onClick={() => setExpandedCards({...expandedCards, [cardName]: !isExpanded})}>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-sm font-bold text-slate-100 break-words mb-1">{cardName}</h3>
+              <div className="flex gap-4 text-xs">
+                <div><span className="text-slate-500">Qty:</span> <span className={`${totalQty === 0 ? 'text-slate-500' : 'text-teal-300'} font-semibold`}>{totalQty}</span></div>
+                <div><span className="text-slate-500">Available:</span> <span className="text-green-300 font-semibold">{available}</span></div>
+                <div><span className="text-slate-500">Cost/ea:</span> <span className="text-blue-300 font-semibold">${avgPrice.toFixed(2)}</span></div>
+                <div><span className="text-slate-500">Total:</span> <span className="text-amber-400 font-semibold">${formatTotal(totalValue)}</span></div>
+              </div>
+            </div>
+            <div className="text-teal-400 text-sm flex-shrink-0">
+              {isExpanded ? '▼' : '▶'}
+            </div>
           </div>
+
+          {isExpanded && (
+            <div className="mt-3 pt-3 border-t border-slate-600">
+              <div className="flex flex-wrap gap-3">
+                {Object.values(
+                  items.reduce((acc, item) => {
+                    const setKey = `${item.set || 'unknown'}-${item.set_name || 'unknown'}`;
+                    if (!acc[setKey]) {
+                      acc[setKey] = [];
+                    }
+                    acc[setKey].push(item);
+                    return acc;
+                  }, {})
+                ).map((setItems) => {
+                  const firstItem = setItems[0];
+                  const totalQtyInSet = setItems.reduce((sum, item) => sum + (item.quantity || 0), 0);
+                  const avgPrice = setItems.reduce((sum, item) => sum + (parseFloat(item.purchase_price) || 0), 0) / setItems.length;
+                  const isEditing = editingId === firstItem.id;
+                  
+                  return (
+                    <div key={`${firstItem.set}-${firstItem.id}`} className="flex-1 min-w-[160px] bg-slate-700 rounded-lg p-2 border border-slate-500">
+                      {isEditing ? (
+                        <div className="space-y-1.5">
+                          <div className="text-xs font-bold text-teal-300 mb-1">{firstItem.set?.toUpperCase() || 'N/A'}</div>
+                          <div className="space-y-1">
+                            <input type="text" placeholder="Folder" value={editForm.folder || ''} onChange={(e) => setEditForm({...editForm, folder: e.target.value || 'Uncategorized'})} className="w-full bg-slate-600 border border-slate-500 rounded px-2 py-0.5 text-white text-xs" />
+                            <div className="flex gap-1">
+                              <input type="number" min="1" placeholder="Qty" value={editForm.quantity} onChange={(e) => setEditForm({...editForm, quantity: e.target.value})} className="w-1/2 bg-slate-600 border border-slate-500 rounded px-2 py-0.5 text-white text-xs" />
+                              <input type="number" step="0.01" placeholder="$" value={editForm.purchase_price} onChange={(e) => setEditForm({...editForm, purchase_price: e.target.value})} className="w-1/2 bg-slate-600 border border-slate-500 rounded px-2 py-0.5 text-white text-xs" />
+                            </div>
+                            <input type="date" value={editForm.purchase_date} onChange={(e) => setEditForm({...editForm, purchase_date: e.target.value})} className="w-full bg-slate-600 border border-slate-500 rounded px-2 py-0.5 text-white text-xs" />
+                          </div>
+                          <div className="flex gap-1 mt-1">
+                            <button onClick={() => updateInventoryItem(firstItem.id)} className="flex-1 bg-green-600 hover:bg-green-700 rounded px-2 py-0.5 text-xs font-semibold">Save</button>
+                            <button onClick={() => setEditForm({})} className="flex-1 bg-slate-500 hover:bg-slate-400 rounded px-2 py-0.5 text-xs">Cancel</button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-1">
+                          <div className="flex justify-between items-center pb-1 border-b border-slate-500">
+                            <span className="text-xs font-bold text-teal-300">{firstItem.set?.toUpperCase() || 'N/A'}</span>
+                            <span className="text-[9px] text-slate-400 bg-slate-600 px-1 py-0.5 rounded">{setItems.length}</span>
+                          </div>
+                          <div className="flex justify-between text-xs">
+                            <div><span className="text-slate-400">Qty: </span><span className="text-teal-300 font-bold">{totalQtyInSet}</span></div>
+                            <div><span className="text-slate-400">Avg: </span><span className="text-green-300 font-bold">${avgPrice.toFixed(2)}</span></div>
+                          </div>
+                          {setItems.length > 1 && (
+                            <div className="space-y-0.5 max-h-16 overflow-y-auto">
+                              {setItems.map((item) => (
+                                <div key={item.id} className="text-[9px] text-slate-300 bg-slate-600/50 rounded px-1.5 py-0.5 flex justify-between">
+                                  <span>{item.quantity}x @ ${parseFloat(item.purchase_price || 0).toFixed(2)}</span>
+                                  <span className="text-slate-400">{new Date(item.purchase_date).toLocaleDateString()}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); startEditingItem(firstItem); }}
+                            className="w-full text-[9px] text-teal-400 hover:text-teal-300 hover:bg-slate-600 py-0.5 rounded border border-slate-500"
+                          >
+                            Edit
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
         )}
       </div>
     );
