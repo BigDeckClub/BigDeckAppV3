@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { BookOpen, Plus, Trash2, Edit2, X } from 'lucide-react';
+import { BookOpen, Plus, Trash2, Edit2, X, Download } from 'lucide-react';
 
 const API_BASE = '/api';
 
@@ -13,8 +13,108 @@ export const DeckTab = () => {
   const [successMessage, setSuccessMessage] = useState('');
   const [editingDeck, setEditingDeck] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showImportArchidekt, setShowImportArchidekt] = useState(false);
+  const [archidektUrl, setArchidektUrl] = useState('');
+  const [isImporting, setIsImporting] = useState(false);
 
   const formats = ['Standard', 'Modern', 'Commander', 'Casual', 'Limited', 'Pioneer'];
+
+  const importFromArchidekt = async () => {
+    if (!archidektUrl.trim()) {
+      alert('Please enter an Archidekt deck URL');
+      return;
+    }
+
+    setIsImporting(true);
+    try {
+      // Extract deck ID from URL
+      // Archidekt URLs look like: archidekt.com/decks/1234567 or archidekt.com/decks/1234567/
+      const match = archidektUrl.match(/archidekt\.com\/decks\/(\d+)/i);
+      if (!match) {
+        alert('Invalid Archidekt URL. Please use a URL like: archidekt.com/decks/123456');
+        setIsImporting(false);
+        return;
+      }
+
+      const deckId = match[1];
+      
+      // Fetch deck data from Archidekt API
+      const response = await fetch(`https://api.archidekt.com/v1/decks/${deckId}/`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch deck from Archidekt');
+      }
+
+      const deckData = await response.json();
+      
+      // Extract cards from the deck
+      const cards = [];
+      if (deckData.cards && Array.isArray(deckData.cards)) {
+        deckData.cards.forEach(cardEntry => {
+          if (cardEntry.card) {
+            const cardObj = cardEntry.card;
+            const card = {
+              quantity: cardEntry.quantity || 1,
+              name: cardObj.name || 'Unknown Card',
+              set: cardObj.edition?.abbreviation || cardObj.edition || 'Unknown',
+              scryfall_id: cardObj.scryfall_id || null,
+              image_url: cardObj.image_url || null
+            };
+            cards.push(card);
+          }
+        });
+      }
+
+      if (cards.length === 0) {
+        alert('No cards found in this deck');
+        setIsImporting(false);
+        return;
+      }
+
+      // Get deck name and format
+      const deckName = deckData.name || 'Imported Deck';
+      const deckFormat = deckData.format || 'Casual';
+      const deckDescription = deckData.description || '';
+
+      // Create the deck with imported cards
+      const createResponse = await fetch(`${API_BASE}/decks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: deckName,
+          format: deckFormat,
+          description: deckDescription
+        })
+      });
+
+      if (!createResponse.ok) {
+        throw new Error('Failed to create deck');
+      }
+
+      const newDeck = await createResponse.json();
+
+      // Update deck with cards
+      const updateResponse = await fetch(`${API_BASE}/decks/${newDeck.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cards })
+      });
+
+      if (!updateResponse.ok) {
+        throw new Error('Failed to add cards to deck');
+      }
+
+      await loadDecks();
+      setArchidektUrl('');
+      setShowImportArchidekt(false);
+      setSuccessMessage(`Deck imported successfully! ${cards.length} cards added.`);
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (error) {
+      console.error('Error importing from Archidekt:', error);
+      alert(`Error importing deck: ${error.message}`);
+    } finally {
+      setIsImporting(false);
+    }
+  };
 
   // Load decks from API
   useEffect(() => {
@@ -149,14 +249,64 @@ export const DeckTab = () => {
               <BookOpen className="w-6 h-6" />
               Your Decks
             </h2>
-            <button
-              onClick={() => setShowCreateDeck(true)}
-              className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              New Deck
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowImportArchidekt(true)}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+              >
+                <Download className="w-4 h-4" />
+                Import from Archidekt
+              </button>
+              <button
+                onClick={() => setShowCreateDeck(true)}
+                className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                New Deck
+              </button>
+            </div>
           </div>
+
+          {showImportArchidekt && (
+            <div className="bg-slate-800 rounded-lg border border-blue-500/50 p-4 mb-4">
+              <h3 className="text-lg font-semibold text-blue-300 mb-4">Import Deck from Archidekt</h3>
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm text-slate-400 mb-1">Archidekt Deck URL</label>
+                  <input
+                    type="text"
+                    placeholder="e.g., https://archidekt.com/decks/1234567"
+                    value={archidektUrl}
+                    onChange={(e) => setArchidektUrl(e.target.value)}
+                    className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white placeholder-slate-500"
+                    onKeyDown={(e) => e.key === 'Enter' && importFromArchidekt()}
+                    autoFocus
+                    disabled={isImporting}
+                  />
+                  <p className="text-xs text-slate-500 mt-1">Paste the full URL of any public Archidekt deck</p>
+                </div>
+                <div className="flex gap-2 pt-2">
+                  <button
+                    onClick={importFromArchidekt}
+                    disabled={isImporting}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 text-white px-3 py-2 rounded font-semibold transition-colors"
+                  >
+                    {isImporting ? 'Importing...' : 'Import'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowImportArchidekt(false);
+                      setArchidektUrl('');
+                    }}
+                    disabled={isImporting}
+                    className="flex-1 bg-slate-700 hover:bg-slate-600 disabled:bg-slate-600 text-white px-3 py-2 rounded transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {showCreateDeck && (
             <div className="bg-slate-800 rounded-lg border border-teal-500/50 p-4 mb-4">
