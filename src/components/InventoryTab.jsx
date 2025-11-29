@@ -39,6 +39,25 @@ export const InventoryTab = ({
   const [expandedFolders, setExpandedFolders] = useState({});
   const [newFolderName, setNewFolderName] = useState('');
   const [showCreateFolder, setShowCreateFolder] = useState(false);
+  const [createdFolders, setCreatedFolders] = useState([]);
+
+  // Load created folders from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('createdFolders');
+    if (saved) {
+      setCreatedFolders(JSON.parse(saved));
+    }
+  }, []);
+
+  // Save created folders to localStorage
+  const addCreatedFolder = (folderName) => {
+    const trimmedName = folderName.trim();
+    if (!createdFolders.includes(trimmedName)) {
+      const updated = [...createdFolders, trimmedName];
+      setCreatedFolders(updated);
+      localStorage.setItem('createdFolders', JSON.stringify(updated));
+    }
+  };
   
   // Group inventory by folder, then by card name
   const groupedByFolder = inventory.reduce((acc, item) => {
@@ -261,6 +280,46 @@ export const InventoryTab = ({
         </div>
       )}
 
+      {/* Folder Thumbnails Grid */}
+      {createdFolders.length > 0 && (
+        <div className="rounded-lg p-4 sm:p-6 border-2 border-teal-500/50 bg-gradient-to-br from-slate-900/50 to-slate-800/50">
+          <h2 className="text-lg sm:text-xl font-bold mb-4 text-teal-300">📁 Folders</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {createdFolders.map((folderName) => {
+              const cardsByName = groupedByFolder[folderName] || {};
+              const cardsInFolder = Object.values(cardsByName).flat();
+              const totalCards = Object.keys(cardsByName).length;
+              const isFolderExpanded = expandedFolders[folderName];
+              
+              return (
+                <div key={folderName} className="flex flex-col">
+                  <button
+                    onClick={() => setExpandedFolders({...expandedFolders, [folderName]: !isFolderExpanded})}
+                    className="bg-gradient-to-br from-teal-900/40 to-teal-800/40 border-2 border-teal-600/50 hover:border-teal-400 rounded-lg p-6 flex flex-col items-center justify-center min-h-48 transition-all hover:from-teal-900/60 hover:to-teal-800/60"
+                  >
+                    <div className="text-4xl mb-3">📁</div>
+                    <h3 className="font-semibold text-slate-100 text-center text-sm">{folderName}</h3>
+                    <p className="text-xs text-teal-300 mt-2">{totalCards} {totalCards === 1 ? 'card' : 'cards'}</p>
+                  </button>
+                  
+                  {isFolderExpanded && (
+                    <div className="mt-2 p-4 bg-slate-900/50 border border-teal-600/30 rounded-lg">
+                      <div className="grid gap-4">
+                        {Object.entries(cardsByName).length > 0 ? (
+                          Object.entries(cardsByName).map(renderCardGroup)
+                        ) : (
+                          <p className="text-slate-400 text-sm text-center py-4">No cards in this folder yet.</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Create Folder Section */}
       <div className="rounded-lg p-4 sm:p-6 border-2 border-teal-600/60 bg-gradient-to-br from-teal-900/20 to-teal-800/10">
         {!showCreateFolder ? (
@@ -296,8 +355,10 @@ export const InventoryTab = ({
             <button
               onClick={() => {
                 if (newFolderName.trim()) {
+                  addCreatedFolder(newFolderName);
                   setNewFolderName('');
                   setShowCreateFolder(false);
+                  setExpandedFolders({...expandedFolders, [newFolderName.trim()]: true});
                   setSuccessMessage(`Folder "${newFolderName.trim()}" created! Add cards to it from the Imports tab.`);
                   setTimeout(() => setSuccessMessage(''), 3000);
                 }
@@ -319,12 +380,12 @@ export const InventoryTab = ({
         )}
       </div>
 
-      {/* My Folders Section */}
-      {Object.keys(groupedByFolder).some(f => f !== 'Uncategorized') && (
+      {/* My Folders Section (Legacy - for folders with cards but not explicitly created) */}
+      {Object.keys(groupedByFolder).some(f => f !== 'Uncategorized' && !createdFolders.includes(f)) && (
         <div className="rounded-lg p-4 sm:p-6 border-2 border-teal-500/50 bg-gradient-to-br from-slate-900/50 to-slate-800/50">
-          <h2 className="text-lg sm:text-xl font-bold mb-4 text-teal-300">📁 My Folders</h2>
+          <h2 className="text-lg sm:text-xl font-bold mb-4 text-teal-300">📁 Other Folders</h2>
           <div className="space-y-3">
-            {Object.entries(groupedByFolder).filter(([folder]) => folder !== 'Uncategorized').map(([folder, cardsByName]) => {
+            {Object.entries(groupedByFolder).filter(([folder]) => folder !== 'Uncategorized' && !createdFolders.includes(folder)).map(([folder, cardsByName]) => {
               const folderInStockCards = Object.entries(cardsByName).filter(([_, items]) => {
                 const totalQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
                 return totalQty > 0;
