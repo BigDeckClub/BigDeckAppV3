@@ -52,11 +52,46 @@ export const LoginModal = ({ isOpen, onClose }) => {
           throw new Error(data.error || 'Registration failed');
         }
 
-        // After registration, sign in
-        window.location.href = `/api/auth/signin/credentials?email=${encodeURIComponent(emailForm.email)}`;
+        // After registration, automatically sign in using form submission
+        const formData = new URLSearchParams();
+        formData.append('email', emailForm.email);
+        formData.append('password', emailForm.password);
+        formData.append('csrfToken', ''); // Will be handled by Auth.js
+        formData.append('callbackUrl', '/');
+        
+        const signInResponse = await fetch('/api/auth/callback/credentials', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: formData.toString(),
+          credentials: 'include',
+        });
+
+        if (signInResponse.ok || signInResponse.redirected) {
+          window.location.href = '/';
+        } else {
+          // Redirect to Auth.js signin page for credentials
+          window.location.href = '/api/auth/signin?callbackUrl=/';
+        }
       } else {
-        // Sign in with credentials
-        window.location.href = `/api/auth/signin/credentials?email=${encodeURIComponent(emailForm.email)}`;
+        // Sign in with credentials using form submission
+        const formData = new URLSearchParams();
+        formData.append('email', emailForm.email);
+        formData.append('password', emailForm.password);
+        formData.append('csrfToken', ''); // Will be handled by Auth.js
+        formData.append('callbackUrl', '/');
+        
+        const signInResponse = await fetch('/api/auth/callback/credentials', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: formData.toString(),
+          credentials: 'include',
+        });
+
+        if (signInResponse.ok || signInResponse.redirected) {
+          window.location.href = '/';
+        } else {
+          throw new Error('Invalid email or password');
+        }
       }
     } catch (err) {
       setError(err.message);

@@ -76,55 +76,72 @@ async function findUserByEmail(pool, email) {
 
 // Create Auth.js configuration
 function createAuthConfig(pool) {
+  // Build providers array - only include providers with valid credentials
+  const providers = [];
+  
+  if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+    providers.push(Google({
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    }));
+    console.log('[AUTH] ✓ Google provider configured');
+  }
+  
+  if (process.env.APPLE_CLIENT_ID && process.env.APPLE_CLIENT_SECRET) {
+    providers.push(Apple({
+      clientId: process.env.APPLE_CLIENT_ID,
+      clientSecret: process.env.APPLE_CLIENT_SECRET,
+    }));
+    console.log('[AUTH] ✓ Apple provider configured');
+  }
+  
+  if (process.env.FACEBOOK_CLIENT_ID && process.env.FACEBOOK_CLIENT_SECRET) {
+    providers.push(Facebook({
+      clientId: process.env.FACEBOOK_CLIENT_ID,
+      clientSecret: process.env.FACEBOOK_CLIENT_SECRET,
+    }));
+    console.log('[AUTH] ✓ Facebook provider configured');
+  }
+  
+  // Always include credentials provider for email/password
+  providers.push(Credentials({
+    id: 'credentials',
+    name: 'Email',
+    credentials: {
+      email: { label: 'Email', type: 'email' },
+      password: { label: 'Password', type: 'password' },
+    },
+    async authorize(credentials) {
+      if (!credentials?.email || !credentials?.password) {
+        return null;
+      }
+
+      const user = await findUserByEmail(pool, credentials.email);
+      if (!user || !user.password_hash) {
+        return null;
+      }
+
+      const isValid = await bcrypt.compare(
+        credentials.password,
+        user.password_hash
+      );
+      if (!isValid) {
+        return null;
+      }
+
+      return {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        image: user.image,
+      };
+    },
+  }));
+  console.log('[AUTH] ✓ Credentials provider configured');
+  
   return {
     adapter: PostgresAdapter(pool),
-    providers: [
-      Google({
-        clientId: process.env.GOOGLE_CLIENT_ID,
-        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      }),
-      Apple({
-        clientId: process.env.APPLE_CLIENT_ID,
-        clientSecret: process.env.APPLE_CLIENT_SECRET,
-      }),
-      Facebook({
-        clientId: process.env.FACEBOOK_CLIENT_ID,
-        clientSecret: process.env.FACEBOOK_CLIENT_SECRET,
-      }),
-      Credentials({
-        id: 'credentials',
-        name: 'Email',
-        credentials: {
-          email: { label: 'Email', type: 'email' },
-          password: { label: 'Password', type: 'password' },
-        },
-        async authorize(credentials) {
-          if (!credentials?.email || !credentials?.password) {
-            return null;
-          }
-
-          const user = await findUserByEmail(pool, credentials.email);
-          if (!user || !user.password_hash) {
-            return null;
-          }
-
-          const isValid = await bcrypt.compare(
-            credentials.password,
-            user.password_hash
-          );
-          if (!isValid) {
-            return null;
-          }
-
-          return {
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            image: user.image,
-          };
-        },
-      }),
-    ],
+    providers,
     session: {
       strategy: 'database',
       maxAge: 7 * 24 * 60 * 60, // 7 days
@@ -136,7 +153,7 @@ function createAuthConfig(pool) {
         }
         return session;
       },
-      async signIn({ user, account }) {
+      async signIn({ user }) {
         // Sync user to legacy users table for backward compatibility
         await upsertLegacyUser(pool, user);
         return true;
@@ -194,7 +211,7 @@ async function initializeAuthTables(pool) {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS auth_sessions (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        "sessionToken" VARCHAR(255) UNIQUE NOT NULL,
+        "sessionToken" TEXT UNIQUE NOT NULL,
         "userId" UUID NOT NULL REFERENCES auth_users(id) ON DELETE CASCADE,
         expires TIMESTAMPTZ NOT NULL
       )
@@ -270,32 +287,43 @@ export async function setupAuth(app) {
     // Get current user (compatibility endpoint)
     app.get('/api/auth/user', async (req, res) => {
       try {
-        // Get session from Auth.js
-        const authResponse = await fetch(
-          `${req.protocol}://${req.get('host')}/api/auth/session`,
-          {
-            headers: {
-              cookie: req.headers.cookie || '',
-            },
-          }
-        );
-
-        if (authResponse.ok) {
-          const session = await authResponse.json();
-          if (session?.user) {
-            console.log(`[AUTH] ✓ User authenticated: ${session.user.email}`);
-            res.json({
-              id: session.user.id,
-              email: session.user.email,
-              firstName: session.user.name?.split(' ')[0] || null,
-              lastName: session.user.name?.split(' ').slice(1).join(' ') || null,
-              profileImage: session.user.image,
-            });
-            return;
-          }
+        // Get session token from cookie
+        const cookies = req.headers.cookie?.split(';').reduce((acc, cookie) => {
+          const [key, value] = cookie.trim().split('=');
+          acc[key] = value;
+          return acc;
+        }, {}) || {};
+        
+        const sessionToken = cookies['authjs.session-token'] || cookies['__Secure-authjs.session-token'];
+        
+        if (!sessionToken) {
+          console.log('[AUTH] User not authenticated - no session token');
+          return res.status(401).json({ error: 'Unauthorized' });
         }
 
-        console.log('[AUTH] User not authenticated');
+        // Query session directly from database
+        const sessionResult = await pool.query(
+          `SELECT s.*, u.id as user_id, u.name, u.email, u.image 
+           FROM auth_sessions s 
+           JOIN auth_users u ON s."userId" = u.id 
+           WHERE s."sessionToken" = $1 AND s.expires > NOW()`,
+          [sessionToken]
+        );
+
+        if (sessionResult.rows.length > 0) {
+          const user = sessionResult.rows[0];
+          console.log(`[AUTH] ✓ User authenticated: ${user.email}`);
+          res.json({
+            id: user.user_id,
+            email: user.email,
+            firstName: user.name?.split(' ')[0] || null,
+            lastName: user.name?.split(' ').slice(1).join(' ') || null,
+            profileImage: user.image,
+          });
+          return;
+        }
+
+        console.log('[AUTH] User not authenticated - session not found or expired');
         res.status(401).json({ error: 'Unauthorized' });
       } catch (err) {
         console.error('[AUTH] ✗ Failed to get user:', err.message);
@@ -312,10 +340,19 @@ export async function setupAuth(app) {
           return res.status(400).json({ error: 'Email and password are required' });
         }
 
-        // Check if user already exists
+        // Validate password strength
+        if (password.length < 6) {
+          return res.status(400).json({ error: 'Password must be at least 6 characters' });
+        }
+
+        // Check if user already exists - use generic error to prevent email enumeration
         const existingUser = await findUserByEmail(pool, email);
         if (existingUser) {
-          return res.status(409).json({ error: 'User already exists' });
+          // Return same success response to prevent email enumeration
+          console.log(`[AUTH] Registration attempt for existing email: ${email}`);
+          return res.status(201).json({
+            message: 'If the email is available, a confirmation will be sent',
+          });
         }
 
         // Hash password
@@ -341,12 +378,7 @@ export async function setupAuth(app) {
 
         console.log(`[AUTH] ✓ New user registered: ${email}`);
         res.status(201).json({
-          message: 'User registered successfully',
-          user: {
-            id: newUser.id,
-            email: newUser.email,
-            name: newUser.name,
-          },
+          message: 'If the email is available, a confirmation will be sent',
         });
       } catch (err) {
         console.error('[AUTH] ✗ Failed to register user:', err.message);
