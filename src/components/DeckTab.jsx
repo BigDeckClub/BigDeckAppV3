@@ -9,6 +9,7 @@ export const DeckTab = () => {
   const [showCreateDeck, setShowCreateDeck] = useState(false);
   const [newDeckName, setNewDeckName] = useState('');
   const [newDeckFormat, setNewDeckFormat] = useState('Standard');
+  const [deckListText, setDeckListText] = useState('');
   const [selectedDeck, setSelectedDeck] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
   const [editingDeck, setEditingDeck] = useState(null);
@@ -136,9 +137,65 @@ export const DeckTab = () => {
     }
   };
 
-  const createDeck = async () => {
+  // Parse deck list text in MTG format (e.g., "4 Black Lotus" or "4x Black Lotus")
+  const parseDeckList = (text) => {
+    const cards = [];
+    const lines = text.split('\n');
+
+    lines.forEach(line => {
+      const trimmed = line.trim();
+      if (!trimmed) return;
+
+      // Skip comment lines
+      if (trimmed.startsWith('//')) return;
+
+      // Match patterns: "4 Card Name", "4x Card Name", "4X Card Name"
+      const match = trimmed.match(/^(\d+)\s*x?\s+(.+)$/i);
+      if (match) {
+        const quantity = parseInt(match[1], 10);
+        const name = match[2].trim();
+
+        // Try to extract set code from parentheses: "Card Name (MH2)" or "Card Name (MH2) 123"
+        const setMatch = name.match(/^(.+?)\s*\(\s*([A-Z0-9]{2,})\s*\)(?:\s+\d+)?$/);
+        
+        if (setMatch) {
+          cards.push({
+            quantity,
+            name: setMatch[1].trim(),
+            set: setMatch[2].toUpperCase(),
+            scryfall_id: null,
+            image_url: null
+          });
+        } else {
+          cards.push({
+            quantity,
+            name,
+            set: 'Unknown',
+            scryfall_id: null,
+            image_url: null
+          });
+        }
+      }
+    });
+
+    return cards;
+  };
+
+  const importFromTextDeck = async () => {
     if (!newDeckName.trim()) {
       alert('Please enter a deck name');
+      return;
+    }
+
+    if (!deckListText.trim()) {
+      alert('Please paste a deck list');
+      return;
+    }
+
+    const cards = parseDeckList(deckListText);
+
+    if (cards.length === 0) {
+      alert('No cards found in deck list. Format: "4 Card Name" or "4x Card Name"');
       return;
     }
 
@@ -153,14 +210,26 @@ export const DeckTab = () => {
         })
       });
 
-      if (response.ok) {
-        await loadDecks();
-        setNewDeckName('');
-        setNewDeckFormat('Standard');
-        setShowCreateDeck(false);
-        setSuccessMessage('Deck created successfully!');
-        setTimeout(() => setSuccessMessage(''), 3000);
-      }
+      if (!response.ok) throw new Error('Failed to create deck');
+
+      const newDeck = await response.json();
+
+      // Add cards to the deck
+      const updateResponse = await fetch(`${API_BASE}/decks/${newDeck.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cards })
+      });
+
+      if (!updateResponse.ok) throw new Error('Failed to add cards');
+
+      await loadDecks();
+      setNewDeckName('');
+      setDeckListText('');
+      setNewDeckFormat('Standard');
+      setShowCreateDeck(false);
+      setSuccessMessage(`Deck created with ${cards.length} cards!`);
+      setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error) {
       console.error('Failed to create deck:', error);
       alert('Error creating deck');
@@ -310,7 +379,7 @@ export const DeckTab = () => {
 
           {showCreateDeck && (
             <div className="bg-slate-800 rounded-lg border border-teal-500/50 p-4 mb-4">
-              <h3 className="text-lg font-semibold text-teal-300 mb-4">Create New Deck</h3>
+              <h3 className="text-lg font-semibold text-teal-300 mb-4">Import Deck from Text</h3>
               <div className="space-y-3">
                 <div>
                   <label className="block text-sm text-slate-400 mb-1">Deck Name</label>
@@ -320,7 +389,6 @@ export const DeckTab = () => {
                     value={newDeckName}
                     onChange={(e) => setNewDeckName(e.target.value)}
                     className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white placeholder-slate-500"
-                    onKeyDown={(e) => e.key === 'Enter' && createDeck()}
                     autoFocus
                   />
                 </div>
@@ -336,17 +404,29 @@ export const DeckTab = () => {
                     ))}
                   </select>
                 </div>
+                <div>
+                  <label className="block text-sm text-slate-400 mb-1">Deck List</label>
+                  <textarea
+                    placeholder={`4 Black Lotus\n4 Ancestral Recall\n4 Time Walk\n\nOne card per line. Format: "4 Card Name" or "4x Card Name (SET)"`}
+                    value={deckListText}
+                    onChange={(e) => setDeckListText(e.target.value)}
+                    className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white placeholder-slate-500 resize-none font-mono text-sm"
+                    rows="8"
+                  />
+                  <p className="text-xs text-slate-500 mt-1">One card per line. Optional set code in parentheses: "Card Name (MH2)"</p>
+                </div>
                 <div className="flex gap-2 pt-2">
                   <button
-                    onClick={createDeck}
+                    onClick={importFromTextDeck}
                     className="flex-1 bg-teal-600 hover:bg-teal-700 text-white px-3 py-2 rounded font-semibold transition-colors"
                   >
-                    Create
+                    Import
                   </button>
                   <button
                     onClick={() => {
                       setShowCreateDeck(false);
                       setNewDeckName('');
+                      setDeckListText('');
                       setNewDeckFormat('Standard');
                     }}
                     className="flex-1 bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded transition-colors"
