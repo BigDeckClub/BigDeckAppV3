@@ -265,17 +265,23 @@ export const InventoryTab = ({
       <div className={`fixed md:static left-0 w-64 flex-shrink-0 space-y-4 h-full md:h-auto overflow-y-auto md:overflow-visible bg-slate-900 md:bg-transparent z-30 transition-transform duration-300 ${
         sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
       }`}>
-        <div className="rounded-lg p-4 border-2 border-teal-600/60 bg-gradient-to-br from-teal-900/20 to-teal-800/10 sticky top-4">
-          {!showCreateFolder ? (
-            <button
-              onClick={() => setShowCreateFolder(true)}
-              className="flex items-center gap-2 text-teal-300 hover:text-teal-200 font-semibold transition-colors w-full"
-            >
-              <Plus className="w-4 h-4" />
-              New Folder
-            </button>
-          ) : (
-            <div className="flex flex-col gap-2">
+        {/* Folder List */}
+        <div className="rounded-lg p-4 border-2 border-teal-500/50 bg-gradient-to-br from-slate-900/50 to-slate-800/50 space-y-3 max-h-96 overflow-y-auto">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-teal-300">📁 Folders</h3>
+            {!showCreateFolder && (
+              <button
+                onClick={() => setShowCreateFolder(true)}
+                className="text-teal-300 hover:text-teal-200 transition-colors"
+                title="New Folder"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+
+          {showCreateFolder && (
+            <div className="flex flex-col gap-2 pb-3 border-b border-slate-700">
               <input
                 type="text"
                 placeholder="Folder name"
@@ -326,11 +332,6 @@ export const InventoryTab = ({
               </div>
             </div>
           )}
-        </div>
-
-        {/* Folder List */}
-        <div className="rounded-lg p-4 border-2 border-teal-500/50 bg-gradient-to-br from-slate-900/50 to-slate-800/50 space-y-2 max-h-96 overflow-y-auto">
-          <h3 className="text-sm font-semibold text-teal-300 mb-3">📁 Folders</h3>
           
           {/* Created Folders */}
           {createdFolders.map((folderName) => {
