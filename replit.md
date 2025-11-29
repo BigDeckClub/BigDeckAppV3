@@ -1,14 +1,13 @@
 # BigDeck.app - MTG Card Manager
 
 ## Overview
-BigDeck.app is a production-ready Magic: The Gathering inventory management system. It enables users to track card inventory with location-based organization, create decklists, manage containers by location, import bulk orders, record sales, and monitor real-time market pricing from Scryfall and Card Kingdom.
+BigDeck.app is a streamlined Magic: The Gathering inventory management system. It enables users to track card inventory with location-based organization and manage bulk import orders. The app uses real-time market pricing from Scryfall and features a clean, modern interface with no authentication required.
 
 ## Current Status
-✅ **PRODUCTION READY** - All core features implemented and optimized
-- Multi-tab interface with Inventory, Decklists, Containers, Imports, Sales, and Analytics
-- **NEW: Location-based inventory system** - Cards now tracked by physical location with shared location support
-- **NEW: Location-based containers** - Containers organized by storage location instead of decklists
-- Real-time pricing from Scryfall and Card Kingdom
+✅ **PRODUCTION READY** - Streamlined core features fully implemented
+- Two-tab interface: **Inventory** (view/edit cards) and **Imports** (add cards + manage orders)
+- Location-based inventory system with shared location support
+- Real-time pricing from Scryfall
 - Responsive design with mobile-optimized bottom navigation
 - PostgreSQL database with complete schema and API routes
 - Zero authentication overhead - fully accessible without login
@@ -16,112 +15,104 @@ BigDeck.app is a production-ready Magic: The Gathering inventory management syst
 ## Architecture
 - **Frontend**: React 18 + Vite with Tailwind CSS, modern glassmorphism UI, cyan/teal color palette
 - **Backend**: Express.js with PostgreSQL via native pg driver
-- **Database**: PostgreSQL with complete inventory location tracking
+- **Database**: PostgreSQL with inventory location tracking
 - **Icons**: Lucide React
-- **Pricing**: Scryfall (TCG) + Card Kingdom scraping + fallback support
+- **Pricing**: Scryfall API for real-time TCG pricing
 
-## Recent Optimizations
-- ✅ Added location and shared_location fields to inventory table
-- ✅ Transformed containers system from decklist-based to location-based
-- ✅ Added complete CRUD API endpoints for inventory (GET, POST, PUT, DELETE)
-- ✅ Added complete CRUD API endpoints for containers (GET, POST, DELETE)
-- ✅ Frontend location input fields with shared location checkbox
-- ✅ Location display badges in inventory list
-- ✅ Container creation now tied to physical storage locations
-- Removed 15+ unused dependencies (Prisma, Passport, auth packages, testing libraries)
-- Deleted unused utility files (apiClient.js, fetchCardPrices.js, priceUtils.js, api types)
-- Removed all authentication infrastructure and dead code
+## Latest Changes (November 29, 2025)
+- ✅ Removed unused tabs (Decklists, Containers, Sales, Analytics) - simplified to 2-tab interface
+- ✅ Moved "Add Card" feature from Inventory tab to Imports tab
+- ✅ Cleaned up 40+ lines of unused imports, state variables, and functions
+- ✅ Removed SellModal and all related dead code
+- ✅ Fixed all syntax errors and JSX warnings
+- ✅ Optimized component rendering with proper React keys
 
 ## Core Features
-1. **Inventory Tab** - Add/edit/delete cards with location tracking, quantity management, purchase history, real-time prices
-2. **Decklists Tab** - Paste decklists, validate cards, calculate deck value, manage multiple decklists
-3. **Containers Tab** - Create collection boxes within specific locations, organize cards by storage location (shelf, box, etc.)
-4. **Imports Tab** - Create bulk import orders, track pending/completed imports, manage card lists
-5. **Sales Tab** - Record sales, calculate profit/loss, view sales history
-6. **Analytics Tab** - Inventory stats, reorder alerts, activity history, purchase tracking
+1. **Inventory Tab** - View all cards organized by name with:
+   - Total quantity per card
+   - Available copies (not in containers)
+   - Cards in containers
+   - Average purchase price (last 60 days)
+   - Edit/delete individual entries
+   - Expandable card groups
 
-## Locations Feature (NEW)
-- **Location Field**: Every card in inventory has a location (e.g., "Shelf A", "Box 1", "Binder Top Shelf")
-- **Shared Locations**: Mark locations as shared to indicate multi-user storage areas
-- **Location Badges**: Visual indicators show location and shared status on each card
-- **Container Organization**: Containers now represent collection boxes within specific locations
-- **Location Dropdown**: Containers can only be created for locations that have inventory items
+2. **Imports Tab** - Centralized card management with:
+   - Add card to inventory (search Scryfall, select set, enter quantity/price/location)
+   - Create bulk import orders (paste card lists, track status)
+   - Mark orders as complete
+   - Delete orders
 
 ## Database Tables
-- `inventory` - Card inventory with quantities, prices, images, **location, is_shared_location** (NEW)
-- `decklists` - Saved decklists with card lists
-- `containers` - Boxes/containers organized by **location** (decklist_id removed)
-- `container_items` - Individual cards in containers
-- `sales` - Sale records with COGS and profit tracking
+- `inventory` - Card inventory with quantities, prices, images, location, is_shared_location
 - `imports` - Bulk import orders with status tracking
-- `users` - User profiles (schema preserved for future multi-user)
+- `decklists` - Saved decklists (legacy, not actively used)
+- `containers` - Collection boxes organized by location (legacy, not actively used)
+- `container_items` - Cards in containers (legacy)
+- `sales` - Sale records (legacy)
+- `users` - User profiles (schema preserved)
 - `sessions` - User session data (schema preserved)
 
 ## API Endpoints
-**Inventory (NEW - Complete CRUD):**
-- `GET /api/inventory` - Fetch all inventory items with locations
+**Inventory:**
+- `GET /api/inventory` - Fetch all cards with locations
 - `POST /api/inventory` - Add new card with location data
 - `PUT /api/inventory/:id` - Update card (quantity, price, location, shared status)
 - `DELETE /api/inventory/:id` - Remove card from inventory
 
-**Containers (NEW - Updated for locations):**
-- `GET /api/containers` - Fetch all containers organized by location
-- `POST /api/containers` - Create container for specific location
-- `DELETE /api/containers/:id` - Delete container
-
-**Legacy Endpoints:**
-- `GET/POST /api/decklists` - Decklist CRUD
+**Imports:**
+- `GET /api/imports` - Fetch all import orders
+- `POST /api/imports` - Create new import order
 - `PATCH /api/imports/:id/complete` - Mark import as done
-- `POST /api/containers/:id/sell` - Record container sale
+- `DELETE /api/imports/:id` - Delete import order
+
+**Pricing:**
 - `GET /api/prices/:cardName/:setCode` - Fetch market prices
-- `GET /api/settings/reorder_thresholds` - Reorder threshold settings
 
 ## User Preferences
-- No authentication layer required for MVP
-- Prefer iterative development with focus on core functionality
-- Value clean, well-structured code with clear patterns
-- Mobile-first responsive design approach
-- **Location-based organization** over decklist-based containers
+- No authentication layer - fully open access
+- Clean, streamlined two-tab interface for focused workflow
+- Location-based card organization (e.g., "Shelf A", "Box 1")
+- Mobile-first responsive design
+- Scryfall search integration for card discovery
 
 ## Project Structure
 ```
 src/
-  components/      - React components (Tabs, Modals, Cards)
-  context/         - PriceCacheContext for pricing data
-  hooks/           - useApi, useDebounce utilities
-  utils/           - useDebounce hook
-  App.jsx          - Main app container and state management
-  main.jsx         - Entry point
-  index.css        - Tailwind + custom styles
+  components/
+    InventoryTab.jsx       - View inventory, edit/delete cards
+    ImportTab.jsx          - Add cards & manage import orders
+    SettingsPanel.jsx      - Settings modal
+    PriceCacheContext.jsx   - Price caching
+    DecklistCardPrice.jsx   - Market price display
+    ErrorBoundary.jsx      - Error handling
+  context/
+    PriceCacheContext.jsx  - Price data caching
+  hooks/
+    useApi.js              - API utility functions
+  utils/
+    useDebounce.js         - Debounced search
+  App.jsx                  - Main app & state management
+  main.jsx                 - Entry point
+  index.css                - Tailwind + custom styles
 
-server/            - (Removed unused auth files)
-
-server.js          - Express server with all API routes
-package.json       - Dependencies (optimized)
+server.js                  - Express server with all routes
+package.json               - Dependencies (optimized)
 ```
 
-## Next Steps for Production
-1. Deploy to Replit with `npm run prod`
-2. Configure PostgreSQL DATABASE_URL environment variable
-3. Monitor pricing API calls and adjust rate limits if needed
-4. Test location-based workflow: Add cards with different locations → Create containers for those locations
-5. Prepare marketing materials highlighting real-time pricing and location tracking
-6. Consider adding multi-user support (schema ready but not implemented)
-
-## Deployment Notes
-- App runs on port 3000 (Express) with Vite dev server on 5000
-- Frontend served via ViteExpress with Vite dev middleware in dev mode
+## Deployment
+- App runs on port 3000 (Express) with Vite on port 5000
+- Frontend served via ViteExpress
 - Production: `npm run build && npm run start`
-- All environment variables optional except DATABASE_URL for persistence
+- No special environment variables required for basic use
+- Optional: Set DATABASE_URL for persistent storage
 
-## Performance Metrics
+## Performance
 - Lightweight bundle with only essential dependencies
 - Price caching to minimize external API calls
-- Rate limiting on price endpoints (100 req/min)
-- Debounced search queries (300ms)
-- Optimized React component structure with memoization
-- Efficient location extraction from inventory for container creation
+- Debounced card search (300ms)
+- Optimized React component structure
+- Mobile-responsive design
 
 ---
-*Last updated: November 29, 2025*
-*Locations feature fully implemented and ready for production*
+*Last updated: November 29, 2025 - 2:10 PM*
+*Status: Production-ready, streamlined 2-tab interface*

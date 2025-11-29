@@ -153,9 +153,9 @@ export const ImportTab = ({
                       seen.add(card.name);
                       return true;
                     })
-                    .map((card) => (
+                    .map((card, idx) => (
                       <div
-                        key={card.id}
+                        key={`${card.name}-${idx}`}
                         onClick={() => selectCard(card)}
                         className="px-4 py-3 hover:bg-teal-600/30 cursor-pointer border-b border-slate-700 last:border-b-0 active:bg-teal-600/50"
                       >
