@@ -134,16 +134,18 @@ export const InventoryTab = ({
             </div>
           </div>
           
-          <div className="space-y-0.5 text-center text-[7px] md:text-[8px]">
-            <div className="flex justify-center gap-2">
-              <span className="text-slate-500">Qty</span>
-              <span className="text-slate-500">Cost</span>
-              <span className="text-slate-500">Total</span>
+          <div className="grid grid-cols-3 gap-1 text-center text-[7px] md:text-[8px]">
+            <div className="space-y-0.5">
+              <div className="text-slate-500">Qty</div>
+              <div className={`font-semibold ${totalQty === 0 ? 'text-slate-500' : 'text-teal-300'}`}>{totalQty}</div>
             </div>
-            <div className="flex justify-center gap-2">
-              <span className={`font-semibold ${totalQty === 0 ? 'text-slate-500' : 'text-teal-300'}`}>{totalQty}</span>
-              <span className="font-semibold text-blue-300">${avgPrice.toFixed(2)}</span>
-              <span className="font-semibold text-amber-400">${(totalQty * avgPrice).toFixed(2)}</span>
+            <div className="space-y-0.5">
+              <div className="text-slate-500">Cost</div>
+              <div className="font-semibold text-blue-300">${avgPrice.toFixed(2)}</div>
+            </div>
+            <div className="space-y-0.5">
+              <div className="text-slate-500">Total</div>
+              <div className="font-semibold text-amber-400">${(totalQty * avgPrice).toFixed(2)}</div>
             </div>
           </div>
         </div>
