@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { BookOpen, Plus, Trash2, Edit2, X } from 'lucide-react';
 
+const API_BASE = '/api';
+
 export const DeckTab = () => {
   const [decks, setDecks] = useState([]);
   const [showCreateDeck, setShowCreateDeck] = useState(false);
@@ -10,73 +12,121 @@ export const DeckTab = () => {
   const [selectedDeck, setSelectedDeck] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
   const [editingDeck, setEditingDeck] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const formats = ['Standard', 'Modern', 'Commander', 'Casual', 'Limited', 'Pioneer'];
 
-  // Load decks from localStorage
+  // Load decks from API
   useEffect(() => {
-    const savedDecks = localStorage.getItem('mtg_decks');
-    if (savedDecks) {
-      setDecks(JSON.parse(savedDecks));
-    }
+    loadDecks();
   }, []);
 
-  // Save decks to localStorage
-  const saveDecks = (updatedDecks) => {
-    localStorage.setItem('mtg_decks', JSON.stringify(updatedDecks));
-    setDecks(updatedDecks);
+  const loadDecks = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch(`${API_BASE}/decks`);
+      if (response.ok) {
+        const data = await response.json();
+        setDecks(data);
+      }
+    } catch (error) {
+      console.error('Failed to load decks:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const createDeck = () => {
+  const createDeck = async () => {
     if (!newDeckName.trim()) {
       alert('Please enter a deck name');
       return;
     }
 
-    const newDeck = {
-      id: Date.now(),
-      name: newDeckName,
-      format: newDeckFormat,
-      cards: [],
-      createdAt: new Date().toISOString(),
-      description: ''
-    };
+    try {
+      const response = await fetch(`${API_BASE}/decks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newDeckName,
+          format: newDeckFormat,
+          description: ''
+        })
+      });
 
-    const updatedDecks = [...decks, newDeck];
-    saveDecks(updatedDecks);
-    setNewDeckName('');
-    setNewDeckFormat('Standard');
-    setShowCreateDeck(false);
-    setSuccessMessage('Deck created successfully!');
-    setTimeout(() => setSuccessMessage(''), 3000);
-  };
-
-  const deleteDeck = (id) => {
-    if (window.confirm('Are you sure you want to delete this deck?')) {
-      const updatedDecks = decks.filter(d => d.id !== id);
-      saveDecks(updatedDecks);
-      if (selectedDeck?.id === id) {
-        setSelectedDeck(null);
+      if (response.ok) {
+        await loadDecks();
+        setNewDeckName('');
+        setNewDeckFormat('Standard');
+        setShowCreateDeck(false);
+        setSuccessMessage('Deck created successfully!');
+        setTimeout(() => setSuccessMessage(''), 3000);
       }
-      setSuccessMessage('Deck deleted!');
-      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (error) {
+      console.error('Failed to create deck:', error);
+      alert('Error creating deck');
     }
   };
 
-  const updateDeckName = (id, newName) => {
-    if (!newName.trim()) return;
-    const updatedDecks = decks.map(d => d.id === id ? { ...d, name: newName } : d);
-    saveDecks(updatedDecks);
-    setEditingDeck(null);
-    setSuccessMessage('Deck updated!');
-    setTimeout(() => setSuccessMessage(''), 3000);
+  const deleteDeck = async (id) => {
+    if (window.confirm('Are you sure you want to delete this deck?')) {
+      try {
+        const response = await fetch(`${API_BASE}/decks/${id}`, { method: 'DELETE' });
+        if (response.ok) {
+          await loadDecks();
+          if (selectedDeck?.id === id) {
+            setSelectedDeck(null);
+          }
+          setSuccessMessage('Deck deleted!');
+          setTimeout(() => setSuccessMessage(''), 3000);
+        }
+      } catch (error) {
+        console.error('Failed to delete deck:', error);
+        alert('Error deleting deck');
+      }
+    }
   };
 
-  const updateDeckDescription = (id, newDescription) => {
-    const updatedDecks = decks.map(d => d.id === id ? { ...d, description: newDescription } : d);
-    saveDecks(updatedDecks);
-    setSuccessMessage('Deck description updated!');
-    setTimeout(() => setSuccessMessage(''), 3000);
+  const updateDeckName = async (id, newName) => {
+    if (!newName.trim()) return;
+    try {
+      const response = await fetch(`${API_BASE}/decks/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newName })
+      });
+
+      if (response.ok) {
+        await loadDecks();
+        setEditingDeck(null);
+        setSuccessMessage('Deck updated!');
+        setTimeout(() => setSuccessMessage(''), 3000);
+      }
+    } catch (error) {
+      console.error('Failed to update deck:', error);
+    }
+  };
+
+  const updateDeckDescription = async (id, newDescription) => {
+    try {
+      const response = await fetch(`${API_BASE}/decks/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ description: newDescription })
+      });
+
+      if (response.ok) {
+        await loadDecks();
+        // Update selected deck if it's the one being edited
+        if (selectedDeck?.id === id) {
+          const updated = decks.find(d => d.id === id);
+          if (updated) setSelectedDeck(updated);
+        }
+        setSuccessMessage('Deck description updated!');
+        setTimeout(() => setSuccessMessage(''), 3000);
+      }
+    } catch (error) {
+      console.error('Failed to update description:', error);
+    }
   };
 
   return (
@@ -87,7 +137,11 @@ export const DeckTab = () => {
         </div>
       )}
 
-      {!selectedDeck ? (
+      {isLoading ? (
+        <div className="text-center py-12">
+          <div className="w-8 h-8 animate-spin mx-auto text-teal-400 border-2 border-teal-400 border-t-transparent rounded-full"></div>
+        </div>
+      ) : !selectedDeck ? (
         // Deck List View
         <div className="space-y-4">
           <div className="flex items-center justify-between mb-6">
@@ -223,10 +277,10 @@ export const DeckTab = () => {
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-slate-400">Cards:</span>
-                      <span className="text-teal-300 font-semibold">{deck.cards.length}</span>
+                      <span className="text-teal-300 font-semibold">{(deck.cards && deck.cards.length) || 0}</span>
                     </div>
                     <div className="text-xs text-slate-500">
-                      Created: {new Date(deck.createdAt).toLocaleDateString()}
+                      Created: {new Date(deck.created_at).toLocaleDateString()}
                     </div>
                     {deck.description && (
                       <p className="text-xs text-slate-400 italic mt-2">{deck.description}</p>
@@ -259,7 +313,7 @@ export const DeckTab = () => {
             <div className="flex justify-between items-start mb-4">
               <div>
                 <h2 className="text-2xl font-bold text-teal-300">{selectedDeck.name}</h2>
-                <p className="text-slate-400 mt-1">{selectedDeck.format} • {selectedDeck.cards.length} cards</p>
+                <p className="text-slate-400 mt-1">{selectedDeck.format} • {(selectedDeck.cards && selectedDeck.cards.length) || 0} cards</p>
               </div>
               <button
                 onClick={() => deleteDeck(selectedDeck.id)}
@@ -273,7 +327,7 @@ export const DeckTab = () => {
             <div className="mb-4">
               <label className="block text-sm text-slate-400 mb-2">Description</label>
               <textarea
-                value={selectedDeck.description}
+                value={selectedDeck.description || ''}
                 onChange={(e) => updateDeckDescription(selectedDeck.id, e.target.value)}
                 placeholder="Add deck notes, strategy, etc."
                 className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white placeholder-slate-500 resize-none"
@@ -281,7 +335,7 @@ export const DeckTab = () => {
               />
             </div>
 
-            {selectedDeck.cards.length === 0 ? (
+            {(!selectedDeck.cards || selectedDeck.cards.length === 0) ? (
               <div className="text-center py-8">
                 <p className="text-slate-400">No cards in this deck yet. Add cards from your inventory!</p>
               </div>
@@ -300,7 +354,7 @@ export const DeckTab = () => {
             )}
 
             <p className="text-xs text-slate-500 mt-4">
-              Created: {new Date(selectedDeck.createdAt).toLocaleDateString()}
+              Created: {new Date(selectedDeck.created_at).toLocaleDateString()}
             </p>
           </div>
         </div>

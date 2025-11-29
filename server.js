@@ -733,6 +733,102 @@ app.get('/api/analytics/card-metrics', async (req, res) => {
   }
 });
 
+// ========== DECKS ENDPOINTS ==========
+app.get('/api/decks', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM decks ORDER BY created_at DESC');
+    res.json(result.rows);
+  } catch (error) {
+    console.error('[DECKS] Error fetching decks:', error.message);
+    res.status(500).json({ error: 'Failed to fetch decks' });
+  }
+});
+
+app.post('/api/decks', async (req, res) => {
+  const { name, format, description } = req.body;
+  
+  if (!name || typeof name !== 'string' || name.trim().length === 0) {
+    return res.status(400).json({ error: 'Deck name is required' });
+  }
+  
+  try {
+    const result = await pool.query(
+      `INSERT INTO decks (name, format, description, cards, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, NOW(), NOW())
+       RETURNING *`,
+      [name, format || 'Casual', description || '', '[]']
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error('[DECKS] Error creating deck:', error.message);
+    res.status(500).json({ error: 'Failed to create deck' });
+  }
+});
+
+app.put('/api/decks/:id', async (req, res) => {
+  const { id } = req.params;
+  const { name, format, description, cards } = req.body;
+  
+  try {
+    const updates = [];
+    const values = [];
+    let paramCount = 1;
+    
+    if (name !== undefined) {
+      updates.push(`name = $${paramCount++}`);
+      values.push(name);
+    }
+    if (format !== undefined) {
+      updates.push(`format = $${paramCount++}`);
+      values.push(format);
+    }
+    if (description !== undefined) {
+      updates.push(`description = $${paramCount++}`);
+      values.push(description);
+    }
+    if (cards !== undefined) {
+      updates.push(`cards = $${paramCount++}`);
+      values.push(JSON.stringify(cards));
+    }
+    
+    updates.push(`updated_at = NOW()`);
+    
+    if (updates.length === 1) {
+      return res.status(400).json({ error: 'No fields to update' });
+    }
+    
+    values.push(id);
+    const query = `UPDATE decks SET ${updates.join(', ')} WHERE id = $${paramCount} RETURNING *`;
+    const result = await pool.query(query, values);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Deck not found' });
+    }
+    
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('[DECKS] Error updating deck:', error.message);
+    res.status(500).json({ error: 'Failed to update deck' });
+  }
+});
+
+app.delete('/api/decks/:id', async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    const result = await pool.query('DELETE FROM decks WHERE id = $1 RETURNING *', [id]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Deck not found' });
+    }
+    
+    res.json({ message: 'Deck deleted', deck: result.rows[0] });
+  } catch (error) {
+    console.error('[DECKS] Error deleting deck:', error.message);
+    res.status(500).json({ error: 'Failed to delete deck' });
+  }
+});
+
 // ========== CENTRALIZED ERROR HANDLING ==========
 // Placed after all API routes to catch unhandled errors from route handlers
 app.use((err, req, res, next) => {
