@@ -131,6 +131,31 @@ export async function setupAuth(app, pool) {
       );
     });
   });
+
+  // Auth user endpoint
+  app.get("/api/auth/user", async (req, res) => {
+    const user = req.user;
+    
+    if (!user || !user?.claims?.sub) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    
+    try {
+      const userId = user.claims.sub;
+      // For now, return the user claims as the user object
+      // The frontend will use this to determine if user is authenticated
+      res.json({
+        id: userId,
+        email: user.claims?.email,
+        firstName: user.claims?.first_name,
+        lastName: user.claims?.last_name,
+        profileImageUrl: user.claims?.profile_image_url
+      });
+    } catch (error) {
+      console.error("[AUTH] Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
 }
 
 export const isAuthenticated = async (req, res, next) => {
