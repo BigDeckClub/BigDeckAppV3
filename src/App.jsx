@@ -33,7 +33,6 @@ function MTGInventoryTrackerContent() {
   const [activeTab, setActiveTab] = useState("inventory");
   const [inventory, setInventory] = useState([]);
   const [decklists, setDecklists] = useState([]);
-  const [containers, setContainers] = useState([]);
   const [sales, setSales] = useState([]);
   const [imports, setImports] = useState([]);
   const [reorderSettings, setReorderSettings] = useState({
@@ -44,10 +43,6 @@ function MTGInventoryTrackerContent() {
   const [usageHistory, setUsageHistory] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [totalPurchased60Days, setTotalPurchased60Days] = useState(0);
-
-  const [showSellModal, setShowSellModal] = useState(false);
-  const [selectedContainerForSale, setSelectedContainerForSale] = useState(null);
-  const [salePrice, setSalePrice] = useState("");
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
@@ -64,8 +59,6 @@ function MTGInventoryTrackerContent() {
     location: "",
     isSharedLocation: false,
   });
-
-  const [containerItems, setContainerItems] = useState({});
   const [defaultSearchSet, setDefaultSearchSet] = useState("");
   const [allSets, setAllSets] = useState([]);
   const [successMessage, setSuccessMessage] = useState("");
@@ -102,20 +95,6 @@ function MTGInventoryTrackerContent() {
     } catch (error) {}
   };
 
-  const loadContainers = async () => {
-    try {
-      const data = await get(`${API_BASE}/containers`);
-      setContainers(data || []);
-
-      if (data && data.length > 0) {
-        const itemsMap = {};
-        data.forEach(container => {
-          itemsMap[container.id] = container.cards || [];
-        });
-        setContainerItems(itemsMap);
-      }
-    } catch (error) {}
-  };
 
   const loadSales = async () => {
     try {
@@ -231,7 +210,6 @@ function MTGInventoryTrackerContent() {
       await Promise.all([
         loadInventory(),
         loadDecklists(),
-        loadContainers(),
         loadSales(),
         loadReorderSettings(),
         loadUsageHistory(),
@@ -392,7 +370,7 @@ function MTGInventoryTrackerContent() {
   const navItems = [
     { id: "inventory", icon: Layers, label: "Inventory" },
     { id: "decklists", icon: FileText, label: "Decks" },
-    { id: "containers", icon: Package, label: "Boxes" },
+    { id: "containers", icon: Package, label: "Locations" },
     { id: "imports", icon: Download, label: "Imports" },
     { id: "analytics", icon: TrendingUp, label: "Stats" },
     { id: "sales", icon: DollarSign, label: "Sales" },
