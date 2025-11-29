@@ -35,7 +35,6 @@ export const InventoryTab = ({
   MarketPrices,
   handleSearch
 }) => {
-  const [showOutOfStock, setShowOutOfStock] = useState(false);
   const [expandedFolders, setExpandedFolders] = useState({});
   const [newFolderName, setNewFolderName] = useState('');
   const [showCreateFolder, setShowCreateFolder] = useState(false);
