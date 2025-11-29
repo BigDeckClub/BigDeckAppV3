@@ -135,12 +135,12 @@ export const InventoryTab = ({
           </div>
           
           <div className="space-y-0.5 text-center text-[7px] md:text-[8px]">
-            <div className="flex justify-around gap-1">
+            <div className="flex justify-center gap-2">
               <span className="text-slate-500">Qty</span>
               <span className="text-slate-500">Cost</span>
               <span className="text-slate-500">Total</span>
             </div>
-            <div className="flex justify-around gap-1">
+            <div className="flex justify-center gap-2">
               <span className={`font-semibold ${totalQty === 0 ? 'text-slate-500' : 'text-teal-300'}`}>{totalQty}</span>
               <span className="font-semibold text-blue-300">${avgPrice.toFixed(2)}</span>
               <span className="font-semibold text-amber-400">${(totalQty * avgPrice).toFixed(2)}</span>
