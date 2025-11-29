@@ -126,15 +126,41 @@ export async function setupAuth(app) {
     // Strategy registry
     const strategies = new Map();
 
-    // Helper to ensure strategy exists for domain
-    const ensureStrategy = (domain) => {
+    // Helper to get the actual Replit domain
+    const getReplitDomain = () => {
+      // Use REPLIT_DOMAINS environment variable (set by Replit)
+      if (process.env.REPLIT_DOMAINS) {
+        return process.env.REPLIT_DOMAINS;
+      }
+      // Fallback for production
+      if (process.env.REPL_OWNER && process.env.REPL_SLUG) {
+        return `${process.env.REPL_OWNER}--${process.env.REPL_SLUG}.repl.co`;
+      }
+      return null;
+    };
+
+    // Helper to construct callback URL
+    const getCallbackURL = () => {
+      const domain = getReplitDomain();
+      if (domain) {
+        return `https://${domain}`;
+      }
+      // Fallback for local development only
+      return 'http://localhost:3000';
+    };
+
+    // Helper to ensure strategy exists
+    const ensureStrategy = () => {
+      const domain = getReplitDomain() || 'localhost';
       if (!strategies.has(domain)) {
         const strategyName = `replitauth:${domain}`;
+        const callbackURL = `${getCallbackURL()}/api/callback`;
+        console.log(`[AUTH] Creating strategy with callback: ${callbackURL}`);
         const strategy = new Strategy(
           {
             config,
             scope: 'openid email profile offline_access',
-            callbackURL: `${getCallbackURL(domain)}/api/callback`,
+            callbackURL: callbackURL,
           },
           verify
         );
@@ -145,21 +171,13 @@ export async function setupAuth(app) {
       return strategies.get(domain);
     };
 
-    // Helper to construct callback URL
-    const getCallbackURL = (domain) => {
-      if (process.env.NODE_ENV === 'production' && process.env.REPL_OWNER && process.env.REPL_SLUG) {
-        return `https://${process.env.REPL_OWNER}--${process.env.REPL_SLUG}.repl.co`;
-      }
-      return `http://${domain}`;
-    };
-
     // ========== AUTH ROUTES ==========
     console.log('[AUTH] Registering auth routes...');
 
     // Login endpoint
     app.get('/api/login', (req, res, next) => {
       console.log('[AUTH] GET /api/login - initiating login flow');
-      const strategyName = ensureStrategy(req.hostname);
+      const strategyName = ensureStrategy();
       passport.authenticate(strategyName, {
         prompt: 'login consent',
         scope: ['openid', 'email', 'profile', 'offline_access'],
@@ -169,7 +187,7 @@ export async function setupAuth(app) {
     // Callback endpoint
     app.get('/api/callback', (req, res, next) => {
       console.log('[AUTH] GET /api/callback - processing OAuth response');
-      const strategyName = ensureStrategy(req.hostname);
+      const strategyName = ensureStrategy();
       passport.authenticate(strategyName, {
         successRedirect: '/',
         failureRedirect: '/api/login',
@@ -205,7 +223,7 @@ export async function setupAuth(app) {
         try {
           const logoutURL = client.buildEndSessionUrl(config, {
             client_id: process.env.REPL_ID,
-            post_logout_redirect_uri: `${getCallbackURL(req.hostname)}/`,
+            post_logout_redirect_uri: `${getCallbackURL()}/`,
           });
           console.log('[AUTH] ✓ User logged out, redirecting to Replit logout');
           res.redirect(logoutURL.href);
