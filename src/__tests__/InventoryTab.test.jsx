@@ -161,8 +161,9 @@ describe('InventoryTab', () => {
     const listViewButton = screen.getByTitle('List View');
     fireEvent.click(listViewButton);
     
-    // In list view, expanded content should still show properly
-    // The component re-renders with the list view
+    // Verify list view renders the expanded content with the border-l-2 styling
+    const expandedContent = container.querySelector('.border-l-2.border-teal-500\\/50');
+    expect(expandedContent).toBeInTheDocument();
   });
 
   it('close button collapses expanded content', () => {
@@ -183,5 +184,67 @@ describe('InventoryTab', () => {
     expect(setExpandedCards).toHaveBeenCalledWith(
       expect.objectContaining({ 'Lightning Bolt': false })
     );
+  });
+
+  it('shows Edit and Delete buttons for individual items when set is expanded', () => {
+    const propsWithExpanded = {
+      ...defaultProps,
+      expandedCards: { 'Lightning Bolt': true }
+    };
+    
+    const { container } = render(<InventoryTab {...propsWithExpanded} />);
+    
+    // Expand the TLE set by clicking on it
+    const tleHeader = screen.getByText('TLE');
+    fireEvent.click(tleHeader);
+    
+    // Should show Edit and Delete buttons for items
+    const editButtons = screen.getAllByText('Edit');
+    const deleteButtons = screen.getAllByText('Delete');
+    
+    expect(editButtons.length).toBeGreaterThan(0);
+    expect(deleteButtons.length).toBeGreaterThan(0);
+  });
+
+  it('clicking Edit button triggers startEditingItem', () => {
+    const startEditingItem = vi.fn();
+    const propsWithExpanded = {
+      ...defaultProps,
+      expandedCards: { 'Lightning Bolt': true },
+      startEditingItem
+    };
+    
+    render(<InventoryTab {...propsWithExpanded} />);
+    
+    // Expand the TLE set
+    const tleHeader = screen.getByText('TLE');
+    fireEvent.click(tleHeader);
+    
+    // Click the Edit button
+    const editButtons = screen.getAllByText('Edit');
+    fireEvent.click(editButtons[0]);
+    
+    expect(startEditingItem).toHaveBeenCalled();
+  });
+
+  it('clicking Delete button triggers deleteInventoryItem', () => {
+    const deleteInventoryItem = vi.fn();
+    const propsWithExpanded = {
+      ...defaultProps,
+      expandedCards: { 'Lightning Bolt': true },
+      deleteInventoryItem
+    };
+    
+    render(<InventoryTab {...propsWithExpanded} />);
+    
+    // Expand the TLE set
+    const tleHeader = screen.getByText('TLE');
+    fireEvent.click(tleHeader);
+    
+    // Click the Delete button
+    const deleteButtons = screen.getAllByText('Delete');
+    fireEvent.click(deleteButtons[0]);
+    
+    expect(deleteInventoryItem).toHaveBeenCalledWith('1'); // First item id
   });
 });

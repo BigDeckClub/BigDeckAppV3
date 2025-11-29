@@ -275,16 +275,26 @@ export const InventoryTab = ({
                     
                     <div className="text-sm px-3 py-2 text-slate-300 bg-slate-900/50 rounded space-y-1">
                       <div><span className="text-slate-500">Qty:</span> <span className="text-teal-300 font-bold ml-2">{totalQtyInSet}</span></div>
-                      <div><span className="text-slate-500">Price:</span> <span className="text-blue-300 font-bold ml-2">${(setItems.reduce((sum, item) => sum + (parseFloat(item.purchase_price) || 0), 0) / setItems.length).toFixed(2)}</span></div>
+                      <div><span className="text-slate-500">Price:</span> <span className="text-blue-300 font-bold ml-2">${setItems.length > 0 ? (setItems.reduce((sum, item) => sum + (parseFloat(item.purchase_price) || 0), 0) / setItems.length).toFixed(2) : '0.00'}</span></div>
                     </div>
 
                     {expandedSets[`${firstItem.set}-${cardName}`] && (
                       <div className="space-y-2 pt-2 border-t border-slate-700">
                         {setItems.map((item) => (
-                          <div key={item.id} className="text-sm text-slate-300 space-y-0.5">
-                            <div><span className="text-slate-500">Qty:</span> <span className="font-semibold ml-2">{item.quantity}</span></div>
-                            <div><span className="text-slate-500">Price:</span> <span className="font-semibold ml-2">${parseFloat(item.purchase_price || 0).toFixed(2)}</span></div>
-                            <div className="text-xs text-slate-500">{new Date(item.purchase_date).toLocaleDateString()}</div>
+                          <div key={item.id} className="flex items-center justify-between text-sm text-slate-300 py-1">
+                            <div className="space-y-0.5">
+                              <div><span className="text-slate-500">Qty:</span> <span className="font-semibold ml-2">{item.quantity}</span></div>
+                              <div><span className="text-slate-500">Price:</span> <span className="font-semibold ml-2">${parseFloat(item.purchase_price || 0).toFixed(2)}</span></div>
+                              <div className="text-xs text-slate-500">{new Date(item.purchase_date).toLocaleDateString()}</div>
+                            </div>
+                            <div className="flex gap-2">
+                              <button onClick={() => startEditingItem(item)} className="text-blue-400 hover:text-blue-300 text-xs">
+                                Edit
+                              </button>
+                              <button onClick={() => deleteInventoryItem(item.id)} className="text-red-400 hover:text-red-300 text-xs">
+                                Delete
+                              </button>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -429,16 +439,26 @@ export const InventoryTab = ({
                         
                         <div className="text-sm px-3 py-2 text-slate-300 bg-slate-900/50 rounded space-y-1">
                           <div><span className="text-slate-500">Qty:</span> <span className="text-teal-300 font-bold ml-2">{totalQtyInSet}</span></div>
-                          <div><span className="text-slate-500">Price:</span> <span className="text-blue-300 font-bold ml-2">${(setItems.reduce((sum, item) => sum + (parseFloat(item.purchase_price) || 0), 0) / setItems.length).toFixed(2)}</span></div>
+                          <div><span className="text-slate-500">Price:</span> <span className="text-blue-300 font-bold ml-2">${setItems.length > 0 ? (setItems.reduce((sum, item) => sum + (parseFloat(item.purchase_price) || 0), 0) / setItems.length).toFixed(2) : '0.00'}</span></div>
                         </div>
 
                         {expandedSets[`${firstItem.set}-${cardName}`] && (
                           <div className="space-y-2 pt-2 border-t border-slate-700">
                             {setItems.map((item) => (
-                              <div key={item.id} className="text-sm text-slate-300 space-y-0.5">
-                                <div><span className="text-slate-500">Qty:</span> <span className="font-semibold ml-2">{item.quantity}</span></div>
-                                <div><span className="text-slate-500">Price:</span> <span className="font-semibold ml-2">${parseFloat(item.purchase_price || 0).toFixed(2)}</span></div>
-                                <div className="text-xs text-slate-500">{new Date(item.purchase_date).toLocaleDateString()}</div>
+                              <div key={item.id} className="flex items-center justify-between text-sm text-slate-300 py-1">
+                                <div className="space-y-0.5">
+                                  <div><span className="text-slate-500">Qty:</span> <span className="font-semibold ml-2">{item.quantity}</span></div>
+                                  <div><span className="text-slate-500">Price:</span> <span className="font-semibold ml-2">${parseFloat(item.purchase_price || 0).toFixed(2)}</span></div>
+                                  <div className="text-xs text-slate-500">{new Date(item.purchase_date).toLocaleDateString()}</div>
+                                </div>
+                                <div className="flex gap-2">
+                                  <button onClick={() => startEditingItem(item)} className="text-blue-400 hover:text-blue-300 text-xs">
+                                    Edit
+                                  </button>
+                                  <button onClick={() => deleteInventoryItem(item.id)} className="text-red-400 hover:text-red-300 text-xs">
+                                    Delete
+                                  </button>
+                                </div>
                               </div>
                             ))}
                           </div>
@@ -456,16 +476,16 @@ export const InventoryTab = ({
   };
 
   // Helper to render a card grid with expanded content below
-  const renderCardGridWithExpanded = (cards, groupedData = null) => {
-    // Find expanded card from this set of cards
-    const expandedCard = cards.find(([cardName]) => expandedCards[cardName]);
+  const renderCardGridWithExpanded = (cards) => {
+    // Find all expanded cards from this set of cards
+    const expandedCardsList = cards.filter(([cardName]) => expandedCards[cardName]);
     
     return (
       <>
         <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-3">
           {cards.map(renderCardTile)}
         </div>
-        {expandedCard && renderExpandedContent(expandedCard)}
+        {expandedCardsList.map(([cardName, items]) => renderExpandedContent([cardName, items]))}
       </>
     );
   };
