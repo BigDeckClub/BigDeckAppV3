@@ -1,4 +1,4 @@
-import fs from 'fs';
+import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -50,21 +50,21 @@ class MtgjsonPriceService {
    */
   async loadCacheFromDisk() {
     try {
-      if (fs.existsSync(CACHE_FILE)) {
-        const cacheContent = fs.readFileSync(CACHE_FILE, 'utf8');
-        const cache = JSON.parse(cacheContent);
-        
-        if (cache.timestamp && cache.prices) {
-          this.lastFetchTime = cache.timestamp;
-          this.priceData = new Map(Object.entries(cache.prices));
-          if (cache.scryfallMap) {
-            this.scryfallToMtgjsonMap = new Map(Object.entries(cache.scryfallMap));
-          }
-          console.log(`[MTGJSON] Loaded ${this.priceData.size} price entries and ${this.scryfallToMtgjsonMap.size} ID mappings from cache`);
+      const cacheContent = await fs.readFile(CACHE_FILE, 'utf8');
+      const cache = JSON.parse(cacheContent);
+      
+      if (cache.timestamp && cache.prices) {
+        this.lastFetchTime = cache.timestamp;
+        this.priceData = new Map(Object.entries(cache.prices));
+        if (cache.scryfallMap) {
+          this.scryfallToMtgjsonMap = new Map(Object.entries(cache.scryfallMap));
         }
+        console.log(`[MTGJSON] Loaded ${this.priceData.size} price entries and ${this.scryfallToMtgjsonMap.size} ID mappings from cache`);
       }
     } catch (err) {
-      console.error('[MTGJSON] Failed to load cache from disk:', err.message);
+      if (err.code !== 'ENOENT') {
+        console.error('[MTGJSON] Failed to load cache from disk:', err.message);
+      }
     }
   }
 
@@ -78,7 +78,7 @@ class MtgjsonPriceService {
         prices: Object.fromEntries(this.priceData),
         scryfallMap: Object.fromEntries(this.scryfallToMtgjsonMap)
       };
-      fs.writeFileSync(CACHE_FILE, JSON.stringify(cache), 'utf8');
+      await fs.writeFile(CACHE_FILE, JSON.stringify(cache), 'utf8');
       console.log(`[MTGJSON] Saved ${this.priceData.size} price entries and ${this.scryfallToMtgjsonMap.size} ID mappings to cache`);
     } catch (err) {
       console.error('[MTGJSON] Failed to save cache to disk:', err.message);
@@ -129,14 +129,26 @@ class MtgjsonPriceService {
    * Internal method to fetch all required data
    */
   async _fetchAllData() {
-    // Fetch prices first
-    await this._fetchPriceData();
+    try {
+      // Fetch prices first
+      await this._fetchPriceData();
+    } catch (err) {
+      console.error('[MTGJSON] Error fetching price data. Will attempt to fetch identifiers and preserve cache:', err.message);
+    }
     
-    // Then fetch identifiers mapping (this is a larger file, so do it separately)
-    await this._fetchIdentifiersData();
+    try {
+      // Fetch identifiers mapping (this is a larger file, so do it separately)
+      await this._fetchIdentifiersData();
+    } catch (err) {
+      console.error('[MTGJSON] Error fetching identifiers data:', err.message);
+    }
     
-    // Save combined cache to disk
-    await this.saveCacheToDisk();
+    // Save combined cache to disk, even if price fetch failed
+    try {
+      await this.saveCacheToDisk();
+    } catch (err) {
+      console.error('[MTGJSON] Error saving cache to disk:', err.message);
+    }
   }
 
   /**
@@ -239,7 +251,7 @@ class MtgjsonPriceService {
       if (ckPrices && typeof ckPrices === 'object') {
         // Get the most recent price (last date in the object)
         // MTGJSON uses ISO date format (YYYY-MM-DD) which sorts lexicographically correctly
-        const dates = Object.keys(ckPrices).sort((a, b) => new Date(a) - new Date(b));
+        const dates = Object.keys(ckPrices).sort();
         if (dates.length > 0) {
           const latestDate = dates[dates.length - 1];
           const price = parseFloat(ckPrices[latestDate]);

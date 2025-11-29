@@ -576,7 +576,12 @@ async function startServer() {
     await initializeDatabase();
 
     console.log('[APP] Initializing MTGJSON price service...');
-    await mtgjsonService.initialize();
+    try {
+      await mtgjsonService.initialize();
+    } catch (error) {
+      console.error('[APP] ✗ Failed to initialize MTGJSON price service:', error);
+      console.warn('[APP] Continuing startup without MTGJSON price service. Some features may be unavailable.');
+    }
 
     // ========== SERVE STATIC ASSETS ==========
     app.use(express.static('dist'));
