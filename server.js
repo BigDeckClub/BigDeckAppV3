@@ -579,18 +579,22 @@ async function startServer() {
     console.log('[APP] Initializing database...');
     await initializeDatabase();
 
-    // ========== CATCH-ALL HANDLER (AFTER all routes) ==========
+    // ========== SERVE STATIC ASSETS ==========
+    app.use(express.static('dist'));
+
+    // ========== CATCH-ALL HANDLER - SPA ROUTING ==========
     app.use((req, res) => {
       if (req.path.startsWith('/api/')) {
         console.log(`[404] API endpoint not found: ${req.method} ${req.path}`);
         return res.status(404).json({ error: 'API endpoint not found' });
       }
-      // Let ViteExpress handle everything else (SPA routes, static files, etc.)
+      // Serve index.html for SPA routes
+      res.sendFile(path.join(__dirname, 'dist', 'index.html'));
     });
 
-    // ========== START WITH VITE EXPRESS ==========
+    // ========== START SERVER ==========
     const PORT = process.env.PORT || 5000;
-    ViteExpress.listen(app, PORT, () => {
+    app.listen(PORT, () => {
       console.log(`[SERVER] ✓ Running on port ${PORT}`);
       console.log('[SERVER] ✓ All systems ready');
     });
