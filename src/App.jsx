@@ -1,23 +1,14 @@
 import React, { useState, useEffect } from "react";
 import {
   Layers,
-  FileText,
-  Package,
-  TrendingUp,
-  DollarSign,
   Settings,
   RefreshCw,
   Download,
 } from "lucide-react";
 import { useDebounce } from "./utils/useDebounce";
 import { InventoryTab } from "./components/InventoryTab";
-import { DecklistTab } from "./components/DecklistTab";
-import { ContainersTab } from "./components/ContainersTab";
-import { SalesTab } from "./components/SalesTab";
-import { AnalyticsTab } from "./components/AnalyticsTab";
 import { ImportTab } from "./components/ImportTab";
 import { SettingsPanel } from "./components/SettingsPanel";
-import { SellModal } from "./components/SellModal";
 import { PriceCacheProvider, usePriceCache } from "./context/PriceCacheContext";
 import DecklistCardPrice from "./components/DecklistCardPrice";
 import { FloatingDollarSigns } from "./components/FloatingDollarSigns";
@@ -32,9 +23,6 @@ function MTGInventoryTrackerContent() {
   
   const [activeTab, setActiveTab] = useState("inventory");
   const [inventory, setInventory] = useState([]);
-  const [decklists, setDecklists] = useState([]);
-  const [containers, setContainers] = useState([]);
-  const [sales, setSales] = useState([]);
   const [imports, setImports] = useState([]);
   const [reorderSettings, setReorderSettings] = useState({
     bulk: 12,
@@ -44,10 +32,6 @@ function MTGInventoryTrackerContent() {
   const [usageHistory, setUsageHistory] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [totalPurchased60Days, setTotalPurchased60Days] = useState(0);
-
-  const [showSellModal, setShowSellModal] = useState(false);
-  const [selectedContainerForSale, setSelectedContainerForSale] = useState(null);
-  const [salePrice, setSalePrice] = useState("");
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
@@ -93,30 +77,7 @@ function MTGInventoryTrackerContent() {
     }
   };
 
-  const loadDecklists = async () => {
-    try {
-      const data = await get(`${API_BASE}/decklists`);
-      setDecklists(data || []);
-    } catch (error) {}
-  };
 
-  const loadContainers = async () => {
-    try {
-      const data = await get(`${API_BASE}/containers`);
-      setContainers(data || []);
-    } catch (error) {
-      setContainers([]);
-    }
-  };
-
-  const loadSales = async () => {
-    try {
-      const data = await get(`${API_BASE}/sales`);
-      setSales(data || []);
-    } catch (error) {
-      setSales([]);
-    }
-  };
 
   const loadImports = async () => {
     try {
@@ -222,9 +183,6 @@ function MTGInventoryTrackerContent() {
       setIsLoading(true);
       await Promise.all([
         loadInventory(),
-        loadDecklists(),
-        loadContainers(),
-        loadSales(),
         loadReorderSettings(),
         loadUsageHistory(),
         loadAllSets(),
@@ -313,73 +271,6 @@ function MTGInventoryTrackerContent() {
     }
   };
 
-  const calculateDeckCOGS = (decklistId) => {
-    const deck = decklists.find((d) => d.id === decklistId);
-    if (!deck || !deck.decklist) return 0;
-
-    let totalCost = 0;
-    const lines = deck.decklist.split("\n");
-
-    lines.forEach((line) => {
-      const match = line.match(/^(\d+)\s+(.+)$/);
-      if (match) {
-        const quantity = parseInt(match[1]);
-        const cardName = match[2].trim();
-
-        const inventoryCard = inventory.find(
-          (card) => card.name.toLowerCase() === cardName.toLowerCase()
-        );
-
-        if (inventoryCard && inventoryCard.purchase_price) {
-          totalCost += quantity * (parseFloat(inventoryCard.purchase_price) || 0);
-        }
-      }
-    });
-
-    return totalCost;
-  };
-
-  const sellContainer = async () => {
-    const priceToParse = parseFloat(salePrice);
-    if (!selectedContainerForSale || !priceToParse || isNaN(priceToParse)) {
-      setSuccessMessage("Error: Please enter a valid sale price");
-      return;
-    }
-
-    try {
-      const containerName = containers.find(c => c.id === selectedContainerForSale)?.name || 'Unknown';
-      await post(`${API_BASE}/containers/${selectedContainerForSale}/sell`, {
-        salePrice: priceToParse,
-      });
-
-      await Promise.all([loadSales(), loadContainers(), loadInventory()]);
-      
-      const cogs = calculateDeckCOGS(containers.find(c => c.id === selectedContainerForSale)?.decklist_id);
-      const profit = priceToParse - cogs;
-      await recordUsage(
-        `Sold container: ${containerName} for $${priceToParse}`,
-        { container_id: selectedContainerForSale, container_name: containerName, sale_price: priceToParse, cogs, profit }
-      );
-
-      setShowSellModal(false);
-      setSelectedContainerForSale(null);
-      setSalePrice("");
-      setSuccessMessage("Container sold! Sale recorded.");
-      setShowSaleAnimation(true);
-      setTimeout(() => {
-        setSuccessMessage("");
-        setShowSaleAnimation(false);
-      }, 3000);
-    } catch (error) {
-      setSuccessMessage("Error recording sale: " + error.message);
-      setTimeout(() => setSuccessMessage(""), 3000);
-    }
-  };
-
-  const openSellModal = (containerId) => {
-    setSelectedContainerForSale(containerId);
-    setShowSellModal(true);
-  };
 
   const navItems = [
     { id: "inventory", icon: Layers, label: "Inventory" },
@@ -497,19 +388,6 @@ function MTGInventoryTrackerContent() {
             setSuccessMessage={setSuccessMessage}
           />
         )}
-
-        {/* Sell Modal */}
-        <SellModal
-          showSellModal={showSellModal}
-          setShowSellModal={setShowSellModal}
-          selectedContainerForSale={selectedContainerForSale}
-          setSelectedContainerForSale={setSelectedContainerForSale}
-          salePrice={salePrice}
-          setSalePrice={setSalePrice}
-          containers={containers}
-          calculateDeckCOGS={calculateDeckCOGS}
-          onSellContainer={sellContainer}
-        />
 
         {/* Settings Panel */}
         <SettingsPanel
