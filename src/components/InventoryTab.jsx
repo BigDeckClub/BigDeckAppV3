@@ -169,23 +169,24 @@ export const InventoryTab = ({
         )}
         
         {isExpanded && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {Object.values(
-              items.reduce((acc, item) => {
-                const setKey = `${item.set || 'unknown'}-${item.set_name || 'unknown'}`;
-                if (!acc[setKey]) {
-                  acc[setKey] = [];
-                }
-                acc[setKey].push(item);
-                return acc;
-              }, {})
-            ).map((setItems) => {
-              const firstItem = setItems[0];
-              const totalQtyInSet = setItems.reduce((sum, item) => sum + (item.quantity || 0), 0);
-              const isEditing = editingId === firstItem.id;
-              
-              return (
-                <div key={`${firstItem.set}-${firstItem.id}`} className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 hover:border-teal-500 rounded-lg p-4 transition-colors">
+          <div className="mt-4 pt-4 border-t border-slate-700">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {Object.values(
+                items.reduce((acc, item) => {
+                  const setKey = `${item.set || 'unknown'}-${item.set_name || 'unknown'}`;
+                  if (!acc[setKey]) {
+                    acc[setKey] = [];
+                  }
+                  acc[setKey].push(item);
+                  return acc;
+                }, {})
+              ).map((setItems) => {
+                const firstItem = setItems[0];
+                const totalQtyInSet = setItems.reduce((sum, item) => sum + (item.quantity || 0), 0);
+                const isEditing = editingId === firstItem.id;
+                
+                return (
+                  <div key={`${firstItem.set}-${firstItem.id}`} className="bg-slate-900/60 border border-slate-600/50 hover:border-teal-500 rounded-lg p-3 transition-colors">
                   {isEditing ? (
                     <div className="space-y-2">
                       <div className="text-sm font-semibold text-slate-100">{firstItem.set_name} ({firstItem.set})</div>
@@ -313,9 +314,10 @@ export const InventoryTab = ({
                       )}
                     </>
                   )}
-                </div>
-              );
-            })}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
       </div>
