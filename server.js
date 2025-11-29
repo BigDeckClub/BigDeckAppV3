@@ -306,7 +306,7 @@ async function fetchRetry(url, options = {}, retries = 2) {
 
 // ========== HEALTH CHECK ==========
 app.get('/health', async (req, res) => {
-  let dbStatus;
+  let dbStatus = 'disconnected'; // Default to disconnected for safety
   try {
     await pool.query('SELECT 1');
     dbStatus = 'connected';
