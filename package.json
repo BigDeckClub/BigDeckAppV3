@@ -29,7 +29,9 @@
     "vitest": "^4.0.13"
   },
   "dependencies": {
-    "@types/memoizee": "^0.4.12",
+    "@auth/express": "^0.12.1",
+    "@auth/pg-adapter": "^1.11.1",
+    "bcryptjs": "^3.0.3",
     "body-parser": "^2.2.0",
     "cheerio": "^1.1.2",
     "connect-pg-simple": "^10.0.0",
@@ -41,9 +43,6 @@
     "helmet": "^8.1.0",
     "joi": "^18.0.2",
     "lucide-react": "^0.554.0",
-    "memoizee": "^0.4.17",
-    "openid-client": "^6.8.1",
-    "passport": "^0.7.0",
     "pg": "^8.16.3",
     "prop-types": "^15.8.1",
     "vite-express": "^0.21.1"

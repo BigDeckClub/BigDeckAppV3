@@ -103,7 +103,7 @@ export const LoginPage = () => {
                 <p className="text-xs text-slate-500 text-center font-medium uppercase tracking-wide">Sign in with</p>
                 <div className="flex items-center justify-center gap-2">
                   <div className="w-1 h-1 rounded-full bg-slate-600"></div>
-                  <p className="text-xs text-slate-500">Google • GitHub • X • Apple • Email</p>
+                  <p className="text-xs text-slate-500">Google • Apple • Facebook • Email</p>
                   <div className="w-1 h-1 rounded-full bg-slate-600"></div>
                 </div>
               </div>
@@ -116,7 +116,7 @@ export const LoginPage = () => {
               🔒 Your data is encrypted and never shared
             </p>
             <p className="text-slate-600 text-xs">
-              Powered by Replit Auth • Built for Magic: The Gathering
+              Built for Magic: The Gathering
             </p>
           </div>
         </div>

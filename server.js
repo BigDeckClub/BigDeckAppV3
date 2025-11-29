@@ -8,7 +8,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { setupAuth } from './server/replitAuth.js';
+import { setupAuth } from './server/auth.js';
 import { mtgjsonService } from './server/mtgjsonPriceService.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -53,7 +53,7 @@ const pool = new Pool({
 // ========== DATABASE INITIALIZATION ==========
 async function initializeDatabase() {
   try {
-    // Users table (for Replit Auth)
+    // Users table (for backward compatibility with Auth.js)
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
         id VARCHAR(255) PRIMARY KEY,
@@ -66,7 +66,7 @@ async function initializeDatabase() {
       )
     `);
 
-    // Sessions table (for Replit Auth)
+    // Sessions table (for express-session)
     await pool.query(`
       CREATE TABLE IF NOT EXISTS sessions (
         sid VARCHAR(255) PRIMARY KEY,
