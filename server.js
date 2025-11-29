@@ -1971,9 +1971,15 @@ app.get('/api/prices-test/:cardName/:setCode', priceLimiter, (req, res) => {
 });
 
 // ========== AUTH ENDPOINT ==========
-app.get('/api/auth/user', isAuthenticated, async (req, res) => {
+app.get('/api/auth/user', async (req, res) => {
+  const user = req.user;
+  
+  if (!user || !user?.claims?.sub) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+  
   try {
-    const userId = req.user?.claims?.sub;
+    const userId = user.claims.sub;
     const result = await pool.query('SELECT id, email, first_name, last_name, profile_image_url FROM users WHERE id = $1', [userId]);
     if (result.rows.length === 0) {
       return res.status(404).json({ message: 'User not found' });
