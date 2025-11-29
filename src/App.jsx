@@ -10,8 +10,6 @@ import {
   LogOut,
 } from "lucide-react";
 import { useDebounce } from "./utils/useDebounce";
-import { useAuth } from "./hooks/useAuth";
-import { LoginPage } from "./components/LoginPage";
 import { InventoryTab } from "./components/InventoryTab";
 import { DecklistTab } from "./components/DecklistTab";
 import { ContainersTab } from "./components/ContainersTab";
@@ -594,19 +592,5 @@ function MTGInventoryTracker() {
 }
 
 export default function App() {
-  const { user, isLoading } = useAuth();
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <div className="text-slate-400">Loading...</div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return <LoginPage />;
-  }
-
   return <MTGInventoryTracker />;
 }
