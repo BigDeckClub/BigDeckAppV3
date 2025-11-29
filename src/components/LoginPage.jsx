@@ -5,13 +5,9 @@ export const LoginPage = () => {
   const [isHovering, setIsHovering] = useState(false);
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
-      {/* Animated background gradient orbs */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-teal-500 rounded-full mix-blend-screen filter blur-3xl opacity-10 animate-pulse"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-cyan-500 rounded-full mix-blend-screen filter blur-3xl opacity-10 animate-pulse" style={{ animationDelay: '1s' }}></div>
-        <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-slate-800 rounded-full mix-blend-screen filter blur-3xl opacity-5"></div>
-      </div>
+    <div style={{ background: '#0f172a' }} className="min-h-screen relative overflow-hidden">
+      {/* Dark background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950"></div>
 
       <div className="relative z-10 min-h-screen flex flex-col items-center justify-center p-4 md:p-8">
         {/* Header section */}
@@ -21,7 +17,7 @@ export const LoginPage = () => {
             <div className="inline-block">
               <div className="text-6xl mb-2">🎴</div>
             </div>
-            <h1 className="text-5xl md:text-6xl font-black bg-gradient-to-r from-teal-400 via-cyan-400 to-teal-400 bg-clip-text text-transparent animate-fade-in">
+            <h1 className="text-5xl md:text-6xl font-black text-cyan-400">
               BigDeck.app
             </h1>
             <p className="text-lg md:text-xl text-slate-300 font-medium">
@@ -67,9 +63,6 @@ export const LoginPage = () => {
 
           {/* Sign in card */}
           <div className="relative">
-            {/* Glow effect on hover */}
-            <div className="absolute inset-0 bg-gradient-to-r from-teal-600/20 to-cyan-600/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ opacity: isHovering ? 1 : 0 }}></div>
-
             <div className="relative bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700 rounded-2xl p-8 md:p-10 shadow-2xl space-y-6">
               <div className="space-y-3">
                 <p className="text-slate-300 text-center text-base font-medium">
