@@ -122,9 +122,6 @@ export const InventoryTab = ({
         >
           <div className="text-center flex-1 flex flex-col justify-center min-w-0">
             <h3 className="text-xs font-bold text-slate-100 line-clamp-2 break-words px-1">{cardName}</h3>
-            <div className="text-teal-400 text-xs mt-0.5">
-              {isExpanded ? '▼' : '▶'}
-            </div>
           </div>
           
           <div className="grid grid-cols-3 gap-1 w-full text-center text-[10px]">
