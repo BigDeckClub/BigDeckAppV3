@@ -23,14 +23,11 @@ export const ImportTab = ({
 }) => {
   const [showImportForm, setShowImportForm] = useState(false);
   const [createdFolders, setCreatedFolders] = useState([]);
-  const [createdLocations, setCreatedLocations] = useState([]);
 
-  // Load folders and locations from localStorage
+  // Load folders from localStorage
   React.useEffect(() => {
     const savedFolders = localStorage.getItem('createdFolders');
     if (savedFolders) setCreatedFolders(JSON.parse(savedFolders));
-    const savedLocations = localStorage.getItem('createdLocations');
-    if (savedLocations) setCreatedLocations(JSON.parse(savedLocations));
   }, []);
   const [importForm, setImportForm] = useState({
     title: '',
@@ -106,7 +103,7 @@ export const ImportTab = ({
           <h2 className="text-lg sm:text-xl font-bold">Add Card to Inventory</h2>
         </div>
         <div className="space-y-4">
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-semibold mb-2">Preferred Set (optional):</label>
               <select
@@ -136,29 +133,7 @@ export const ImportTab = ({
                 ))}
               </select>
             </div>
-            <div>
-              <label className="block text-sm font-semibold mb-2">Location:</label>
-              <select
-                value={newEntry.location || ''}
-                onChange={(e) => setNewEntry({...newEntry, location: e.target.value})}
-                className="w-full bg-slate-800 border border-slate-600 rounded px-4 py-2 text-white text-sm"
-              >
-                <option value="">Select a location</option>
-                {createdLocations.map(location => (
-                  <option key={location} value={location}>{location}</option>
-                ))}
-              </select>
-            </div>
           </div>
-          <label className="flex items-center gap-2 mt-4 text-slate-300 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={newEntry.isSharedLocation}
-              onChange={(e) => setNewEntry({...newEntry, isSharedLocation: e.target.checked})}
-              className="w-4 h-4 rounded"
-            />
-            <span className="text-sm">This is a shared location</span>
-          </label>
           <div className="relative">
             <input
               type="text"
