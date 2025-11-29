@@ -114,7 +114,7 @@ export const InventoryTab = ({
           </div>
         </div>
         
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2 sm:mb-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-2 sm:mb-3">
           <div className="bg-slate-800 bg-opacity-50 rounded p-2 sm:p-2 border border-slate-700">
             <div className="text-[10px] sm:text-xs text-slate-400">Total Copies</div>
             <div className={`text-lg sm:text-xl font-bold ${totalQty === 0 ? 'text-slate-500' : 'text-teal-300'}`}>{totalQty}</div>
@@ -122,10 +122,6 @@ export const InventoryTab = ({
           <div className="bg-slate-800 bg-opacity-50 rounded p-2 sm:p-2 border border-slate-700">
             <div className="text-[10px] sm:text-xs text-slate-400">Available</div>
             <div className="text-lg sm:text-xl font-bold text-green-300">{available}</div>
-          </div>
-          <div className="bg-slate-800 bg-opacity-50 rounded p-2 sm:p-2 border border-slate-700">
-            <div className="text-[10px] sm:text-xs text-slate-400">In Containers</div>
-            <div className="text-lg sm:text-xl font-bold text-pink-300">{totalInContainers}</div>
           </div>
           <div className="bg-slate-800 bg-opacity-50 rounded p-2 sm:p-2 border border-slate-700">
             <div className="text-[10px] sm:text-xs text-slate-400">Avg Price (60d)</div>
