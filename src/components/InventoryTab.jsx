@@ -40,7 +40,6 @@ export const InventoryTab = ({
   const [createdFolders, setCreatedFolders] = useState([]);
   const [selectedFolder, setSelectedFolder] = useState(null);
   const [activeTab, setActiveTab] = useState('all'); // 'all', 'unsorted', or folder name
-  const [expandedSets, setExpandedSets] = useState({}); // Track expansion of individual sets within cards
   const [viewMode, setViewMode] = useState('card'); // 'card' or 'list'
   const [sidebarOpen, setSidebarOpen] = useState(false); // Mobile sidebar toggle
 
@@ -192,96 +191,38 @@ export const InventoryTab = ({
                 const isEditing = editingId === firstItem.id;
                 
                 return (
-                  <div key={`${firstItem.set}-${firstItem.id}`} className="w-full bg-slate-800 border border-slate-600 rounded-lg p-4 hover:border-teal-500 transition-colors">
+                  <div key={`${firstItem.set}-${firstItem.id}`} className="col-span-1 bg-slate-800 border border-slate-600 rounded-lg p-4 hover:border-teal-500 transition-colors">
                     {isEditing ? (
                       <div className="space-y-3">
                         <div className="text-sm font-semibold text-slate-100">{firstItem.set_name} ({firstItem.set})</div>
                         <div>
                           <label className="text-xs text-slate-400">Folder</label>
-                          <input
-                            type="text"
-                            placeholder="e.g. Modern, Standard, Bulk"
-                            value={editForm.folder || ''}
-                            onChange={(e) => setEditForm({...editForm, folder: e.target.value || 'Uncategorized'})}
-                            className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-sm mb-2"
-                          />
+                          <input type="text" placeholder="e.g. Modern, Standard, Bulk" value={editForm.folder || ''} onChange={(e) => setEditForm({...editForm, folder: e.target.value || 'Uncategorized'})} className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-sm mb-2" />
                         </div>
                         <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <label className="text-xs text-slate-400">Qty</label>
-                            <input
-                              type="number"
-                              min="1"
-                              value={editForm.quantity}
-                              onChange={(e) => setEditForm({...editForm, quantity: e.target.value})}
-                              className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-sm"
-                            />
-                          </div>
-                          <div>
-                            <label className="text-xs text-slate-400">Price</label>
-                            <input
-                              type="number"
-                              step="0.01"
-                              value={editForm.purchase_price}
-                              onChange={(e) => setEditForm({...editForm, purchase_price: e.target.value})}
-                              className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-sm"
-                            />
-                          </div>
-                          <div>
-                            <label className="text-xs text-slate-400">Date</label>
-                            <input
-                              type="date"
-                              value={editForm.purchase_date}
-                              onChange={(e) => setEditForm({...editForm, purchase_date: e.target.value})}
-                              className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-sm"
-                            />
-                          </div>
-                          <div>
-                            <label className="text-xs text-slate-400">Type</label>
-                            <select
-                              value={editForm.reorder_type}
-                              onChange={(e) => setEditForm({...editForm, reorder_type: e.target.value})}
-                              className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-sm"
-                            >
-                              <option value="normal">Normal</option>
-                              <option value="land">Land</option>
-                              <option value="bulk">Bulk</option>
-                            </select>
-                          </div>
+                          <div><label className="text-xs text-slate-400">Qty</label><input type="number" min="1" value={editForm.quantity} onChange={(e) => setEditForm({...editForm, quantity: e.target.value})} className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-sm" /></div>
+                          <div><label className="text-xs text-slate-400">Price</label><input type="number" step="0.01" value={editForm.purchase_price} onChange={(e) => setEditForm({...editForm, purchase_price: e.target.value})} className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-sm" /></div>
+                          <div><label className="text-xs text-slate-400">Date</label><input type="date" value={editForm.purchase_date} onChange={(e) => setEditForm({...editForm, purchase_date: e.target.value})} className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-sm" /></div>
+                          <div><label className="text-xs text-slate-400">Type</label><select value={editForm.reorder_type} onChange={(e) => setEditForm({...editForm, reorder_type: e.target.value})} className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-sm"><option value="normal">Normal</option><option value="land">Land</option><option value="bulk">Bulk</option></select></div>
                         </div>
                         <div className="flex gap-2 pt-2">
-                          <button
-                            onClick={() => updateInventoryItem(firstItem.id)}
-                            className="flex-1 bg-green-600 hover:bg-green-700 rounded px-3 py-1 text-sm font-semibold"
-                          >
-                            Save
-                          </button>
-                          <button
-                            onClick={() => setEditForm({})}
-                            className="flex-1 bg-gray-600 hover:bg-gray-700 rounded px-3 py-1 text-sm"
-                          >
-                            Cancel
-                          </button>
+                          <button onClick={() => updateInventoryItem(firstItem.id)} className="flex-1 bg-green-600 hover:bg-green-700 rounded px-3 py-1 text-sm font-semibold">Save</button>
+                          <button onClick={() => setEditForm({})} className="flex-1 bg-gray-600 hover:bg-gray-700 rounded px-3 py-1 text-sm">Cancel</button>
                         </div>
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        <div className="flex items-center gap-2">
-                          <span className="text-base font-bold text-slate-100">{firstItem.set.toUpperCase()}</span>
-                          <span className="text-sm text-slate-500">({setItems.length})</span>
+                        <div><span className="text-base font-bold text-slate-100">{firstItem.set.toUpperCase()}</span> <span className="text-sm text-slate-500">({setItems.length})</span></div>
+                        <div className="text-xs p-2 text-slate-300 bg-slate-700/40 rounded space-y-1">
+                          <div><span className="text-slate-500">Qty:</span> <span className="text-teal-300 font-bold">{totalQtyInSet}</span></div>
+                          <div><span className="text-slate-500">Avg:</span> <span className="text-blue-300 font-bold">${(setItems.reduce((sum, item) => sum + (parseFloat(item.purchase_price) || 0), 0) / setItems.length).toFixed(2)}</span></div>
                         </div>
-                        
-                        <div className="text-sm p-3 text-slate-300 bg-slate-700/30 rounded space-y-1">
-                          <div><span className="text-slate-500">Qty:</span> <span className="text-teal-300 font-bold ml-2">{totalQtyInSet}</span></div>
-                          <div><span className="text-slate-500">Price:</span> <span className="text-blue-300 font-bold ml-2">${(setItems.reduce((sum, item) => sum + (parseFloat(item.purchase_price) || 0), 0) / setItems.length).toFixed(2)}</span></div>
-                        </div>
-
-                        <div className="space-y-2 pt-2 border-t border-slate-700">
+                        <div className="space-y-2 text-xs">
                           {setItems.map((item) => (
-                            <div key={item.id} className="text-sm text-slate-300 space-y-0.5">
-                              <div><span className="text-slate-500">Qty:</span> <span className="font-semibold ml-2">{item.quantity}</span></div>
-                              <div><span className="text-slate-500">Price:</span> <span className="font-semibold ml-2">${parseFloat(item.purchase_price || 0).toFixed(2)}</span></div>
-                              <div className="text-xs text-slate-500">{new Date(item.purchase_date).toLocaleDateString()}</div>
+                            <div key={item.id} className="text-slate-300 pb-2 border-b border-slate-700 last:border-0">
+                              <div><span className="text-slate-500">Qty:</span> <span>{item.quantity}</span></div>
+                              <div><span className="text-slate-500">$:</span> <span>{parseFloat(item.purchase_price || 0).toFixed(2)}</span></div>
+                              <div className="text-slate-500 text-[10px]">{new Date(item.purchase_date).toLocaleDateString()}</div>
                             </div>
                           ))}
                         </div>
