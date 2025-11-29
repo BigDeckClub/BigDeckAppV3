@@ -174,8 +174,8 @@ export const InventoryTab = ({
         )}
         
         {isExpanded && (
-          <div className="mt-4 pt-4 border-t border-slate-700">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="bg-slate-900/80 rounded-xl border border-slate-700 p-4 mt-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {Object.values(
                 items.reduce((acc, item) => {
                   const setKey = `${item.set || 'unknown'}-${item.set_name || 'unknown'}`;
@@ -188,44 +188,85 @@ export const InventoryTab = ({
               ).map((setItems) => {
                 const firstItem = setItems[0];
                 const totalQtyInSet = setItems.reduce((sum, item) => sum + (item.quantity || 0), 0);
+                const avgPrice = setItems.reduce((sum, item) => sum + (parseFloat(item.purchase_price) || 0), 0) / setItems.length;
                 const isEditing = editingId === firstItem.id;
                 
                 return (
-                  <div key={`${firstItem.set}-${firstItem.id}`} className="col-span-1 bg-slate-800 border border-slate-600 rounded-lg p-4 hover:border-teal-500 transition-colors">
+                  <div key={`${firstItem.set}-${firstItem.id}`} className="bg-gradient-to-br from-slate-800 to-slate-850 border border-slate-600 rounded-lg p-4 hover:border-teal-500/70 transition-all shadow-md hover:shadow-teal-500/10">
                     {isEditing ? (
                       <div className="space-y-3">
-                        <div className="text-sm font-semibold text-slate-100">{firstItem.set_name} ({firstItem.set})</div>
+                        <div className="text-sm font-semibold text-slate-100 border-b border-slate-700 pb-2">{firstItem.set_name} ({firstItem.set})</div>
                         <div>
-                          <label className="text-xs text-slate-400">Folder</label>
-                          <input type="text" placeholder="e.g. Modern, Standard, Bulk" value={editForm.folder || ''} onChange={(e) => setEditForm({...editForm, folder: e.target.value || 'Uncategorized'})} className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-sm mb-2" />
+                          <label className="text-xs text-slate-400 block mb-1">Folder</label>
+                          <input type="text" placeholder="e.g. Modern, Standard, Bulk" value={editForm.folder || ''} onChange={(e) => setEditForm({...editForm, folder: e.target.value || 'Uncategorized'})} className="w-full bg-slate-700 border border-slate-500 rounded-lg px-3 py-2 text-white text-sm" />
                         </div>
-                        <div className="grid grid-cols-2 gap-2">
-                          <div><label className="text-xs text-slate-400">Qty</label><input type="number" min="1" value={editForm.quantity} onChange={(e) => setEditForm({...editForm, quantity: e.target.value})} className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-sm" /></div>
-                          <div><label className="text-xs text-slate-400">Price</label><input type="number" step="0.01" value={editForm.purchase_price} onChange={(e) => setEditForm({...editForm, purchase_price: e.target.value})} className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-sm" /></div>
-                          <div><label className="text-xs text-slate-400">Date</label><input type="date" value={editForm.purchase_date} onChange={(e) => setEditForm({...editForm, purchase_date: e.target.value})} className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-sm" /></div>
-                          <div><label className="text-xs text-slate-400">Type</label><select value={editForm.reorder_type} onChange={(e) => setEditForm({...editForm, reorder_type: e.target.value})} className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-sm"><option value="normal">Normal</option><option value="land">Land</option><option value="bulk">Bulk</option></select></div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-xs text-slate-400 block mb-1">Qty</label>
+                            <input type="number" min="1" value={editForm.quantity} onChange={(e) => setEditForm({...editForm, quantity: e.target.value})} className="w-full bg-slate-700 border border-slate-500 rounded-lg px-3 py-2 text-white text-sm" />
+                          </div>
+                          <div>
+                            <label className="text-xs text-slate-400 block mb-1">Price</label>
+                            <input type="number" step="0.01" value={editForm.purchase_price} onChange={(e) => setEditForm({...editForm, purchase_price: e.target.value})} className="w-full bg-slate-700 border border-slate-500 rounded-lg px-3 py-2 text-white text-sm" />
+                          </div>
+                          <div>
+                            <label className="text-xs text-slate-400 block mb-1">Date</label>
+                            <input type="date" value={editForm.purchase_date} onChange={(e) => setEditForm({...editForm, purchase_date: e.target.value})} className="w-full bg-slate-700 border border-slate-500 rounded-lg px-3 py-2 text-white text-sm" />
+                          </div>
+                          <div>
+                            <label className="text-xs text-slate-400 block mb-1">Type</label>
+                            <select value={editForm.reorder_type} onChange={(e) => setEditForm({...editForm, reorder_type: e.target.value})} className="w-full bg-slate-700 border border-slate-500 rounded-lg px-3 py-2 text-white text-sm">
+                              <option value="normal">Normal</option>
+                              <option value="land">Land</option>
+                              <option value="bulk">Bulk</option>
+                            </select>
+                          </div>
                         </div>
                         <div className="flex gap-2 pt-2">
-                          <button onClick={() => updateInventoryItem(firstItem.id)} className="flex-1 bg-green-600 hover:bg-green-700 rounded px-3 py-1 text-sm font-semibold">Save</button>
-                          <button onClick={() => setEditForm({})} className="flex-1 bg-gray-600 hover:bg-gray-700 rounded px-3 py-1 text-sm">Cancel</button>
+                          <button onClick={() => updateInventoryItem(firstItem.id)} className="flex-1 bg-green-600 hover:bg-green-700 rounded-lg px-3 py-2 text-sm font-semibold transition-colors">Save</button>
+                          <button onClick={() => setEditForm({})} className="flex-1 bg-slate-600 hover:bg-slate-500 rounded-lg px-3 py-2 text-sm transition-colors">Cancel</button>
                         </div>
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        <div><span className="text-base font-bold text-slate-100">{firstItem.set.toUpperCase()}</span> <span className="text-sm text-slate-500">({setItems.length})</span></div>
-                        <div className="text-xs p-2 text-slate-300 bg-slate-700/40 rounded space-y-1">
-                          <div><span className="text-slate-500">Qty:</span> <span className="text-teal-300 font-bold">{totalQtyInSet}</span></div>
-                          <div><span className="text-slate-500">Avg:</span> <span className="text-blue-300 font-bold">${(setItems.reduce((sum, item) => sum + (parseFloat(item.purchase_price) || 0), 0) / setItems.length).toFixed(2)}</span></div>
+                        <div className="flex items-center justify-between border-b border-slate-700 pb-2">
+                          <span className="text-sm font-bold text-teal-300">{firstItem.set?.toUpperCase() || 'N/A'}</span>
+                          <span className="text-xs text-slate-400 bg-slate-700/60 px-2 py-0.5 rounded">{setItems.length} {setItems.length === 1 ? 'entry' : 'entries'}</span>
                         </div>
-                        <div className="space-y-2 text-xs">
-                          {setItems.map((item) => (
-                            <div key={item.id} className="text-slate-300 pb-2 border-b border-slate-700 last:border-0">
-                              <div><span className="text-slate-500">Qty:</span> <span>{item.quantity}</span></div>
-                              <div><span className="text-slate-500">$:</span> <span>{parseFloat(item.purchase_price || 0).toFixed(2)}</span></div>
-                              <div className="text-slate-500 text-[10px]">{new Date(item.purchase_date).toLocaleDateString()}</div>
+                        
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                          <div className="bg-slate-700/40 rounded-lg p-2 text-center">
+                            <div className="text-slate-400 text-[10px] uppercase tracking-wider">Total Qty</div>
+                            <div className="text-teal-300 font-bold text-lg">{totalQtyInSet}</div>
+                          </div>
+                          <div className="bg-slate-700/40 rounded-lg p-2 text-center">
+                            <div className="text-slate-400 text-[10px] uppercase tracking-wider">Avg Price</div>
+                            <div className="text-blue-300 font-bold text-lg">${avgPrice.toFixed(2)}</div>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2 max-h-40 overflow-y-auto">
+                          {setItems.map((item, idx) => (
+                            <div key={item.id} className="bg-slate-700/30 rounded-lg p-2.5 flex items-center justify-between text-xs border border-slate-600/40">
+                              <div className="flex gap-3">
+                                <span className="text-slate-300">
+                                  <span className="text-slate-500">Qty:</span> <span className="text-teal-200 font-semibold">{item.quantity}</span>
+                                </span>
+                                <span className="text-slate-300">
+                                  <span className="text-slate-500">$</span><span className="text-green-300 font-semibold">{parseFloat(item.purchase_price || 0).toFixed(2)}</span>
+                                </span>
+                              </div>
+                              <span className="text-slate-500 text-[10px]">{new Date(item.purchase_date).toLocaleDateString()}</span>
                             </div>
                           ))}
                         </div>
+                        
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); startEditingItem(firstItem); }}
+                          className="w-full mt-2 text-xs text-teal-400 hover:text-teal-300 hover:bg-slate-700/50 py-1.5 rounded-lg transition-colors border border-slate-600/50"
+                        >
+                          Edit Entry
+                        </button>
                       </div>
                     )}
                   </div>
