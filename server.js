@@ -89,17 +89,16 @@ async function initializeDatabase() {
         reorder_type VARCHAR(20) DEFAULT 'Normal',
         image_url TEXT,
         scryfall_id VARCHAR(255),
-        location VARCHAR(255),
-        is_shared_location BOOLEAN DEFAULT FALSE,
+        folder VARCHAR(255) DEFAULT 'Uncategorized',
         created_at TIMESTAMP DEFAULT NOW()
       )
     `);
     await pool.query(`ALTER TABLE inventory ADD COLUMN IF NOT EXISTS image_url TEXT`).catch(() => {});
     await pool.query(`ALTER TABLE inventory ADD COLUMN IF NOT EXISTS scryfall_id VARCHAR(255)`).catch(() => {});
     await pool.query(`ALTER TABLE inventory ADD COLUMN IF NOT EXISTS user_id VARCHAR(255) REFERENCES users(id) ON DELETE CASCADE`).catch(() => {});
-    await pool.query(`ALTER TABLE inventory ADD COLUMN IF NOT EXISTS location VARCHAR(255)`).catch(() => {});
-    await pool.query(`ALTER TABLE inventory ADD COLUMN IF NOT EXISTS is_shared_location BOOLEAN DEFAULT FALSE`).catch(() => {});
     await pool.query(`ALTER TABLE inventory ADD COLUMN IF NOT EXISTS folder VARCHAR(255) DEFAULT 'Uncategorized'`).catch(() => {});
+    await pool.query(`ALTER TABLE inventory DROP COLUMN IF EXISTS location`).catch(() => {});
+    await pool.query(`ALTER TABLE inventory DROP COLUMN IF EXISTS is_shared_location`).catch(() => {});
 
     // Decklists table
     await pool.query(`
@@ -113,21 +112,20 @@ async function initializeDatabase() {
     `);
     await pool.query(`ALTER TABLE decklists ADD COLUMN IF NOT EXISTS user_id VARCHAR(255) REFERENCES users(id) ON DELETE CASCADE`).catch(() => {});
 
-    // Containers table (now represents collection boxes within locations)
+    // Containers table
     await pool.query(`
       CREATE TABLE IF NOT EXISTS containers (
         id SERIAL PRIMARY KEY,
         user_id VARCHAR(255) REFERENCES users(id) ON DELETE CASCADE,
         name VARCHAR(255) NOT NULL,
-        location VARCHAR(255) NOT NULL,
         cards JSONB DEFAULT '[]',
         created_at TIMESTAMP DEFAULT NOW()
       )
     `);
     await pool.query(`ALTER TABLE containers ADD COLUMN IF NOT EXISTS user_id VARCHAR(255) REFERENCES users(id) ON DELETE CASCADE`).catch(() => {});
     await pool.query(`ALTER TABLE containers ADD COLUMN IF NOT EXISTS cards JSONB DEFAULT '[]'`).catch(() => {});
-    await pool.query(`ALTER TABLE containers ADD COLUMN IF NOT EXISTS location VARCHAR(255)`).catch(() => {});
     await pool.query(`ALTER TABLE containers DROP COLUMN IF EXISTS decklist_id`).catch(() => {});
+    await pool.query(`ALTER TABLE containers DROP COLUMN IF EXISTS location`).catch(() => {});
 
     // Container items table
     await pool.query(`
@@ -353,7 +351,7 @@ app.get('/api/inventory', async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT id, name, set, set_name, quantity, purchase_price, purchase_date, 
-              reorder_type, image_url, scryfall_id, location, is_shared_location, created_at 
+              reorder_type, image_url, scryfall_id, folder, created_at 
        FROM inventory ORDER BY name ASC`
     );
     res.json(result.rows);
@@ -364,7 +362,7 @@ app.get('/api/inventory', async (req, res) => {
 });
 
 app.post('/api/inventory', async (req, res) => {
-  const { name, set, set_name, quantity, purchase_price, purchase_date, reorder_type, image_url, location, is_shared_location } = req.body;
+  const { name, set, set_name, quantity, purchase_price, purchase_date, reorder_type, image_url, folder } = req.body;
   
   if (!name) {
     return res.status(400).json({ error: 'Card name is required' });
@@ -372,10 +370,10 @@ app.post('/api/inventory', async (req, res) => {
 
   try {
     const result = await pool.query(
-      `INSERT INTO inventory (name, set, set_name, quantity, purchase_price, purchase_date, reorder_type, image_url, location, is_shared_location, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
+      `INSERT INTO inventory (name, set, set_name, quantity, purchase_price, purchase_date, reorder_type, image_url, folder, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
        RETURNING *`,
-      [name, set || null, set_name || null, quantity || 1, purchase_price || null, purchase_date || null, reorder_type || 'normal', image_url || null, location || 'Unspecified', is_shared_location || false]
+      [name, set || null, set_name || null, quantity || 1, purchase_price || null, purchase_date || null, reorder_type || 'normal', image_url || null, folder || 'Uncategorized']
     );
     res.status(201).json(result.rows[0]);
   } catch (error) {
@@ -386,7 +384,7 @@ app.post('/api/inventory', async (req, res) => {
 
 app.put('/api/inventory/:id', async (req, res) => {
   const { id } = req.params;
-  const { quantity, purchase_price, purchase_date, reorder_type, location, is_shared_location } = req.body;
+  const { quantity, purchase_price, purchase_date, reorder_type, folder } = req.body;
 
   try {
     const updates = [];
@@ -409,13 +407,9 @@ app.put('/api/inventory/:id', async (req, res) => {
       updates.push(`reorder_type = $${paramCount++}`);
       values.push(reorder_type);
     }
-    if (location !== undefined) {
-      updates.push(`location = $${paramCount++}`);
-      values.push(location);
-    }
-    if (is_shared_location !== undefined) {
-      updates.push(`is_shared_location = $${paramCount++}`);
-      values.push(is_shared_location);
+    if (folder !== undefined) {
+      updates.push(`folder = $${paramCount++}`);
+      values.push(folder);
     }
 
     if (updates.length === 0) {
