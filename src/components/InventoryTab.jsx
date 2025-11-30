@@ -970,7 +970,7 @@ export const InventoryTab = ({
   };
 
   return (
-    <div className="flex gap-6 min-h-screen bg-slate-900">
+    <div className="flex gap-6 min-h-screen bg-slate-900 max-w-7xl mx-auto w-full">
       {successMessage && successMessage.includes('Error') && (
         <div className="fixed top-4 right-4 z-50 rounded-lg p-4 border flex items-center justify-between bg-red-900 bg-opacity-30 border-red-500 text-red-200">
           <span>{successMessage}</span>
@@ -993,7 +993,7 @@ export const InventoryTab = ({
       </button>
 
       {/* LEFT SIDEBAR - Folders */}
-      <div className={`fixed md:static left-0 w-64 flex-shrink-0 space-y-4 h-full overflow-y-auto bg-slate-900 md:bg-transparent z-30 transition-transform duration-300 ${
+      <div className={`fixed md:static left-0 w-64 flex-shrink-0 space-y-4 h-full overflow-y-auto bg-slate-900 md:bg-transparent z-30 transition-transform duration-300 md:px-0 px-4 ${
         sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
       }`}>
         {/* Folder List */}
@@ -1313,7 +1313,7 @@ export const InventoryTab = ({
       )}
 
       {/* RIGHT CONTENT - Cards or Deck Details */}
-      <div className="flex-1 pb-24 md:pb-6 px-4 md:px-6">
+      <div className="flex-1 pb-24 md:pb-6 px-4 md:px-6 md:ml-0">
         {/* Search Bar */}
         <div className="mb-6">
           <input
