@@ -448,8 +448,12 @@ app.get('/api/prices/:cardName/:setCode', priceLimiter, async (req, res) => {
 app.get('/api/inventory', async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT id, name, set, set_name, quantity, purchase_price, purchase_date, 
-              reorder_type, image_url, scryfall_id, folder, created_at 
+      `SELECT 
+        id, name, set, set_name, quantity, purchase_price, purchase_date, 
+        reorder_type, image_url, scryfall_id, folder, created_at,
+        COALESCE(quantity, 0) - COALESCE(
+          (SELECT SUM(dr.quantity_reserved) FROM deck_reservations dr WHERE dr.inventory_item_id = id), 0
+        ) as available_quantity
        FROM inventory ORDER BY name ASC`
     );
     res.json(result.rows);
