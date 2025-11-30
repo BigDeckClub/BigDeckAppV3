@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Layers, TrendingUp, BookOpen, BarChart3, ArrowRight } from 'lucide-react';
+import { Layers, TrendingUp, BookOpen, BarChart3, ArrowRight, Plus, Trash2, PieChart, DollarSign } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export function LoginForm({ onSuccess }) {
@@ -51,6 +51,45 @@ export function LoginForm({ onSuccess }) {
       icon: TrendingUp,
       title: 'Sales History',
       description: 'Monitor sales and manage your selling transactions'
+    }
+  ];
+
+  const previews = [
+    {
+      title: 'Inventory Management',
+      icon: Layers,
+      stats: [
+        { label: 'Cards', value: '1,247' },
+        { label: 'Total Value', value: '$3,842' },
+        { label: 'Collections', value: '12' }
+      ]
+    },
+    {
+      title: 'Portfolio Analytics',
+      icon: PieChart,
+      stats: [
+        { label: 'Portfolio Value', value: '$8,542' },
+        { label: 'Monthly Profit', value: '+$284' },
+        { label: 'ROI', value: '+12.4%' }
+      ]
+    },
+    {
+      title: 'Deck Builder',
+      icon: BookOpen,
+      stats: [
+        { label: 'Active Decks', value: '8' },
+        { label: 'Avg Value', value: '$456' },
+        { label: 'Total Invested', value: '$3,648' }
+      ]
+    },
+    {
+      title: 'Sales Tracking',
+      icon: TrendingUp,
+      stats: [
+        { label: 'Sold This Month', value: '23' },
+        { label: 'Total Revenue', value: '$1,340' },
+        { label: 'Avg Sale Price', value: '$58' }
+      ]
     }
   ];
 
@@ -189,6 +228,54 @@ export function LoginForm({ onSuccess }) {
             {/* Footer */}
             <p className="text-center text-slate-500 text-xs mt-6">
               By signing in, you agree to our Terms of Service
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Preview Section - Full Width Below Auth */}
+      <div className="bg-gradient-to-b from-slate-900 to-slate-950 border-t border-slate-800 py-16">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-white mb-3">See What You Can Do</h2>
+            <p className="text-slate-400">Get complete visibility into your MTG portfolio in one place</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {previews.map((preview, index) => {
+              const Icon = preview.icon;
+              return (
+                <div
+                  key={index}
+                  className="bg-gradient-to-b from-slate-800 to-slate-900 rounded-xl border border-slate-700 p-6 hover:border-teal-500/50 transition"
+                >
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 rounded-lg bg-teal-500/20 border border-teal-500/40 flex items-center justify-center">
+                      <Icon className="w-6 h-6 text-teal-400" />
+                    </div>
+                    <h3 className="text-white font-semibold">{preview.title}</h3>
+                  </div>
+
+                  <div className="space-y-4">
+                    {preview.stats.map((stat, idx) => (
+                      <div key={idx} className="flex justify-between items-end">
+                        <span className="text-slate-400 text-sm">{stat.label}</span>
+                        <span className="text-white font-bold text-lg">{stat.value}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mt-6 pt-4 border-t border-slate-700">
+                    <div className="h-1 bg-gradient-to-r from-teal-500 to-cyan-500 rounded w-1/2"></div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="mt-12 text-center">
+            <p className="text-slate-500 text-sm">
+              Example stats from active users • Data updates in real-time
             </p>
           </div>
         </div>
