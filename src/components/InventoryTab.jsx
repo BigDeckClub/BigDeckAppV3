@@ -77,10 +77,14 @@ export const InventoryTab = ({
       if (response.ok) {
         const data = await response.json();
         setDeckDetails(data);
+      } else {
+        const error = await response.json();
+        console.error('Error loading deck details:', error);
+        alert(`Error: ${error.error || 'Failed to load deck details'}`);
       }
     } catch (error) {
       console.error('Failed to load deck details:', error);
-      alert('Failed to load deck details');
+      alert('Network error: Failed to load deck details');
     } finally {
       setLoadingDeckDetails(false);
     }

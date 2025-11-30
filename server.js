@@ -891,7 +891,7 @@ app.get('/api/deck-instances/:id/details', async (req, res) => {
     const deck = deckResult.rows[0];
     
     const reservationsResult = await pool.query(`
-      SELECT dr.*, i.name, i.set, i.purchase_price, i.folder, i.quantity as inventory_quantity
+      SELECT dr.*, i.name, i.set, i.purchase_price, i.folder as original_folder, i.quantity as inventory_quantity
       FROM deck_reservations dr
       JOIN inventory i ON dr.inventory_item_id = i.id
       WHERE dr.deck_id = $1
@@ -902,17 +902,28 @@ app.get('/api/deck-instances/:id/details', async (req, res) => {
       SELECT * FROM deck_missing_cards WHERE deck_id = $1 ORDER BY card_name
     `, [id]);
     
-    const totalCost = reservationsResult.rows.reduce((sum, r) => {
-      return sum + (parseFloat(r.purchase_price) || 0) * r.quantity_reserved;
-    }, 0);
+    // Calculate totals with proper type conversion
+    let totalCost = 0;
+    let reservedCount = 0;
+    reservationsResult.rows.forEach(r => {
+      const qty = parseInt(r.quantity_reserved) || 0;
+      const price = parseFloat(r.purchase_price) || 0;
+      totalCost += qty * price;
+      reservedCount += qty;
+    });
+    
+    let missingCount = 0;
+    missingResult.rows.forEach(m => {
+      missingCount += parseInt(m.quantity_needed) || 0;
+    });
     
     res.json({
       deck: deck,
       reservations: reservationsResult.rows,
       missingCards: missingResult.rows,
       totalCost: totalCost,
-      reservedCount: reservationsResult.rows.reduce((sum, r) => sum + r.quantity_reserved, 0),
-      missingCount: missingResult.rows.reduce((sum, m) => sum + m.quantity_needed, 0)
+      reservedCount: reservedCount,
+      missingCount: missingCount
     });
   } catch (error) {
     console.error('[DECKS] Error fetching deck details:', error.message);
