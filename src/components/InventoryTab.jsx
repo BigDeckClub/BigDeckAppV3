@@ -173,7 +173,6 @@ export const InventoryTab = ({
           throw new Error(error.error || 'Failed to update folder');
         }
       }
-      await loadInventory();
       setSuccessMessage(`Moved "${cardName}" to ${targetFolder}`);
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error) {
@@ -198,7 +197,6 @@ export const InventoryTab = ({
         const error = await response.json();
         throw new Error(error.error || 'Failed to add card to deck');
       }
-      await loadInventory();
       await refreshDeckInstances();
       setSuccessMessage(`Added ${inventoryItem.quantity}x ${inventoryItem.name} to deck`);
       setTimeout(() => setSuccessMessage(''), 3000);
