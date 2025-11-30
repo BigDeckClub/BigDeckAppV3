@@ -325,6 +325,11 @@ export const DeckTab = ({ onDeckCreatedOrDeleted }) => {
           }
           setSuccessMessage('Deck deleted!');
           setTimeout(() => setSuccessMessage(''), 3000);
+          
+          // Refresh deck instances in Inventory tab
+          if (onDeckCreatedOrDeleted) {
+            onDeckCreatedOrDeleted();
+          }
         }
       } catch (error) {
         console.error('Failed to delete deck:', error);
