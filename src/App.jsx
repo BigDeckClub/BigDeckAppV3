@@ -448,7 +448,10 @@ function MTGInventoryTrackerContent() {
 
         {/* Decks Tab */}
         {activeTab === "decks" && !isLoading && (
-          <DeckTab onDeckCreatedOrDeleted={() => setDeckRefreshTrigger(prev => prev + 1)} />
+          <DeckTab 
+            onDeckCreatedOrDeleted={() => setDeckRefreshTrigger(prev => prev + 1)} 
+            onInventoryUpdate={loadInventory}
+          />
         )}
 
         {/* Sales History Tab */}
