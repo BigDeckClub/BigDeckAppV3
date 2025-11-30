@@ -875,26 +875,19 @@ app.get('/api/analytics/card-metrics', async (req, res) => {
     // Purchased in last 60 days = current inventory + sold in period (since current reflects post-sale)
     const purchasedLast60d = totalCards + totalSoldLast60d;
     
-    // Lifetime totals = current inventory + all cards ever sold (gives true purchase total)
-    const lifetimeSoldResult = await pool.query(
+    // Lifetime totals = sum all PURCHASE transactions (correct equation)
+    const lifetimePurchasedResult = await pool.query(
       'SELECT SUM(quantity) as count FROM inventory_transactions WHERE transaction_type = $1',
-      ['SALE']
+      ['PURCHASE']
     );
-    const lifetimeSoldTotal = parseInt(lifetimeSoldResult.rows[0].count) || 0;
-    const lifetimeTotalCards = totalCards + lifetimeSoldTotal;
+    const lifetimeTotalCards = parseInt(lifetimePurchasedResult.rows[0].count) || 0;
     
-    // Total value = current inventory value + sold inventory value
-    const currentInventoryValue = await pool.query(
-      'SELECT COALESCE(SUM(quantity * purchase_price), 0) as value FROM inventory WHERE quantity > 0'
-    );
-    const currentValue = parseFloat(currentInventoryValue.rows[0].value) || 0;
-    
-    const soldInventoryValue = await pool.query(
+    // Lifetime value = sum all PURCHASE transaction values (correct equation)
+    const lifetimePurchaseValueResult = await pool.query(
       'SELECT COALESCE(SUM(quantity * purchase_price), 0) as value FROM inventory_transactions WHERE transaction_type = $1',
-      ['SALE']
+      ['PURCHASE']
     );
-    const soldValue = parseFloat(soldInventoryValue.rows[0].value) || 0;
-    const lifetimeTotalValue = currentValue + soldValue;
+    const lifetimeTotalValue = parseFloat(lifetimePurchaseValueResult.rows[0].value) || 0;
     
     res.json({
       totalCards,
