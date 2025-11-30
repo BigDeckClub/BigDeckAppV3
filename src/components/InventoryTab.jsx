@@ -125,7 +125,7 @@ export const InventoryTab = ({
         {viewMode === 'card' ? (
         <div 
           className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 hover:border-teal-500 rounded p-1.5 transition-colors flex flex-col h-32 md:h-36 hover:shadow-lg hover:shadow-teal-500/20" 
-          onClick={() => setExpandedCards({...expandedCards, [cardName]: !isExpanded})}
+          onClick={() => setExpandedCards(isExpanded ? {} : {[cardName]: true})}
         >
           <div className="text-center px-1 cursor-pointer">
             <h3 className="text-[10px] md:text-xs font-bold text-slate-100 line-clamp-2 break-words">{cardName}</h3>
@@ -157,7 +157,7 @@ export const InventoryTab = ({
         <div>
           {/* List View */}
           <div className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 hover:border-teal-500 rounded p-3 transition-colors cursor-pointer hover:shadow-lg hover:shadow-teal-500/20">
-            <div className="flex items-center justify-between gap-4" onClick={() => setExpandedCards({...expandedCards, [cardName]: !isExpanded})}>
+            <div className="flex items-center justify-between gap-4" onClick={() => setExpandedCards(isExpanded ? {} : {[cardName]: true})}>
               <div className="flex-1 min-w-0">
                 <h3 className="text-sm font-bold text-slate-100 break-words mb-1">{cardName}</h3>
                 <div className="flex gap-4 text-xs">
