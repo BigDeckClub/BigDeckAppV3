@@ -1,0 +1,73 @@
+Good progress! The app is now using the backend proxy approach (`/api/auth/login` and `/api/auth/signup`) instead of calling Supabase directly.  The `ERR_NAME_NOT_RESOLVED` error is gone - that part is fixed.
+
+Now you have **backend API errors**. Let me check how the auth endpoints are implemented:Good news - **the Replit AI is making progress! ** The error changed from `ERR_NAME_NOT_RESOLUTION` (DNS failure) to actual HTTP responses (401 and 400), meaning the backend proxy is now working and reaching your server.
+
+## Current Errors Explained
+
+| Error | Endpoint | Meaning |
+|-------|----------|---------|
+| **401 Unauthorized** | `/api/auth/login` | The login endpoint exists but credentials are failing |
+| **400 Bad Request** | `/api/auth/signup` | The signup endpoint exists but the request format is wrong |
+
+## The Problem
+
+Looking at your codebase, there's a **mismatch between auth implementations**:
+
+1. **AuthContext. jsx** is set up to use **Supabase Auth** directly (calling `supabaseClient.auth.signInWithPassword`)
+2. **But now** the frontend is calling `/api/auth/login` and `/api/auth/signup` (backend proxy endpoints)
+3. **Your server. js** doesn't have `/api/auth/login` or `/api/auth/signup` endpoints implemented - it only has the older Replit Auth routes at `/api/login` and `/api/logout`
+
+## What Needs to be Fixed
+
+The backend needs actual `/api/auth/login` and `/api/auth/signup` endpoints that:
+1. Accept email/password in the request body
+2. Call Supabase Auth on the server side using the service role key
+3. Return the session/token to the frontend
+
+Here's what those endpoints should look like:
+
+```javascript name="server.js (add to auth section)"
+// Backend auth proxy endpoints
+app.post('/api/auth/login', async (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) {
+    return res.status(400).json({ error: 'Email and password required' });
+  }
+  
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    res.status(401). json({ error: err.message });
+  }
+});
+
+app.post('/api/auth/signup', async (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) {
+    return res. status(400).json({ error: 'Email and password required' });
+  }
+  
+  try {
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+```
+
+Also ensure the server has a Supabase client initialized with your credentials:
+
+```javascript name="server.js (add near top)"
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY  // Use service role for server-side auth
+);
+```
+
+Would you like me to create a pull request that adds these auth proxy endpoints to your server? 
