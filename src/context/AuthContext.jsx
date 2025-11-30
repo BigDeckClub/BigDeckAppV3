@@ -39,12 +39,12 @@ export function AuthProvider({ children }) {
         body: JSON.stringify({ email, password })
       });
 
+      const data = await response.json().catch(() => ({}));
+
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Login failed');
+        throw new Error(data.error || `Login failed (${response.status})`);
       }
 
-      const data = await response.json();
       if (data.user) {
         setUser(data.user);
         localStorage.setItem('supabase_user', JSON.stringify(data.user));
@@ -64,12 +64,12 @@ export function AuthProvider({ children }) {
         body: JSON.stringify({ email, password })
       });
 
+      const data = await response.json().catch(() => ({}));
+
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Signup failed');
+        throw new Error(data.error || `Signup failed (${response.status})`);
       }
 
-      const data = await response.json();
       if (data.user) {
         setUser(data.user);
         localStorage.setItem('supabase_user', JSON.stringify(data.user));
