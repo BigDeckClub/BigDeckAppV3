@@ -849,8 +849,8 @@ app.get('/api/analytics/market-values', async (req, res) => {
 
 app.get('/api/analytics/card-metrics', async (req, res) => {
   try {
-    // Total cards and unique cards
-    const totalResult = await pool.query('SELECT COUNT(*) as unique_count, SUM(quantity) as total_count FROM inventory');
+    // Total cards and unique cards (count distinct card names)
+    const totalResult = await pool.query('SELECT COUNT(DISTINCT LOWER(TRIM(name))) as unique_count, SUM(quantity) as total_count FROM inventory');
     const totalRow = totalResult.rows[0];
     const totalCards = parseInt(totalRow.total_count) || 0;
     const uniqueCards = parseInt(totalRow.unique_count) || 0;
