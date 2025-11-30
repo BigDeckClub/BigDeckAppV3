@@ -22,22 +22,12 @@ import { useApi } from "./hooks/useApi";
 const API_BASE = "/api";
 
 function MTGInventoryTrackerContent() {
+  // ALL hooks must be called before any conditional returns
   const { user, loading: authLoading } = useAuth();
   const { getPrice } = usePriceCache();
   const { get, post, put, del } = useApi();
 
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
-        <div className="w-8 h-8 animate-spin text-teal-400 border-2 border-teal-400 border-t-transparent rounded-full"></div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return <LoginForm onSuccess={() => {}} />;
-  }
-  
+  // ALL useState hooks
   const [activeTab, setActiveTab] = useState("inventory");
   const [inventory, setInventory] = useState([]);
   const [imports, setImports] = useState([]);
@@ -186,6 +176,7 @@ function MTGInventoryTrackerContent() {
   }, [debouncedSearchQuery]);
 
   useEffect(() => {
+    if (!user) return; // Guard inside effect - don't load data without user
     const loadAllData = async () => {
       setIsLoading(true);
       await Promise.all([
@@ -195,7 +186,7 @@ function MTGInventoryTrackerContent() {
       setIsLoading(false);
     };
     loadAllData();
-  }, []);
+  }, [user]);
 
   const addInventoryItem = async (item) => {
     try {
@@ -294,6 +285,19 @@ function MTGInventoryTrackerContent() {
       throw error;
     }
   };
+
+  // Conditional returns AFTER all hooks are called
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
+        <div className="w-8 h-8 animate-spin text-teal-400 border-2 border-teal-400 border-t-transparent rounded-full"></div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <LoginForm onSuccess={() => {}} />;
+  }
 
   const navItems = [
     { id: "inventory", icon: Layers, label: "Inventory" },

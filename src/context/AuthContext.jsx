@@ -45,13 +45,19 @@ export function AuthProvider({ children }) {
 
     initAuth();
 
-    const { data: { subscription } } = supabaseClient.auth.onAuthStateChange(
-      (event, session) => {
-        if (mounted) {
-          setUser(session?.user || null);
+    let subscription;
+    try {
+      const { data } = supabaseClient.auth.onAuthStateChange(
+        (event, session) => {
+          if (mounted) {
+            setUser(session?.user || null);
+          }
         }
-      }
-    );
+      );
+      subscription = data.subscription;
+    } catch (err) {
+      console.error('Failed to subscribe to auth changes:', err);
+    }
 
     return () => {
       mounted = false;
