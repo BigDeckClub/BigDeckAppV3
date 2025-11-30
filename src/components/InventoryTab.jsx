@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { Plus, Trash2, X, ChevronDown, ChevronRight, Grid3X3, List, Menu } from 'lucide-react';
+import { Plus, Trash2, X, ChevronDown, ChevronRight, Grid3X3, List, Menu, Wand2 } from 'lucide-react';
 import { usePriceCache } from "../context/PriceCacheContext";
 
 // Simple normalize functions
@@ -367,6 +367,63 @@ export const InventoryTab = ({
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error) {
       console.error('Failed to add card to deck:', error);
+      setSuccessMessage(`Error: ${error.message}`);
+      setTimeout(() => setSuccessMessage(''), 5000);
+    }
+  };
+
+  // Auto-fill missing cards from inventory (oldest and cheapest first)
+  const autoFillMissingCards = async (deck, deckId) => {
+    try {
+      setSuccessMessage('Auto-filling missing cards...');
+      
+      // For each card in the decklist
+      const cardsToAdd = [];
+      for (const decklistCard of (deck.cards || [])) {
+        // Find how many are already reserved
+        const reservedQty = (inventory || [])
+          .filter(i => i.name.toLowerCase() === decklistCard.name.toLowerCase())
+          .reduce((sum, i) => {
+            const reserved = (deckDetailsCache[deckId]?.reservations || [])
+              .filter(r => r.name.toLowerCase() === i.name.toLowerCase())
+              .reduce((s, r) => s + parseInt(r.quantity_reserved || 0), 0);
+            return sum + reserved;
+          }, 0);
+        
+        const needed = (decklistCard.quantity || 1) - reservedQty;
+        if (needed <= 0) continue;
+        
+        // Find matching inventory items, sorted by date (oldest first) then price (cheapest first)
+        const matchingItems = (inventory || [])
+          .filter(i => i.name.toLowerCase() === decklistCard.name.toLowerCase() && (i.quantity || 0) > 0)
+          .sort((a, b) => {
+            const dateA = new Date(a.created_at || 0).getTime();
+            const dateB = new Date(b.created_at || 0).getTime();
+            if (dateA !== dateB) return dateA - dateB; // Oldest first
+            return (parseFloat(a.purchase_price) || 999) - (parseFloat(b.purchase_price) || 999); // Cheapest first
+          });
+        
+        let stillNeeded = needed;
+        for (const item of matchingItems) {
+          if (stillNeeded <= 0) break;
+          const qtyToAdd = Math.min(stillNeeded, item.quantity || 0);
+          if (qtyToAdd > 0) {
+            cardsToAdd.push({ ...item, quantity: qtyToAdd });
+            stillNeeded -= qtyToAdd;
+          }
+        }
+      }
+      
+      // Add all cards to deck
+      for (const card of cardsToAdd) {
+        await moveCardSkuToDeck(card, deckId);
+      }
+      
+      setSuccessMessage(`✅ Auto-filled ${cardsToAdd.length} card(s) into deck`);
+      await loadDeckDetails(deckId, true);
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (error) {
+      console.error('Failed to auto-fill missing cards:', error);
       setSuccessMessage(`Error: ${error.message}`);
       setTimeout(() => setSuccessMessage(''), 5000);
     }
@@ -1567,11 +1624,12 @@ export const InventoryTab = ({
                       </div>
                       <div className="flex gap-2">
                         <button
-                          onClick={() => reoptimizeDeck(deck.id)}
-                          className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm transition-colors"
-                          title="Re-optimize for cheapest cards"
+                          onClick={() => autoFillMissingCards(deck, deck.id)}
+                          className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded text-sm transition-colors flex items-center gap-1"
+                          title="Auto-fill missing cards from inventory (oldest & cheapest first)"
                         >
-                          🔄
+                          <Wand2 className="w-4 h-4" />
+                          Auto-Fill
                         </button>
                         <button
                           onClick={() => releaseDeck(deck.id)}
