@@ -986,10 +986,10 @@ export const InventoryTab = ({
       {/* Mobile Menu Button */}
       <button
         onClick={() => setSidebarOpen(!sidebarOpen)}
-        className="fixed bottom-6 right-6 md:hidden z-40 bg-teal-600 hover:bg-teal-700 text-white p-3 rounded-full shadow-lg transition-colors"
+        className="fixed bottom-8 right-8 md:hidden z-40 bg-gradient-to-br from-teal-600 to-teal-700 hover:from-teal-500 hover:to-teal-600 text-white p-4 rounded-full shadow-2xl shadow-teal-500/40 transition-all active:scale-90 min-w-14 min-h-14 flex items-center justify-center"
         title="Toggle Sidebar"
       >
-        <Menu className="w-5 h-5" />
+        <Menu className="w-6 h-6" />
       </button>
 
       {/* LEFT SIDEBAR - Folders */}
@@ -1307,7 +1307,7 @@ export const InventoryTab = ({
       {/* Overlay for mobile */}
       {sidebarOpen && (
         <div 
-          className="fixed inset-0 bg-black/50 z-20 md:hidden"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-20 md:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -1315,14 +1315,14 @@ export const InventoryTab = ({
       {/* RIGHT CONTENT - Cards or Deck Details */}
       <div className="flex-1 pb-24 md:pb-6 px-4 md:px-8 md:ml-0 pt-16">
         {/* Search Bar */}
-        <div className="mb-10">
+        <div className="mb-8 px-1 md:px-0">
           <div className="relative">
             <input
               type="text"
-              placeholder="Search inventory by card name..."
+              placeholder="Search cards..."
               value={inventorySearch}
               onChange={(e) => setInventorySearch(e.target.value)}
-              className="w-full px-5 py-3 bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 hover:border-teal-500 focus:border-teal-400 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-opacity-30 transition-all duration-300 font-medium shadow-lg shadow-slate-900/50"
+              className="w-full px-5 py-3.5 md:py-3 bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 hover:border-teal-500 focus:border-teal-400 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-opacity-30 transition-all duration-300 font-medium shadow-lg shadow-slate-900/50 text-base md:text-sm"
             />
             <svg className="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -1331,8 +1331,8 @@ export const InventoryTab = ({
         </div>
 
         {/* Tabs and View Mode */}
-        <div className="flex flex-col md:flex-row gap-3 md:gap-4 mb-8 border-b border-slate-700 pb-4 items-start md:items-center justify-between">
-          <div className="flex gap-1 w-full md:w-auto overflow-x-auto flex-wrap bg-slate-800/50 rounded-lg p-1.5 border border-slate-700">
+        <div className="flex flex-col md:flex-row gap-3 md:gap-4 mb-6 md:mb-8 border-b border-slate-700 pb-4 items-start md:items-center justify-between">
+          <div className="flex gap-1 w-full md:w-auto overflow-x-auto flex-wrap bg-slate-800/50 rounded-lg p-1 md:p-1.5 border border-slate-700">
             <button
               onClick={() => { setActiveTab('all'); setSidebarOpen(false); }}
               className={`px-4 py-2 text-sm md:text-base font-medium transition-all duration-300 whitespace-nowrap rounded-lg ${

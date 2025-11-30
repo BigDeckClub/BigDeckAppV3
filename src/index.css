@@ -70,7 +70,7 @@ h3 {
 
 /* Card Grid Spacing */
 .card-grid {
-  @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5;
+  @apply grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3 md:gap-4 lg:gap-5;
 }
 
 .card-sm {
@@ -82,19 +82,19 @@ h3 {
 
 /* Buttons - Modern design */
 .btn-primary {
-  @apply bg-gradient-to-br from-teal-500 to-cyan-500 hover:from-teal-400 hover:to-cyan-400 text-slate-900 font-bold py-2.5 px-4 rounded-xl transition-all duration-300 hover:shadow-2xl hover:shadow-teal-500/40 active:scale-95 active:shadow-lg uppercase text-sm tracking-wide hover:-translate-y-0.5;
+  @apply bg-gradient-to-br from-teal-500 to-cyan-500 hover:from-teal-400 hover:to-cyan-400 text-slate-900 font-bold py-2.5 md:py-2 px-4 rounded-xl transition-all duration-300 hover:shadow-2xl hover:shadow-teal-500/40 active:scale-95 active:shadow-lg uppercase text-sm tracking-wide hover:-translate-y-0.5 min-h-12 md:min-h-10;
 }
 
 .btn-secondary {
-  @apply bg-gradient-to-br from-slate-700 to-slate-800 backdrop-blur hover:from-slate-600 hover:to-slate-700 text-white font-semibold py-2.5 px-4 rounded-xl transition-all duration-300 hover:shadow-xl hover:shadow-slate-600/40 border border-slate-600/50 hover:border-slate-500 hover:-translate-y-0.5;
+  @apply bg-gradient-to-br from-slate-700 to-slate-800 backdrop-blur hover:from-slate-600 hover:to-slate-700 text-white font-semibold py-2.5 md:py-2 px-4 rounded-xl transition-all duration-300 hover:shadow-xl hover:shadow-slate-600/40 border border-slate-600/50 hover:border-slate-500 hover:-translate-y-0.5 min-h-12 md:min-h-10;
 }
 
 .btn-danger {
-  @apply bg-gradient-to-br from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-semibold py-1.5 px-3 rounded-lg transition-all duration-300 hover:shadow-lg hover:shadow-red-500/40 hover:-translate-y-0.5;
+  @apply bg-gradient-to-br from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-semibold py-1.5 md:py-1 px-3 rounded-lg transition-all duration-300 hover:shadow-lg hover:shadow-red-500/40 hover:-translate-y-0.5 min-h-10 md:min-h-8;
 }
 
 .btn-accent {
-  @apply bg-gradient-to-br from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-bold px-4 py-2.5 rounded-xl transition-all duration-300 hover:shadow-2xl hover:shadow-amber-500/40 hover:-translate-y-0.5;
+  @apply bg-gradient-to-br from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-bold px-4 py-2.5 md:py-2 rounded-xl transition-all duration-300 hover:shadow-2xl hover:shadow-amber-500/40 hover:-translate-y-0.5 min-h-12 md:min-h-10;
 }
 
 /* Input styling - Modern with glassmorphism */
@@ -103,7 +103,7 @@ input[type="number"],
 input[type="date"],
 textarea,
 select {
-  @apply w-full bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 hover:border-teal-500 backdrop-blur rounded-xl px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-500 focus:ring-opacity-30 transition-all duration-300 shadow-lg shadow-slate-900/30;
+  @apply w-full bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 hover:border-teal-500 backdrop-blur rounded-xl px-4 py-2.5 md:py-2 text-white placeholder-slate-500 focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-500 focus:ring-opacity-30 transition-all duration-300 shadow-lg shadow-slate-900/30 text-base md:text-sm min-h-12 md:min-h-10;
   -webkit-backdrop-filter: blur(16px);
   backdrop-filter: blur(16px);
 }
