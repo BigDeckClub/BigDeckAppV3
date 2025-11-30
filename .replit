@@ -109,3 +109,4 @@ CHECKPOINT_DISABLE = "1"
 
 [userenv.production]
 DATABASE_URL = "postgresql://neondb_owner:npg_Ah3YCkH5WXGi@ep-red-wave-ahuq4str.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require"
+PRODUCTION_DATABASE_URL = "postgresql://neondb_owner:npg_Ah3YCkH5WXGi@ep-red-wave-ahuq4str.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require"

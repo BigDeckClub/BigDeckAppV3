@@ -71,8 +71,10 @@ function setCachedPrice(key, data) {
 // ========== SERVER TRACKING ==========
 const serverStartTime = Date.now();
 
-// PostgreSQL connection
-const dbUrl = process.env.DATABASE_URL;
+// PostgreSQL connection - separate dev and production databases
+const dbUrl = process.env.REPLIT_DEPLOYMENT 
+  ? (process.env.PRODUCTION_DATABASE_URL || process.env.DATABASE_URL)
+  : process.env.DATABASE_URL;
 
 const pool = new Pool({
   connectionString: dbUrl,
