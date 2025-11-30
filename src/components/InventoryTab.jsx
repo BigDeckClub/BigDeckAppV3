@@ -1088,21 +1088,6 @@ export const InventoryTab = ({
                     <div className="font-medium text-sm text-slate-100">{folder}</div>
                     <div className="text-xs text-teal-300">{folderInStockCards.length} {folderInStockCards.length === 1 ? 'card' : 'cards'}</div>
                   </button>
-                  <button
-                    onClick={() => {
-                      setSellModalData({
-                        itemType: 'folder',
-                        itemId: null,
-                        itemName: folder,
-                        purchasePrice: folderCost
-                      });
-                      setShowSellModal(true);
-                    }}
-                    className="w-full px-3 py-1 text-xs bg-green-600/20 hover:bg-green-600/40 text-green-400 rounded-b-lg transition-colors border-t border-green-600/30"
-                    title="Sell this folder"
-                  >
-                    Sell Folder
-                  </button>
                 </div>
               );
             })}
@@ -1745,7 +1730,83 @@ export const InventoryTab = ({
                 const reservedQty = items.reduce((sum, item) => sum + (parseInt(item.reserved_quantity) || 0), 0);
                 return matchesSearch && (totalQty - reservedQty) > 0;
               });
-              return folderCards.length > 0 ? (
+              const uniqueCards = Object.keys(groupedByFolder[activeTab] || {}).length;
+              const totalCards = Object.values(groupedByFolder[activeTab] || {}).reduce((sum, items) => sum + items.reduce((s, item) => s + (item.quantity || 0), 0), 0);
+              const totalCost = Object.values(groupedByFolder[activeTab] || {}).reduce((sum, items) => sum + items.reduce((s, item) => s + ((item.purchase_price || 0) * (item.quantity || 0)), 0), 0);
+              const folderDesc = folderMetadata[activeTab]?.description || '';
+              
+              return (
+                <>
+                  {/* Folder Header Box */}
+                  <div className="bg-slate-800 rounded-lg border border-slate-600 p-4 mb-4">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <h2 className="text-2xl font-bold text-teal-300">{activeTab}</h2>
+                        {editingFolderName === activeTab ? (
+                          <input
+                            type="text"
+                            value={editingFolderDesc}
+                            onChange={(e) => setEditingFolderDesc(e.target.value)}
+                            onBlur={() => {
+                              setFolderMetadata(prev => ({...prev, [activeTab]: {description: editingFolderDesc}}));
+                              setEditingFolderName(null);
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                setFolderMetadata(prev => ({...prev, [activeTab]: {description: editingFolderDesc}}));
+                                setEditingFolderName(null);
+                              }
+                            }}
+                            placeholder="Add folder description..."
+                            className="w-full mt-1 px-2 py-1 bg-slate-700 border border-slate-600 rounded text-slate-300 placeholder-slate-500 focus:outline-none focus:border-teal-400"
+                            autoFocus
+                          />
+                        ) : (
+                          <p 
+                            onClick={() => {
+                              setEditingFolderName(activeTab);
+                              setEditingFolderDesc(folderDesc);
+                            }}
+                            className="text-sm text-slate-400 mt-1 cursor-pointer hover:text-slate-300 transition-colors"
+                          >
+                            {folderDesc || 'Click to add description...'}
+                          </p>
+                        )}
+                        <div className="flex gap-4 mt-3 text-sm">
+                          <div>
+                            <span className="text-slate-400">Cards: </span>
+                            <span className="font-semibold text-slate-200">{totalCards}</span>
+                          </div>
+                          <div>
+                            <span className="text-slate-400">Unique: </span>
+                            <span className="font-semibold text-slate-200">{uniqueCards}</span>
+                          </div>
+                          <div>
+                            <span className="text-slate-400">Total Cost: </span>
+                            <span className="font-semibold text-green-400">${totalCost.toFixed(2)}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => {
+                            setSellModalData({
+                              itemType: 'folder',
+                              itemId: null,
+                              itemName: activeTab,
+                              purchasePrice: totalCost
+                            });
+                            setShowSellModal(true);
+                          }}
+                          className="bg-green-600 hover:bg-green-500 text-white p-2 rounded transition-colors flex items-center"
+                          title="Sell this folder"
+                        >
+                          <DollarSign className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  {folderCards.length > 0 ? (
                 viewMode === 'card' ? (
                   <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-3">
                     {folderCards.map(([cardName, items]) => (
@@ -1788,7 +1849,9 @@ export const InventoryTab = ({
                   </div>
                 )
               ) : (
-                <p className="text-slate-400 text-center py-12">No cards in this folder.</p>
+                    <p className="text-slate-400 text-center py-12">No cards in this folder.</p>
+                  )}
+                </>
               );
             })()
           ) : (
