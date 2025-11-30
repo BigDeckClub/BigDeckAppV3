@@ -927,6 +927,13 @@ app.get('/api/analytics/card-metrics', async (req, res) => {
     );
     const lifetimeTotalValue = parseFloat(lifetimePurchaseValueResult.rows[0].value) || 0;
     
+    // Lifetime revenue = sum all SALE transaction values
+    const lifetimeRevenueResult = await pool.query(
+      'SELECT COALESCE(SUM(quantity * sale_price), 0) as value FROM inventory_transactions WHERE transaction_type = $1',
+      ['SALE']
+    );
+    const lifetimeTotalRevenue = parseFloat(lifetimeRevenueResult.rows[0].value) || 0;
+    
     res.json({
       totalCards,
       totalAvailable,
@@ -934,7 +941,8 @@ app.get('/api/analytics/card-metrics', async (req, res) => {
       totalSoldLast60d,
       totalPurchasedLast60d: purchasedLast60d,
       lifetimeTotalCards,
-      lifetimeTotalValue
+      lifetimeTotalValue,
+      lifetimeTotalRevenue
     });
   } catch (error) {
     console.error('[ANALYTICS] Error calculating card metrics:', error.message);
