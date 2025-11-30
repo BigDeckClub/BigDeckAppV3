@@ -1085,7 +1085,12 @@ export const InventoryTab = ({
           {/* Created Folders */}
           {createdFolders.map((folderName) => {
             const cardsByName = groupedByFolder[folderName] || {};
-            const totalCards = Object.keys(cardsByName).length;
+            const inStockCards = Object.entries(cardsByName).filter(([_, items]) => {
+              const totalQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
+              const reservedQty = items.reduce((sum, item) => sum + (parseInt(item.reserved_quantity) || 0), 0);
+              return (totalQty - reservedQty) > 0;
+            });
+            const totalCards = inStockCards.length;
             const isSelected = selectedFolder === folderName;
             
             return (
