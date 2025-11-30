@@ -1306,7 +1306,10 @@ export const InventoryTab = ({
                     📁 {folderName}
                   </button>
                   <button
-                    onClick={() => setActiveTab('all')}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveTab('all');
+                    }}
                     className="ml-1 text-slate-400 hover:text-red-400 transition-colors"
                     title="Close folder"
                   >
