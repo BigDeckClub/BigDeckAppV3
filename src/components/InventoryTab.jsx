@@ -1040,19 +1040,30 @@ export const InventoryTab = ({
             {[...createdFolders, ...Object.keys(groupedByFolder).filter(f => f !== 'Uncategorized' && !createdFolders.includes(f))].map((folderName) => {
               const isFolderOpen = activeTab === folderName;
               return (
-                <button
+                <div 
                   key={`folder-tab-${folderName}`}
-                  onClick={() => {
-                    setActiveTab(folderName);
-                  }}
-                  className={`px-3 md:px-4 py-2 text-sm md:text-base font-medium transition-colors whitespace-nowrap ${
-                    isFolderOpen
-                      ? 'text-teal-300 border-b-2 border-teal-400'
-                      : 'text-slate-400 hover:text-slate-300'
-                  }`}
+                  className="flex items-center"
                 >
-                  📁 {folderName}
-                </button>
+                  <button
+                    onClick={() => {
+                      setActiveTab(folderName);
+                    }}
+                    className={`px-3 md:px-4 py-2 text-sm md:text-base font-medium transition-colors whitespace-nowrap ${
+                      isFolderOpen
+                        ? 'text-teal-300 border-b-2 border-teal-400'
+                        : 'text-slate-400 hover:text-slate-300'
+                    }`}
+                  >
+                    📁 {folderName}
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('all')}
+                    className="ml-1 text-slate-400 hover:text-red-400 transition-colors"
+                    title="Close folder"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
               );
             })}
 
