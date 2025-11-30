@@ -855,6 +855,262 @@ app.delete('/api/decks/:id', async (req, res) => {
   }
 });
 
+// ========== DECK INSTANCES (Two-Tier System) ==========
+
+// GET all deck instances
+app.get('/api/deck-instances', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT d.*,
+        (SELECT COALESCE(SUM(dr.quantity_reserved), 0) FROM deck_reservations dr WHERE dr.deck_id = d.id) as reserved_count,
+        (SELECT COALESCE(SUM(dm.quantity_needed), 0) FROM deck_missing_cards dm WHERE dm.deck_id = d.id) as missing_count
+      FROM decks d
+      WHERE d.is_deck_instance = TRUE
+      ORDER BY d.created_at DESC
+    `);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('[DECKS] Error fetching deck instances:', error.message);
+    res.status(500).json({ error: 'Failed to fetch deck instances' });
+  }
+});
+
+// GET full details of a deck instance
+app.get('/api/deck-instances/:id/details', async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    const deckResult = await pool.query('SELECT * FROM decks WHERE id = $1 AND is_deck_instance = TRUE', [id]);
+    if (deckResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Deck instance not found' });
+    }
+    const deck = deckResult.rows[0];
+    
+    const reservationsResult = await pool.query(`
+      SELECT dr.*, i.name, i.set, i.purchase_price, i.folder, i.quantity as inventory_quantity
+      FROM deck_reservations dr
+      JOIN inventory i ON dr.inventory_item_id = i.id
+      WHERE dr.deck_id = $1
+      ORDER BY i.name, i.purchase_price ASC
+    `, [id]);
+    
+    const missingResult = await pool.query(`
+      SELECT * FROM deck_missing_cards WHERE deck_id = $1 ORDER BY card_name
+    `, [id]);
+    
+    const totalCost = reservationsResult.rows.reduce((sum, r) => {
+      return sum + (parseFloat(r.purchase_price) || 0) * r.quantity_reserved;
+    }, 0);
+    
+    res.json({
+      deck: deck,
+      reservations: reservationsResult.rows,
+      missingCards: missingResult.rows,
+      totalCost: totalCost,
+      reservedCount: reservationsResult.rows.reduce((sum, r) => sum + r.quantity_reserved, 0),
+      missingCount: missingResult.rows.reduce((sum, m) => sum + m.quantity_needed, 0)
+    });
+  } catch (error) {
+    console.error('[DECKS] Error fetching deck details:', error.message);
+    res.status(500).json({ error: 'Failed to fetch deck details' });
+  }
+});
+
+// POST copy decklist to inventory (create deck instance)
+app.post('/api/decks/:id/copy-to-inventory', async (req, res) => {
+  const { id } = req.params;
+  const { name } = req.body;
+  
+  try {
+    const decklistResult = await pool.query('SELECT * FROM decks WHERE id = $1', [id]);
+    if (decklistResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Decklist not found' });
+    }
+    const decklist = decklistResult.rows[0];
+    const cards = decklist.cards || [];
+    
+    const deckName = name || decklist.name;
+    const newDeckResult = await pool.query(
+      `INSERT INTO decks (name, format, description, cards, decklist_id, is_deck_instance, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, TRUE, NOW(), NOW())
+       RETURNING *`,
+      [deckName, decklist.format, decklist.description, JSON.stringify(cards), id]
+    );
+    const newDeck = newDeckResult.rows[0];
+    
+    const reservations = [];
+    const missingCards = [];
+    
+    for (const card of cards) {
+      const cardName = card.name;
+      const quantityNeeded = card.quantity || 1;
+      
+      const inventoryResult = await pool.query(`
+        SELECT i.*, 
+          COALESCE(i.quantity, 0) - COALESCE(
+            (SELECT SUM(dr.quantity_reserved) FROM deck_reservations dr WHERE dr.inventory_item_id = i.id), 0
+          ) as available_quantity
+        FROM inventory i
+        WHERE LOWER(TRIM(i.name)) = LOWER(TRIM($1))
+        HAVING COALESCE(i.quantity, 0) - COALESCE(
+          (SELECT SUM(dr.quantity_reserved) FROM deck_reservations dr WHERE dr.inventory_item_id = i.id), 0
+        ) > 0
+        ORDER BY COALESCE(i.purchase_price, 999999) ASC
+      `, [cardName]);
+      
+      let remainingNeeded = quantityNeeded;
+      
+      for (const invItem of inventoryResult.rows) {
+        if (remainingNeeded <= 0) break;
+        
+        const availableQty = invItem.available_quantity;
+        const reserveQty = Math.min(remainingNeeded, availableQty);
+        
+        if (reserveQty > 0) {
+          reservations.push({
+            deck_id: newDeck.id,
+            inventory_item_id: invItem.id,
+            quantity_reserved: reserveQty,
+            original_folder: invItem.folder || 'Uncategorized'
+          });
+          remainingNeeded -= reserveQty;
+        }
+      }
+      
+      if (remainingNeeded > 0) {
+        missingCards.push({
+          deck_id: newDeck.id,
+          card_name: cardName,
+          set_code: card.set || null,
+          quantity_needed: remainingNeeded
+        });
+      }
+    }
+    
+    for (const reservation of reservations) {
+      await pool.query(
+        `INSERT INTO deck_reservations (deck_id, inventory_item_id, quantity_reserved, original_folder)
+         VALUES ($1, $2, $3, $4)`,
+        [reservation.deck_id, reservation.inventory_item_id, reservation.quantity_reserved, reservation.original_folder]
+      );
+    }
+    
+    for (const missing of missingCards) {
+      await pool.query(
+        `INSERT INTO deck_missing_cards (deck_id, card_name, set_code, quantity_needed)
+         VALUES ($1, $2, $3, $4)`,
+        [missing.deck_id, missing.card_name, missing.set_code, missing.quantity_needed]
+      );
+    }
+    
+    res.status(201).json({
+      deck: newDeck,
+      reservations: reservations,
+      missingCards: missingCards,
+      totalCards: cards.reduce((sum, c) => sum + (c.quantity || 1), 0),
+      reservedCount: reservations.reduce((sum, r) => sum + r.quantity_reserved, 0),
+      missingCount: missingCards.reduce((sum, m) => sum + m.quantity_needed, 0)
+    });
+  } catch (error) {
+    console.error('[DECKS] Error copying to inventory:', error.message);
+    res.status(500).json({ error: 'Failed to copy deck to inventory' });
+  }
+});
+
+// POST add card to deck instance
+app.post('/api/deck-instances/:id/add-card', async (req, res) => {
+  const { id } = req.params;
+  const { inventory_item_id, quantity } = req.body;
+  
+  try {
+    const invResult = await pool.query(`
+      SELECT i.*, 
+        COALESCE(i.quantity, 0) - COALESCE(
+          (SELECT SUM(dr.quantity_reserved) FROM deck_reservations dr WHERE dr.inventory_item_id = i.id), 0
+        ) as available_quantity
+      FROM inventory i WHERE i.id = $1
+    `, [inventory_item_id]);
+    
+    if (invResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Inventory item not found' });
+    }
+    
+    const invItem = invResult.rows[0];
+    if (invItem.available_quantity < quantity) {
+      return res.status(400).json({ error: 'Not enough available quantity' });
+    }
+    
+    const existingRes = await pool.query(
+      'SELECT * FROM deck_reservations WHERE deck_id = $1 AND inventory_item_id = $2',
+      [id, inventory_item_id]
+    );
+    
+    if (existingRes.rows.length > 0) {
+      await pool.query(
+        'UPDATE deck_reservations SET quantity_reserved = quantity_reserved + $1 WHERE deck_id = $2 AND inventory_item_id = $3',
+        [quantity, id, inventory_item_id]
+      );
+    } else {
+      await pool.query(
+        `INSERT INTO deck_reservations (deck_id, inventory_item_id, quantity_reserved, original_folder)
+         VALUES ($1, $2, $3, $4)`,
+        [id, inventory_item_id, quantity, invItem.folder || 'Uncategorized']
+      );
+    }
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error('[DECKS] Error adding card:', error.message);
+    res.status(500).json({ error: 'Failed to add card' });
+  }
+});
+
+// DELETE remove card from deck instance
+app.delete('/api/deck-instances/:id/remove-card', async (req, res) => {
+  const { id } = req.params;
+  const { reservation_id, quantity } = req.body;
+  
+  try {
+    const resResult = await pool.query('SELECT * FROM deck_reservations WHERE id = $1 AND deck_id = $2', [reservation_id, id]);
+    
+    if (resResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Reservation not found' });
+    }
+    
+    const reservation = resResult.rows[0];
+    
+    if (quantity >= reservation.quantity_reserved) {
+      await pool.query('DELETE FROM deck_reservations WHERE id = $1', [reservation_id]);
+    } else {
+      await pool.query(
+        'UPDATE deck_reservations SET quantity_reserved = quantity_reserved - $1 WHERE id = $2',
+        [quantity, reservation_id]
+      );
+    }
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error('[DECKS] Error removing card:', error.message);
+    res.status(500).json({ error: 'Failed to remove card' });
+  }
+});
+
+// POST release entire deck instance
+app.post('/api/deck-instances/:id/release', async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    await pool.query('DELETE FROM deck_reservations WHERE deck_id = $1', [id]);
+    await pool.query('DELETE FROM deck_missing_cards WHERE deck_id = $1', [id]);
+    await pool.query('DELETE FROM decks WHERE id = $1 AND is_deck_instance = TRUE', [id]);
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error('[DECKS] Error releasing deck:', error.message);
+    res.status(500).json({ error: 'Failed to release deck' });
+  }
+});
+
 // ========== CENTRALIZED ERROR HANDLING ==========
 // Placed after all API routes to catch unhandled errors from route handlers
 app.use((err, req, res, next) => {
