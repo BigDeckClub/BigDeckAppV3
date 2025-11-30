@@ -70,8 +70,8 @@ export const InventoryTab = ({
   };
 
   // Load full details of a deck instance
-  const loadDeckDetails = async (deckId) => {
-    if (deckDetailsCache[deckId]) return; // Already cached
+  const loadDeckDetails = async (deckId, forceRefresh = false) => {
+    if (deckDetailsCache[deckId] && !forceRefresh) return; // Already cached
     setLoadingDeckDetails(true);
     try {
       const response = await fetch(`/api/deck-instances/${deckId}/details`);
@@ -141,7 +141,7 @@ export const InventoryTab = ({
         body: JSON.stringify({ reservation_id: reservationId, quantity: quantity })
       });
       if (response.ok) {
-        await loadDeckDetails(deckId);
+        await loadDeckDetails(deckId, true); // Force refresh to get latest data
         await refreshDeckInstances();
       }
     } catch (error) {
