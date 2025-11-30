@@ -22,16 +22,23 @@ BigDeck.app is a streamlined Magic: The Gathering inventory management system. I
 - **Pricing**: Real-time market prices from Scryfall API
 - **Two-tier Decks**: Decklists (templates) vs Deck Instances (inventory folders with reservations)
 
-## Latest Changes (November 30, 2025 - Two-Tier Deck System Complete)
-- ✅ **Two-tier deck system fully implemented** - Decklists (templates) in Decks tab, Deck instances (inventory) in Inventory tab
-- ✅ **Deck-to-Inventory workflow** - Copy decklists to create inventory decks with automatic cheapest-card reservation
-- ✅ **Event-driven deck refresh** - Decks sidebar updates instantly on create/delete (no polling)
-- ✅ **12 backend API endpoints** - Complete deck reservation system with reoptimize and release functions
-- ✅ **Deck reservations tracking** - Cards reserved per deck, missing cards tracked, total cost calculated
-- ✅ **Reoptimize & Release features** - Recalculate reservations or free all cards back to inventory
-- ✅ **Mobile-responsive deck UI** - Sidebar deck list with reserved/missing card counts, detail view in main area
+## Latest Changes (November 30, 2025 - Sell Functionality Complete)
+- ✅ **Sell buttons on folders & decks** - Green "Sell Folder" buttons below each folder, green dollar icon on deck headers
+- ✅ **Sell Modal with profit calculation** - Input sell price, auto-calculates profit (sell - purchase)
+- ✅ **Sales History tracking** - Complete sales log with date, item type, cost, sell price, profit
+- ✅ **Sales Dashboard** - New "Sales" tab shows total sales, revenue, and profit summary
+- ✅ **Persistent sales data** - All sales recorded in `sales_history` database table
+- ✅ **Auto-delete on deck sale** - Selling a deck removes it from inventory and frees all reserved cards
+- ✅ **Profit tracking** - Color-coded profit display (green for gains, red for losses)
 
 ## Core Features
+
+### Sales Tab (NEW)
+- **Sales History Dashboard** - View all recorded sales with summary stats
+- **Total Sales Count** - Number of items sold
+- **Total Revenue** - Sum of all sell prices
+- **Total Profit** - Net profit from all sales (color-coded)
+- **Sales Table** - Detailed record with item name, type, cost, sell price, profit, date
 
 ### Inventory Tab
 - View all cards organized by folder
@@ -42,8 +49,13 @@ BigDeck.app is a streamlined Magic: The Gathering inventory management system. I
 - Delete individual entries
 - **🎴 Decks section** - Sidebar showing all deck instances with reserved/missing card counts
 - Click deck to view full details (reserved cards with prices, missing cards, total cost)
+- **Sell Deck button** (green $) - Open sell modal, enter price, track profit
 - Reoptimize decks to recalculate cheapest card reservations
 - Release decks to return all cards to inventory
+- **Folder Sell buttons** - "Sell Folder" button under each folder header
+  - Auto-calculates folder cost (all cards in folder × quantity × purchase price)
+  - Opens modal to input sell price and track profit
+  - Records sale without removing inventory (folders are organization, not deletion)
 
 ### Decks Tab (Decklists - Templates)
 - Create decklists from Archidekt URLs
@@ -67,12 +79,17 @@ imports (id, user_id, title, description, card_list, source, status, created_at,
 decks (id, name, format, description, cards, decklist_id, is_deck_instance, created_at, updated_at)
 deck_reservations (id, deck_id, inventory_item_id, quantity_reserved, original_folder, reserved_at)
 deck_missing_cards (id, deck_id, card_name, set_code, quantity_needed)
+sales_history (id, item_type, item_id, item_name, purchase_price, sell_price, profit, quantity, created_at)
 
 -- Legacy tables preserved (for schema compatibility):
 users, sessions, decklists, containers, sales
 ```
 
 ## API Endpoints (Production)
+
+### Sales
+- `POST /api/sales` - Record a sale (item_type, item_name, purchase_price, sell_price, quantity)
+- `GET /api/sales` - Fetch all sales history with profit calculations
 
 ### Inventory
 - `GET /api/inventory` - Fetch all cards
@@ -110,9 +127,15 @@ users, sessions, decklists, containers, sales
 ```
 src/
   components/
-    InventoryTab.jsx       - View/manage cards by folder
+    InventoryTab.jsx       - View/manage cards by folder + Sell buttons
     ImportTab.jsx          - Add cards & import orders
+    DeckTab.jsx            - Create & manage decklists
+    AnalyticsTab.jsx       - Inventory analytics
+    SalesHistoryTab.jsx    - Sales dashboard & history (NEW)
+    SellModal.jsx          - Sell price input & profit calculation (NEW)
     ErrorBoundary.jsx      - Error handling
+    inventory/
+      CardGroup.jsx        - Card display component
   context/
     PriceCacheContext.jsx  - Price data caching
   hooks/
@@ -184,5 +207,6 @@ replit.md                  - This file
 
 ---
 *Last updated: November 30, 2025*
-*Status: Two-tier deck system complete and tested*
+*Status: Sell functionality fully implemented and tested*
+*Features: Two-tier decks + Search + Sell tracking + Sales history dashboard*
 *Ready for production deployment*

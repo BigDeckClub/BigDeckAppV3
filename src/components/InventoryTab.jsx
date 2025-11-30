@@ -981,71 +981,20 @@ export const InventoryTab = ({
               return matchesSearch && (totalQty - reservedQty) > 0;
             });
             const totalCards = inStockCards.length;
+            const folderCost = Object.values(cardsByName).reduce((sum, items) => {
+              return sum + items.reduce((s, item) => s + ((item.purchase_price || 0) * (item.quantity || 0)), 0);
+            }, 0);
             const isSelected = selectedFolder === folderName;
             
             return (
-              <button
-                key={folderName}
-                onClick={() => {
-                  if (isSelected) {
-                    closeFolderTab(folderName);
-                  } else {
-                    setSelectedFolder(folderName);
-                    openFolderTab(folderName);
-                  }
-                  setSidebarOpen(false);
-                }}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  e.currentTarget.classList.add('bg-teal-700/60', 'border-teal-300');
-                }}
-                onDragLeave={(e) => {
-                  e.currentTarget.classList.remove('bg-teal-700/60', 'border-teal-300');
-                }}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  e.currentTarget.classList.remove('bg-teal-700/60', 'border-teal-300');
-                  const cardName = e.dataTransfer.getData('cardName');
-                  const deckCardDataStr = e.dataTransfer.getData('deckCardData');
-                  if (deckCardDataStr) {
-                    const deckCardData = JSON.parse(deckCardDataStr);
-                    moveCardFromDeckToFolder(deckCardData, folderName);
-                  } else if (cardName) {
-                    moveCardToFolder(cardName, folderName);
-                  }
-                }}
-                className={`w-full text-left p-3 rounded-lg transition-colors ${
-                  isSelected
-                    ? 'bg-teal-600/40 border-l-4 border-teal-400'
-                    : 'bg-slate-800 border-l-4 border-transparent hover:bg-slate-700'
-                }`}
-              >
-                <div className="font-medium text-sm text-slate-100">{folderName}</div>
-                <div className="text-xs text-teal-300">{totalCards} {totalCards === 1 ? 'card' : 'cards'}</div>
-              </button>
-            );
-          })}
-
-          {/* Other Folders */}
-          {Object.entries(groupedByFolder)
-            .filter(([folder]) => folder !== 'Uncategorized' && !createdFolders.includes(folder))
-            .map(([folder, cardsByName]) => {
-              const folderInStockCards = Object.entries(cardsByName).filter(([_, items]) => {
-                const totalQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
-                return totalQty > 0;
-              });
-              const isSelected = selectedFolder === folder;
-              
-              return (
+              <div key={folderName}>
                 <button
-                  key={folder}
                   onClick={() => {
                     if (isSelected) {
-                      closeFolderTab(folder);
+                      closeFolderTab(folderName);
                     } else {
-                      setSelectedFolder(folder);
-                      openFolderTab(folder);
+                      setSelectedFolder(folderName);
+                      openFolderTab(folderName);
                     }
                     setSidebarOpen(false);
                   }}
@@ -1064,20 +1013,109 @@ export const InventoryTab = ({
                     const deckCardDataStr = e.dataTransfer.getData('deckCardData');
                     if (deckCardDataStr) {
                       const deckCardData = JSON.parse(deckCardDataStr);
-                      moveCardFromDeckToFolder(deckCardData, folder);
+                      moveCardFromDeckToFolder(deckCardData, folderName);
                     } else if (cardName) {
-                      moveCardToFolder(cardName, folder);
+                      moveCardToFolder(cardName, folderName);
                     }
                   }}
-                  className={`w-full text-left p-3 rounded-lg transition-colors ${
+                  className={`w-full text-left p-3 rounded-t-lg transition-colors flex-1 ${
                     isSelected
                       ? 'bg-teal-600/40 border-l-4 border-teal-400'
                       : 'bg-slate-800 border-l-4 border-transparent hover:bg-slate-700'
                   }`}
                 >
-                  <div className="font-medium text-sm text-slate-100">{folder}</div>
-                  <div className="text-xs text-teal-300">{folderInStockCards.length} {folderInStockCards.length === 1 ? 'card' : 'cards'}</div>
+                  <div className="font-medium text-sm text-slate-100">{folderName}</div>
+                  <div className="text-xs text-teal-300">{totalCards} {totalCards === 1 ? 'card' : 'cards'}</div>
                 </button>
+                <button
+                  onClick={() => {
+                    setSellModalData({
+                      itemType: 'folder',
+                      itemId: null,
+                      itemName: folderName,
+                      purchasePrice: folderCost
+                    });
+                    setShowSellModal(true);
+                  }}
+                  className="w-full px-3 py-1 text-xs bg-green-600/20 hover:bg-green-600/40 text-green-400 rounded-b-lg transition-colors border-t border-green-600/30"
+                  title="Sell this folder"
+                >
+                  Sell Folder
+                </button>
+              </div>
+            );
+          })}
+
+          {/* Other Folders */}
+          {Object.entries(groupedByFolder)
+            .filter(([folder]) => folder !== 'Uncategorized' && !createdFolders.includes(folder))
+            .map(([folder, cardsByName]) => {
+              const folderInStockCards = Object.entries(cardsByName).filter(([_, items]) => {
+                const totalQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
+                return totalQty > 0;
+              });
+              const folderCost = Object.values(cardsByName).reduce((sum, items) => {
+                return sum + items.reduce((s, item) => s + ((item.purchase_price || 0) * (item.quantity || 0)), 0);
+              }, 0);
+              const isSelected = selectedFolder === folder;
+              
+              return (
+                <div key={folder}>
+                  <button
+                    onClick={() => {
+                      if (isSelected) {
+                        closeFolderTab(folder);
+                      } else {
+                        setSelectedFolder(folder);
+                        openFolderTab(folder);
+                      }
+                      setSidebarOpen(false);
+                    }}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.currentTarget.classList.add('bg-teal-700/60', 'border-teal-300');
+                    }}
+                    onDragLeave={(e) => {
+                      e.currentTarget.classList.remove('bg-teal-700/60', 'border-teal-300');
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      e.currentTarget.classList.remove('bg-teal-700/60', 'border-teal-300');
+                      const cardName = e.dataTransfer.getData('cardName');
+                      const deckCardDataStr = e.dataTransfer.getData('deckCardData');
+                      if (deckCardDataStr) {
+                        const deckCardData = JSON.parse(deckCardDataStr);
+                        moveCardFromDeckToFolder(deckCardData, folder);
+                      } else if (cardName) {
+                        moveCardToFolder(cardName, folder);
+                      }
+                    }}
+                    className={`w-full text-left p-3 rounded-t-lg transition-colors ${
+                      isSelected
+                        ? 'bg-teal-600/40 border-l-4 border-teal-400'
+                        : 'bg-slate-800 border-l-4 border-transparent hover:bg-slate-700'
+                    }`}
+                  >
+                    <div className="font-medium text-sm text-slate-100">{folder}</div>
+                    <div className="text-xs text-teal-300">{folderInStockCards.length} {folderInStockCards.length === 1 ? 'card' : 'cards'}</div>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSellModalData({
+                        itemType: 'folder',
+                        itemId: null,
+                        itemName: folder,
+                        purchasePrice: folderCost
+                      });
+                      setShowSellModal(true);
+                    }}
+                    className="w-full px-3 py-1 text-xs bg-green-600/20 hover:bg-green-600/40 text-green-400 rounded-b-lg transition-colors border-t border-green-600/30"
+                    title="Sell this folder"
+                  >
+                    Sell Folder
+                  </button>
+                </div>
               );
             })}
 
@@ -1771,6 +1809,26 @@ export const InventoryTab = ({
           </div>
         )}
       </div>
+
+      {/* Sell Modal */}
+      {sellModalData && (
+        <SellModal
+          isOpen={showSellModal}
+          itemName={sellModalData.itemName}
+          purchasePrice={sellModalData.purchasePrice}
+          itemType={sellModalData.itemType}
+          deckId={sellModalData.itemId}
+          onClose={() => {
+            setShowSellModal(false);
+            setSellModalData(null);
+          }}
+          onSell={async (saleData) => {
+            await onSell(saleData);
+            setShowSellModal(false);
+            setSellModalData(null);
+          }}
+        />
+      )}
     </div>
   );
 };
