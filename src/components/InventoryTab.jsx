@@ -241,6 +241,40 @@ export const InventoryTab = ({
     }
   };
 
+  // Move a single inventory item to folder (memoized)
+  const moveInventoryItemToFolder = useCallback(async (itemId, targetFolder) => {
+    try {
+      const item = inventory.find(i => i.id === itemId);
+      if (!item) {
+        alert('Item not found');
+        return;
+      }
+      
+      // Show the change immediately
+      setSuccessMessage(`Moved ${item.quantity}x ${item.name} to ${targetFolder}`);
+      
+      // Update API
+      const response = await fetch(`/api/inventory/${itemId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ folder: targetFolder })
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update folder');
+      }
+      
+      // Refresh inventory to show changes
+      if (onLoadInventory) {
+        await onLoadInventory();
+      }
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (error) {
+      setSuccessMessage(`Error moving item: ${error.message}`);
+      setTimeout(() => setSuccessMessage(''), 5000);
+    }
+  }, [inventory, onLoadInventory, setSuccessMessage]);
+
   // Move cards to folder via drag-drop (with optimistic updates) (memoized)
   const moveCardToFolder = useCallback(async (cardName, targetFolder) => {
     try {
@@ -1013,9 +1047,12 @@ export const InventoryTab = ({
                     e.preventDefault();
                     e.stopPropagation();
                     e.currentTarget.classList.remove('bg-teal-700/60', 'border-teal-300');
+                    const inventoryItemId = e.dataTransfer.getData('inventoryItemId');
                     const cardName = e.dataTransfer.getData('cardName');
                     const deckCardDataStr = e.dataTransfer.getData('deckCardData');
-                    if (deckCardDataStr) {
+                    if (inventoryItemId) {
+                      moveInventoryItemToFolder(parseInt(inventoryItemId), folderName);
+                    } else if (deckCardDataStr) {
                       const deckCardData = JSON.parse(deckCardDataStr);
                       moveCardFromDeckToFolder(deckCardData, folderName);
                     } else if (cardName) {
@@ -1071,9 +1108,12 @@ export const InventoryTab = ({
                       e.preventDefault();
                       e.stopPropagation();
                       e.currentTarget.classList.remove('bg-teal-700/60', 'border-teal-300');
+                      const inventoryItemId = e.dataTransfer.getData('inventoryItemId');
                       const cardName = e.dataTransfer.getData('cardName');
                       const deckCardDataStr = e.dataTransfer.getData('deckCardData');
-                      if (deckCardDataStr) {
+                      if (inventoryItemId) {
+                        moveInventoryItemToFolder(parseInt(inventoryItemId), folder);
+                      } else if (deckCardDataStr) {
                         const deckCardData = JSON.parse(deckCardDataStr);
                         moveCardFromDeckToFolder(deckCardData, folder);
                       } else if (cardName) {

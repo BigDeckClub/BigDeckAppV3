@@ -100,9 +100,10 @@ export const CardGroup = memo(function CardGroup({
                   onDragStart={(e) => {
                     e.dataTransfer.effectAllowed = 'move';
                     e.dataTransfer.setData('skuData', JSON.stringify(item));
+                    e.dataTransfer.setData('inventoryItemId', item.id.toString());
                   }}
                   className="text-[9px] text-slate-300 bg-slate-600/50 rounded px-1.5 py-0.5 flex justify-between items-center cursor-grab active:cursor-grabbing hover:bg-slate-600 group"
-                  title="Drag to a deck tab to add"
+                  title="Drag to a folder or deck tab"
                 >
                   <span>{item.quantity}x @ ${parseFloat(item.purchase_price || 0).toFixed(2)}</span>
                   <div className="flex items-center gap-1">
