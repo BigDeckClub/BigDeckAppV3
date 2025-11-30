@@ -187,9 +187,6 @@ export const DeckTab = ({ onDeckCreatedOrDeleted }) => {
   // Load decks on mount
   useEffect(() => {
     loadDecks();
-    // Reload decks every 3 seconds to stay in sync
-    const interval = setInterval(loadDecks, 3000);
-    return () => clearInterval(interval);
   }, []);
 
   // Parse deck list text in MTG format (e.g., "4 Black Lotus" or "4x Black Lotus")
