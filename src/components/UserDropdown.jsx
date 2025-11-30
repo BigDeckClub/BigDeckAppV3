@@ -36,24 +36,25 @@ export function UserDropdown() {
     <div ref={dropdownRef} className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="p-2 rounded hover:bg-slate-700 transition text-slate-300"
+        className="p-2.5 rounded-lg bg-gradient-to-br from-slate-700 to-slate-800 hover:from-teal-700 hover:to-teal-800 transition-all duration-300 text-slate-300 hover:text-teal-300 shadow-lg shadow-slate-900/50"
         title={user?.email}
       >
         <User className="w-5 h-5" />
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-48 bg-slate-800 border border-slate-700 rounded shadow-lg z-50">
-          <div className="px-4 py-2 border-b border-slate-700 text-sm text-slate-300">
-            {user?.email}
+        <div className="absolute right-0 mt-3 w-56 bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700 rounded-xl shadow-2xl shadow-slate-900/80 z-50 backdrop-blur-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+          <div className="px-4 py-3 border-b border-slate-700/50 text-sm text-slate-300 bg-gradient-to-r from-slate-800/50 to-transparent">
+            <div className="text-xs text-slate-500 mb-1">Account</div>
+            <div className="font-medium text-teal-300 truncate">{user?.email}</div>
           </div>
           <button
             onClick={handleLogout}
             disabled={loading}
-            className="w-full px-4 py-2 text-left text-red-400 hover:bg-slate-700 hover:text-red-300 flex items-center gap-2 transition disabled:opacity-50"
+            className="w-full px-4 py-3 text-left text-red-300 hover:bg-red-600/20 hover:text-red-200 flex items-center gap-2 transition-all duration-200 disabled:opacity-50 group border-t border-slate-700/50"
           >
-            <LogOut className="w-4 h-4" />
-            {loading ? 'Logging out...' : 'Logout'}
+            <LogOut className="w-4 h-4 group-hover:animate-pulse" />
+            <span className="font-medium">{loading ? 'Logging out...' : 'Logout'}</span>
           </button>
         </div>
       )}
