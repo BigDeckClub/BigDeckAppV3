@@ -396,7 +396,11 @@ export const InventoryTab = ({
       
       // Find matching inventory items, sorted by date (oldest first) then price (cheapest first)
       const matchingItems = (inventory || [])
-        .filter(i => i.name.toLowerCase() === decklistCard.name.toLowerCase() && (i.quantity || 0) > 0)
+        .filter(i => {
+          const nameMatch = i.name.toLowerCase() === decklistCard.name.toLowerCase();
+          const available = (i.quantity || 0) - (i.reserved_quantity || 0);
+          return nameMatch && available > 0;
+        })
         .sort((a, b) => {
           const dateA = new Date(a.created_at || 0).getTime();
           const dateB = new Date(b.created_at || 0).getTime();
@@ -408,7 +412,8 @@ export const InventoryTab = ({
       let stillNeeded = needed;
       for (const item of matchingItems) {
         if (stillNeeded <= 0) break;
-        const qtyToAdd = Math.min(stillNeeded, item.quantity || 0);
+        const available = (item.quantity || 0) - (item.reserved_quantity || 0);
+        const qtyToAdd = Math.min(stillNeeded, available);
         if (qtyToAdd > 0) {
           await moveCardSkuToDeck({ ...item, quantity: qtyToAdd }, deckId, true);
           added++;
@@ -452,7 +457,11 @@ export const InventoryTab = ({
         
         // Find matching inventory items, sorted by date (oldest first) then price (cheapest first)
         const matchingItems = (inventory || [])
-          .filter(i => i.name.toLowerCase() === decklistCard.name.toLowerCase() && (i.quantity || 0) > 0)
+          .filter(i => {
+            const nameMatch = i.name.toLowerCase() === decklistCard.name.toLowerCase();
+            const available = (i.quantity || 0) - (i.reserved_quantity || 0);
+            return nameMatch && available > 0;
+          })
           .sort((a, b) => {
             const dateA = new Date(a.created_at || 0).getTime();
             const dateB = new Date(b.created_at || 0).getTime();
@@ -463,7 +472,8 @@ export const InventoryTab = ({
         let stillNeeded = needed;
         for (const item of matchingItems) {
           if (stillNeeded <= 0) break;
-          const qtyToAdd = Math.min(stillNeeded, item.quantity || 0);
+          const available = (item.quantity || 0) - (item.reserved_quantity || 0);
+          const qtyToAdd = Math.min(stillNeeded, available);
           if (qtyToAdd > 0) {
             cardsToAdd.push({ ...item, quantity: qtyToAdd });
             stillNeeded -= qtyToAdd;
