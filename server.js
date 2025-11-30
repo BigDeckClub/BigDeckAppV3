@@ -875,13 +875,26 @@ app.get('/api/analytics/card-metrics', async (req, res) => {
     // Purchased in last 60 days = current inventory + sold in period (since current reflects post-sale)
     const purchasedLast60d = totalCards + totalSoldLast60d;
     
-    // Lifetime totals (from transaction history)
-    const lifetimePurchasedResult = await pool.query(
+    // Lifetime totals = current inventory + all cards ever sold (gives true purchase total)
+    const lifetimeSoldResult = await pool.query(
       'SELECT SUM(quantity) as count FROM inventory_transactions WHERE transaction_type = $1',
-      ['PURCHASE']
+      ['SALE']
     );
-    const lifetimePurchased = parseInt(lifetimePurchasedResult.rows[0].count) || 0;
-    const lifetimeTotalCards = lifetimePurchased;
+    const lifetimeSoldTotal = parseInt(lifetimeSoldResult.rows[0].count) || 0;
+    const lifetimeTotalCards = totalCards + lifetimeSoldTotal;
+    
+    // Total value = current inventory value + sold inventory value
+    const currentInventoryValue = await pool.query(
+      'SELECT COALESCE(SUM(quantity * purchase_price), 0) as value FROM inventory WHERE quantity > 0'
+    );
+    const currentValue = parseFloat(currentInventoryValue.rows[0].value) || 0;
+    
+    const soldInventoryValue = await pool.query(
+      'SELECT COALESCE(SUM(quantity * purchase_price), 0) as value FROM inventory_transactions WHERE transaction_type = $1',
+      ['SALE']
+    );
+    const soldValue = parseFloat(soldInventoryValue.rows[0].value) || 0;
+    const lifetimeTotalValue = currentValue + soldValue;
     
     res.json({
       totalCards,
@@ -889,7 +902,8 @@ app.get('/api/analytics/card-metrics', async (req, res) => {
       uniqueCards,
       totalSoldLast60d,
       totalPurchasedLast60d: purchasedLast60d,
-      lifetimeTotalCards
+      lifetimeTotalCards,
+      lifetimeTotalValue
     });
   } catch (error) {
     console.error('[ANALYTICS] Error calculating card metrics:', error.message);
@@ -899,7 +913,8 @@ app.get('/api/analytics/card-metrics', async (req, res) => {
       uniqueCards: 0,
       totalSoldLast60d: 0,
       totalPurchasedLast60d: 0,
-      lifetimeTotalCards: 0
+      lifetimeTotalCards: 0,
+      lifetimeTotalValue: 0
     });
   }
 });

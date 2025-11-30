@@ -10,7 +10,8 @@ export const AnalyticsTab = ({ inventory }) => {
     uniqueCards: 0,
     totalSoldLast60d: 0,
     totalPurchasedLast60d: 0,
-    lifetimeTotalCards: 0
+    lifetimeTotalCards: 0,
+    lifetimeTotalValue: 0
   });
   const [showChangeLog, setShowChangeLog] = useState(false);
   const [filterSection, setFilterSection] = useState('all');
@@ -31,7 +32,8 @@ export const AnalyticsTab = ({ inventory }) => {
           uniqueCards: 0,
           totalSoldLast60d: 0,
           totalPurchasedLast60d: 0,
-          lifetimeTotalCards: 0
+          lifetimeTotalCards: 0,
+          lifetimeTotalValue: 0
         });
       } catch (error) {}
     };
@@ -245,7 +247,7 @@ export const AnalyticsTab = ({ inventory }) => {
             <div className="space-y-4">
               <div>
                 <div className="text-slate-400 text-xs font-semibold mb-1">Total Paid</div>
-                <div className="text-2xl font-bold text-green-300">${totalValue.toFixed(2)}</div>
+                <div className="text-2xl font-bold text-green-300">${cardMetrics.lifetimeTotalValue.toFixed(2)}</div>
               </div>
               <div className="border-t border-slate-600 pt-4">
                 <div className="text-slate-400 text-xs font-semibold mb-1">Card Kingdom Value</div>
