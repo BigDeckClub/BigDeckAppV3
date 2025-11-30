@@ -1098,6 +1098,8 @@ app.delete('/api/deck-instances/:id/remove-card', async (req, res) => {
     const reservation = resResult.rows[0];
     
     if (quantity >= reservation.quantity_reserved) {
+      // Move card back to unsorted when removing from deck
+      await pool.query('UPDATE inventory SET folder = $1 WHERE id = $2', ['Uncategorized', reservation.inventory_item_id]);
       await pool.query('DELETE FROM deck_reservations WHERE id = $1', [reservation_id]);
     } else {
       await pool.query(
@@ -1112,6 +1114,7 @@ app.delete('/api/deck-instances/:id/remove-card', async (req, res) => {
     res.status(500).json({ error: 'Failed to remove card' });
   }
 });
+
 
 // POST release entire deck instance
 app.post('/api/deck-instances/:id/release', async (req, res) => {
