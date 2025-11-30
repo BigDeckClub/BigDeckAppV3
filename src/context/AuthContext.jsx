@@ -3,32 +3,21 @@ import { createClient } from '@supabase/supabase-js';
 
 export const AuthContext = createContext();
 
-let supabaseInstance = null;
-
-const initSupabase = () => {
-  if (supabaseInstance) return supabaseInstance;
-  
-  try {
-    const url = import.meta.env.VITE_SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-    const key = import.meta.env.VITE_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
-    
-    if (!url || !key) {
-      console.error('Supabase config missing:', { hasUrl: !!url, hasKey: !!key });
-      return null;
-    }
-    
-    supabaseInstance = createClient(url, key);
-    return supabaseInstance;
-  } catch (err) {
-    console.error('Failed to initialize Supabase:', err);
-    return null;
-  }
-};
-
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [supabaseClient] = useState(() => initSupabase());
+  
+  const [supabaseClient] = useState(() => {
+    const url = import.meta.env.VITE_SUPABASE_URL;
+    const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    
+    if (!url || !key) {
+      console.error('Missing Supabase env vars');
+      return null;
+    }
+    
+    return createClient(url, key);
+  });
 
   useEffect(() => {
     if (!supabaseClient) {
