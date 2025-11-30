@@ -54,14 +54,12 @@ export const InventoryTab = ({
   const [expandedMissingCards, setExpandedMissingCards] = useState({}); // Track which decks have missing cards expanded
 
   // Debounced inventory refresh to prevent excessive API calls
-  const debouncedLoadInventory = useMemo(() => {
-    let timeoutId;
-    return () => {
-      if (timeoutId) clearTimeout(timeoutId);
-      timeoutId = setTimeout(() => {
-        if (onLoadInventory) onLoadInventory();
-      }, 300);
-    };
+  const debouncedTimeoutRef = React.useRef(null);
+  const debouncedLoadInventory = useCallback(() => {
+    if (debouncedTimeoutRef.current) clearTimeout(debouncedTimeoutRef.current);
+    debouncedTimeoutRef.current = setTimeout(() => {
+      if (onLoadInventory) onLoadInventory();
+    }, 300);
   }, [onLoadInventory]);
 
   // Reorder tabs when drag ends
@@ -596,25 +594,6 @@ export const InventoryTab = ({
     });
     return { inStockCards: inStock, outOfStockCards: outOfStock };
   }, [groupedInventory]);
-  
-  // Render helper that uses the memoized CardGroup component
-  const renderCardGroup = useCallback(([cardName, items]) => (
-    <CardGroup
-      key={cardName}
-      cardName={cardName}
-      items={items}
-      viewMode={viewMode}
-      expandedCards={expandedCards}
-      setExpandedCards={setExpandedCards}
-      editingId={editingId}
-      editForm={editForm}
-      setEditForm={setEditForm}
-      startEditingItem={startEditingItem}
-      updateInventoryItem={updateInventoryItem}
-      deleteInventoryItem={deleteInventoryItem}
-      createdFolders={createdFolders}
-    />
-  ), [viewMode, expandedCards, setExpandedCards, editingId, editForm, setEditForm, startEditingItem, updateInventoryItem, deleteInventoryItem, createdFolders]);
   
   // Render function for deck cards using same grid structure as inventory
   const renderDeckCardGroup = ([cardName, items]) => {
@@ -1494,38 +1473,134 @@ export const InventoryTab = ({
                 {viewMode === 'card' ? (
                   <>
                     <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-3">
-                      {inStockCards.map(renderCardGroup)}
+                      {inStockCards.map(([cardName, items]) => (
+                        <CardGroup
+                          key={cardName}
+                          cardName={cardName}
+                          items={items}
+                          viewMode={viewMode}
+                          expandedCards={expandedCards}
+                          setExpandedCards={setExpandedCards}
+                          editingId={editingId}
+                          editForm={editForm}
+                          setEditForm={setEditForm}
+                          startEditingItem={startEditingItem}
+                          updateInventoryItem={updateInventoryItem}
+                          deleteInventoryItem={deleteInventoryItem}
+                          createdFolders={createdFolders}
+                        />
+                      ))}
                     </div>
                     {inStockCards.length > 0 && outOfStockCards.length > 0 && (
                       <div className="border-t border-slate-700 pt-4">
                         <h3 className="text-sm font-semibold text-slate-400 mb-3">Out of Stock</h3>
                         <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-3">
-                          {outOfStockCards.map(renderCardGroup)}
+                          {outOfStockCards.map(([cardName, items]) => (
+                            <CardGroup
+                              key={cardName}
+                              cardName={cardName}
+                              items={items}
+                              viewMode={viewMode}
+                              expandedCards={expandedCards}
+                              setExpandedCards={setExpandedCards}
+                              editingId={editingId}
+                              editForm={editForm}
+                              setEditForm={setEditForm}
+                              startEditingItem={startEditingItem}
+                              updateInventoryItem={updateInventoryItem}
+                              deleteInventoryItem={deleteInventoryItem}
+                              createdFolders={createdFolders}
+                            />
+                          ))}
                         </div>
                       </div>
                     )}
                     {outOfStockCards.length > 0 && inStockCards.length === 0 && (
                       <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-3">
-                        {outOfStockCards.map(renderCardGroup)}
+                        {outOfStockCards.map(([cardName, items]) => (
+                          <CardGroup
+                            key={cardName}
+                            cardName={cardName}
+                            items={items}
+                            viewMode={viewMode}
+                            expandedCards={expandedCards}
+                            setExpandedCards={setExpandedCards}
+                            editingId={editingId}
+                            editForm={editForm}
+                            setEditForm={setEditForm}
+                            startEditingItem={startEditingItem}
+                            updateInventoryItem={updateInventoryItem}
+                            deleteInventoryItem={deleteInventoryItem}
+                            createdFolders={createdFolders}
+                          />
+                        ))}
                       </div>
                     )}
                   </>
                 ) : (
                   <>
                     <div className="space-y-2">
-                      {inStockCards.map(renderCardGroup)}
+                      {inStockCards.map(([cardName, items]) => (
+                        <CardGroup
+                          key={cardName}
+                          cardName={cardName}
+                          items={items}
+                          viewMode={viewMode}
+                          expandedCards={expandedCards}
+                          setExpandedCards={setExpandedCards}
+                          editingId={editingId}
+                          editForm={editForm}
+                          setEditForm={setEditForm}
+                          startEditingItem={startEditingItem}
+                          updateInventoryItem={updateInventoryItem}
+                          deleteInventoryItem={deleteInventoryItem}
+                          createdFolders={createdFolders}
+                        />
+                      ))}
                     </div>
                     {inStockCards.length > 0 && outOfStockCards.length > 0 && (
                       <div className="border-t border-slate-700 pt-4">
                         <h3 className="text-sm font-semibold text-slate-400 mb-2">Out of Stock</h3>
                         <div className="space-y-2">
-                          {outOfStockCards.map(renderCardGroup)}
+                          {outOfStockCards.map(([cardName, items]) => (
+                            <CardGroup
+                              key={cardName}
+                              cardName={cardName}
+                              items={items}
+                              viewMode={viewMode}
+                              expandedCards={expandedCards}
+                              setExpandedCards={setExpandedCards}
+                              editingId={editingId}
+                              editForm={editForm}
+                              setEditForm={setEditForm}
+                              startEditingItem={startEditingItem}
+                              updateInventoryItem={updateInventoryItem}
+                              deleteInventoryItem={deleteInventoryItem}
+                              createdFolders={createdFolders}
+                            />
+                          ))}
                         </div>
                       </div>
                     )}
                     {outOfStockCards.length > 0 && inStockCards.length === 0 && (
                       <div className="space-y-2">
-                        {outOfStockCards.map(renderCardGroup)}
+                        {outOfStockCards.map(([cardName, items]) => (
+                          <CardGroup
+                            key={cardName}
+                            cardName={cardName}
+                            items={items}
+                            viewMode={viewMode}
+                            expandedCards={expandedCards}
+                            setExpandedCards={setExpandedCards}
+                            editingId={editingId}
+                            editForm={editForm}
+                            setEditForm={setEditForm}
+                            startEditingItem={startEditingItem}
+                            updateInventoryItem={updateInventoryItem}
+                            deleteInventoryItem={deleteInventoryItem}
+                            createdFolders={createdFolders}
+                          />
+                        ))}
                       </div>
                     )}
                   </>
@@ -1539,11 +1614,43 @@ export const InventoryTab = ({
             groupedByFolder['Uncategorized'] && Object.keys(groupedByFolder['Uncategorized']).length > 0 ? (
               viewMode === 'card' ? (
                 <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-3">
-                  {Object.entries(groupedByFolder['Uncategorized']).map(renderCardGroup)}
+                  {Object.entries(groupedByFolder['Uncategorized']).map(([cardName, items]) => (
+                    <CardGroup
+                      key={cardName}
+                      cardName={cardName}
+                      items={items}
+                      viewMode={viewMode}
+                      expandedCards={expandedCards}
+                      setExpandedCards={setExpandedCards}
+                      editingId={editingId}
+                      editForm={editForm}
+                      setEditForm={setEditForm}
+                      startEditingItem={startEditingItem}
+                      updateInventoryItem={updateInventoryItem}
+                      deleteInventoryItem={deleteInventoryItem}
+                      createdFolders={createdFolders}
+                    />
+                  ))}
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {Object.entries(groupedByFolder['Uncategorized']).map(renderCardGroup)}
+                  {Object.entries(groupedByFolder['Uncategorized']).map(([cardName, items]) => (
+                    <CardGroup
+                      key={cardName}
+                      cardName={cardName}
+                      items={items}
+                      viewMode={viewMode}
+                      expandedCards={expandedCards}
+                      setExpandedCards={setExpandedCards}
+                      editingId={editingId}
+                      editForm={editForm}
+                      setEditForm={setEditForm}
+                      startEditingItem={startEditingItem}
+                      updateInventoryItem={updateInventoryItem}
+                      deleteInventoryItem={deleteInventoryItem}
+                      createdFolders={createdFolders}
+                    />
+                  ))}
                 </div>
               )
             ) : (
@@ -1560,11 +1667,43 @@ export const InventoryTab = ({
               return folderCards.length > 0 ? (
                 viewMode === 'card' ? (
                   <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-3">
-                    {folderCards.map(renderCardGroup)}
+                    {folderCards.map(([cardName, items]) => (
+                      <CardGroup
+                        key={cardName}
+                        cardName={cardName}
+                        items={items}
+                        viewMode={viewMode}
+                        expandedCards={expandedCards}
+                        setExpandedCards={setExpandedCards}
+                        editingId={editingId}
+                        editForm={editForm}
+                        setEditForm={setEditForm}
+                        startEditingItem={startEditingItem}
+                        updateInventoryItem={updateInventoryItem}
+                        deleteInventoryItem={deleteInventoryItem}
+                        createdFolders={createdFolders}
+                      />
+                    ))}
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    {folderCards.map(renderCardGroup)}
+                    {folderCards.map(([cardName, items]) => (
+                      <CardGroup
+                        key={cardName}
+                        cardName={cardName}
+                        items={items}
+                        viewMode={viewMode}
+                        expandedCards={expandedCards}
+                        setExpandedCards={setExpandedCards}
+                        editingId={editingId}
+                        editForm={editForm}
+                        setEditForm={setEditForm}
+                        startEditingItem={startEditingItem}
+                        updateInventoryItem={updateInventoryItem}
+                        deleteInventoryItem={deleteInventoryItem}
+                        createdFolders={createdFolders}
+                      />
+                    ))}
                   </div>
                 )
               ) : (
