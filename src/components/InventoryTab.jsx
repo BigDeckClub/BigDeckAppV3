@@ -640,13 +640,14 @@ export const InventoryTab = ({
     }, {});
   }, [inventory]);
   
-  // Memoize in-stock and out-of-stock card lists with search filtering
+  // Memoize in-stock and out-of-stock card lists with search filtering (exclude 0 qty items)
   const { inStockCards, outOfStockCards } = useMemo(() => {
     const entries = Object.entries(groupedInventory);
     const inStock = entries.filter(([cardName, items]) => {
       const matchesSearch = inventorySearch === '' || cardName.toLowerCase().includes(inventorySearch.toLowerCase());
       const totalQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
-      return matchesSearch && totalQty > 0;
+      const hasItems = items.some(item => (item.quantity || 0) > 0);
+      return matchesSearch && totalQty > 0 && hasItems;
     });
     const outOfStock = entries.filter(([cardName, items]) => {
       const matchesSearch = inventorySearch === '' || cardName.toLowerCase().includes(inventorySearch.toLowerCase());
@@ -655,6 +656,7 @@ export const InventoryTab = ({
     });
     return { inStockCards: inStock, outOfStockCards: outOfStock };
   }, [groupedInventory, inventorySearch]);
+
   
   // Render function for deck cards using same grid structure as inventory
   const renderDeckCardGroup = ([cardName, items]) => {
