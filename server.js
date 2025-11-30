@@ -250,6 +250,31 @@ async function initializeDatabase() {
     await pool.query(`ALTER TABLE decks ADD COLUMN IF NOT EXISTS cards JSONB DEFAULT '[]'`).catch(() => {});
     await pool.query(`ALTER TABLE decks ADD COLUMN IF NOT EXISTS description TEXT`).catch(() => {});
     await pool.query(`ALTER TABLE decks ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP`).catch(() => {});
+    await pool.query(`ALTER TABLE decks ADD COLUMN IF NOT EXISTS decklist_id INTEGER`).catch(() => {});
+    await pool.query(`ALTER TABLE decks ADD COLUMN IF NOT EXISTS is_deck_instance BOOLEAN DEFAULT FALSE`).catch(() => {});
+
+    // Deck reservations table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS deck_reservations (
+        id SERIAL PRIMARY KEY,
+        deck_id INTEGER REFERENCES decks(id) ON DELETE CASCADE,
+        inventory_item_id INTEGER REFERENCES inventory(id) ON DELETE CASCADE,
+        quantity_reserved INTEGER NOT NULL,
+        original_folder VARCHAR(255),
+        reserved_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    // Deck missing cards table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS deck_missing_cards (
+        id SERIAL PRIMARY KEY,
+        deck_id INTEGER REFERENCES decks(id) ON DELETE CASCADE,
+        card_name VARCHAR(255) NOT NULL,
+        set_code VARCHAR(20),
+        quantity_needed INTEGER NOT NULL
+      )
+    `);
 
     console.log('[DB] ✓ Database initialized successfully');
   } catch (err) {
