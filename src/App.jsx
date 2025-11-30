@@ -216,6 +216,7 @@ function MTGInventoryTrackerContent() {
     setEditForm({
       quantity: item.quantity,
       purchase_price: item.purchase_price || "",
+      folder: item.folder || "Uncategorized",
       reorder_type: item.reorder_type || "normal",
     });
   };
