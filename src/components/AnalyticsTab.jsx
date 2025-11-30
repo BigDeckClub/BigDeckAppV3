@@ -252,14 +252,12 @@ export const AnalyticsTab = ({ inventory }) => {
                 <div className="text-2xl font-bold text-blue-300">${cardMetrics.lifetimeTotalValue.toFixed(2)}</div>
               </div>
               <div className="border-t border-slate-600 pt-4">
-                <div className="text-slate-400 text-xs font-semibold mb-1">Total Revenue</div>
-                <div className="text-2xl font-bold text-green-300">${cardMetrics.lifetimeTotalRevenue.toFixed(2)}</div>
+                <div className="text-slate-400 text-xs font-semibold mb-1">Card Kingdom Value</div>
+                <div className="text-2xl font-bold text-purple-300">${marketValues.cardkingdom.toFixed(2)}</div>
               </div>
               <div className="border-t border-slate-600 pt-4">
-                <div className="text-slate-400 text-xs font-semibold mb-1">Profit/Loss</div>
-                <div className={`text-2xl font-bold ${(cardMetrics.lifetimeTotalRevenue - cardMetrics.lifetimeTotalValue) >= 0 ? 'text-green-300' : 'text-red-300'}`}>
-                  ${(cardMetrics.lifetimeTotalRevenue - cardMetrics.lifetimeTotalValue).toFixed(2)}
-                </div>
+                <div className="text-slate-400 text-xs font-semibold mb-1">TCGPlayer Value</div>
+                <div className="text-2xl font-bold text-pink-300">${marketValues.tcgplayer.toFixed(2)}</div>
               </div>
             </div>
           </div>

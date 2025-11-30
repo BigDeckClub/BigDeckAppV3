@@ -643,6 +643,16 @@ app.post('/api/inventory', async (req, res) => {
        RETURNING *`,
       [name, set || null, set_name || null, quantity || 1, purchase_price || null, purchase_date || null, reorder_type || 'normal', image_url || null, scryfallId, folder || 'Uncategorized']
     );
+    
+    // Record PURCHASE transaction for analytics
+    if (purchase_price && (quantity || 1) > 0) {
+      await pool.query(
+        `INSERT INTO inventory_transactions (card_name, transaction_type, quantity, purchase_price, transaction_date)
+         VALUES ($1, $2, $3, $4, CURRENT_DATE)`,
+        [name, 'PURCHASE', quantity || 1, purchase_price]
+      );
+    }
+    
     res.status(201).json(result.rows[0]);
   } catch (error) {
     console.error('[INVENTORY] Error creating:', error.message);
