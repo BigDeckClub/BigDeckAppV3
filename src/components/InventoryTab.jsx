@@ -50,6 +50,7 @@ export const InventoryTab = ({
   const [deckDetailsCache, setDeckDetailsCache] = useState({}); // Cache deck details by ID
   const [loadingDeckDetails, setLoadingDeckDetails] = useState(false);
   const [draggedTabData, setDraggedTabData] = useState(null); // {type: 'folder'|'deck', name|id, index}
+  const [expandedMissingCards, setExpandedMissingCards] = useState({}); // Track which decks have missing cards expanded
 
   // Reorder tabs when drag ends
   const reorderTabs = (sourceType, sourceIndex, destIndex) => {
@@ -1589,15 +1590,26 @@ export const InventoryTab = ({
                   {/* Missing Cards */}
                   {deckDetails.missingCards && deckDetails.missingCards.length > 0 && (
                     <div>
-                      <h3 className="text-lg font-semibold text-yellow-400 mb-2">❌ Missing Cards ({deckDetails.missingCount})</h3>
-                      <div className="bg-slate-900 rounded p-3 space-y-2 max-h-48 overflow-y-auto">
-                        {deckDetails.missingCards.map((missing, idx) => (
-                          <div key={idx} className="flex justify-between items-center text-sm text-slate-300 bg-slate-800 p-2 rounded">
-                            <span className="text-white">{missing.quantity_needed}x {missing.card_name}</span>
-                            <span className="text-xs text-slate-500">{missing.set_code}</span>
-                          </div>
-                        ))}
-                      </div>
+                      <button
+                        onClick={() => setExpandedMissingCards(prev => ({
+                          ...prev,
+                          [deckId]: !prev[deckId]
+                        }))}
+                        className="w-full flex items-center justify-between p-3 bg-slate-800 rounded-lg hover:bg-slate-700 transition-colors"
+                      >
+                        <h3 className="text-lg font-semibold text-yellow-400">❌ Missing Cards ({deckDetails.missingCount})</h3>
+                        <ChevronDown className={`w-5 h-5 text-yellow-400 transition-transform ${expandedMissingCards[deckId] ? 'rotate-180' : ''}`} />
+                      </button>
+                      {expandedMissingCards[deckId] && (
+                        <div className="bg-slate-900 rounded-b-lg p-3 space-y-2 max-h-48 overflow-y-auto mt-2">
+                          {deckDetails.missingCards.map((missing, idx) => (
+                            <div key={idx} className="flex justify-between items-center text-sm text-slate-300 bg-slate-800 p-2 rounded">
+                              <span className="text-white">{missing.quantity_needed}x {missing.card_name}</span>
+                              <span className="text-xs text-slate-500">{missing.set_code}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
