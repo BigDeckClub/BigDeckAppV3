@@ -1263,13 +1263,14 @@ export const InventoryTab = ({
                     <div className="text-xs text-green-300">
                       {(() => {
                         const decklistTotal = (deck.cards || []).reduce((sum, c) => sum + (c.quantity || 1), 0);
-                        const extraCount = Math.max(0, deck.reserved_count - decklistTotal);
-                        const reserved = decklistTotal - (deck.missing_count || 0);
+                        const reserved = deck.reserved_count;
+                        const missing = Math.max(0, decklistTotal - reserved);
+                        const extras = Math.max(0, reserved - decklistTotal);
                         
-                        if (deck.missing_count > 0) {
-                          return `${reserved} reserved ${deck.missing_count} missing`;
+                        if (missing > 0) {
+                          return `${reserved} reserved ${missing} missing`;
                         } else {
-                          return `${reserved} reserved${extraCount > 0 ? ` +${extraCount} extra` : ''}`;
+                          return `${reserved} reserved${extras > 0 ? ` +${extras} extra` : ''}`;
                         }
                       })()}
                     </div>
