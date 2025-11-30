@@ -240,12 +240,13 @@ export const InventoryTab = ({
         throw new Error('Failed to move card to folder');
       }
       
-      // Refresh both deck and inventory
-      await loadDeckDetails(deckId, true);
-      await refreshDeckInstances();
+      // Refresh both deck and inventory - ensure inventory is fully loaded
       if (onLoadInventory) {
         await onLoadInventory();
       }
+      await new Promise(resolve => setTimeout(resolve, 100)); // Small delay to ensure state updates
+      await loadDeckDetails(deckId, true);
+      await refreshDeckInstances();
       
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error) {
