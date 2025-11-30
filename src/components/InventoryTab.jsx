@@ -839,24 +839,30 @@ export const InventoryTab = ({
               };
               e.dataTransfer.setData('deckCardData', JSON.stringify(deckCardData));
             }}
-            className="relative bg-gradient-to-br from-slate-800 to-slate-900 border border-green-600 hover:border-green-400 rounded p-3 transition-colors cursor-grab active:cursor-grabbing hover:shadow-lg hover:shadow-green-500/20">
+            className="relative bg-gradient-to-br from-slate-800 to-slate-900 border border-green-600 hover:border-green-400 rounded p-3 transition-colors cursor-grab active:cursor-grabbing hover:shadow-lg hover:shadow-green-500/20"
+            onClick={() => setExpandedCards(isExpanded ? {} : {[cardName]: true})}
+          >
             <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      const deckId = openDecks.find(id => `deck-${id}` === activeTab);
-                      items.forEach(item => removeCardFromDeck(deckId, item.id, item.quantity_reserved));
-                    }}
-                    className="text-red-400 hover:text-red-300 p-0.5 flex-shrink-0"
-                    title="Remove all from deck"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
+              onClick={(e) => {
+                e.stopPropagation();
+                const deckId = openDecks.find(id => `deck-${id}` === activeTab);
+                items.forEach(item => removeCardFromDeck(deckId, item.id, item.quantity_reserved));
+              }}
+              className="close-btn absolute top-1 right-1"
+              title="Remove all from deck"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex-1 min-w-0 cursor-pointer">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-slate-100 break-words mb-1">{cardName}</h3>
                 </div>
-                <div className="flex gap-4 text-xs">
-                  <div><span className="text-slate-500">Reserved:</span> <span className="text-green-300 font-semibold">{totalQty}</span></div>
-                  <div><span className="text-slate-500">Cost/ea:</span> <span className="text-blue-300 font-semibold">${avgPrice.toFixed(2)}</span></div>
-                  <div><span className="text-slate-500">Total:</span> <span className="text-amber-400 font-semibold">${formatTotal(totalValue)}</span></div>
-                </div>
+              </div>
+              <div className="flex gap-4 text-xs">
+                <div><span className="text-slate-500">Reserved:</span> <span className="text-green-300 font-semibold">{totalQty}</span></div>
+                <div><span className="text-slate-500">Cost/ea:</span> <span className="text-blue-300 font-semibold">${avgPrice.toFixed(2)}</span></div>
+                <div><span className="text-slate-500">Total:</span> <span className="text-amber-400 font-semibold">${formatTotal(totalValue)}</span></div>
               </div>
               <div className="text-green-400 text-sm flex-shrink-0">
                 {isExpanded ? '▼' : '▶'}
