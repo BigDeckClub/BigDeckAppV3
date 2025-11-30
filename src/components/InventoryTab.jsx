@@ -598,19 +598,21 @@ export const InventoryTab = ({
     }, {});
   }, [inventory]);
   
-  // Memoize in-stock and out-of-stock card lists
+  // Memoize in-stock and out-of-stock card lists with search filtering
   const { inStockCards, outOfStockCards } = useMemo(() => {
     const entries = Object.entries(groupedInventory);
-    const inStock = entries.filter(([_, items]) => {
+    const inStock = entries.filter(([cardName, items]) => {
+      const matchesSearch = inventorySearch === '' || cardName.toLowerCase().includes(inventorySearch.toLowerCase());
       const totalQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
-      return totalQty > 0;
+      return matchesSearch && totalQty > 0;
     });
-    const outOfStock = entries.filter(([_, items]) => {
+    const outOfStock = entries.filter(([cardName, items]) => {
+      const matchesSearch = inventorySearch === '' || cardName.toLowerCase().includes(inventorySearch.toLowerCase());
       const totalQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
-      return totalQty === 0;
+      return matchesSearch && totalQty === 0;
     });
     return { inStockCards: inStock, outOfStockCards: outOfStock };
-  }, [groupedInventory]);
+  }, [groupedInventory, inventorySearch]);
   
   // Render function for deck cards using same grid structure as inventory
   const renderDeckCardGroup = ([cardName, items]) => {
@@ -968,10 +970,11 @@ export const InventoryTab = ({
           {/* Created Folders */}
           {createdFolders.map((folderName) => {
             const cardsByName = groupedByFolder[folderName] || {};
-            const inStockCards = Object.entries(cardsByName).filter(([_, items]) => {
+            const inStockCards = Object.entries(cardsByName).filter(([cardName, items]) => {
+              const matchesSearch = inventorySearch === '' || cardName.toLowerCase().includes(inventorySearch.toLowerCase());
               const totalQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
               const reservedQty = items.reduce((sum, item) => sum + (parseInt(item.reserved_quantity) || 0), 0);
-              return (totalQty - reservedQty) > 0;
+              return matchesSearch && (totalQty - reservedQty) > 0;
             });
             const totalCards = inStockCards.length;
             const isSelected = selectedFolder === folderName;
