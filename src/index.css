@@ -196,6 +196,39 @@ select {
   @apply bg-gradient-to-r from-teal-400 to-cyan-300 bg-clip-text text-transparent;
 }
 
+/* Close Button Styling */
+@keyframes icon-glow {
+  0%, 100% {
+    text-shadow: 0 0 0px rgba(34, 211, 238, 0);
+  }
+  50% {
+    text-shadow: 0 0 8px rgba(34, 211, 238, 0.4);
+  }
+}
+
+.close-btn {
+  @apply text-slate-400 hover:text-cyan-300 p-1 rounded-md transition-all duration-200;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.close-btn:hover {
+  @apply bg-cyan-500/10;
+  animation: icon-glow 1.5s ease-in-out;
+  text-shadow: 0 0 12px rgba(34, 211, 238, 0.6);
+}
+
+.close-btn:active {
+  @apply scale-90;
+}
+
+.close-btn.fade-in-btn {
+  @apply opacity-0 group-hover:opacity-100;
+  transition: opacity 200ms ease-out;
+}
+
 /* Mobile Top Navigation - Hidden by default on desktop */
 .mobile-nav {
   position: fixed !important;

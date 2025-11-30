@@ -499,7 +499,7 @@ export const InventoryTab = ({
                 e.stopPropagation();
                 items.forEach(item => deleteInventoryItem(item.id));
               }}
-              className="text-cyan-400 hover:text-cyan-300 p-0.5 transition-colors"
+              className="close-btn"
               title="Delete all copies"
             >
               <X className="w-3 h-3" />
