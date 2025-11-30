@@ -4,7 +4,7 @@ import { BookOpen, Plus, Trash2, Edit2, X, Download } from 'lucide-react';
 
 const API_BASE = '/api';
 
-export const DeckTab = () => {
+export const DeckTab = ({ onDeckCreatedOrDeleted }) => {
   const [decks, setDecks] = useState([]);
   const [showImportDecklist, setShowImportDecklist] = useState(false);
   const [showBuildDeck, setShowBuildDeck] = useState(false);
@@ -53,6 +53,11 @@ export const DeckTab = () => {
       setCopyDeckName('');
       setSuccessMessage(`Deck created! ${result.reservedCount} cards reserved, ${result.missingCount} cards missing.`);
       setTimeout(() => setSuccessMessage(''), 5000);
+      
+      // Refresh deck instances in Inventory tab
+      if (onDeckCreatedOrDeleted) {
+        onDeckCreatedOrDeleted();
+      }
       
     } catch (error) {
       console.error('Failed to copy deck:', error);

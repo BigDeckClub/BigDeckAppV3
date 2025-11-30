@@ -24,6 +24,7 @@ function MTGInventoryTrackerContent() {
   const [inventory, setInventory] = useState([]);
   const [imports, setImports] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [refreshDeckInstances, setRefreshDeckInstances] = useState(null);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
@@ -355,6 +356,7 @@ function MTGInventoryTrackerContent() {
             updateInventoryItem={updateInventoryItem}
             deleteInventoryItem={deleteInventoryItem}
             handleSearch={handleSearch}
+            onDeckInstancesRefresh={(callback) => setRefreshDeckInstances(() => callback)}
           />
         )}
 
@@ -389,7 +391,7 @@ function MTGInventoryTrackerContent() {
 
         {/* Decks Tab */}
         {activeTab === "decks" && !isLoading && (
-          <DeckTab />
+          <DeckTab onDeckCreatedOrDeleted={refreshDeckInstances} />
         )}
 
       </main>

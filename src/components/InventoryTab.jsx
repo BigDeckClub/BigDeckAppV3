@@ -32,7 +32,8 @@ export const InventoryTab = ({
   startEditingItem,
   updateInventoryItem,
   deleteInventoryItem,
-  handleSearch
+  handleSearch,
+  onDeckInstancesRefresh
 }) => {
   const [expandedFolders, setExpandedFolders] = useState({});
   const [newFolderName, setNewFolderName] = useState('');
@@ -52,23 +53,27 @@ export const InventoryTab = ({
     }
   }, []);
 
-  // Fetch deck instances
-  useEffect(() => {
-    const fetchDeckInstances = async () => {
-      try {
-        const response = await fetch('/api/deck-instances');
-        if (response.ok) {
-          const data = await response.json();
-          setDeckInstances(data);
-        }
-      } catch (error) {
-        console.error('Failed to fetch deck instances:', error);
+  // Fetch deck instances on demand
+  const refreshDeckInstances = async () => {
+    try {
+      const response = await fetch('/api/deck-instances');
+      if (response.ok) {
+        const data = await response.json();
+        setDeckInstances(data);
       }
-    };
-    fetchDeckInstances();
-    const interval = setInterval(fetchDeckInstances, 5000);
-    return () => clearInterval(interval);
-  }, []);
+    } catch (error) {
+      console.error('Failed to fetch deck instances:', error);
+    }
+  };
+
+  // Initial load of deck instances
+  useEffect(() => {
+    refreshDeckInstances();
+    // Pass refresh function to parent so DeckTab can trigger updates
+    if (onDeckInstancesRefresh) {
+      onDeckInstancesRefresh(refreshDeckInstances);
+    }
+  }, [onDeckInstancesRefresh]);
 
   // Collapse all cards when switching tabs or folders
   useEffect(() => {
