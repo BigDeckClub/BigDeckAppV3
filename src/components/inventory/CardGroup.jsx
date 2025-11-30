@@ -13,6 +13,18 @@ function calculateSetAvgPrice(setItems) {
 }
 
 /**
+ * Get dynamic font size based on value length
+ * Larger numbers get smaller text to fit properly
+ */
+function getStatFontSize(value) {
+  const strValue = String(value).length;
+  if (strValue <= 2) return 'text-[11px] md:text-[13px]';
+  if (strValue <= 3) return 'text-[10px] md:text-[11px]';
+  if (strValue <= 4) return 'text-[9px] md:text-[10px]';
+  return 'text-[8px] md:text-[9px]';
+}
+
+/**
  * CardGroup - A memoized component for rendering a group of inventory cards
  * Extracted from InventoryTab for performance optimization
  */
@@ -191,15 +203,15 @@ export const CardGroup = memo(function CardGroup({
         <div className="grid grid-cols-3 gap-2 text-center pt-2 border-t border-slate-700/50">
           <div className="space-y-1">
             <div className="text-slate-500 text-[7px] md:text-[9px] font-semibold uppercase">Qty</div>
-            <div className={`font-bold text-[9px] md:text-[10px] ${totalQty === 0 ? 'text-slate-500' : 'text-teal-300'}`}>{totalQty}</div>
+            <div className={`font-bold ${getStatFontSize(totalQty)} ${totalQty === 0 ? 'text-slate-500' : 'text-teal-300'}`}>{totalQty}</div>
           </div>
           <div className="space-y-1">
             <div className="text-slate-500 text-[7px] md:text-[9px] font-semibold uppercase">Cost</div>
-            <div className="font-bold text-[9px] md:text-[10px] text-blue-300">${avgPrice.toFixed(2)}</div>
+            <div className={`font-bold text-blue-300 ${getStatFontSize(avgPrice.toFixed(2))}`}>${avgPrice.toFixed(2)}</div>
           </div>
           <div className="space-y-1">
             <div className="text-slate-500 text-[7px] md:text-[9px] font-semibold uppercase">Total</div>
-            <div className="font-bold text-[9px] md:text-[10px] text-amber-400">${formatTotal(totalValue)}</div>
+            <div className={`font-bold text-amber-400 ${getStatFontSize(formatTotal(totalValue))}`}>${formatTotal(totalValue)}</div>
           </div>
         </div>
       </div>
