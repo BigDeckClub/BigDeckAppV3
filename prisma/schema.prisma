@@ -85,10 +85,22 @@ model PriceSnapshot {
 // EXISTING TABLES (with migration fields)
 // ============================================
 
+// Folder table - card collection organization
+model Folder {
+  id          Int       @id @default(autoincrement())
+  name        String    @db.VarChar(255)
+  description String?   @db.Text
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@map("folders")
+}
+
 // Inventory table - card stock with purchase history
 model Inventory {
   id            Int       @id @default(autoincrement())
   printingId    Int?      @map("printing_id")
+  folder        String?   @default("Uncategorized") @db.VarChar(255)
   // Legacy fields (keep during migration, remove after verification)
   name          String?   @db.VarChar(255)
   set           String?   @db.VarChar(20)
