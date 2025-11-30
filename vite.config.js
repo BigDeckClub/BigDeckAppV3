@@ -13,7 +13,9 @@ export default defineConfig({
     minify: 'terser',
     terserOptions: {
       compress: {
-        drop_console: false, // Keep console logs for debugging
+        // Console logs intentionally kept for debugging in production
+        // Per project requirements: console logs help diagnose issues
+        drop_console: false,
         drop_debugger: true,
       },
     },
@@ -26,8 +28,8 @@ export default defineConfig({
         },
       },
     },
-    // Generate source maps for debugging
-    sourcemap: false,
+    // Generate hidden source maps for debugging without exposing them to users
+    sourcemap: 'hidden',
     // Target modern browsers
     target: 'es2020',
     // Chunk size warning limit
