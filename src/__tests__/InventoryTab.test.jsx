@@ -110,16 +110,15 @@ describe('InventoryTab Folder Tabs', () => {
     
     // Find the sidebar folder button and click it
     const sidebarButtons = screen.getAllByText('MyFolder');
-    // The first one should be in the sidebar
-    if (sidebarButtons.length > 0) {
-      fireEvent.click(sidebarButtons[0]);
-      
-      // After clicking, the folder tab should appear in the tab bar
-      await waitFor(() => {
-        const folderTabs = screen.getAllByText(/📁 MyFolder/);
-        expect(folderTabs.length).toBeGreaterThan(0);
-      });
-    }
+    // Ensure sidebar button exists before clicking
+    expect(sidebarButtons.length).toBeGreaterThan(0);
+    fireEvent.click(sidebarButtons[0]);
+    
+    // After clicking, the folder tab should appear in the tab bar
+    await waitFor(() => {
+      const folderTabs = screen.getAllByText(/📁 MyFolder/);
+      expect(folderTabs.length).toBeGreaterThan(0);
+    });
   });
 
   it('closes folder tab when clicking close button', async () => {
@@ -137,24 +136,24 @@ describe('InventoryTab Folder Tabs', () => {
     
     // Find the sidebar folder button and click it to open the tab
     const sidebarButtons = screen.getAllByText('CloseTestFolder');
-    if (sidebarButtons.length > 0) {
-      fireEvent.click(sidebarButtons[0]);
-      
-      // Wait for the folder tab to appear
-      await waitFor(() => {
-        const folderTabs = screen.getAllByText(/📁 CloseTestFolder/);
-        expect(folderTabs.length).toBeGreaterThan(0);
-      });
-      
-      // Find and click the close button (X icon in the tab bar)
-      const closeButton = screen.getByTitle('Close folder');
-      fireEvent.click(closeButton);
-      
-      // After clicking close, the folder tab should disappear
-      await waitFor(() => {
-        const folderTabs = screen.queryAllByText(/📁 CloseTestFolder/);
-        expect(folderTabs.length).toBe(0);
-      });
-    }
+    // Ensure sidebar button exists before clicking
+    expect(sidebarButtons.length).toBeGreaterThan(0);
+    fireEvent.click(sidebarButtons[0]);
+    
+    // Wait for the folder tab to appear
+    await waitFor(() => {
+      const folderTabs = screen.getAllByText(/📁 CloseTestFolder/);
+      expect(folderTabs.length).toBeGreaterThan(0);
+    });
+    
+    // Find and click the close button (X icon in the tab bar)
+    const closeButton = screen.getByTitle('Close folder');
+    fireEvent.click(closeButton);
+    
+    // After clicking close, the folder tab should disappear
+    await waitFor(() => {
+      const folderTabs = screen.queryAllByText(/📁 CloseTestFolder/);
+      expect(folderTabs.length).toBe(0);
+    });
   });
 });
