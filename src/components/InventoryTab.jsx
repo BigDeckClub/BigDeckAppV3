@@ -525,11 +525,14 @@ export const InventoryTab = ({
             </h3>
           </div>
           
-          <div className="grid grid-cols-4 gap-1 text-center flex-1">
-            <div className="space-y-0.5 flex flex-col justify-center">
-              <div className="text-slate-400 text-[8px] md:text-xs font-bold">Available</div>
-              <div className="font-bold text-xl md:text-2xl text-green-300 leading-tight">{available}</div>
+          <div className="flex-1 flex items-center justify-center min-h-0">
+            <div className="text-center">
+              <div className="text-slate-400 text-[8px] md:text-xs font-semibold">Available</div>
+              <div className="text-xl md:text-2xl font-bold text-green-300 leading-tight">{available}</div>
             </div>
+          </div>
+          
+          <div className="grid grid-cols-3 gap-1 text-center">
             <div className="space-y-0.5">
               <div className="text-slate-400 text-[8px] md:text-xs font-bold">Qty</div>
               <div className={`font-bold text-[9px] md:text-[10px] ${totalQty === 0 ? 'text-slate-400' : 'text-teal-200'}`}>{totalQty}</div>
@@ -823,11 +826,14 @@ export const InventoryTab = ({
             </h3>
           </div>
           
-          <div className="grid grid-cols-3 gap-1 text-center flex-1">
-            <div className="space-y-0.5 flex flex-col justify-center">
-              <div className="text-slate-400 text-[8px] md:text-xs font-bold">Reserved</div>
-              <div className="font-bold text-xl md:text-2xl text-green-300 leading-tight">{totalQty}</div>
+          <div className="flex-1 flex items-center justify-center min-h-0">
+            <div className="text-center">
+              <div className="text-slate-400 text-[8px] md:text-xs font-semibold">Reserved</div>
+              <div className="text-xl md:text-2xl font-bold text-green-300 leading-tight">{totalQty}</div>
             </div>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-1 text-center">
             <div className="space-y-0.5">
               <div className="text-slate-400 text-[8px] md:text-xs font-bold">Cost</div>
               <div className="font-bold text-[9px] md:text-[10px] text-blue-200">${avgPrice.toFixed(2)}</div>
