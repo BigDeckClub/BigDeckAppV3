@@ -1190,7 +1190,7 @@ export const InventoryTab = ({
                 return (
                   <div
                     key={`deck-${deck.id}`}
-                    className={`group text-left p-3 rounded-lg transition-colors mb-2 border-l-4 cursor-pointer ${
+                    className={`group text-left p-2 rounded-lg transition-colors mb-1.5 border-l-4 cursor-pointer ${
                       isDeckOpen
                         ? 'bg-green-600/40 border-l-4 border-green-400'
                         : 'bg-slate-800 border-l-4 border-transparent hover:bg-slate-700'
@@ -1223,7 +1223,7 @@ export const InventoryTab = ({
                       }
                     }}
                   >
-                    <div className="flex justify-between items-start mb-2">
+                    <div className="flex justify-between items-start mb-1">
                       <div className="flex-1 text-left">
                         <div className="font-medium text-sm text-slate-100">{deck.name}</div>
                       </div>
