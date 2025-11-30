@@ -1111,6 +1111,7 @@ export const InventoryTab = ({
                         ? 'bg-green-600/40 border-l-4 border-green-400'
                         : 'bg-slate-800 border-l-4 border-transparent hover:bg-slate-700'
                     }`}
+                    onClick={() => openDeckTab(deck)}
                     onDragOver={(e) => {
                       e.preventDefault();
                       this?.classList?.add('bg-green-700/60', 'border-green-300');
@@ -1139,12 +1140,9 @@ export const InventoryTab = ({
                     }}
                   >
                     <div className="flex justify-between items-start mb-2">
-                      <button
-                        onClick={() => openDeckTab(deck)}
-                        className="flex-1 text-left hover:opacity-80 transition-opacity"
-                      >
+                      <div className="flex-1 text-left">
                         <div className="font-medium text-sm text-slate-100">{deck.name}</div>
-                      </button>
+                      </div>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
