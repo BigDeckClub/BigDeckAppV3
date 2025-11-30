@@ -206,8 +206,10 @@ function MTGInventoryTrackerContent() {
 
   const deleteInventoryItem = async (id) => {
     try {
-      await del(`${API_BASE}/inventory/${id}`);
+      await put(`${API_BASE}/inventory/${id}`, { folder: 'Uncategorized' });
       await loadInventory();
+      setSuccessMessage("Card moved to Unsorted!");
+      setTimeout(() => setSuccessMessage(""), 3000);
     } catch (error) {}
   };
 
