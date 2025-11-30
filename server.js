@@ -276,6 +276,37 @@ async function initializeDatabase() {
       )
     `);
 
+    // ========== PERFORMANCE INDEXES ==========
+    // Index for case-insensitive card name lookups
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_inventory_name_lower 
+      ON inventory(LOWER(TRIM(name)));
+    `).catch(() => {});
+
+    // Index for deck reservation lookups by deck
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_deck_reservations_deck_id 
+      ON deck_reservations(deck_id);
+    `).catch(() => {});
+
+    // Index for deck reservation lookups by inventory item
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_deck_reservations_inventory_id 
+      ON deck_reservations(inventory_item_id);
+    `).catch(() => {});
+
+    // Index for inventory folder filtering
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_inventory_folder 
+      ON inventory(folder);
+    `).catch(() => {});
+
+    // Index for deck instances lookup
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_decks_is_instance 
+      ON decks(is_deck_instance);
+    `).catch(() => {});
+
     console.log('[DB] ✓ Database initialized successfully');
   } catch (err) {
     console.error('[DB] ✗ Failed to initialize database:', err);
@@ -344,6 +375,17 @@ async function fetchRetry(url, options = {}, retries = 2) {
     console.error(`[FETCH] Failed after retries: ${url}`);
     return null;
   }
+}
+
+// ========== INPUT VALIDATION MIDDLEWARE ==========
+// Validate that ID parameter is a positive integer
+function validateId(req, res, next) {
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id) || id <= 0) {
+    return res.status(400).json({ error: 'Invalid ID parameter' });
+  }
+  req.params.id = id;
+  next();
 }
 
 // ========== HEALTH CHECK ==========
@@ -496,7 +538,7 @@ app.post('/api/inventory', async (req, res) => {
   }
 });
 
-app.put('/api/inventory/:id', async (req, res) => {
+app.put('/api/inventory/:id', validateId, async (req, res) => {
   const { id } = req.params;
   const { quantity, purchase_price, purchase_date, reorder_type, folder } = req.body;
 
@@ -545,7 +587,7 @@ app.put('/api/inventory/:id', async (req, res) => {
   }
 });
 
-app.delete('/api/inventory/:id', async (req, res) => {
+app.delete('/api/inventory/:id', validateId, async (req, res) => {
   const { id } = req.params;
 
   try {
@@ -614,7 +656,7 @@ app.post('/api/imports', async (req, res) => {
   }
 });
 
-app.delete('/api/imports/:id', async (req, res) => {
+app.delete('/api/imports/:id', validateId, async (req, res) => {
   const { id } = req.params;
 
   try {
@@ -634,7 +676,7 @@ app.delete('/api/imports/:id', async (req, res) => {
   }
 });
 
-app.patch('/api/imports/:id/complete', async (req, res) => {
+app.patch('/api/imports/:id/complete', validateId, async (req, res) => {
   const { id } = req.params;
 
   try {
@@ -656,7 +698,7 @@ app.patch('/api/imports/:id/complete', async (req, res) => {
   }
 });
 
-app.patch('/api/imports/:id', async (req, res) => {
+app.patch('/api/imports/:id', validateId, async (req, res) => {
   const { id } = req.params;
   const { title, description, cardList, source, status } = req.body;
 
@@ -800,7 +842,7 @@ app.post('/api/decks', async (req, res) => {
   }
 });
 
-app.put('/api/decks/:id', async (req, res) => {
+app.put('/api/decks/:id', validateId, async (req, res) => {
   const { id } = req.params;
   const { name, format, description, cards } = req.body;
   
@@ -847,7 +889,7 @@ app.put('/api/decks/:id', async (req, res) => {
   }
 });
 
-app.delete('/api/decks/:id', async (req, res) => {
+app.delete('/api/decks/:id', validateId, async (req, res) => {
   const { id } = req.params;
   
   try {
@@ -889,7 +931,7 @@ app.get('/api/deck-instances', async (req, res) => {
 });
 
 // GET full details of a deck instance
-app.get('/api/deck-instances/:id/details', async (req, res) => {
+app.get('/api/deck-instances/:id/details', validateId, async (req, res) => {
   const { id } = req.params;
   
   try {
@@ -966,7 +1008,7 @@ app.get('/api/deck-instances/:id/details', async (req, res) => {
 });
 
 // POST copy decklist to inventory (create deck instance)
-app.post('/api/decks/:id/copy-to-inventory', async (req, res) => {
+app.post('/api/decks/:id/copy-to-inventory', validateId, async (req, res) => {
   const { id } = req.params;
   const { name } = req.body;
   
@@ -987,33 +1029,53 @@ app.post('/api/decks/:id/copy-to-inventory', async (req, res) => {
     );
     const newDeck = newDeckResult.rows[0];
     
+    // Step 1: Get all unique card names from the decklist
+    const cardNames = [...new Set(cards.map(c => c.name.toLowerCase().trim()))];
+    
+    // Step 2: Fetch ALL matching inventory items in ONE query
+    const inventoryResult = await pool.query(`
+      SELECT i.id, i.name, i.folder, i.purchase_price, i.quantity,
+        COALESCE(i.quantity, 0) - COALESCE(
+          (SELECT SUM(dr.quantity_reserved) FROM deck_reservations dr WHERE dr.inventory_item_id = i.id), 0
+        ) as available_quantity
+      FROM inventory i
+      WHERE LOWER(TRIM(i.name)) = ANY($1::text[])
+        AND COALESCE(i.quantity, 0) - COALESCE(
+          (SELECT SUM(dr.quantity_reserved) FROM deck_reservations dr WHERE dr.inventory_item_id = i.id), 0
+        ) > 0
+      ORDER BY LOWER(TRIM(i.name)), COALESCE(i.purchase_price, 999999) ASC
+    `, [cardNames]);
+    
+    // Step 3: Group inventory items by card name for efficient lookup
+    const inventoryByName = {};
+    for (const item of inventoryResult.rows) {
+      const key = item.name.toLowerCase().trim();
+      if (!inventoryByName[key]) inventoryByName[key] = [];
+      inventoryByName[key].push({ ...item, available_quantity: parseInt(item.available_quantity) });
+    }
+    
+    // Step 4: Process each card in the decklist using in-memory data
     const reservations = [];
     const missingCards = [];
+    const usedQuantities = {}; // Track quantities used during this operation
     
     for (const card of cards) {
-      const cardName = card.name;
+      const cardKey = card.name.toLowerCase().trim();
       const quantityNeeded = card.quantity || 1;
-      
-      const inventoryResult = await pool.query(`
-        SELECT i.*, 
-          COALESCE(i.quantity, 0) - COALESCE(
-            (SELECT SUM(dr.quantity_reserved) FROM deck_reservations dr WHERE dr.inventory_item_id = i.id), 0
-          ) as available_quantity
-        FROM inventory i
-        WHERE LOWER(TRIM(i.name)) = LOWER(TRIM($1))
-          AND COALESCE(i.quantity, 0) - COALESCE(
-            (SELECT SUM(dr.quantity_reserved) FROM deck_reservations dr WHERE dr.inventory_item_id = i.id), 0
-          ) > 0
-        ORDER BY COALESCE(i.purchase_price, 999999) ASC
-      `, [cardName]);
+      const availableItems = inventoryByName[cardKey] || [];
       
       let remainingNeeded = quantityNeeded;
       
-      for (const invItem of inventoryResult.rows) {
+      for (const invItem of availableItems) {
         if (remainingNeeded <= 0) break;
         
-        const availableQty = invItem.available_quantity;
-        const reserveQty = Math.min(remainingNeeded, availableQty);
+        // Account for quantities already reserved in this batch
+        const alreadyUsed = usedQuantities[invItem.id] || 0;
+        const actualAvailable = invItem.available_quantity - alreadyUsed;
+        
+        if (actualAvailable <= 0) continue;
+        
+        const reserveQty = Math.min(remainingNeeded, actualAvailable);
         
         if (reserveQty > 0) {
           reservations.push({
@@ -1022,6 +1084,7 @@ app.post('/api/decks/:id/copy-to-inventory', async (req, res) => {
             quantity_reserved: reserveQty,
             original_folder: invItem.folder || 'Uncategorized'
           });
+          usedQuantities[invItem.id] = alreadyUsed + reserveQty;
           remainingNeeded -= reserveQty;
         }
       }
@@ -1029,27 +1092,39 @@ app.post('/api/decks/:id/copy-to-inventory', async (req, res) => {
       if (remainingNeeded > 0) {
         missingCards.push({
           deck_id: newDeck.id,
-          card_name: cardName,
+          card_name: card.name,
           set_code: card.set || null,
           quantity_needed: remainingNeeded
         });
       }
     }
     
-    for (const reservation of reservations) {
-      await pool.query(
-        `INSERT INTO deck_reservations (deck_id, inventory_item_id, quantity_reserved, original_folder)
-         VALUES ($1, $2, $3, $4)`,
-        [reservation.deck_id, reservation.inventory_item_id, reservation.quantity_reserved, reservation.original_folder]
-      );
+    // Step 5: Batch insert reservations (if any)
+    if (reservations.length > 0) {
+      const reservationValues = reservations.map((r, i) => 
+        `($${i*4+1}, $${i*4+2}, $${i*4+3}, $${i*4+4})`
+      ).join(', ');
+      const reservationParams = reservations.flatMap(r => [
+        r.deck_id, r.inventory_item_id, r.quantity_reserved, r.original_folder
+      ]);
+      await pool.query(`
+        INSERT INTO deck_reservations (deck_id, inventory_item_id, quantity_reserved, original_folder)
+        VALUES ${reservationValues}
+      `, reservationParams);
     }
     
-    for (const missing of missingCards) {
-      await pool.query(
-        `INSERT INTO deck_missing_cards (deck_id, card_name, set_code, quantity_needed)
-         VALUES ($1, $2, $3, $4)`,
-        [missing.deck_id, missing.card_name, missing.set_code, missing.quantity_needed]
-      );
+    // Step 6: Batch insert missing cards (if any)
+    if (missingCards.length > 0) {
+      const missingValues = missingCards.map((m, i) => 
+        `($${i*4+1}, $${i*4+2}, $${i*4+3}, $${i*4+4})`
+      ).join(', ');
+      const missingParams = missingCards.flatMap(m => [
+        m.deck_id, m.card_name, m.set_code, m.quantity_needed
+      ]);
+      await pool.query(`
+        INSERT INTO deck_missing_cards (deck_id, card_name, set_code, quantity_needed)
+        VALUES ${missingValues}
+      `, missingParams);
     }
     
     res.status(201).json({
@@ -1067,7 +1142,7 @@ app.post('/api/decks/:id/copy-to-inventory', async (req, res) => {
 });
 
 // POST add card to deck instance
-app.post('/api/deck-instances/:id/add-card', async (req, res) => {
+app.post('/api/deck-instances/:id/add-card', validateId, async (req, res) => {
   const { id } = req.params;
   const { inventory_item_id, quantity } = req.body;
   
@@ -1115,7 +1190,7 @@ app.post('/api/deck-instances/:id/add-card', async (req, res) => {
 });
 
 // DELETE remove card from deck instance
-app.delete('/api/deck-instances/:id/remove-card', async (req, res) => {
+app.delete('/api/deck-instances/:id/remove-card', validateId, async (req, res) => {
   const { id } = req.params;
   const { reservation_id, quantity } = req.body;
   
@@ -1148,7 +1223,7 @@ app.delete('/api/deck-instances/:id/remove-card', async (req, res) => {
 
 
 // POST release entire deck instance
-app.post('/api/deck-instances/:id/release', async (req, res) => {
+app.post('/api/deck-instances/:id/release', validateId, async (req, res) => {
   const { id } = req.params;
   
   try {
@@ -1174,7 +1249,7 @@ app.post('/api/deck-instances/:id/release', async (req, res) => {
 });
 
 // POST reoptimize deck instance
-app.post('/api/deck-instances/:id/reoptimize', async (req, res) => {
+app.post('/api/deck-instances/:id/reoptimize', validateId, async (req, res) => {
   const { id } = req.params;
   
   try {
@@ -1188,33 +1263,53 @@ app.post('/api/deck-instances/:id/reoptimize', async (req, res) => {
     await pool.query('DELETE FROM deck_reservations WHERE deck_id = $1', [id]);
     await pool.query('DELETE FROM deck_missing_cards WHERE deck_id = $1', [id]);
     
+    // Step 1: Get all unique card names from the decklist
+    const cardNames = [...new Set(cards.map(c => c.name.toLowerCase().trim()))];
+    
+    // Step 2: Fetch ALL matching inventory items in ONE query
+    const inventoryResult = await pool.query(`
+      SELECT i.id, i.name, i.folder, i.purchase_price, i.quantity,
+        COALESCE(i.quantity, 0) - COALESCE(
+          (SELECT SUM(dr.quantity_reserved) FROM deck_reservations dr WHERE dr.inventory_item_id = i.id), 0
+        ) as available_quantity
+      FROM inventory i
+      WHERE LOWER(TRIM(i.name)) = ANY($1::text[])
+        AND COALESCE(i.quantity, 0) - COALESCE(
+          (SELECT SUM(dr.quantity_reserved) FROM deck_reservations dr WHERE dr.inventory_item_id = i.id), 0
+        ) > 0
+      ORDER BY LOWER(TRIM(i.name)), COALESCE(i.purchase_price, 999999) ASC
+    `, [cardNames]);
+    
+    // Step 3: Group inventory items by card name for efficient lookup
+    const inventoryByName = {};
+    for (const item of inventoryResult.rows) {
+      const key = item.name.toLowerCase().trim();
+      if (!inventoryByName[key]) inventoryByName[key] = [];
+      inventoryByName[key].push({ ...item, available_quantity: parseInt(item.available_quantity) });
+    }
+    
+    // Step 4: Process each card in the decklist using in-memory data
     const reservations = [];
     const missingCards = [];
+    const usedQuantities = {}; // Track quantities used during this operation
     
     for (const card of cards) {
-      const cardName = card.name;
+      const cardKey = card.name.toLowerCase().trim();
       const quantityNeeded = card.quantity || 1;
-      
-      const inventoryResult = await pool.query(`
-        SELECT i.*, 
-          COALESCE(i.quantity, 0) - COALESCE(
-            (SELECT SUM(dr.quantity_reserved) FROM deck_reservations dr WHERE dr.inventory_item_id = i.id), 0
-          ) as available_quantity
-        FROM inventory i
-        WHERE LOWER(TRIM(i.name)) = LOWER(TRIM($1))
-          AND COALESCE(i.quantity, 0) - COALESCE(
-            (SELECT SUM(dr.quantity_reserved) FROM deck_reservations dr WHERE dr.inventory_item_id = i.id), 0
-          ) > 0
-        ORDER BY COALESCE(i.purchase_price, 999999) ASC
-      `, [cardName]);
+      const availableItems = inventoryByName[cardKey] || [];
       
       let remainingNeeded = quantityNeeded;
       
-      for (const invItem of inventoryResult.rows) {
+      for (const invItem of availableItems) {
         if (remainingNeeded <= 0) break;
         
-        const availableQty = invItem.available_quantity;
-        const reserveQty = Math.min(remainingNeeded, availableQty);
+        // Account for quantities already reserved in this batch
+        const alreadyUsed = usedQuantities[invItem.id] || 0;
+        const actualAvailable = invItem.available_quantity - alreadyUsed;
+        
+        if (actualAvailable <= 0) continue;
+        
+        const reserveQty = Math.min(remainingNeeded, actualAvailable);
         
         if (reserveQty > 0) {
           reservations.push({
@@ -1223,6 +1318,7 @@ app.post('/api/deck-instances/:id/reoptimize', async (req, res) => {
             quantity_reserved: reserveQty,
             original_folder: invItem.folder || 'Uncategorized'
           });
+          usedQuantities[invItem.id] = alreadyUsed + reserveQty;
           remainingNeeded -= reserveQty;
         }
       }
@@ -1230,27 +1326,39 @@ app.post('/api/deck-instances/:id/reoptimize', async (req, res) => {
       if (remainingNeeded > 0) {
         missingCards.push({
           deck_id: id,
-          card_name: cardName,
+          card_name: card.name,
           set_code: card.set || null,
           quantity_needed: remainingNeeded
         });
       }
     }
     
-    for (const reservation of reservations) {
-      await pool.query(
-        `INSERT INTO deck_reservations (deck_id, inventory_item_id, quantity_reserved, original_folder)
-         VALUES ($1, $2, $3, $4)`,
-        [reservation.deck_id, reservation.inventory_item_id, reservation.quantity_reserved, reservation.original_folder]
-      );
+    // Step 5: Batch insert reservations (if any)
+    if (reservations.length > 0) {
+      const reservationValues = reservations.map((r, i) => 
+        `($${i*4+1}, $${i*4+2}, $${i*4+3}, $${i*4+4})`
+      ).join(', ');
+      const reservationParams = reservations.flatMap(r => [
+        r.deck_id, r.inventory_item_id, r.quantity_reserved, r.original_folder
+      ]);
+      await pool.query(`
+        INSERT INTO deck_reservations (deck_id, inventory_item_id, quantity_reserved, original_folder)
+        VALUES ${reservationValues}
+      `, reservationParams);
     }
     
-    for (const missing of missingCards) {
-      await pool.query(
-        `INSERT INTO deck_missing_cards (deck_id, card_name, set_code, quantity_needed)
-         VALUES ($1, $2, $3, $4)`,
-        [missing.deck_id, missing.card_name, missing.set_code, missing.quantity_needed]
-      );
+    // Step 6: Batch insert missing cards (if any)
+    if (missingCards.length > 0) {
+      const missingValues = missingCards.map((m, i) => 
+        `($${i*4+1}, $${i*4+2}, $${i*4+3}, $${i*4+4})`
+      ).join(', ');
+      const missingParams = missingCards.flatMap(m => [
+        m.deck_id, m.card_name, m.set_code, m.quantity_needed
+      ]);
+      await pool.query(`
+        INSERT INTO deck_missing_cards (deck_id, card_name, set_code, quantity_needed)
+        VALUES ${missingValues}
+      `, missingParams);
     }
     
     res.json({
@@ -1265,7 +1373,7 @@ app.post('/api/deck-instances/:id/reoptimize', async (req, res) => {
 });
 
 // PUT update deck instance metadata
-app.put('/api/deck-instances/:id', async (req, res) => {
+app.put('/api/deck-instances/:id', validateId, async (req, res) => {
   const { id } = req.params;
   const { name, format, description } = req.body;
   
