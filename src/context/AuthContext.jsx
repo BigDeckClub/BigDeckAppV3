@@ -1,42 +1,23 @@
 import React, { createContext, useState, useEffect } from 'react';
-import { createClient } from '@supabase/supabase-js';
 
 export const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  
-  const [supabaseClient] = useState(() => {
-    const url = import.meta.env.VITE_SUPABASE_URL;
-    const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
-    
-    if (!url || !key) {
-      console.error('Missing Supabase env vars');
-      return null;
-    }
-    
-    return createClient(url, key);
-  });
 
   useEffect(() => {
-    if (!supabaseClient) {
-      console.error('Supabase client is not available');
-      setLoading(false);
-      return;
-    }
-
     let mounted = true;
 
     const initAuth = async () => {
       try {
-        const { data: { session } } = await supabaseClient.auth.getSession();
-        if (mounted) {
-          setUser(session?.user || null);
-          setLoading(false);
+        const saved = localStorage.getItem('supabase_user');
+        if (mounted && saved) {
+          setUser(JSON.parse(saved));
         }
       } catch (err) {
         console.error('Error initializing auth:', err);
+      } finally {
         if (mounted) {
           setLoading(false);
         }
@@ -45,31 +26,29 @@ export function AuthProvider({ children }) {
 
     initAuth();
 
-    let subscription;
-    try {
-      const { data } = supabaseClient.auth.onAuthStateChange(
-        (event, session) => {
-          if (mounted) {
-            setUser(session?.user || null);
-          }
-        }
-      );
-      subscription = data.subscription;
-    } catch (err) {
-      console.error('Failed to subscribe to auth changes:', err);
-    }
-
     return () => {
       mounted = false;
-      subscription?.unsubscribe();
     };
-  }, [supabaseClient]);
+  }, []);
 
   const login = async (email, password) => {
-    if (!supabaseClient) throw new Error('Supabase not initialized');
     try {
-      const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-      if (error) throw error;
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Login failed');
+      }
+
+      const data = await response.json();
+      if (data.user) {
+        setUser(data.user);
+        localStorage.setItem('supabase_user', JSON.stringify(data.user));
+      }
       return data;
     } catch (err) {
       console.error('Login error:', err);
@@ -78,10 +57,23 @@ export function AuthProvider({ children }) {
   };
 
   const signup = async (email, password) => {
-    if (!supabaseClient) throw new Error('Supabase not initialized');
     try {
-      const { data, error } = await supabaseClient.auth.signUp({ email, password });
-      if (error) throw error;
+      const response = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Signup failed');
+      }
+
+      const data = await response.json();
+      if (data.user) {
+        setUser(data.user);
+        localStorage.setItem('supabase_user', JSON.stringify(data.user));
+      }
       return data;
     } catch (err) {
       console.error('Signup error:', err);
@@ -90,13 +82,18 @@ export function AuthProvider({ children }) {
   };
 
   const logout = async () => {
-    if (!supabaseClient) throw new Error('Supabase not initialized');
-    const { error } = await supabaseClient.auth.signOut();
-    if (error) throw error;
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      setUser(null);
+      localStorage.removeItem('supabase_user');
+    } catch (err) {
+      console.error('Logout error:', err);
+      throw err;
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, signup, logout, supabase: supabaseClient }}>
+    <AuthContext.Provider value={{ user, loading, login, signup, logout }}>
       {children}
     </AuthContext.Provider>
   );

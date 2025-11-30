@@ -8,6 +8,7 @@ import compression from 'compression';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { mtgjsonService } from './server/mtgjsonPriceService.js';
+import { createClient } from '@supabase/supabase-js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -1740,6 +1741,65 @@ app.get('/api/sales', async (req, res) => {
     console.error('[SALES] Error fetching sales:', error.message);
     res.status(500).json({ error: 'Failed to fetch sales history' });
   }
+});
+
+// ========== SUPABASE AUTH PROXY ==========
+// Initialize Supabase client on server side
+const supabaseUrl = process.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY;
+
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password required' });
+    }
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+      return res.status(500).json({ error: 'Supabase not configured' });
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    
+    if (error) {
+      return res.status(401).json({ error: error.message });
+    }
+
+    res.json(data);
+  } catch (error) {
+    console.error('[AUTH] Login error:', error.message);
+    res.status(500).json({ error: 'Login failed' });
+  }
+});
+
+app.post('/api/auth/signup', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password required' });
+    }
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+      return res.status(500).json({ error: 'Supabase not configured' });
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    
+    if (error) {
+      return res.status(400).json({ error: error.message });
+    }
+
+    res.json(data);
+  } catch (error) {
+    console.error('[AUTH] Signup error:', error.message);
+    res.status(500).json({ error: 'Signup failed' });
+  }
+});
+
+app.post('/api/auth/logout', (req, res) => {
+  res.json({ success: true });
 });
 
 // ========== CENTRALIZED ERROR HANDLING ==========
