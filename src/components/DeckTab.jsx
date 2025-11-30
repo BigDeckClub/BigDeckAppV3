@@ -7,9 +7,6 @@ const API_BASE = '/api';
 export const DeckTab = ({ onDeckCreatedOrDeleted }) => {
   const [decks, setDecks] = useState([]);
   const [showImportDecklist, setShowImportDecklist] = useState(false);
-  const [showBuildDeck, setShowBuildDeck] = useState(false);
-  const [buildDeckName, setBuildDeckName] = useState('');
-  const [buildDeckFormat, setBuildDeckFormat] = useState('Standard');
   const [newDeckName, setNewDeckName] = useState('');
   const [newDeckFormat, setNewDeckFormat] = useState('Standard');
   const [deckListText, setDeckListText] = useState('');
@@ -420,7 +417,6 @@ export const DeckTab = ({ onDeckCreatedOrDeleted }) => {
                 onClick={() => {
                   setShowImportArchidekt(!showImportArchidekt);
                   setShowImportDecklist(false);
-                  setShowBuildDeck(false);
                 }}
                 className={`px-3 sm:px-4 py-2 rounded-lg flex items-center justify-center sm:justify-start gap-2 transition-colors text-white text-sm sm:text-base ${
                   showImportArchidekt
@@ -436,7 +432,6 @@ export const DeckTab = ({ onDeckCreatedOrDeleted }) => {
                 onClick={() => {
                   setShowImportDecklist(!showImportDecklist);
                   setShowImportArchidekt(false);
-                  setShowBuildDeck(false);
                 }}
                 className={`px-3 sm:px-4 py-2 rounded-lg flex items-center justify-center sm:justify-start gap-2 transition-colors text-white text-sm sm:text-base ${
                   showImportDecklist
@@ -447,22 +442,6 @@ export const DeckTab = ({ onDeckCreatedOrDeleted }) => {
                 <Download className="w-4 h-4 flex-shrink-0" />
                 <span className="hidden sm:inline">Import Decklist</span>
                 <span className="sm:hidden">Decklist</span>
-              </button>
-              <button
-                onClick={() => {
-                  setShowBuildDeck(!showBuildDeck);
-                  setShowImportArchidekt(false);
-                  setShowImportDecklist(false);
-                }}
-                className={`px-3 sm:px-4 py-2 rounded-lg flex items-center justify-center sm:justify-start gap-2 transition-colors text-white text-sm sm:text-base ${
-                  showBuildDeck
-                    ? 'bg-teal-500 shadow-lg shadow-teal-500/50'
-                    : 'bg-teal-600 hover:bg-teal-700'
-                }`}
-              >
-                <Plus className="w-4 h-4 flex-shrink-0" />
-                <span className="hidden sm:inline">Build Deck</span>
-                <span className="sm:hidden">Build</span>
               </button>
             </div>
           </div>
@@ -569,55 +548,6 @@ export const DeckTab = ({ onDeckCreatedOrDeleted }) => {
             </div>
           )}
 
-          {showBuildDeck && (
-            <div className="bg-slate-800 rounded-lg border border-teal-500/50 p-4 mb-4">
-              <h3 className="text-lg font-semibold text-teal-300 mb-4">Build New Deck</h3>
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-sm text-slate-400 mb-1">Deck Name</label>
-                  <input
-                    type="text"
-                    placeholder="e.g., Mono Red Aggro"
-                    value={buildDeckName}
-                    onChange={(e) => setBuildDeckName(e.target.value)}
-                    className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white placeholder-slate-500"
-                    onKeyDown={(e) => e.key === 'Enter' && createEmptyDeck()}
-                    autoFocus
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-slate-400 mb-1">Format</label>
-                  <select
-                    value={buildDeckFormat}
-                    onChange={(e) => setBuildDeckFormat(e.target.value)}
-                    className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white"
-                  >
-                    {formats.map(fmt => (
-                      <option key={fmt} value={fmt}>{fmt}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex gap-2 pt-2">
-                  <button
-                    onClick={createEmptyDeck}
-                    className="flex-1 bg-teal-600 hover:bg-teal-700 text-white px-3 py-2 rounded font-semibold transition-colors"
-                  >
-                    Create
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowBuildDeck(false);
-                      setBuildDeckName('');
-                      setBuildDeckFormat('Standard');
-                    }}
-                    className="flex-1 bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded transition-colors"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
 
           {decks.length === 0 ? (
             <div className="text-center py-12">
