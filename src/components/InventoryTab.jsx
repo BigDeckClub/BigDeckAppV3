@@ -621,7 +621,7 @@ export const InventoryTab = ({
                             </div>
                           </div>
                           <div className="flex gap-1 mt-1">
-                            <button onClick={() => updateInventoryItem(firstItem.id, {...editForm, quantity: parseInt(editForm.quantity), purchase_price: parseFloat(editForm.purchase_price), purchase_date: new Date().toISOString().split('T')[0]})} className="flex-1 bg-green-600 hover:bg-green-700 rounded px-2 py-0.5 text-xs font-semibold">Save</button>
+                            <button onClick={() => updateInventoryItem(firstItem.id, {...editForm, quantity: parseInt(editForm.quantity), purchase_price: parseFloat(editForm.purchase_price)})} className="flex-1 bg-green-600 hover:bg-green-700 rounded px-2 py-0.5 text-xs font-semibold">Save</button>
                             <button onClick={() => { setEditForm({}); setEditingId(null); }} className="flex-1 bg-slate-500 hover:bg-slate-400 rounded px-2 py-0.5 text-xs">Cancel</button>
                           </div>
                         </div>
@@ -718,7 +718,7 @@ export const InventoryTab = ({
                           </div>
                         </div>
                         <div className="flex gap-1 mt-1">
-                          <button onClick={() => updateInventoryItem(firstItem.id, {...editForm, quantity: parseInt(editForm.quantity), purchase_price: parseFloat(editForm.purchase_price), purchase_date: new Date().toISOString().split('T')[0]})} className="flex-1 bg-green-600 hover:bg-green-700 rounded px-2 py-0.5 text-xs font-semibold">Save</button>
+                          <button onClick={() => updateInventoryItem(firstItem.id, {...editForm, quantity: parseInt(editForm.quantity), purchase_price: parseFloat(editForm.purchase_price)})} className="flex-1 bg-green-600 hover:bg-green-700 rounded px-2 py-0.5 text-xs font-semibold">Save</button>
                           <button onClick={() => { setEditForm({}); setEditingId(null); }} className="flex-1 bg-slate-500 hover:bg-slate-400 rounded px-2 py-0.5 text-xs">Cancel</button>
                         </div>
                       </div>
