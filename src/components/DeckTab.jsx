@@ -4,7 +4,7 @@ import { BookOpen, Plus, Trash2, Edit2, X, Download } from 'lucide-react';
 
 const API_BASE = '/api';
 
-export const DeckTab = ({ onDeckCreatedOrDeleted }) => {
+export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
   const [decks, setDecks] = useState([]);
   const [showImportDecklist, setShowImportDecklist] = useState(false);
   const [newDeckName, setNewDeckName] = useState('');
@@ -51,9 +51,12 @@ export const DeckTab = ({ onDeckCreatedOrDeleted }) => {
       setSuccessMessage(`Deck created! ${result.reservedCount} cards reserved, ${result.missingCount} cards missing.`);
       setTimeout(() => setSuccessMessage(''), 5000);
       
-      // Refresh deck instances in Inventory tab
+      // Refresh deck instances and inventory in parent components
       if (onDeckCreatedOrDeleted) {
         onDeckCreatedOrDeleted();
+      }
+      if (onInventoryUpdate) {
+        onInventoryUpdate();
       }
       
     } catch (error) {
@@ -153,6 +156,11 @@ export const DeckTab = ({ onDeckCreatedOrDeleted }) => {
       setShowImportArchidekt(false);
       setSuccessMessage(`Deck imported successfully! ${cards.length} cards added.`);
       setTimeout(() => setSuccessMessage(''), 3000);
+      
+      // Refresh inventory after deck import
+      if (onInventoryUpdate) {
+        onInventoryUpdate();
+      }
     } catch (error) {
 
       alert(`Error importing deck: ${error.message}`);
@@ -279,6 +287,11 @@ export const DeckTab = ({ onDeckCreatedOrDeleted }) => {
       setShowImportDecklist(false);
       setSuccessMessage(`Deck created with ${cards.length} cards!`);
       setTimeout(() => setSuccessMessage(''), 3000);
+      
+      // Refresh inventory after deck creation
+      if (onInventoryUpdate) {
+        onInventoryUpdate();
+      }
     } catch (error) {
 
       alert('Error creating deck');
@@ -297,9 +310,12 @@ export const DeckTab = ({ onDeckCreatedOrDeleted }) => {
           setSuccessMessage('Deck deleted!');
           setTimeout(() => setSuccessMessage(''), 3000);
           
-          // Refresh deck instances in Inventory tab
+          // Refresh deck instances and inventory after deletion
           if (onDeckCreatedOrDeleted) {
             onDeckCreatedOrDeleted();
+          }
+          if (onInventoryUpdate) {
+            onInventoryUpdate();
           }
         }
       } catch (error) {
