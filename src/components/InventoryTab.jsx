@@ -1294,7 +1294,7 @@ export const InventoryTab = ({
       )}
 
       {/* RIGHT CONTENT - Cards or Deck Details */}
-      <div className="flex-1 pb-24 md:pb-6 px-2 md:px-0">
+      <div className="flex-1 pb-24 md:pb-6 px-4 md:px-6">
         {/* Tabs and View Mode */}
         <div className="flex flex-col md:flex-row gap-3 md:gap-4 mb-6 border-b border-slate-700 pb-4 items-start md:items-center justify-between">
           <div className="flex gap-2 w-full md:w-auto overflow-x-auto flex-wrap">
