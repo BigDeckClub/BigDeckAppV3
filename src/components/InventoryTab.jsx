@@ -699,9 +699,9 @@ export const InventoryTab = ({
         )}
 
         {/* Regular Inventory View */}
-        {!selectedDeck &&
-        {!selectedDeck && <>
-        {/* Tabs and View Mode */}
+        {!selectedDeck && (
+          <>
+            {/* Tabs and View Mode */}
         <div className="flex flex-col md:flex-row gap-3 md:gap-4 mb-6 border-b border-slate-700 pb-4 items-start md:items-center justify-between">
           <div className="flex gap-2 w-full md:w-auto">
             <button
@@ -832,7 +832,9 @@ export const InventoryTab = ({
               <p className="text-slate-400 text-center py-12">No cards in this folder yet.</p>
             )
           )}
-        </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
