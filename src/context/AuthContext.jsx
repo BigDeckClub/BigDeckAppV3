@@ -1,41 +1,60 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, useMemo } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
 export const AuthContext = createContext();
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+let supabase = null;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Missing Supabase configuration:', { url: !!supabaseUrl, key: !!supabaseAnonKey });
+function getSupabaseClient() {
+  if (supabase) return supabase;
+  
+  const url = import.meta.env.VITE_SUPABASE_URL;
+  const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  
+  if (!url || !key) {
+    console.error('Missing Supabase configuration');
+    return null;
+  }
+  
+  supabase = createClient(url, key);
+  return supabase;
 }
-
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const supabaseClient = useMemo(() => getSupabaseClient(), []);
 
   useEffect(() => {
+    if (!supabaseClient) {
+      console.error('Supabase client not initialized');
+      setLoading(false);
+      return;
+    }
+
     // Check current session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabaseClient.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user || null);
+      setLoading(false);
+    }).catch(err => {
+      console.error('Error getting session:', err);
       setLoading(false);
     });
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+    const { data: { subscription } } = supabaseClient.auth.onAuthStateChange(
       (event, session) => {
         setUser(session?.user || null);
       }
     );
 
     return () => subscription?.unsubscribe();
-  }, []);
+  }, [supabaseClient]);
 
   const login = async (email, password) => {
+    if (!supabaseClient) throw new Error('Supabase not initialized');
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
       if (error) {
         console.error('Supabase login error:', error);
         throw error;
@@ -48,8 +67,9 @@ export function AuthProvider({ children }) {
   };
 
   const signup = async (email, password) => {
+    if (!supabaseClient) throw new Error('Supabase not initialized');
     try {
-      const { data, error } = await supabase.auth.signUp({ email, password });
+      const { data, error } = await supabaseClient.auth.signUp({ email, password });
       if (error) {
         console.error('Supabase signup error:', error);
         throw error;
@@ -62,12 +82,13 @@ export function AuthProvider({ children }) {
   };
 
   const logout = async () => {
-    const { error } = await supabase.auth.signOut();
+    if (!supabaseClient) throw new Error('Supabase not initialized');
+    const { error } = await supabaseClient.auth.signOut();
     if (error) throw error;
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, signup, logout, supabase }}>
+    <AuthContext.Provider value={{ user, loading, login, signup, logout, supabase: supabaseClient }}>
       {children}
     </AuthContext.Provider>
   );
