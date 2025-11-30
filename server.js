@@ -865,7 +865,7 @@ app.get('/api/analytics/card-metrics', async (req, res) => {
     const allRows = availableResult.rows || [];
     const totalAvailable = allRows.reduce((sum, row) => sum + parseInt(row.available_count || 0), 0);
     
-    // Cards purchased in last 60 days
+    // Cards purchased in last 60 days (only inventory items, not sales)
     const sixtyDaysAgo = new Date();
     sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
     
@@ -875,13 +875,28 @@ app.get('/api/analytics/card-metrics', async (req, res) => {
     );
     const purchasedLast60d = parseInt(purchasedResult.rows[0].count) || 0;
     
+    // Cards sold in last 60 days
+    const soldResult = await pool.query(
+      'SELECT SUM(quantity) as count FROM sales_history WHERE created_at >= NOW() - INTERVAL \'60 days\'',
+      []
+    );
+    const totalSoldLast60d = parseInt(soldResult.rows[0].count) || 0;
+    
+    // Lifetime total cards = current inventory + all cards ever sold
+    const lifetimeSoldResult = await pool.query(
+      'SELECT SUM(quantity) as count FROM sales_history',
+      []
+    );
+    const lifetimeSold = parseInt(lifetimeSoldResult.rows[0].count) || 0;
+    const lifetimeTotalCards = totalCards + lifetimeSold;
+    
     res.json({
       totalCards,
       totalAvailable,
       uniqueCards,
-      totalSoldLast60d: 0,
+      totalSoldLast60d,
       totalPurchasedLast60d: purchasedLast60d,
-      lifetimeTotalCards: totalCards
+      lifetimeTotalCards
     });
   } catch (error) {
     console.error('[ANALYTICS] Error calculating card metrics:', error.message);
