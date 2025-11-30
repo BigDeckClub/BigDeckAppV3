@@ -827,7 +827,16 @@ export const InventoryTab = ({
             return (
               <button
                 key={folderName}
-                onClick={() => setSelectedFolder(isSelected ? null : folderName)}
+                onClick={() => {
+                  if (isSelected) {
+                    setSelectedFolder(null);
+                    setActiveTab('all');
+                  } else {
+                    setSelectedFolder(folderName);
+                    setActiveTab(folderName);
+                  }
+                  setSidebarOpen(false);
+                }}
                 onDragOver={(e) => {
                   e.preventDefault();
                   e.currentTarget.classList.add('bg-teal-700/60', 'border-teal-300');
@@ -866,7 +875,16 @@ export const InventoryTab = ({
               return (
                 <button
                   key={folder}
-                  onClick={() => setSelectedFolder(isSelected ? null : folder)}
+                  onClick={() => {
+                    if (isSelected) {
+                      setSelectedFolder(null);
+                      setActiveTab('all');
+                    } else {
+                      setSelectedFolder(folder);
+                      setActiveTab(folder);
+                    }
+                    setSidebarOpen(false);
+                  }}
                   onDragOver={(e) => {
                     e.preventDefault();
                     e.currentTarget.classList.add('bg-teal-700/60', 'border-teal-300');
