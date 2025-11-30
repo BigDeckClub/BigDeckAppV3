@@ -1253,7 +1253,7 @@ export const InventoryTab = ({
                         console.error('Error adding card to deck from sidebar:', err);
                       }
                     }}
-                    className={`w-full text-left p-3 rounded-lg transition-colors ${
+                    className={`w-full text-left p-3 rounded-lg transition-colors mb-2 ${
                       isDeckOpen
                         ? 'bg-green-600/40 border-l-4 border-green-400'
                         : 'bg-slate-800 border-l-4 border-transparent hover:bg-slate-700'
@@ -1321,7 +1321,7 @@ export const InventoryTab = ({
             {openFolders.map((folderName) => (
               <div 
                 key={`folder-tab-${folderName}`}
-                className="flex items-center"
+                className="flex items-center group"
               >
                 <button
                   type="button"
@@ -1345,7 +1345,7 @@ export const InventoryTab = ({
                       setActiveTab('all');
                     }
                   }}
-                  className="ml-1 text-slate-400 hover:text-red-400 transition-colors p-1"
+                  className="ml-1 text-slate-400 opacity-0 group-hover:opacity-100 hover:text-red-400 transition-all duration-200 p-1"
                   title="Close folder"
                 >
                   <X className="w-4 h-4" />
