@@ -1281,7 +1281,7 @@ export const InventoryTab = ({
                     }`}
                   >
                     <div className="font-medium text-sm text-slate-100">{deck.name}</div>
-                    <div className="text-xs text-green-300">
+                    <div className="text-xs flex flex-wrap gap-1">
                       {(() => {
                         const decklistTotal = (deck.cards || []).reduce((sum, c) => sum + (c.quantity || 1), 0);
                         const reserved = deck.reserved_count;
@@ -1289,10 +1289,20 @@ export const InventoryTab = ({
                         const extras = Math.max(0, reserved - decklistTotal);
                         
                         if (missing > 0) {
-                          return `${reserved} reserved ${missing} missing`;
+                          return (
+                            <>
+                              <span className="text-green-300">{reserved} reserved</span>
+                              <span className="text-red-400">{missing} missing</span>
+                            </>
+                          );
                         } else {
                           const displayReserved = decklistTotal > 0 ? decklistTotal : reserved;
-                          return `${displayReserved} reserved${extras > 0 ? ` +${extras} extra` : ''}`;
+                          return (
+                            <>
+                              <span className="text-green-300">{displayReserved} reserved</span>
+                              {extras > 0 && <span className="text-purple-400">+{extras} extra</span>}
+                            </>
+                          );
                         }
                       })()}
                     </div>
