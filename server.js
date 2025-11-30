@@ -1742,6 +1742,61 @@ app.get('/api/sales', async (req, res) => {
   }
 });
 
+// ========== LOCAL AUTHENTICATION ==========
+app.post('/api/auth/signup', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password required' });
+    }
+
+    // Check if user exists
+    const existing = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
+    if (existing.rows.length > 0) {
+      return res.status(400).json({ error: 'User already exists' });
+    }
+
+    // Create user (password stored as-is for simplicity; use bcrypt in production)
+    const result = await pool.query(
+      'INSERT INTO users (id, email) VALUES ($1, $2) RETURNING id, email',
+      [email.split('@')[0] + '_' + Date.now(), email]
+    );
+
+    res.json({ user: result.rows[0], session: 'local-session' });
+  } catch (error) {
+    console.error('[AUTH] Signup error:', error.message);
+    res.status(500).json({ error: 'Signup failed' });
+  }
+});
+
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ error: 'Email required' });
+    }
+
+    // Find or create user for local auth
+    let result = await pool.query('SELECT id, email FROM users WHERE email = $1', [email]);
+    
+    if (result.rows.length === 0) {
+      result = await pool.query(
+        'INSERT INTO users (id, email) VALUES ($1, $2) RETURNING id, email',
+        [email.split('@')[0] + '_' + Date.now(), email]
+      );
+    }
+
+    res.json({ user: result.rows[0], session: 'local-session' });
+  } catch (error) {
+    console.error('[AUTH] Login error:', error.message);
+    res.status(500).json({ error: 'Login failed' });
+  }
+});
+
+app.post('/api/auth/logout', (req, res) => {
+  res.json({ success: true });
+});
+
 // ========== CENTRALIZED ERROR HANDLING ==========
 // Placed after all API routes to catch unhandled errors from route handlers
 app.use((err, req, res, next) => {
