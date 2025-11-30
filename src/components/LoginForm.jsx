@@ -146,10 +146,10 @@ export function LoginForm({ onSuccess }) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 relative overflow-hidden">
-      {/* Animated background */}
-      <div className="fixed inset-0 opacity-30">
-        <div className="absolute top-0 left-0 w-96 h-96 bg-gradient-to-br from-teal-500/30 to-transparent rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-gradient-to-tl from-cyan-500/30 to-transparent rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+      {/* Subtle animated background */}
+      <div className="fixed inset-0 opacity-15">
+        <div className="absolute top-0 left-0 w-96 h-96 bg-gradient-to-br from-teal-500/40 to-transparent rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-gradient-to-tl from-cyan-500/40 to-transparent rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
       </div>
 
       <AnimatedParticles />
@@ -206,13 +206,10 @@ export function LoginForm({ onSuccess }) {
               <p className="text-slate-400">Professional MTG Inventory Management</p>
             </div>
 
-            {/* Auth Card with glow effect */}
+            {/* Auth Card */}
             <div className="relative group">
-              {/* Animated border glow */}
-              <div className="absolute inset-0 bg-gradient-to-r from-teal-500/30 via-cyan-500/30 to-teal-500/30 rounded-xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-
               {/* Card */}
-              <div className="relative bg-slate-800/40 backdrop-blur-md rounded-xl border border-slate-700/50 group-hover:border-teal-500/30 p-8 shadow-2xl transition-all duration-500 animate-fade-up" style={{ animationDelay: '0.1s' }}>
+              <div className="relative bg-slate-800/50 backdrop-blur-md rounded-xl border border-slate-700/60 hover:border-slate-600/80 p-8 shadow-xl transition-all duration-500 animate-fade-up hover:bg-slate-800/60" style={{ animationDelay: '0.1s' }}>
                 <div className="mb-8">
                   <h2 className="text-2xl font-bold text-transparent bg-gradient-to-r from-white to-slate-300 bg-clip-text mb-2">
                     {isSignup ? 'Create Account' : 'Welcome Back'}
@@ -270,24 +267,20 @@ export function LoginForm({ onSuccess }) {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full px-4 py-3 mt-6 relative group overflow-hidden rounded-lg font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed animate-fade-up"
+                    className="w-full px-4 py-3 mt-6 bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white font-semibold rounded-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition duration-300 animate-fade-up shadow-lg hover:shadow-xl hover:shadow-teal-500/20"
                     style={{ animationDelay: '0.4s' }}
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-teal-500 via-cyan-500 to-teal-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    <div className="absolute inset-0 bg-gradient-to-r from-teal-500 to-cyan-500" />
-                    <div className="relative flex items-center justify-center gap-2 text-white">
-                      {loading ? (
-                        <>
-                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                          Loading...
-                        </>
-                      ) : (
-                        <>
-                          {isSignup ? 'Create Account' : 'Sign In'}
-                          <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                        </>
-                      )}
-                    </div>
+                    {loading ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        Loading...
+                      </>
+                    ) : (
+                      <>
+                        {isSignup ? 'Create Account' : 'Sign In'}
+                        <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                      </>
+                    )}
                   </button>
                 </form>
 
