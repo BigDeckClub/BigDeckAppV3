@@ -64,10 +64,19 @@ export function AuthProvider({ children }) {
         body: JSON.stringify({ email, password })
       });
 
-      const data = await response.json().catch(() => ({}));
+      let data = {};
+      const contentType = response.headers.get('content-type');
+      
+      if (contentType?.includes('application/json')) {
+        data = await response.json().catch(() => ({}));
+      } else {
+        const text = await response.text();
+        console.log('Response text:', text);
+      }
 
       if (!response.ok) {
-        throw new Error(data.error || `Signup failed (${response.status})`);
+        const errorMsg = data.error || data.message || 'Signup failed';
+        throw new Error(errorMsg);
       }
 
       if (data.user) {
