@@ -49,6 +49,23 @@ export const InventoryTab = ({
   const [openFolders, setOpenFolders] = useState([]); // Array of folder names that are open as tabs
   const [deckDetailsCache, setDeckDetailsCache] = useState({}); // Cache deck details by ID
   const [loadingDeckDetails, setLoadingDeckDetails] = useState(false);
+  const [draggedTabData, setDraggedTabData] = useState(null); // {type: 'folder'|'deck', name|id, index}
+
+  // Reorder tabs when drag ends
+  const reorderTabs = (sourceType, sourceIndex, destIndex) => {
+    if (sourceIndex === destIndex) return;
+    if (sourceType === 'folder') {
+      const newFolders = [...openFolders];
+      const [moved] = newFolders.splice(sourceIndex, 1);
+      newFolders.splice(destIndex, 0, moved);
+      setOpenFolders(newFolders);
+    } else if (sourceType === 'deck') {
+      const newDecks = [...openDecks];
+      const [moved] = newDecks.splice(sourceIndex, 1);
+      newDecks.splice(destIndex, 0, moved);
+      setOpenDecks(newDecks);
+    }
+  };
 
   // Load created folders from localStorage
   useEffect(() => {
@@ -1320,15 +1337,37 @@ export const InventoryTab = ({
             </button>
             
             {/* Folder Tabs */}
-            {openFolders.map((folderName) => (
+            {openFolders.map((folderName, index) => (
               <div 
                 key={`folder-tab-${folderName}`}
                 className="flex items-center group"
+                draggable
+                onDragStart={(e) => {
+                  setDraggedTabData({type: 'folder', index});
+                  e.dataTransfer.effectAllowed = 'move';
+                }}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  if (draggedTabData?.type === 'folder') {
+                    e.currentTarget.classList.add('opacity-50');
+                  }
+                }}
+                onDragLeave={(e) => {
+                  e.currentTarget.classList.remove('opacity-50');
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  e.currentTarget.classList.remove('opacity-50');
+                  if (draggedTabData?.type === 'folder') {
+                    reorderTabs('folder', draggedTabData.index, index);
+                    setDraggedTabData(null);
+                  }
+                }}
               >
                 <button
                   type="button"
                   onClick={() => setActiveTab(folderName)}
-                  className={`px-3 md:px-4 py-2 text-sm md:text-base font-medium transition-colors whitespace-nowrap ${
+                  className={`px-3 md:px-4 py-2 text-sm md:text-base font-medium transition-colors whitespace-nowrap cursor-grab active:cursor-grabbing ${
                     activeTab === folderName
                       ? 'text-teal-300 border-b-2 border-teal-400'
                       : 'text-slate-400 hover:text-slate-300'
@@ -1356,17 +1395,39 @@ export const InventoryTab = ({
             ))}
 
             {/* Deck Tabs */}
-            {openDecks.map((deckId) => {
+            {openDecks.map((deckId, index) => {
               const deck = deckInstances.find(d => d.id === deckId);
               if (!deck) return null;
               return (
                 <div 
                   key={`deck-tab-${deckId}`} 
                   className="flex items-center"
+                  draggable
+                  onDragStart={(e) => {
+                    setDraggedTabData({type: 'deck', index});
+                    e.dataTransfer.effectAllowed = 'move';
+                  }}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    if (draggedTabData?.type === 'deck') {
+                      e.currentTarget.classList.add('opacity-50');
+                    }
+                  }}
+                  onDragLeave={(e) => {
+                    e.currentTarget.classList.remove('opacity-50');
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.currentTarget.classList.remove('opacity-50');
+                    if (draggedTabData?.type === 'deck') {
+                      reorderTabs('deck', draggedTabData.index, index);
+                      setDraggedTabData(null);
+                    }
+                  }}
                 >
                   <button
                     onClick={() => setActiveTab(`deck-${deckId}`)}
-                    className={`px-3 md:px-4 py-2 text-sm md:text-base font-medium transition-colors whitespace-nowrap ${
+                    className={`px-3 md:px-4 py-2 text-sm md:text-base font-medium transition-colors whitespace-nowrap cursor-grab active:cursor-grabbing ${
                       activeTab === `deck-${deckId}`
                         ? 'text-green-300 border-b-2 border-green-400'
                         : 'text-slate-400 hover:text-slate-300'
