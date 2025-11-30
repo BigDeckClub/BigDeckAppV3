@@ -3,6 +3,16 @@ import PropTypes from 'prop-types';
 import { X, Trash2 } from 'lucide-react';
 
 /**
+ * Calculate average price for a set of items
+ * @param {Array} setItems - Array of items with purchase_price
+ * @returns {number} - Average price
+ */
+function calculateSetAvgPrice(setItems) {
+  if (setItems.length === 0) return 0;
+  return setItems.reduce((sum, item) => sum + (parseFloat(item.purchase_price) || 0), 0) / setItems.length;
+}
+
+/**
  * CardGroup - A memoized component for rendering a group of inventory cards
  * Extracted from InventoryTab for performance optimization
  */
@@ -152,7 +162,7 @@ export const CardGroup = memo(function CardGroup({
               ).map((setItems) => {
                 const firstItem = setItems[0];
                 const totalQtyInSet = setItems.reduce((sum, item) => sum + (item.quantity || 0), 0);
-                const setAvgPrice = setItems.reduce((sum, item) => sum + (parseFloat(item.purchase_price) || 0), 0) / setItems.length;
+                const setAvgPrice = calculateSetAvgPrice(setItems);
                 const isEditing = editingId === firstItem.id;
                 
                 return (
@@ -249,7 +259,7 @@ export const CardGroup = memo(function CardGroup({
             ).map((setItems) => {
               const firstItem = setItems[0];
               const totalQtyInSet = setItems.reduce((sum, item) => sum + (item.quantity || 0), 0);
-              const setAvgPrice = setItems.reduce((sum, item) => sum + (parseFloat(item.purchase_price) || 0), 0) / setItems.length;
+              const setAvgPrice = calculateSetAvgPrice(setItems);
               const isEditing = editingId === firstItem.id;
               
               return (
