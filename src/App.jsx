@@ -258,7 +258,11 @@ function MTGInventoryTrackerContent() {
         purchasePrice: "",
         reorderType: "normal",
         selectedSet: null,
+        folder: "Uncategorized",
       });
+      setSearchQuery("");
+      setSearchResults([]);
+      setShowDropdown(false);
     }
   };
 
