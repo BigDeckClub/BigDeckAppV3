@@ -528,7 +528,7 @@ export const InventoryTab = ({
           <div className="flex-1 flex items-center justify-center min-h-0">
             <div className="text-center">
               <div className="text-slate-400 text-[8px] md:text-xs font-semibold">Available</div>
-              <div className="text-2xl md:text-3xl font-bold text-green-300 leading-tight">{available}</div>
+              <div className="text-xl md:text-2xl font-bold text-green-300 leading-tight">{available}</div>
             </div>
           </div>
           
@@ -831,7 +831,7 @@ export const InventoryTab = ({
           <div className="flex-1 flex items-center justify-center min-h-0">
             <div className="text-center">
               <div className="text-slate-400 text-[8px] md:text-xs font-semibold">Reserved</div>
-              <div className="text-2xl md:text-3xl font-bold text-green-300 leading-tight">{totalQty}</div>
+              <div className="text-xl md:text-2xl font-bold text-green-300 leading-tight">{totalQty}</div>
             </div>
           </div>
           
