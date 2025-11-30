@@ -404,6 +404,13 @@ export const InventoryTab = ({
     refreshDeckInstances();
   }, [deckRefreshTrigger]);
 
+  // Initialize openFolders on component mount
+  useEffect(() => {
+    if (createdFolders.length > 0 && openFolders.length === 0) {
+      setOpenFolders(createdFolders);
+    }
+  }, [createdFolders, openFolders]);
+
   // Collapse all cards when switching tabs or folders
   useEffect(() => {
     setExpandedCards({});
@@ -432,13 +439,6 @@ export const InventoryTab = ({
     return acc;
   }, {});
 
-  // Debug: Log folders on render
-  useEffect(() => {
-    const allFolders = [...createdFolders, ...Object.keys(groupedByFolder).filter(f => f !== 'Uncategorized' && !createdFolders.includes(f))];
-    console.log('DEBUG - createdFolders:', createdFolders);
-    console.log('DEBUG - groupedByFolder keys:', Object.keys(groupedByFolder));
-    console.log('DEBUG - allFolders for tabs:', allFolders);
-  }, [createdFolders, groupedByFolder]);
   
   // Legacy: group by card name for backwards compatibility
   const groupedInventory = inventory.reduce((acc, item) => {
@@ -1313,7 +1313,7 @@ export const InventoryTab = ({
             </button>
             
             {/* Folder Tabs */}
-            {[...createdFolders, ...Object.keys(groupedByFolder).filter(f => f !== 'Uncategorized' && !createdFolders.includes(f))].map((folderName) => (
+            {openFolders.map((folderName) => (
               <div 
                 key={`folder-tab-${folderName}`}
                 className="flex items-center"
@@ -1332,11 +1332,13 @@ export const InventoryTab = ({
                 <button
                   type="button"
                   onClick={(e) => {
-                    console.log('X button clicked for folder:', folderName);
                     e.preventDefault();
                     e.stopPropagation();
-                    console.log('Setting activeTab to all');
-                    setActiveTab('all');
+                    const remaining = openFolders.filter(f => f !== folderName);
+                    setOpenFolders(remaining);
+                    if (activeTab === folderName) {
+                      setActiveTab('all');
+                    }
                   }}
                   className="ml-1 text-slate-400 hover:text-red-400 transition-colors p-1"
                   title="Close folder"
