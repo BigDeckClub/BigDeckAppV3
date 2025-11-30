@@ -14,6 +14,7 @@ async function fetchCardPrices(name, setCode) {
 const SOFT_TTL_MS = 1000 * 60 * 10; // 10 minutes - return cached, refresh in background
 const HARD_TTL_MS = 1000 * 60 * 60; // 1 hour - always fetch from backend
 const STORAGE_KEY = "mtg-card-price-cache";
+const MAX_CACHE_ENTRIES = 500; // Maximum number of cached entries to prevent unbounded growth
 
 /**
  * PriceCacheProvider
@@ -36,12 +37,32 @@ export function PriceCacheProvider({ children }) {
     } catch (err) {}
   }, []);
 
-  // Persist cache to localStorage whenever it changes
+  // Persist cache to localStorage whenever it changes, with size limiting
   useEffect(() => {
     try {
+      const entries = Object.entries(cache);
+      // Only persist, don't mutate state here to avoid infinite loops
+      // Cache trimming is handled at the point of entry (in getPrice and setCache calls)
       localStorage.setItem(STORAGE_KEY, JSON.stringify(cache));
     } catch (err) {}
   }, [cache]);
+
+  /**
+   * Trim cache to MAX_CACHE_ENTRIES by keeping newest entries
+   * @param {Object} currentCache - Current cache object
+   * @returns {Object} - Trimmed cache object
+   */
+  function trimCache(currentCache) {
+    const entries = Object.entries(currentCache);
+    if (entries.length <= MAX_CACHE_ENTRIES) {
+      return currentCache;
+    }
+    // Keep newest entries based on fetchedAt
+    const sorted = entries.sort((a, b) => 
+      (b[1].fetchedAt || 0) - (a[1].fetchedAt || 0)
+    );
+    return Object.fromEntries(sorted.slice(0, MAX_CACHE_ENTRIES));
+  }
 
   /**
    * Get price for a card, using cache when available
@@ -69,7 +90,7 @@ export function PriceCacheProvider({ children }) {
           backgroundRefreshRef.current.add(key);
           fetchCardPrices(name, setCode)
             .then(result => {
-              setCache(prev => ({
+              setCache(prev => trimCache({
                 ...prev,
                 [key]: { ...result, fetchedAt: Date.now() },
               }));
@@ -91,13 +112,13 @@ export function PriceCacheProvider({ children }) {
     const promise = fetchCardPrices(name, setCode)
       .then(result => {
         const entry = { ...result, fetchedAt: Date.now() };
-        setCache(prev => ({ ...prev, [key]: entry }));
+        setCache(prev => trimCache({ ...prev, [key]: entry }));
         delete inflightRef.current[key];
         return result;
       })
       .catch(err => {
         const fallback = { tcg: "N/A", ck: "N/A", fetchedAt: Date.now() };
-        setCache(prev => ({ ...prev, [key]: fallback }));
+        setCache(prev => trimCache({ ...prev, [key]: fallback }));
         delete inflightRef.current[key];
         return fallback;
       });
