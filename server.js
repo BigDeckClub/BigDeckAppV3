@@ -870,7 +870,11 @@ app.get('/api/deck-instances', async (req, res) => {
     const result = await pool.query(`
       SELECT d.*,
         (SELECT COALESCE(SUM(dr.quantity_reserved), 0) FROM deck_reservations dr WHERE dr.deck_id = d.id) as reserved_count,
-        (SELECT COALESCE(SUM(dm.quantity_needed), 0) FROM deck_missing_cards dm WHERE dm.deck_id = d.id) as missing_count
+        (SELECT COALESCE(SUM(dm.quantity_needed), 0) FROM deck_missing_cards dm WHERE dm.deck_id = d.id) as missing_count,
+        (SELECT COALESCE(SUM(dr.quantity_reserved * COALESCE(i.purchase_price, 0)), 0) 
+         FROM deck_reservations dr
+         JOIN inventory i ON dr.inventory_item_id = i.id 
+         WHERE dr.deck_id = d.id) as total_cost
       FROM decks d
       WHERE d.is_deck_instance = TRUE
       ORDER BY d.created_at DESC

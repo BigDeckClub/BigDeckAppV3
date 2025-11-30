@@ -1296,6 +1296,9 @@ export const InventoryTab = ({
                         }
                       })()}
                     </div>
+                    <div className="text-xs text-amber-300 mt-1">
+                      Total: ${(parseFloat(deck.total_cost) || 0).toFixed(2)}
+                    </div>
                   </button>
                 );
               })}
