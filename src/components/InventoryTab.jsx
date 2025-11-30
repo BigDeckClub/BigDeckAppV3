@@ -404,13 +404,6 @@ export const InventoryTab = ({
     refreshDeckInstances();
   }, [deckRefreshTrigger]);
 
-  // Initialize openFolders on component mount
-  useEffect(() => {
-    if (createdFolders.length > 0 && openFolders.length === 0) {
-      setOpenFolders(createdFolders);
-    }
-  }, [createdFolders, openFolders]);
-
   // Collapse all cards when switching tabs or folders
   useEffect(() => {
     setExpandedCards({});
@@ -422,6 +415,7 @@ export const InventoryTab = ({
     if (!createdFolders.includes(trimmedName)) {
       const updated = [...createdFolders, trimmedName];
       setCreatedFolders(updated);
+      setOpenFolders([...openFolders, trimmedName]); // Add to open tabs when created
       localStorage.setItem('createdFolders', JSON.stringify(updated));
     }
   };
