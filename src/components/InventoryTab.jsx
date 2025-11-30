@@ -42,6 +42,7 @@ export const InventoryTab = ({
   const [activeTab, setActiveTab] = useState('all'); // 'all', 'unsorted', or folder name
   const [viewMode, setViewMode] = useState('card'); // 'card' or 'list'
   const [sidebarOpen, setSidebarOpen] = useState(false); // Mobile sidebar toggle
+  const [deckInstances, setDeckInstances] = useState([]);
 
   // Load created folders from localStorage
   useEffect(() => {
@@ -49,6 +50,24 @@ export const InventoryTab = ({
     if (savedFolders) {
       setCreatedFolders(JSON.parse(savedFolders));
     }
+  }, []);
+
+  // Fetch deck instances
+  useEffect(() => {
+    const fetchDeckInstances = async () => {
+      try {
+        const response = await fetch('/api/deck-instances');
+        if (response.ok) {
+          const data = await response.json();
+          setDeckInstances(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch deck instances:', error);
+      }
+    };
+    fetchDeckInstances();
+    const interval = setInterval(fetchDeckInstances, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   // Collapse all cards when switching tabs or folders
@@ -471,6 +490,33 @@ export const InventoryTab = ({
                 </button>
               );
             })}
+
+          {/* Deck Instances Section */}
+          {deckInstances.length > 0 && (
+            <div className="pt-3 border-t border-slate-700 mt-3">
+              <h3 className="text-sm font-semibold text-teal-300 mb-2">🎴 Deck Instances</h3>
+              {deckInstances.map((deck) => {
+                const isSelected = selectedFolder === `deck-${deck.id}`;
+                return (
+                  <button
+                    key={`deck-${deck.id}`}
+                    onClick={() => setSelectedFolder(isSelected ? null : `deck-${deck.id}`)}
+                    className={`w-full text-left p-3 rounded-lg transition-colors ${
+                      isSelected
+                        ? 'bg-green-600/40 border-l-4 border-green-400'
+                        : 'bg-slate-800 border-l-4 border-transparent hover:bg-slate-700'
+                    }`}
+                  >
+                    <div className="font-medium text-sm text-slate-100">{deck.name}</div>
+                    <div className="text-xs text-green-300">{deck.reserved_count} reserved</div>
+                    {deck.missing_count > 0 && (
+                      <div className="text-xs text-yellow-400">{deck.missing_count} missing</div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
 
