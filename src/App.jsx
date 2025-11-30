@@ -268,6 +268,7 @@ function MTGInventoryTrackerContent() {
     { id: "imports", icon: Download, label: "Imports" },
     { id: "analytics", icon: BarChart3, label: "Analytics" },
     { id: "decks", icon: BookOpen, label: "Decks" },
+    { id: "changelog", icon: History, label: "Change Log" },
   ];
 
   return (
@@ -304,6 +305,13 @@ function MTGInventoryTrackerContent() {
             >
               <BookOpen className="w-5 h-5 inline mr-2" />
               Decks
+            </button>
+            <button
+              onClick={() => setActiveTab("changelog")}
+              className={`px-4 py-2 nav-tab inactive ${activeTab === "changelog" ? "btn-primary" : "hover:shadow-lg"}`}
+            >
+              <History className="w-5 h-5 inline mr-2" />
+              Change Log
             </button>
           </div>
         </div>
