@@ -1568,20 +1568,27 @@ export const InventoryTab = ({
               <p className="text-slate-400 text-center py-12">No unsorted cards.</p>
             )
           ) : groupedByFolder[activeTab] ? (
-            /* Show folder's cards */
-            Object.keys(groupedByFolder[activeTab]).length > 0 ? (
-              viewMode === 'card' ? (
-                <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-3">
-                  {Object.entries(groupedByFolder[activeTab]).map(renderCardGroup)}
-                </div>
+            /* Show folder's cards - only include in-stock cards */
+            (() => {
+              const folderCards = Object.entries(groupedByFolder[activeTab]).filter(([_, items]) => {
+                const totalQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
+                const reservedQty = items.reduce((sum, item) => sum + (parseInt(item.reserved_quantity) || 0), 0);
+                return (totalQty - reservedQty) > 0;
+              });
+              return folderCards.length > 0 ? (
+                viewMode === 'card' ? (
+                  <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-3">
+                    {folderCards.map(renderCardGroup)}
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {folderCards.map(renderCardGroup)}
+                  </div>
+                )
               ) : (
-                <div className="space-y-2">
-                  {Object.entries(groupedByFolder[activeTab]).map(renderCardGroup)}
-                </div>
-              )
-            ) : (
-              <p className="text-slate-400 text-center py-12">No cards in this folder.</p>
-            )
+                <p className="text-slate-400 text-center py-12">No cards in this folder.</p>
+              );
+            })()
           ) : (
             <p className="text-slate-400 text-center py-12">Select a view to display cards.</p>
           )}
