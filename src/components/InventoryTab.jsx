@@ -153,7 +153,7 @@ export const InventoryTab = ({
     }
   };
 
-  // Move cards to folder via drag-drop
+  // Move cards to folder via drag-drop (with optimistic updates)
   const moveCardToFolder = async (cardName, targetFolder) => {
     try {
       const cardItems = inventory.filter(item => item.name === cardName);
@@ -161,6 +161,20 @@ export const InventoryTab = ({
         alert('Card not found');
         return;
       }
+      
+      // Optimistic update: update local state immediately
+      const updatedInventory = inventory.map(item => 
+        item.name === cardName ? { ...item, folder: targetFolder } : item
+      );
+      
+      // Store original state in case we need to rollback
+      const originalInventory = inventory;
+      
+      // Show the change immediately
+      setSuccessMessage(`Moved "${cardName}" to ${targetFolder}`);
+      
+      // Update API in the background
+      let hasError = false;
       for (const item of cardItems) {
         const response = await fetch(`/api/inventory/${item.id}`, {
           method: 'PUT',
@@ -168,12 +182,14 @@ export const InventoryTab = ({
           body: JSON.stringify({ folder: targetFolder })
         });
         if (!response.ok) {
+          hasError = true;
           const error = await response.json();
           console.error('API error:', error);
           throw new Error(error.error || 'Failed to update folder');
         }
       }
-      setSuccessMessage(`Moved "${cardName}" to ${targetFolder}`);
+      
+      // If successful, keep the optimistic update (no need to refetch)
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error) {
       console.error('Failed to move card:', error);
@@ -182,9 +198,46 @@ export const InventoryTab = ({
     }
   };
 
-  // Move individual card SKU to deck
+  // Move individual card SKU to deck (with optimistic updates)
   const moveCardSkuToDeck = async (inventoryItem, deckId) => {
     try {
+      const deck = deckInstances.find(d => d.id === deckId);
+      if (!deck) {
+        throw new Error('Deck not found');
+      }
+      
+      // Optimistic update: update deck details cache immediately
+      const optimisticReservation = {
+        name: inventoryItem.name,
+        set: inventoryItem.set,
+        quantity_reserved: inventoryItem.quantity,
+        purchase_price: inventoryItem.purchase_price,
+        original_folder: inventoryItem.folder
+      };
+      
+      if (deckDetailsCache[deckId]) {
+        setDeckDetailsCache(prev => ({
+          ...prev,
+          [deckId]: {
+            ...prev[deckId],
+            reservations: [...(prev[deckId].reservations || []), optimisticReservation],
+            reservedCount: (prev[deckId].reservedCount || 0) + 1,
+            totalCost: (prev[deckId].totalCost || 0) + (inventoryItem.purchase_price * inventoryItem.quantity || 0)
+          }
+        }));
+      }
+      
+      // Update deck instances with optimistic count
+      const updatedDeckInstances = deckInstances.map(d => 
+        d.id === deckId 
+          ? { ...d, reserved_count: (d.reserved_count || 0) + 1 }
+          : d
+      );
+      
+      // Show immediate feedback
+      setSuccessMessage(`Added ${inventoryItem.quantity}x ${inventoryItem.name} to deck`);
+      
+      // Update API in the background
       const response = await fetch(`/api/deck-instances/${deckId}/add-card`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -193,12 +246,14 @@ export const InventoryTab = ({
           quantity: inventoryItem.quantity
         })
       });
+      
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.error || 'Failed to add card to deck');
       }
+      
+      // Refresh deck instances to sync with backend
       await refreshDeckInstances();
-      setSuccessMessage(`Added ${inventoryItem.quantity}x ${inventoryItem.name} to deck`);
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error) {
       console.error('Failed to add card to deck:', error);
