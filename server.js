@@ -1785,20 +1785,24 @@ app.post('/api/auth/signup', async (req, res) => {
     }
 
     if (!supabaseUrl || !supabaseAnonKey) {
+      console.error('[AUTH] Supabase not configured');
       return res.status(500).json({ error: 'Supabase not configured' });
     }
 
+    console.log('[AUTH] Signup attempt for:', email);
     const supabase = createClient(supabaseUrl, supabaseAnonKey);
     const { data, error } = await supabase.auth.signUp({ email, password });
     
     if (error) {
-      return res.status(400).json({ error: error.message });
+      console.error('[AUTH] Supabase signup error:', error.message, error.status);
+      return res.status(error.status || 400).json({ error: error.message });
     }
 
+    console.log('[AUTH] Signup successful for:', email);
     res.json(data);
   } catch (error) {
-    console.error('[AUTH] Signup error:', error.message);
-    res.status(500).json({ error: 'Signup failed' });
+    console.error('[AUTH] Signup error:', error.message, error);
+    res.status(500).json({ error: error.message || 'Signup failed' });
   }
 });
 
