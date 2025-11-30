@@ -246,8 +246,8 @@ export const AnalyticsTab = ({ inventory }) => {
           <div className="bg-slate-800 border border-slate-600 rounded-lg p-4">
             <div className="space-y-4">
               <div>
-                <div className="text-slate-400 text-xs font-semibold mb-1">Total Spent</div>
-                <div className="text-2xl font-bold text-blue-300">${cardMetrics.lifetimeTotalValue.toFixed(2)}</div>
+                <div className="text-slate-400 text-xs font-semibold mb-1">Current Inventory Value</div>
+                <div className="text-2xl font-bold text-blue-300">${totalValue.toFixed(2)}</div>
               </div>
               <div className="border-t border-slate-600 pt-4">
                 <div className="text-slate-400 text-xs font-semibold mb-1">Card Kingdom Value</div>
