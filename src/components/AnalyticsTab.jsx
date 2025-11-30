@@ -11,8 +11,7 @@ export const AnalyticsTab = ({ inventory }) => {
     totalSoldLast60d: 0,
     totalPurchasedLast60d: 0,
     lifetimeTotalCards: 0,
-    lifetimeTotalValue: 0,
-    lifetimeTotalRevenue: 0
+    lifetimeTotalValue: 0
   });
   const [showChangeLog, setShowChangeLog] = useState(false);
   const [filterSection, setFilterSection] = useState('all');
@@ -34,8 +33,7 @@ export const AnalyticsTab = ({ inventory }) => {
           totalSoldLast60d: 0,
           totalPurchasedLast60d: 0,
           lifetimeTotalCards: 0,
-          lifetimeTotalValue: 0,
-          lifetimeTotalRevenue: 0
+          lifetimeTotalValue: 0
         });
       } catch (error) {}
     };
