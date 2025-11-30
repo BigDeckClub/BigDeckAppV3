@@ -1541,29 +1541,33 @@ export const InventoryTab = ({
                   }}
                 >
                   {/* Deck Header */}
-                  <div className="bg-slate-800 rounded-lg border border-slate-600 p-4">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h2 className="text-2xl font-bold text-green-300">{deck.name}</h2>
-                        <p className="text-sm text-slate-400">{deck.format}</p>
+                  <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/50 rounded-lg border border-slate-600 hover:border-green-500/50 p-3 transition-all duration-300 shadow-lg shadow-slate-900/50">
+                    <div className="flex justify-between items-start gap-3">
+                      <div className="flex-1">
+                        <div className="flex items-baseline gap-3 mb-1.5 flex-wrap">
+                          <h2 className="text-xl font-bold text-green-300">{deck.name}</h2>
+                          <span className="text-xs font-medium px-2 py-1 bg-green-900/40 text-green-300 rounded">{deck.format}</span>
+                        </div>
                         {deckDetails.originalDecklist && (
-                          <p className="text-sm text-cyan-400 mt-1">
+                          <p className="text-xs text-cyan-400 mb-1">
                             From: <span className="font-semibold">{deckDetails.originalDecklist.name}</span> ({deckDetails.originalDecklist.cardCount} cards)
                           </p>
                         )}
-                        {deckDetails.totalCost > 0 && (
-                          <p className="text-sm text-green-400 font-semibold mt-1">Total Cost: ${deckDetails.totalCost?.toFixed(2) || '0.00'}</p>
-                        )}
-                        <p className="text-sm text-slate-400 mt-1">
-                          {deckDetails.reservedCount} reserved
-                          {deckDetails.extraCount > 0 && <span className="text-blue-400">, +{deckDetails.extraCount} extra</span>}
-                          {deckDetails.missingCount > 0 && <span className="text-yellow-400"> {deckDetails.missingCount} missing</span>}
-                        </p>
+                        <div className="flex flex-wrap gap-4 text-xs">
+                          {deckDetails.totalCost > 0 && (
+                            <span className="text-green-400 font-semibold">💰 ${deckDetails.totalCost?.toFixed(2) || '0.00'}</span>
+                          )}
+                          <span className="text-slate-400">
+                            ✅ {deckDetails.reservedCount} reserved
+                            {deckDetails.extraCount > 0 && <span className="text-blue-400"> • +{deckDetails.extraCount} extra</span>}
+                            {deckDetails.missingCount > 0 && <span className="text-yellow-400"> • {deckDetails.missingCount} missing</span>}
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex gap-1.5">
                         <button
                           onClick={() => autoFillMissingCards(deck, deck.id)}
-                          className="bg-teal-600 hover:bg-teal-500 text-white p-2 rounded transition-colors flex items-center"
+                          className="bg-gradient-to-br from-teal-600 to-teal-700 hover:from-teal-500 hover:to-teal-600 text-white p-2 rounded-lg transition-all duration-200 hover:shadow-lg hover:shadow-teal-500/30 flex items-center"
                           title="Auto-fill missing cards from inventory (oldest & cheapest first)"
                         >
                           <Wand2 className="w-4 h-4" />
@@ -1578,14 +1582,14 @@ export const InventoryTab = ({
                             });
                             setShowSellModal(true);
                           }}
-                          className="bg-green-600 hover:bg-green-500 text-white p-2 rounded transition-colors flex items-center"
+                          className="bg-gradient-to-br from-green-600 to-green-700 hover:from-green-500 hover:to-green-600 text-white p-2 rounded-lg transition-all duration-200 hover:shadow-lg hover:shadow-green-500/30 flex items-center"
                           title="Sell deck and track profit"
                         >
                           <DollarSign className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => releaseDeck(deck.id)}
-                          className="close-btn p-2"
+                          className="bg-gradient-to-br from-slate-700 to-slate-800 hover:from-red-600 hover:to-red-700 text-slate-300 hover:text-white p-2 rounded-lg transition-all duration-200 hover:shadow-lg hover:shadow-red-500/30 flex items-center"
                           title="Delete deck and return cards to unsorted"
                         >
                           <Trash2 className="w-5 h-5" />
@@ -1597,13 +1601,13 @@ export const InventoryTab = ({
                   {/* Reserved Cards Grid */}
                   {reservationEntries.length > 0 && (
                     <div>
-                      <h3 className="text-lg font-semibold text-green-400 mb-3">✅ Reserved Cards ({deckDetails.reservedCount})</h3>
+                      <h3 className="text-sm font-semibold px-3 py-2 rounded-lg bg-gradient-to-r from-green-600/30 to-green-700/20 border border-green-600/40 text-green-300 mb-3">✅ Reserved Cards ({deckDetails.reservedCount})</h3>
                       {viewMode === 'card' ? (
                         <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-3">
                           {reservationEntries.map(renderDeckCardGroup)}
                         </div>
                       ) : (
-                        <div className="space-y-2">
+                        <div className="space-y-1.5">
                           {reservationEntries.map(renderDeckCardGroup)}
                         </div>
                       )}
@@ -1618,9 +1622,9 @@ export const InventoryTab = ({
                           ...prev,
                           [deckId]: !prev[deckId]
                         }))}
-                        className="w-full flex items-center justify-between p-3 bg-slate-800 rounded-lg hover:bg-slate-700 transition-colors"
+                        className="w-full flex items-center justify-between p-2.5 bg-gradient-to-r from-yellow-600/20 to-yellow-700/10 hover:from-yellow-600/30 hover:to-yellow-700/20 rounded-lg transition-all duration-300 border border-yellow-600/40"
                       >
-                        <h3 className="text-lg font-semibold text-yellow-400">❌ Missing Cards ({actualMissingCount})</h3>
+                        <h3 className="text-sm font-semibold text-yellow-300">❌ Missing Cards ({actualMissingCount})</h3>
                         <ChevronDown className={`w-5 h-5 text-yellow-400 transition-transform ${expandedMissingCards[deckId] ? 'rotate-180' : ''}`} />
                       </button>
                       {expandedMissingCards[deckId] && (
