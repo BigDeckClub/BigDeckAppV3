@@ -855,6 +855,16 @@ app.get('/api/analytics/card-metrics', async (req, res) => {
     const totalCards = parseInt(totalRow.total_count) || 0;
     const uniqueCards = parseInt(totalRow.unique_count) || 0;
     
+    // Available cards (total - reserved)
+    const availableResult = await pool.query(`
+      SELECT COALESCE(SUM(i.quantity), 0) as available_count
+      FROM inventory i
+      LEFT JOIN deck_reservations dr ON i.id = dr.inventory_item_id
+      GROUP BY i.id
+    `);
+    const allRows = availableResult.rows || [];
+    const totalAvailable = allRows.reduce((sum, row) => sum + parseInt(row.available_count || 0), 0);
+    
     // Cards purchased in last 60 days
     const sixtyDaysAgo = new Date();
     sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
@@ -867,7 +877,7 @@ app.get('/api/analytics/card-metrics', async (req, res) => {
     
     res.json({
       totalCards,
-      totalAvailable: totalCards,
+      totalAvailable,
       uniqueCards,
       totalSoldLast60d: 0,
       totalPurchasedLast60d: purchasedLast60d,
@@ -1504,19 +1514,22 @@ app.post('/api/sales', async (req, res) => {
       [itemType, itemId || null, itemName, purchasePrice, sellPrice, profit, quantity || 1]
     );
 
-    // If selling a deck, delete the reserved inventory items and the deck
+    // If selling a deck, reduce the reserved inventory items and the deck
     if (itemType === 'deck' && itemId) {
-      // Get all reserved inventory items for this deck
+      // Get all reserved inventory items for this deck with quantities
       const reservationsResult = await pool.query(
-        `SELECT inventory_item_id FROM deck_reservations WHERE deck_id = $1`,
+        `SELECT inventory_item_id, quantity_reserved FROM deck_reservations WHERE deck_id = $1`,
         [itemId]
       );
       
-      // Delete those inventory items (this updates analytics automatically)
+      // Update inventory quantities by subtracting reserved amounts
       if (reservationsResult.rows.length > 0) {
-        const inventoryIds = reservationsResult.rows.map(r => r.inventory_item_id);
-        const placeholders = inventoryIds.map((_, i) => `$${i + 1}`).join(',');
-        await pool.query(`DELETE FROM inventory WHERE id IN (${placeholders})`, inventoryIds);
+        for (const reservation of reservationsResult.rows) {
+          await pool.query(
+            `UPDATE inventory SET quantity = quantity - $1 WHERE id = $2`,
+            [reservation.quantity_reserved, reservation.inventory_item_id]
+          );
+        }
       }
       
       // Delete the deck and its reservations
