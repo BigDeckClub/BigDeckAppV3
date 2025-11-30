@@ -86,13 +86,22 @@ export const InventoryTab = ({
     }
   };
 
-  // Load created folders from localStorage
-  useEffect(() => {
-    const savedFolders = localStorage.getItem('createdFolders');
-    if (savedFolders) {
-      setCreatedFolders(JSON.parse(savedFolders));
+  // Load created folders from server
+  const loadFolders = useCallback(async () => {
+    try {
+      const response = await fetch('/api/folders');
+      if (response.ok) {
+        const data = await response.json();
+        setCreatedFolders(data.map(f => f.name));
+      }
+    } catch (error) {
+      console.error('Error loading folders:', error);
     }
   }, []);
+
+  useEffect(() => {
+    loadFolders();
+  }, [loadFolders]);
 
   // Fetch deck instances on demand (memoized)
   const refreshDeckInstances = useCallback(async () => {
@@ -602,14 +611,29 @@ export const InventoryTab = ({
     setExpandedCards({});
   }, [activeTab, selectedFolder]);
 
-  // Save created folders to localStorage
-  const addCreatedFolder = (folderName) => {
+  // Create folder on server
+  const addCreatedFolder = async (folderName) => {
     const trimmedName = folderName.trim();
     if (!createdFolders.includes(trimmedName)) {
-      const updated = [...createdFolders, trimmedName];
-      setCreatedFolders(updated);
-      setOpenFolders([...openFolders, trimmedName]); // Add to open tabs when created
-      localStorage.setItem('createdFolders', JSON.stringify(updated));
+      try {
+        const response = await fetch('/api/folders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: trimmedName, description: '' })
+        });
+        
+        if (response.ok) {
+          const updated = [...createdFolders, trimmedName];
+          setCreatedFolders(updated);
+          setOpenFolders([...openFolders, trimmedName]);
+        } else if (response.status === 409) {
+          // Folder already exists, just add to UI
+          setCreatedFolders([...createdFolders, trimmedName]);
+          setOpenFolders([...openFolders, trimmedName]);
+        }
+      } catch (error) {
+        console.error('Error creating folder:', error);
+      }
     }
   };
   
