@@ -1261,7 +1261,12 @@ export const InventoryTab = ({
                   >
                     <div className="font-medium text-sm text-slate-100">{deck.name}</div>
                     <div className="text-xs text-green-300">
-                      {deck.reserved_count}/{(deck.cards || []).reduce((sum, c) => sum + (c.quantity || 1), 0)} reserved
+                      {deck.reserved_count} reserved
+                      {(() => {
+                        const decklistTotal = (deck.cards || []).reduce((sum, c) => sum + (c.quantity || 1), 0);
+                        const extraCount = Math.max(0, deck.reserved_count - decklistTotal);
+                        return extraCount > 0 ? `, +${extraCount} extra` : '';
+                      })()}
                     </div>
                     {deck.missing_count > 0 && (
                       <div className="text-xs text-yellow-400">{deck.missing_count} missing</div>
@@ -1459,9 +1464,9 @@ export const InventoryTab = ({
                           <p className="text-sm text-green-400 font-semibold mt-1">Total Cost: ${deckDetails.totalCost?.toFixed(2) || '0.00'}</p>
                         )}
                         <p className="text-sm text-slate-400 mt-1">
-                          {deckDetails.reservedCount}/{deckDetails.originalDecklist?.cardCount || deckDetails.reservedCount} reserved
-                          {deckDetails.missingCount > 0 && <span className="text-yellow-400"> • {deckDetails.missingCount} missing</span>}
-                          {deckDetails.extraCount > 0 && <span className="text-blue-400"> • {deckDetails.extraCount} extras</span>}
+                          {deckDetails.reservedCount} reserved
+                          {deckDetails.extraCount > 0 && <span className="text-blue-400">, +{deckDetails.extraCount} extra</span>}
+                          {deckDetails.missingCount > 0 && <span className="text-yellow-400"> {deckDetails.missingCount} missing</span>}
                         </p>
                       </div>
                       <div className="flex gap-2">
