@@ -102,5 +102,3 @@ CHECKPOINT_DISABLE = "1"
 [userenv.production]
 DATABASE_URL = "postgresql://neondb_owner:npg_Ah3YCkH5WXGi@ep-red-wave-ahuq4str.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require"
 PRODUCTION_DATABASE_URL = "postgresql://neondb_owner:npg_uq2Gwcnro3XH@ep-square-frog-a4poapo4-pooler.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
-VITE_SUPABASE_URL = "https://tcbhokgxavhsbonzwelq.supabase.co"
-VITE_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRjYmhva2d4YXZoc2Jvbnp3ZWxxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ0Nzg2NDcsImV4cCI6MjA4MDA1NDY0N30.PeSdDk2c4EKX8ITz-2MKyApz3-tNAgw61mNgCf9NxIs"
