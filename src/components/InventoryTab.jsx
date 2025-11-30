@@ -1324,8 +1324,10 @@ export const InventoryTab = ({
                 <button
                   type="button"
                   onClick={(e) => {
+                    console.log('X button clicked for folder:', folderName);
                     e.preventDefault();
                     e.stopPropagation();
+                    console.log('Setting activeTab to all');
                     setActiveTab('all');
                   }}
                   className="ml-1 text-slate-400 hover:text-red-400 transition-colors p-1"
