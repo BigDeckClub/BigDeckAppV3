@@ -321,7 +321,7 @@ export const InventoryTab = ({
   };
 
   // Move individual card SKU to deck (with optimistic updates)
-  const moveCardSkuToDeck = async (inventoryItem, deckId) => {
+  const moveCardSkuToDeck = async (inventoryItem, deckId, skipRefresh = false) => {
     try {
       const deck = deckInstances.find(d => d.id === deckId);
       if (!deck) {
@@ -374,11 +374,12 @@ export const InventoryTab = ({
         throw new Error(error.error || 'Failed to add card to deck');
       }
       
-      // Refresh deck instances to sync with backend
-      await refreshDeckInstances();
-      // Use debounced refresh for inventory to prevent excessive API calls during rapid operations
-      debouncedLoadInventory();
-      setTimeout(() => setSuccessMessage(''), 3000);
+      // Only refresh immediately if not called from auto-fill (which does its own refresh)
+      if (!skipRefresh) {
+        await refreshDeckInstances();
+        debouncedLoadInventory();
+        setTimeout(() => setSuccessMessage(''), 3000);
+      }
     } catch (error) {
 
       setSuccessMessage(`Error: ${error.message}`);
@@ -407,14 +408,17 @@ export const InventoryTab = ({
         if (stillNeeded <= 0) break;
         const qtyToAdd = Math.min(stillNeeded, item.quantity || 0);
         if (qtyToAdd > 0) {
-          await moveCardSkuToDeck({ ...item, quantity: qtyToAdd }, deckId);
+          await moveCardSkuToDeck({ ...item, quantity: qtyToAdd }, deckId, true);
           added++;
           stillNeeded -= qtyToAdd;
         }
       }
       
-      setSuccessMessage(`✅ Added ${added} item(s) to deck`);
+      // Single refresh after all cards are added
+      await refreshDeckInstances();
+      debouncedLoadInventory();
       await loadDeckDetails(deckId, true);
+      setSuccessMessage(`✅ Added ${added} item(s) to deck`);
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error) {
 
