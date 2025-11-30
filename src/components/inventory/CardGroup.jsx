@@ -200,24 +200,18 @@ export const CardGroup = memo(function CardGroup({
           </div>
         </div>
         
-        <div className="grid grid-cols-3 gap-2 text-center pt-2 border-t border-slate-700/50">
-          <div className="space-y-0.5">
-            <div className="text-slate-500 text-[7px] md:text-[8px] font-semibold uppercase">Qty</div>
-            <div className="h-5 md:h-6 flex items-center justify-center">
-              <div className={`font-bold leading-tight ${getStatFontSize(totalQty)} ${totalQty === 0 ? 'text-slate-500' : 'text-teal-300'}`}>{totalQty}</div>
-            </div>
+        <div className="grid grid-cols-3 gap-1 text-center pt-1.5 border-t border-slate-700/50">
+          <div className="min-h-12 flex flex-col justify-center">
+            <div className="text-slate-500 text-[6px] md:text-[7px] font-semibold uppercase leading-tight mb-0.5">QTY</div>
+            <div className={`font-bold text-sm md:text-base leading-none ${totalQty === 0 ? 'text-slate-500' : 'text-teal-300'}`}>{totalQty}</div>
           </div>
-          <div className="space-y-0.5">
-            <div className="text-slate-500 text-[7px] md:text-[8px] font-semibold uppercase">Cost</div>
-            <div className="h-5 md:h-6 flex items-center justify-center">
-              <div className={`font-bold leading-tight text-blue-300 ${getStatFontSize(avgPrice.toFixed(2))}`}>${avgPrice.toFixed(2)}</div>
-            </div>
+          <div className="min-h-12 flex flex-col justify-center">
+            <div className="text-slate-500 text-[6px] md:text-[7px] font-semibold uppercase leading-tight mb-0.5">COST</div>
+            <div className="font-bold text-blue-300 text-sm md:text-base leading-none">${avgPrice.toFixed(2)}</div>
           </div>
-          <div className="space-y-0.5">
-            <div className="text-slate-500 text-[7px] md:text-[8px] font-semibold uppercase">Total</div>
-            <div className="h-5 md:h-6 flex items-center justify-center">
-              <div className={`font-bold leading-tight text-amber-400 ${getStatFontSize(formatTotal(totalValue))}`}>${formatTotal(totalValue)}</div>
-            </div>
+          <div className="min-h-12 flex flex-col justify-center">
+            <div className="text-slate-500 text-[6px] md:text-[7px] font-semibold uppercase leading-tight mb-0.5">TOTAL</div>
+            <div className="font-bold text-amber-400 text-sm md:text-base leading-none">${formatTotal(totalValue)}</div>
           </div>
         </div>
       </div>
