@@ -110,9 +110,6 @@ export const InventoryTab = ({
 
   // Release deck and return cards to inventory
   const releaseDeck = async (deckId) => {
-    if (!window.confirm('Are you sure you want to release this deck? All cards will be returned to inventory.')) {
-      return;
-    }
     try {
       const response = await fetch(`/api/deck-instances/${deckId}/release`, {
         method: 'POST'
@@ -121,14 +118,14 @@ export const InventoryTab = ({
         setSelectedDeck(null);
         setDeckDetails(null);
         await refreshDeckInstances();
-        setSuccessMessage('Deck released! Cards returned to inventory.');
+        setSuccessMessage('Deck deleted! Cards returned to unsorted.');
         setTimeout(() => setSuccessMessage(''), 3000);
       } else {
-        alert('Failed to release deck');
+        alert('Failed to delete deck');
       }
     } catch (error) {
-      console.error('Failed to release deck:', error);
-      alert('Error releasing deck');
+      console.error('Failed to delete deck:', error);
+      alert('Error deleting deck');
     }
   };
 
@@ -1231,10 +1228,10 @@ export const InventoryTab = ({
                         </button>
                         <button
                           onClick={() => releaseDeck(deck.id)}
-                          className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm transition-colors"
-                          title="Release deck and return cards"
+                          className="text-red-400 hover:text-red-300 p-2"
+                          title="Delete deck and return cards to unsorted"
                         >
-                          Release
+                          <Trash2 className="w-5 h-5" />
                         </button>
                       </div>
                     </div>
