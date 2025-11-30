@@ -99,8 +99,13 @@ export const InventoryTab = ({
         const data = await response.json();
         setDeckDetailsCache(prev => ({ ...prev, [deckId]: data }));
         // Expand missing cards section if there are missing cards
-        if (data.missingCards && data.missingCards.length > 0) {
-          setExpandedMissingCards(prev => ({ ...prev, [deckId]: true }));
+        const deck = deckInstances.find(d => d.id === deckId);
+        if (deck) {
+          const decklistTotal = (deck.cards || []).reduce((sum, c) => sum + (c.quantity || 1), 0);
+          const actualMissingCount = Math.max(0, decklistTotal - (data.reservedCount || 0));
+          if (actualMissingCount > 0) {
+            setExpandedMissingCards(prev => ({ ...prev, [deckId]: true }));
+          }
         }
       } else {
         const error = await response.json();
@@ -1503,6 +1508,10 @@ export const InventoryTab = ({
               const deckDetails = deckDetailsCache[deckId];
               if (!deck || !deckDetails) return null;
 
+              // Calculate actual missing cards based on decklist
+              const decklistTotal = (deck.cards || []).reduce((sum, c) => sum + (c.quantity || 1), 0);
+              const actualMissingCount = Math.max(0, decklistTotal - (deckDetails.reservedCount || 0));
+
               // Group reservations by card name for grid view
               const groupedReservations = (deckDetails.reservations || []).reduce((acc, res) => {
                 const cardName = res.name;
@@ -1592,7 +1601,7 @@ export const InventoryTab = ({
                   )}
 
                   {/* Missing Cards */}
-                  {(deckDetails.missingCount > 0 || (deckDetails.missingCards && deckDetails.missingCards.length > 0)) && (
+                  {actualMissingCount > 0 && (
                     <div>
                       <button
                         onClick={() => setExpandedMissingCards(prev => ({
@@ -1601,23 +1610,28 @@ export const InventoryTab = ({
                         }))}
                         className="w-full flex items-center justify-between p-3 bg-slate-800 rounded-lg hover:bg-slate-700 transition-colors"
                       >
-                        <h3 className="text-lg font-semibold text-yellow-400">❌ Missing Cards ({deckDetails.missingCount || 0})</h3>
+                        <h3 className="text-lg font-semibold text-yellow-400">❌ Missing Cards ({actualMissingCount})</h3>
                         <ChevronDown className={`w-5 h-5 text-yellow-400 transition-transform ${expandedMissingCards[deckId] ? 'rotate-180' : ''}`} />
                       </button>
                       {expandedMissingCards[deckId] && (
                         <div className="bg-slate-900 rounded-b-lg p-3 space-y-2 max-h-48 overflow-y-auto mt-2">
-                          {deckDetails.missingCards && deckDetails.missingCards.length > 0 ? (
-                            deckDetails.missingCards.map((missing, idx) => (
-                              <div key={idx} className="flex justify-between items-center text-sm text-slate-300 bg-slate-800 p-2 rounded">
-                                <span className="text-white">{missing.quantity_needed}x {missing.card_name}</span>
-                                <span className="text-xs text-slate-500">{missing.set_code}</span>
-                              </div>
-                            ))
-                          ) : (
-                            <div className="text-sm text-slate-400 p-2">
-                              {deckDetails.missingCount} cards needed from inventory. Add them from All Cards or Unsorted to reserve them in this deck.
-                            </div>
-                          )}
+                          <div className="text-sm text-slate-300 p-2">
+                            <div className="mb-2 font-semibold text-teal-300">Cards needed to complete this deck:</div>
+                            {(deck.cards || []).map((card, idx) => {
+                              // Find how many of this card are reserved
+                              const reservedQty = (deckDetails.reservations || [])
+                                .filter(r => r.name.toLowerCase() === card.name.toLowerCase())
+                                .reduce((sum, r) => sum + parseInt(r.quantity_reserved || 0), 0);
+                              const needed = Math.max(0, (card.quantity || 1) - reservedQty);
+                              if (needed === 0) return null;
+                              return (
+                                <div key={idx} className="flex justify-between items-center text-sm bg-slate-800 p-2 rounded mb-1">
+                                  <span className="text-white">{needed}x {card.name}</span>
+                                  <span className="text-xs text-slate-500">{card.set || 'Unknown'}</span>
+                                </div>
+                              );
+                            }).filter(Boolean)}
+                          </div>
                         </div>
                       )}
                     </div>
