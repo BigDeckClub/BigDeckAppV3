@@ -610,11 +610,38 @@ app.post('/api/inventory', async (req, res) => {
   }
 
   try {
+    // Fetch Scryfall ID for better market value tracking
+    let scryfallId = null;
+    try {
+      let scryfallRes = null;
+      
+      // Try exact match with set if available
+      if (set && set.length > 0) {
+        const exactUrl = `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(name)}&set=${set.toLowerCase()}`;
+        scryfallRes = await fetchRetry(exactUrl);
+        if (!scryfallRes?.ok) scryfallRes = null;
+      }
+      
+      // Fallback to fuzzy match
+      if (!scryfallRes) {
+        const fuzzyUrl = `https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(name)}`;
+        scryfallRes = await fetchRetry(fuzzyUrl);
+      }
+      
+      if (scryfallRes?.ok) {
+        const cardData = await scryfallRes.json();
+        scryfallId = cardData.id || null;
+      }
+    } catch (err) {
+      console.debug('[INVENTORY] Failed to fetch Scryfall ID for market analytics:', err.message);
+      // Continue without Scryfall ID - not critical
+    }
+
     const result = await pool.query(
-      `INSERT INTO inventory (name, set, set_name, quantity, purchase_price, purchase_date, reorder_type, image_url, folder, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
+      `INSERT INTO inventory (name, set, set_name, quantity, purchase_price, purchase_date, reorder_type, image_url, scryfall_id, folder, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
        RETURNING *`,
-      [name, set || null, set_name || null, quantity || 1, purchase_price || null, purchase_date || null, reorder_type || 'normal', image_url || null, folder || 'Uncategorized']
+      [name, set || null, set_name || null, quantity || 1, purchase_price || null, purchase_date || null, reorder_type || 'normal', image_url || null, scryfallId, folder || 'Uncategorized']
     );
     res.status(201).json(result.rows[0]);
   } catch (error) {
@@ -839,12 +866,18 @@ app.get('/api/analytics/market-values', async (req, res) => {
     let cardkingdomTotal = 0;
     let tcgplayerTotal = 0;
     
-    for (const item of items) {
-      const prices = mtgjsonService.getPricesByScryfallId(item.scryfall_id);
-      if (prices.cardkingdom) cardkingdomTotal += prices.cardkingdom * (item.quantity || 0);
-      if (prices.tcgplayer) tcgplayerTotal += prices.tcgplayer * (item.quantity || 0);
+    if (items.length === 0) {
+      console.log('[ANALYTICS] No inventory items with Scryfall IDs found for market valuation');
+      return res.json({ cardkingdom: 0, tcgplayer: 0 });
     }
     
+    for (const item of items) {
+      const prices = mtgjsonService.getPricesByScryfallId(item.scryfall_id);
+      if (prices && prices.cardkingdom) cardkingdomTotal += prices.cardkingdom * (item.quantity || 0);
+      if (prices && prices.tcgplayer) tcgplayerTotal += prices.tcgplayer * (item.quantity || 0);
+    }
+    
+    console.log(`[ANALYTICS] Market values calculated: CK=$${cardkingdomTotal.toFixed(2)}, TCG=$${tcgplayerTotal.toFixed(2)} from ${items.length} items`);
     res.json({ cardkingdom: cardkingdomTotal, tcgplayer: tcgplayerTotal });
   } catch (error) {
     console.error('[ANALYTICS] Error calculating market values:', error.message);
