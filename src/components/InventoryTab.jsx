@@ -46,6 +46,7 @@ export const InventoryTab = ({
   const [sidebarOpen, setSidebarOpen] = useState(false); // Mobile sidebar toggle
   const [deckInstances, setDeckInstances] = useState([]);
   const [openDecks, setOpenDecks] = useState([]); // Array of deck IDs that are open
+  const [openFolders, setOpenFolders] = useState([]); // Array of folder names that are open as tabs
   const [deckDetailsCache, setDeckDetailsCache] = useState({}); // Cache deck details by ID
   const [loadingDeckDetails, setLoadingDeckDetails] = useState(false);
 
@@ -105,6 +106,23 @@ export const InventoryTab = ({
     setOpenDecks(remaining);
     // Switch to 'all' if this was the active tab
     if (activeTab === `deck-${deckId}`) {
+      setActiveTab('all');
+    }
+  };
+
+  // Open a folder in a new tab
+  const openFolderTab = (folderName) => {
+    if (!openFolders.includes(folderName)) {
+      setOpenFolders([...openFolders, folderName]);
+    }
+    setActiveTab(folderName);
+  };
+
+  // Close a folder tab
+  const closeFolderTab = (folderName) => {
+    const remaining = openFolders.filter(f => f !== folderName);
+    setOpenFolders(remaining);
+    if (activeTab === folderName) {
       setActiveTab('all');
     }
   };
@@ -1099,10 +1117,10 @@ export const InventoryTab = ({
                 onClick={() => {
                   if (isSelected) {
                     setSelectedFolder(null);
-                    setActiveTab('all');
+                    closeFolderTab(folderName);
                   } else {
                     setSelectedFolder(folderName);
-                    setActiveTab(folderName);
+                    openFolderTab(folderName);
                   }
                   setSidebarOpen(false);
                 }}
@@ -1154,10 +1172,10 @@ export const InventoryTab = ({
                   onClick={() => {
                     if (isSelected) {
                       setSelectedFolder(null);
-                      setActiveTab('all');
+                      closeFolderTab(folder);
                     } else {
                       setSelectedFolder(folder);
-                      setActiveTab(folder);
+                      openFolderTab(folder);
                     }
                     setSidebarOpen(false);
                   }}
@@ -1286,7 +1304,7 @@ export const InventoryTab = ({
             </button>
             
             {/* Folder Tabs */}
-            {[...createdFolders, ...Object.keys(groupedByFolder).filter(f => f !== 'Uncategorized' && !createdFolders.includes(f))].map((folderName) => {
+            {openFolders.map((folderName) => {
               const isFolderOpen = activeTab === folderName;
               return (
                 <div 
@@ -1294,6 +1312,7 @@ export const InventoryTab = ({
                   className="flex items-center"
                 >
                   <button
+                    type="button"
                     onClick={() => {
                       setActiveTab(folderName);
                     }}
@@ -1306,11 +1325,11 @@ export const InventoryTab = ({
                     📁 {folderName}
                   </button>
                   <button
+                    type="button"
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      setActiveTab('all');
-                      setSidebarOpen(false);
+                      closeFolderTab(folderName);
                     }}
                     className="ml-1 text-slate-400 hover:text-red-400 transition-colors p-1"
                     title="Close folder"
