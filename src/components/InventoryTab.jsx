@@ -1018,7 +1018,9 @@ export const InventoryTab = ({
               <h3 className="text-sm font-semibold text-teal-300 mb-2">🎴 Decks</h3>
               {deckInstances.map((deck) => {
                 const isDeckOpen = openDecks.includes(deck.id);
-                const totalCards = (deck.cards || []).reduce((sum, c) => sum + (c.quantity || 1), 0);
+                const decklistTotal = (deck.cards || []).reduce((sum, c) => sum + (c.quantity || 1), 0);
+                // Use the higher of decklist total or reserved count (in case cards were added via drag-drop)
+                const totalCards = Math.max(decklistTotal, deck.reserved_count);
                 return (
                   <button
                     key={`deck-${deck.id}`}
