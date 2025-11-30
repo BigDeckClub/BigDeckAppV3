@@ -1350,23 +1350,6 @@ export const InventoryTab = ({
                 <div 
                   key={`deck-tab-${deckId}`} 
                   className="flex items-center"
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    e.currentTarget.classList.add('opacity-75');
-                  }}
-                  onDragLeave={(e) => {
-                    e.currentTarget.classList.remove('opacity-75');
-                  }}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    e.currentTarget.classList.remove('opacity-75');
-                    try {
-                      const skuData = JSON.parse(e.dataTransfer.getData('skuData'));
-                      moveCardSkuToDeck(skuData, deckId);
-                    } catch (err) {
-                      console.error('Error parsing drag data:', err);
-                    }
-                  }}
                 >
                   <button
                     onClick={() => setActiveTab(`deck-${deckId}`)}
