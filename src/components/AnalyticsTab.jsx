@@ -33,9 +33,7 @@ export const AnalyticsTab = ({ inventory }) => {
           totalPurchasedLast60d: 0,
           lifetimeTotalCards: 0
         });
-      } catch (error) {
-        console.error('Failed to fetch analytics:', error);
-      }
+      } catch (error) {}
     };
     fetchAnalytics();
   }, []);

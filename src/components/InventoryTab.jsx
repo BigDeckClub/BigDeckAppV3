@@ -85,7 +85,7 @@ export const InventoryTab = ({
         setDeckInstances(data);
       }
     } catch (error) {
-      console.error('Failed to fetch deck instances:', error);
+
     }
   };
 
@@ -109,10 +109,10 @@ export const InventoryTab = ({
         }
       } else {
         const error = await response.json();
-        console.error('Error loading deck details:', error);
+
       }
     } catch (error) {
-      console.error('Failed to load deck details:', error);
+
     } finally {
       setLoadingDeckDetails(false);
     }
@@ -173,7 +173,7 @@ export const InventoryTab = ({
         alert('Failed to delete deck');
       }
     } catch (error) {
-      console.error('Failed to delete deck:', error);
+
       alert('Error deleting deck');
     }
   };
@@ -191,7 +191,7 @@ export const InventoryTab = ({
         await refreshDeckInstances();
       }
     } catch (error) {
-      console.error('Failed to remove card from deck:', error);
+
     }
   };
 
@@ -211,7 +211,7 @@ export const InventoryTab = ({
         alert('Failed to reoptimize deck');
       }
     } catch (error) {
-      console.error('Failed to reoptimize deck:', error);
+
       alert('Error reoptimizing deck');
     }
   };
@@ -239,7 +239,7 @@ export const InventoryTab = ({
         if (!response.ok) {
           hasError = true;
           const error = await response.json();
-          console.error('API error:', error);
+
           throw new Error(error.error || 'Failed to update folder');
         }
       }
@@ -250,7 +250,7 @@ export const InventoryTab = ({
       }
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error) {
-      console.error('Failed to move card:', error);
+
       setSuccessMessage(`Error moving card: ${error.message}`);
       setTimeout(() => setSuccessMessage(''), 5000);
     }
@@ -298,7 +298,7 @@ export const InventoryTab = ({
       
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error) {
-      console.error('Failed to move card from deck to folder:', error);
+
       setSuccessMessage(`Error: ${error.message}`);
       setTimeout(() => setSuccessMessage(''), 5000);
     }
@@ -366,7 +366,7 @@ export const InventoryTab = ({
       }
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error) {
-      console.error('Failed to add card to deck:', error);
+
       setSuccessMessage(`Error: ${error.message}`);
       setTimeout(() => setSuccessMessage(''), 5000);
     }
@@ -403,7 +403,7 @@ export const InventoryTab = ({
       await loadDeckDetails(deckId, true);
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error) {
-      console.error('Failed to auto-fill card:', error);
+
       setSuccessMessage(`Error: ${error.message}`);
       setTimeout(() => setSuccessMessage(''), 5000);
     }
@@ -460,7 +460,7 @@ export const InventoryTab = ({
       await loadDeckDetails(deckId, true);
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error) {
-      console.error('Failed to auto-fill missing cards:', error);
+
       setSuccessMessage(`Error: ${error.message}`);
       setTimeout(() => setSuccessMessage(''), 5000);
     }
@@ -514,7 +514,7 @@ export const InventoryTab = ({
       setSuccessMessage(`Card moved to deck`);
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error) {
-      console.error('Failed to move card between decks:', error);
+
       setSuccessMessage(`Error: ${error.message}`);
       setTimeout(() => setSuccessMessage(''), 5000);
     }
@@ -1375,7 +1375,7 @@ export const InventoryTab = ({
                           moveCardSkuToDeck(skuData, deck.id);
                         }
                       } catch (err) {
-                        console.error('Error adding card to deck from sidebar:', err);
+
                       }
                     }}
                     className={`w-full text-left p-3 rounded-lg transition-colors mb-2 ${
@@ -1635,7 +1635,7 @@ export const InventoryTab = ({
                       const skuData = JSON.parse(e.dataTransfer.getData('skuData'));
                       moveCardSkuToDeck(skuData, deckId);
                     } catch (err) {
-                      console.error('Error adding card to deck:', err);
+
                     }
                   }}
                 >

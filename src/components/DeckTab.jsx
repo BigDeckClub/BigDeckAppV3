@@ -57,7 +57,7 @@ export const DeckTab = ({ onDeckCreatedOrDeleted }) => {
       }
       
     } catch (error) {
-      console.error('Failed to copy deck:', error);
+
       alert('Error copying deck to inventory');
     } finally {
       setIsCopying(false);
@@ -154,7 +154,7 @@ export const DeckTab = ({ onDeckCreatedOrDeleted }) => {
       setSuccessMessage(`Deck imported successfully! ${cards.length} cards added.`);
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error) {
-      console.error('Error importing from Archidekt:', error);
+
       alert(`Error importing deck: ${error.message}`);
     } finally {
       setIsImporting(false);
@@ -170,11 +170,11 @@ export const DeckTab = ({ onDeckCreatedOrDeleted }) => {
         const data = await response.json();
         setDecks(Array.isArray(data) ? data : []);
       } else {
-        console.error('Failed to load decks:', response.status);
+
         setDecks([]);
       }
     } catch (error) {
-      console.error('Failed to load decks:', error);
+
       setDecks([]);
     } finally {
       setIsLoading(false);
@@ -280,7 +280,7 @@ export const DeckTab = ({ onDeckCreatedOrDeleted }) => {
       setSuccessMessage(`Deck created with ${cards.length} cards!`);
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error) {
-      console.error('Failed to create deck:', error);
+
       alert('Error creating deck');
     }
   };
@@ -311,7 +311,7 @@ export const DeckTab = ({ onDeckCreatedOrDeleted }) => {
       setSuccessMessage('Empty deck created!');
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error) {
-      console.error('Failed to create deck:', error);
+
       alert('Error creating deck');
     }
   };
@@ -334,7 +334,7 @@ export const DeckTab = ({ onDeckCreatedOrDeleted }) => {
           }
         }
       } catch (error) {
-        console.error('Failed to delete deck:', error);
+
         alert('Error deleting deck');
       }
     }
@@ -363,7 +363,7 @@ export const DeckTab = ({ onDeckCreatedOrDeleted }) => {
         alert('Failed to update deck');
       }
     } catch (error) {
-      console.error('Failed to update deck:', error);
+
       setEditingDeck(null);
       alert('Error updating deck');
     }
@@ -387,7 +387,7 @@ export const DeckTab = ({ onDeckCreatedOrDeleted }) => {
         alert('Failed to update deck');
       }
     } catch (error) {
-      console.error('Failed to update description:', error);
+
       alert('Error updating deck');
     }
   };

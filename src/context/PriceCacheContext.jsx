@@ -33,18 +33,14 @@ export function PriceCacheProvider({ children }) {
         const parsed = JSON.parse(stored);
         setCache(parsed);
       }
-    } catch (err) {
-      console.warn("[PriceCache] Failed to hydrate from localStorage:", err.message);
-    }
+    } catch (err) {}
   }, []);
 
   // Persist cache to localStorage whenever it changes
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(cache));
-    } catch (err) {
-      console.warn("[PriceCache] Failed to persist to localStorage:", err.message);
-    }
+    } catch (err) {}
   }, [cache]);
 
   /**
@@ -100,7 +96,6 @@ export function PriceCacheProvider({ children }) {
         return result;
       })
       .catch(err => {
-        console.error("[PriceCache] Fetch failed:", err.message);
         const fallback = { tcg: "N/A", ck: "N/A", fetchedAt: Date.now() };
         setCache(prev => ({ ...prev, [key]: fallback }));
         delete inflightRef.current[key];
