@@ -4,12 +4,14 @@ import {
   Download,
   BarChart3,
   BookOpen,
+  TrendingUp,
 } from "lucide-react";
 import { useDebounce } from "./utils/useDebounce";
 import { InventoryTab } from "./components/InventoryTab";
 import { ImportTab } from "./components/ImportTab";
 import { AnalyticsTab } from "./components/AnalyticsTab";
 import { DeckTab } from "./components/DeckTab";
+import { SalesHistoryTab } from "./components/SalesHistoryTab";
 import { PriceCacheProvider, usePriceCache } from "./context/PriceCacheContext";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { useApi } from "./hooks/useApi";
@@ -261,11 +263,24 @@ function MTGInventoryTrackerContent() {
   };
 
 
+  const handleSell = async (saleData) => {
+    try {
+      await post(`${API_BASE}/sales`, saleData);
+      if (saleData.itemType === 'deck') {
+        setDeckRefreshTrigger(prev => prev + 1);
+        await loadInventory();
+      }
+    } catch (error) {
+      throw error;
+    }
+  };
+
   const navItems = [
     { id: "inventory", icon: Layers, label: "Inventory" },
     { id: "imports", icon: Download, label: "Imports" },
     { id: "analytics", icon: BarChart3, label: "Analytics" },
     { id: "decks", icon: BookOpen, label: "Decks" },
+    { id: "sales", icon: TrendingUp, label: "Sales" },
   ];
 
   return (
@@ -302,6 +317,13 @@ function MTGInventoryTrackerContent() {
             >
               <BookOpen className="w-5 h-5 inline mr-2" />
               Decks
+            </button>
+            <button
+              onClick={() => setActiveTab("sales")}
+              className={`px-4 py-2 nav-tab inactive ${activeTab === "sales" ? "btn-primary" : "hover:shadow-lg"}`}
+            >
+              <TrendingUp className="w-5 h-5 inline mr-2" />
+              Sales
             </button>
           </div>
         </div>
@@ -364,6 +386,7 @@ function MTGInventoryTrackerContent() {
             handleSearch={handleSearch}
             deckRefreshTrigger={deckRefreshTrigger}
             onLoadInventory={loadInventory}
+            onSell={handleSell}
           />
         )}
 
@@ -399,6 +422,11 @@ function MTGInventoryTrackerContent() {
         {/* Decks Tab */}
         {activeTab === "decks" && !isLoading && (
           <DeckTab onDeckCreatedOrDeleted={() => setDeckRefreshTrigger(prev => prev + 1)} />
+        )}
+
+        {/* Sales History Tab */}
+        {activeTab === "sales" && !isLoading && (
+          <SalesHistoryTab />
         )}
 
       </main>
