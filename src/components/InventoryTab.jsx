@@ -418,14 +418,6 @@ export const InventoryTab = ({
       localStorage.setItem('createdFolders', JSON.stringify(updated));
     }
   };
-
-  // Debug: Log folders on render
-  useEffect(() => {
-    const allFolders = [...createdFolders, ...Object.keys(groupedByFolder).filter(f => f !== 'Uncategorized' && !createdFolders.includes(f))];
-    console.log('DEBUG - createdFolders:', createdFolders);
-    console.log('DEBUG - groupedByFolder keys:', Object.keys(groupedByFolder));
-    console.log('DEBUG - allFolders for tabs:', allFolders);
-  }, [createdFolders, groupedByFolder]);
   
   // Group inventory by folder, then by card name
   const groupedByFolder = inventory.reduce((acc, item) => {
@@ -439,6 +431,14 @@ export const InventoryTab = ({
     acc[folder][item.name].push(item);
     return acc;
   }, {});
+
+  // Debug: Log folders on render
+  useEffect(() => {
+    const allFolders = [...createdFolders, ...Object.keys(groupedByFolder).filter(f => f !== 'Uncategorized' && !createdFolders.includes(f))];
+    console.log('DEBUG - createdFolders:', createdFolders);
+    console.log('DEBUG - groupedByFolder keys:', Object.keys(groupedByFolder));
+    console.log('DEBUG - allFolders for tabs:', allFolders);
+  }, [createdFolders, groupedByFolder]);
   
   // Legacy: group by card name for backwards compatibility
   const groupedInventory = inventory.reduce((acc, item) => {
