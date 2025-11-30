@@ -170,10 +170,10 @@ export const CardGroup = memo(function CardGroup({
             e.stopPropagation();
             items.forEach(item => deleteInventoryItem(item.id));
           }}
-          className="close-btn absolute top-1 right-1"
+          className="absolute top-2 right-2 p-1 bg-red-600/80 hover:bg-red-500 rounded-full transition-colors z-10"
           title="Delete all copies"
         >
-          <X className="w-3 h-3" />
+          <X className="w-4 h-4 text-white" />
         </button>
         <div className="text-center px-1 cursor-pointer flex items-center justify-center gap-1 mb-1">
           <h3 className="text-[11px] md:text-sm font-bold text-slate-100 line-clamp-2 break-words flex-1">
