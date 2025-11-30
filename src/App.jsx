@@ -357,6 +357,7 @@ function MTGInventoryTrackerContent() {
             deleteInventoryItem={deleteInventoryItem}
             handleSearch={handleSearch}
             deckRefreshTrigger={deckRefreshTrigger}
+            onLoadInventory={loadInventory}
           />
         )}
 

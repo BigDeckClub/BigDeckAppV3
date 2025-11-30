@@ -196,7 +196,9 @@ export const InventoryTab = ({
       }
       
       // Refresh inventory to show changes
-      await refreshInventory();
+      if (onLoadInventory) {
+        await onLoadInventory();
+      }
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error) {
       console.error('Failed to move card:', error);
