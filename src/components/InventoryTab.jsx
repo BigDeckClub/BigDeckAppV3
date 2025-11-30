@@ -40,12 +40,12 @@ export const InventoryTab = ({
   const [showCreateFolder, setShowCreateFolder] = useState(false);
   const [createdFolders, setCreatedFolders] = useState([]);
   const [selectedFolder, setSelectedFolder] = useState(null);
-  const [activeTab, setActiveTab] = useState('all'); // 'all', 'unsorted', or folder name
+  const [activeTab, setActiveTab] = useState('all'); // 'all', 'unsorted', folder name, or 'deck-{id}'
   const [viewMode, setViewMode] = useState('card'); // 'card' or 'list'
   const [sidebarOpen, setSidebarOpen] = useState(false); // Mobile sidebar toggle
   const [deckInstances, setDeckInstances] = useState([]);
-  const [selectedDeck, setSelectedDeck] = useState(null);
-  const [deckDetails, setDeckDetails] = useState(null);
+  const [openDecks, setOpenDecks] = useState([]); // Array of deck IDs that are open
+  const [deckDetailsCache, setDeckDetailsCache] = useState({}); // Cache deck details by ID
   const [loadingDeckDetails, setLoadingDeckDetails] = useState(false);
 
   // Load created folders from localStorage
@@ -71,22 +71,40 @@ export const InventoryTab = ({
 
   // Load full details of a deck instance
   const loadDeckDetails = async (deckId) => {
+    if (deckDetailsCache[deckId]) return; // Already cached
     setLoadingDeckDetails(true);
     try {
       const response = await fetch(`/api/deck-instances/${deckId}/details`);
       if (response.ok) {
         const data = await response.json();
-        setDeckDetails(data);
+        setDeckDetailsCache(prev => ({ ...prev, [deckId]: data }));
       } else {
         const error = await response.json();
         console.error('Error loading deck details:', error);
-        alert(`Error: ${error.error || 'Failed to load deck details'}`);
       }
     } catch (error) {
       console.error('Failed to load deck details:', error);
-      alert('Network error: Failed to load deck details');
     } finally {
       setLoadingDeckDetails(false);
+    }
+  };
+
+  // Open a deck in a new tab
+  const openDeckTab = (deck) => {
+    if (!openDecks.includes(deck.id)) {
+      setOpenDecks([...openDecks, deck.id]);
+    }
+    setActiveTab(`deck-${deck.id}`);
+    loadDeckDetails(deck.id);
+  };
+
+  // Close a deck tab
+  const closeDeckTab = (deckId) => {
+    const remaining = openDecks.filter(id => id !== deckId);
+    setOpenDecks(remaining);
+    // Switch to 'all' if this was the active tab
+    if (activeTab === `deck-${deckId}`) {
+      setActiveTab('all');
     }
   };
 
@@ -566,23 +584,14 @@ export const InventoryTab = ({
             <div className="pt-3 border-t border-slate-700 mt-3">
               <h3 className="text-sm font-semibold text-teal-300 mb-2">🎴 Decks</h3>
               {deckInstances.map((deck) => {
-                const isDeckSelected = selectedDeck?.id === deck.id;
+                const isDeckOpen = openDecks.includes(deck.id);
                 const totalCards = (deck.cards || []).reduce((sum, c) => sum + (c.quantity || 1), 0);
                 return (
                   <button
                     key={`deck-${deck.id}`}
-                    onClick={() => {
-                      if (isDeckSelected) {
-                        setSelectedDeck(null);
-                        setDeckDetails(null);
-                      } else {
-                        setSelectedDeck(deck);
-                        setSelectedFolder(null);
-                        loadDeckDetails(deck.id);
-                      }
-                    }}
+                    onClick={() => openDeckTab(deck)}
                     className={`w-full text-left p-3 rounded-lg transition-colors ${
-                      isDeckSelected
+                      isDeckOpen
                         ? 'bg-green-600/40 border-l-4 border-green-400'
                         : 'bg-slate-800 border-l-4 border-transparent hover:bg-slate-700'
                     }`}
@@ -610,52 +619,122 @@ export const InventoryTab = ({
 
       {/* RIGHT CONTENT - Cards or Deck Details */}
       <div className="flex-1 pb-24 md:pb-6 px-2 md:px-0">
-        {/* Deck Details View */}
-        {selectedDeck && deckDetails && (
-          <div className="space-y-4">
+        {/* Tabs and View Mode */}
+        <div className="flex flex-col md:flex-row gap-3 md:gap-4 mb-6 border-b border-slate-700 pb-4 items-start md:items-center justify-between">
+          <div className="flex gap-2 w-full md:w-auto overflow-x-auto flex-wrap">
             <button
-              onClick={() => {
-                setSelectedDeck(null);
-                setDeckDetails(null);
-              }}
-              className="text-teal-300 hover:text-teal-200 text-sm flex items-center gap-1 mb-2"
+              onClick={() => { setActiveTab('all'); setSidebarOpen(false); }}
+              className={`px-3 md:px-4 py-2 text-sm md:text-base font-medium transition-colors whitespace-nowrap ${
+                activeTab === 'all'
+                  ? 'text-teal-300 border-b-2 border-teal-400'
+                  : 'text-slate-400 hover:text-slate-300'
+              }`}
             >
-              ← Back
+              All Cards
             </button>
-
-            <div className="bg-slate-800 rounded-lg border border-slate-600 p-4">
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h2 className="text-2xl font-bold text-teal-300">{selectedDeck.name}</h2>
-                  <p className="text-sm text-slate-400">{selectedDeck.format}</p>
-                  {deckDetails.totalCost > 0 && (
-                    <p className="text-sm text-green-400 font-semibold mt-1">Total Cost: ${deckDetails.totalCost?.toFixed(2) || '0.00'}</p>
-                  )}
-                </div>
-                <div className="flex gap-2">
+            <button
+              onClick={() => { setActiveTab('unsorted'); setSidebarOpen(false); }}
+              className={`px-3 md:px-4 py-2 text-sm md:text-base font-medium transition-colors whitespace-nowrap ${
+                activeTab === 'unsorted'
+                  ? 'text-teal-300 border-b-2 border-teal-400'
+                  : 'text-slate-400 hover:text-slate-300'
+              }`}
+            >
+              Unsorted
+            </button>
+            
+            {/* Deck Tabs */}
+            {openDecks.map((deckId) => {
+              const deck = deckInstances.find(d => d.id === deckId);
+              if (!deck) return null;
+              return (
+                <div key={`deck-tab-${deckId}`} className="flex items-center">
                   <button
-                    onClick={() => reoptimizeDeck(selectedDeck.id)}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm transition-colors"
-                    title="Re-optimize for cheapest cards"
+                    onClick={() => setActiveTab(`deck-${deckId}`)}
+                    className={`px-3 md:px-4 py-2 text-sm md:text-base font-medium transition-colors whitespace-nowrap ${
+                      activeTab === `deck-${deckId}`
+                        ? 'text-green-300 border-b-2 border-green-400'
+                        : 'text-slate-400 hover:text-slate-300'
+                    }`}
                   >
-                    🔄
+                    {deck.name}
                   </button>
                   <button
-                    onClick={() => releaseDeck(selectedDeck.id)}
-                    className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm transition-colors"
-                    title="Release deck and return cards"
+                    onClick={() => closeDeckTab(deckId)}
+                    className="ml-1 text-slate-400 hover:text-red-400 transition-colors"
+                    title="Close deck"
                   >
-                    Release
+                    <X className="w-4 h-4" />
                   </button>
                 </div>
-              </div>
+              );
+            })}
+          </div>
+          
+          {/* View Mode Toggle */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => setViewMode('card')}
+              className={`p-2 rounded transition-colors ${
+                viewMode === 'card'
+                  ? 'bg-teal-600 text-white'
+                  : 'bg-slate-800 text-slate-400 hover:text-slate-300'
+              }`}
+              title="Card View"
+            >
+              <Grid3X3 className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={`p-2 rounded transition-colors ${
+                viewMode === 'list'
+                  ? 'bg-teal-600 text-white'
+                  : 'bg-slate-800 text-slate-400 hover:text-slate-300'
+              }`}
+              title="List View"
+            >
+              <List className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
 
-              {loadingDeckDetails ? (
-                <div className="text-center py-8">
-                  <div className="w-6 h-6 animate-spin mx-auto text-teal-400 border-2 border-teal-400 border-t-transparent rounded-full"></div>
-                </div>
-              ) : (
-                <>
+        {/* Deck Details View */}
+        {activeTab.startsWith('deck-') && deckDetailsCache[openDecks.find(id => `deck-${id}` === activeTab)] && (
+          <div className="space-y-4">
+            {(() => {
+              const deckId = openDecks.find(id => `deck-${id}` === activeTab);
+              const deck = deckInstances.find(d => d.id === deckId);
+              const deckDetails = deckDetailsCache[deckId];
+              if (!deck || !deckDetails) return null;
+
+              return (
+                <div className="bg-slate-800 rounded-lg border border-slate-600 p-4">
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h2 className="text-2xl font-bold text-green-300">{deck.name}</h2>
+                      <p className="text-sm text-slate-400">{deck.format}</p>
+                      {deckDetails.totalCost > 0 && (
+                        <p className="text-sm text-green-400 font-semibold mt-1">Total Cost: ${deckDetails.totalCost?.toFixed(2) || '0.00'}</p>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => reoptimizeDeck(deck.id)}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm transition-colors"
+                        title="Re-optimize for cheapest cards"
+                      >
+                        🔄
+                      </button>
+                      <button
+                        onClick={() => releaseDeck(deck.id)}
+                        className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm transition-colors"
+                        title="Release deck and return cards"
+                      >
+                        Release
+                      </button>
+                    </div>
+                  </div>
+
                   {/* Reserved Cards */}
                   {deckDetails.reservations && deckDetails.reservations.length > 0 && (
                     <div className="mb-4">
@@ -692,68 +771,15 @@ export const InventoryTab = ({
                       </div>
                     </div>
                   )}
-                </>
-              )}
-            </div>
+                </div>
+              );
+            })()}
           </div>
         )}
 
         {/* Regular Inventory View */}
-        {!selectedDeck && (
-          <>
-            {/* Tabs and View Mode */}
-        <div className="flex flex-col md:flex-row gap-3 md:gap-4 mb-6 border-b border-slate-700 pb-4 items-start md:items-center justify-between">
-          <div className="flex gap-2 w-full md:w-auto">
-            <button
-              onClick={() => { setActiveTab('all'); setSidebarOpen(false); }}
-              className={`flex-1 md:flex-none px-3 md:px-4 py-2 text-sm md:text-base font-medium transition-colors ${
-                activeTab === 'all'
-                  ? 'text-teal-300 border-b-2 border-teal-400'
-                  : 'text-slate-400 hover:text-slate-300'
-              }`}
-            >
-              All Cards
-            </button>
-            <button
-              onClick={() => { setActiveTab('unsorted'); setSidebarOpen(false); }}
-              className={`flex-1 md:flex-none px-3 md:px-4 py-2 text-sm md:text-base font-medium transition-colors ${
-                activeTab === 'unsorted'
-                  ? 'text-teal-300 border-b-2 border-teal-400'
-                  : 'text-slate-400 hover:text-slate-300'
-              }`}
-            >
-              Unsorted
-            </button>
-          </div>
-          
-          {/* View Mode Toggle */}
-          <div className="flex gap-2">
-            <button
-              onClick={() => setViewMode('card')}
-              className={`p-2 rounded transition-colors ${
-                viewMode === 'card'
-                  ? 'bg-teal-600 text-white'
-                  : 'bg-slate-800 text-slate-400 hover:text-slate-300'
-              }`}
-              title="Card View"
-            >
-              <Grid3X3 className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setViewMode('list')}
-              className={`p-2 rounded transition-colors ${
-                viewMode === 'list'
-                  ? 'bg-teal-600 text-white'
-                  : 'bg-slate-800 text-slate-400 hover:text-slate-300'
-              }`}
-              title="List View"
-            >
-              <List className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-
-        <div className={viewMode === 'card' ? 'space-y-4' : 'space-y-2'}>
+        {!activeTab.startsWith('deck-') && (
+          <div className={viewMode === 'card' ? 'space-y-4' : 'space-y-2'}>
           {activeTab === 'all' ? (
             /* Show all cards - masterlist */
             Object.keys(groupedInventory).length > 0 ? (
@@ -832,8 +858,7 @@ export const InventoryTab = ({
               <p className="text-slate-400 text-center py-12">No cards in this folder yet.</p>
             )
           )}
-            </div>
-          </>
+          </div>
         )}
       </div>
     </div>
