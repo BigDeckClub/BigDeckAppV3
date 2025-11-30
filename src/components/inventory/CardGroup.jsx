@@ -200,23 +200,23 @@ export const CardGroup = memo(function CardGroup({
           </div>
         </div>
         
-        <div className="grid grid-cols-3 gap-2 text-center pt-2 border-t border-slate-700/50">
-          <div className="space-y-1">
-            <div className="text-slate-500 text-[7px] md:text-[9px] font-semibold uppercase">Qty</div>
-            <div className="h-4 flex items-center justify-center">
-              <div className={`font-bold leading-none ${getStatFontSize(totalQty)} ${totalQty === 0 ? 'text-slate-500' : 'text-teal-300'}`}>{totalQty}</div>
+        <div className="grid grid-cols-3 gap-1 sm:gap-2 text-center pt-2 border-t border-slate-700/50">
+          <div className="space-y-0.5">
+            <div className="text-slate-500 text-[6px] sm:text-[7px] md:text-[9px] font-semibold uppercase tracking-tighter">Qty</div>
+            <div className="h-5 sm:h-4 flex items-center justify-center min-w-0">
+              <div className={`font-bold leading-none truncate ${getStatFontSize(totalQty)} ${totalQty === 0 ? 'text-slate-500' : 'text-teal-300'}`}>{totalQty}</div>
             </div>
           </div>
-          <div className="space-y-1">
-            <div className="text-slate-500 text-[7px] md:text-[9px] font-semibold uppercase">Cost</div>
-            <div className="h-4 flex items-center justify-center">
-              <div className={`font-bold leading-none text-blue-300 ${getStatFontSize(avgPrice.toFixed(2))}`}>${avgPrice.toFixed(2)}</div>
+          <div className="space-y-0.5">
+            <div className="text-slate-500 text-[6px] sm:text-[7px] md:text-[9px] font-semibold uppercase tracking-tighter">Cost</div>
+            <div className="h-5 sm:h-4 flex items-center justify-center min-w-0">
+              <div className={`font-bold leading-none text-blue-300 truncate ${getStatFontSize(avgPrice.toFixed(2))}`}>${avgPrice.toFixed(2)}</div>
             </div>
           </div>
-          <div className="space-y-1">
-            <div className="text-slate-500 text-[7px] md:text-[9px] font-semibold uppercase">Total</div>
-            <div className="h-4 flex items-center justify-center">
-              <div className={`font-bold leading-none text-amber-400 ${getStatFontSize(formatTotal(totalValue))}`}>${formatTotal(totalValue)}</div>
+          <div className="space-y-0.5">
+            <div className="text-slate-500 text-[6px] sm:text-[7px] md:text-[9px] font-semibold uppercase tracking-tighter">Total</div>
+            <div className="h-5 sm:h-4 flex items-center justify-center min-w-0">
+              <div className={`font-bold leading-none text-amber-400 truncate ${getStatFontSize(formatTotal(totalValue))}`}>${formatTotal(totalValue)}</div>
             </div>
           </div>
         </div>
