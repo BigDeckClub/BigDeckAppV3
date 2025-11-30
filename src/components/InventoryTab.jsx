@@ -1080,7 +1080,7 @@ export const InventoryTab = ({
                         moveCardToFolder(cardName, folder);
                       }
                     }}
-                    className={`w-full text-left p-3 rounded-t-lg transition-colors ${
+                    className={`w-full text-left p-3 rounded-lg transition-colors ${
                       isSelected
                         ? 'bg-teal-600/40 border-l-4 border-teal-400'
                         : 'bg-slate-800 border-l-4 border-transparent hover:bg-slate-700'
@@ -1106,87 +1106,90 @@ export const InventoryTab = ({
                 return (
                   <div
                     key={`deck-${deck.id}`}
-                    className="flex gap-2 mb-2"
-                  >
-                    <button
-                      onClick={() => openDeckTab(deck)}
-                      onDragOver={(e) => {
-                        e.preventDefault();
-                        e.currentTarget.classList.add('bg-green-700/60', 'border-green-300');
-                      }}
-                      onDragLeave={(e) => {
-                        e.currentTarget.classList.remove('bg-green-700/60', 'border-green-300');
-                      }}
-                      onDrop={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        e.currentTarget.classList.remove('bg-green-700/60', 'border-green-300');
-                        try {
-                          const deckCardDataStr = e.dataTransfer.getData('deckCardData');
-                          const skuDataStr = e.dataTransfer.getData('skuData');
-                          
-                          if (deckCardDataStr) {
-                            const deckCardData = JSON.parse(deckCardDataStr);
-                            moveCardBetweenDecks(deckCardData, deck.id);
-                          } else if (skuDataStr) {
-                            const skuData = JSON.parse(skuDataStr);
-                            moveCardSkuToDeck(skuData, deck.id);
-                          }
-                        } catch (err) {
-
+                    className={`group text-left p-3 rounded-lg transition-colors mb-2 border-l-4 cursor-pointer ${
+                      isDeckOpen
+                        ? 'bg-green-600/40 border-l-4 border-green-400'
+                        : 'bg-slate-800 border-l-4 border-transparent hover:bg-slate-700'
+                    }`}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      this?.classList?.add('bg-green-700/60', 'border-green-300');
+                    }}
+                    onDragLeave={(e) => {
+                      e.currentTarget?.classList?.remove('bg-green-700/60', 'border-green-300');
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      e.currentTarget?.classList?.remove('bg-green-700/60', 'border-green-300');
+                      try {
+                        const deckCardDataStr = e.dataTransfer.getData('deckCardData');
+                        const skuDataStr = e.dataTransfer.getData('skuData');
+                        
+                        if (deckCardDataStr) {
+                          const deckCardData = JSON.parse(deckCardDataStr);
+                          moveCardBetweenDecks(deckCardData, deck.id);
+                        } else if (skuDataStr) {
+                          const skuData = JSON.parse(skuDataStr);
+                          moveCardSkuToDeck(skuData, deck.id);
                         }
-                      }}
-                      className={`flex-1 text-left p-3 rounded-lg transition-colors ${
-                        isDeckOpen
-                          ? 'bg-green-600/40 border-l-4 border-green-400'
-                          : 'bg-slate-800 border-l-4 border-transparent hover:bg-slate-700'
-                      }`}
-                    >
-                      <div className="font-medium text-sm text-slate-100">{deck.name}</div>
-                      <div className="text-xs flex flex-wrap gap-1">
-                        {(() => {
-                          const decklistTotal = (deck.cards || []).reduce((sum, c) => sum + (c.quantity || 1), 0);
-                          const reserved = deck.reserved_count;
-                          const missing = Math.max(0, decklistTotal - reserved);
-                          const extras = Math.max(0, reserved - decklistTotal);
-                          
-                          if (missing > 0) {
-                            return (
-                              <>
-                                <span className="text-green-300">{reserved} reserved</span>
-                                <span className="text-red-400">{missing} missing</span>
-                              </>
-                            );
-                          } else {
-                            const displayReserved = decklistTotal > 0 ? decklistTotal : reserved;
-                            return (
-                              <>
-                                <span className="text-green-300">{displayReserved} reserved</span>
-                                {extras > 0 && <span className="text-purple-400">+{extras} extra</span>}
-                              </>
-                            );
-                          }
-                        })()}
-                      </div>
-                      <div className="text-xs text-amber-300 mt-1">
-                        Cost: ${deckCost.toFixed(2)}
-                      </div>
-                    </button>
-                    <button
-                      onClick={() => {
-                        setSellModalData({
-                          itemType: 'deck',
-                          itemId: deck.id,
-                          itemName: deck.name,
-                          purchasePrice: deckCost
-                        });
-                        setShowSellModal(true);
-                      }}
-                      className="bg-green-600 hover:bg-green-500 text-white p-2 rounded transition-colors flex items-center justify-center"
-                      title="Sell this deck"
-                    >
-                      <DollarSign className="w-4 h-4" />
-                    </button>
+                      } catch (err) {
+
+                      }
+                    }}
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <button
+                        onClick={() => openDeckTab(deck)}
+                        className="flex-1 text-left hover:opacity-80 transition-opacity"
+                      >
+                        <div className="font-medium text-sm text-slate-100">{deck.name}</div>
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSellModalData({
+                            itemType: 'deck',
+                            itemId: deck.id,
+                            itemName: deck.name,
+                            purchasePrice: deckCost
+                          });
+                          setShowSellModal(true);
+                        }}
+                        className="ml-2 text-green-400 hover:text-green-300 transition-colors opacity-0 group-hover:opacity-100"
+                        title="Sell this deck"
+                      >
+                        <DollarSign className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <div className="text-xs flex flex-wrap gap-1">
+                      {(() => {
+                        const decklistTotal = (deck.cards || []).reduce((sum, c) => sum + (c.quantity || 1), 0);
+                        const reserved = deck.reserved_count;
+                        const missing = Math.max(0, decklistTotal - reserved);
+                        const extras = Math.max(0, reserved - decklistTotal);
+                        
+                        if (missing > 0) {
+                          return (
+                            <>
+                              <span className="text-green-300">{reserved} reserved</span>
+                              <span className="text-red-400">{missing} missing</span>
+                            </>
+                          );
+                        } else {
+                          const displayReserved = decklistTotal > 0 ? decklistTotal : reserved;
+                          return (
+                            <>
+                              <span className="text-green-300">{displayReserved} reserved</span>
+                              {extras > 0 && <span className="text-purple-400">+{extras} extra</span>}
+                            </>
+                          );
+                        }
+                      })()}
+                    </div>
+                    <div className="text-xs text-amber-300 mt-1">
+                      Cost: ${deckCost.toFixed(2)}
+                    </div>
                   </div>
                 );
               })}
