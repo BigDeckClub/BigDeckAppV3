@@ -1305,41 +1305,36 @@ export const InventoryTab = ({
             </button>
             
             {/* Folder Tabs */}
-            {openFolders.map((folderName) => {
-              const isFolderOpen = activeTab === folderName;
-              return (
-                <div 
-                  key={`folder-tab-${folderName}`}
-                  className="flex items-center"
+            {[...createdFolders, ...Object.keys(groupedByFolder).filter(f => f !== 'Uncategorized' && !createdFolders.includes(f))].map((folderName) => (
+              <div 
+                key={`folder-tab-${folderName}`}
+                className="flex items-center"
+              >
+                <button
+                  type="button"
+                  onClick={() => setActiveTab(folderName)}
+                  className={`px-3 md:px-4 py-2 text-sm md:text-base font-medium transition-colors whitespace-nowrap ${
+                    activeTab === folderName
+                      ? 'text-teal-300 border-b-2 border-teal-400'
+                      : 'text-slate-400 hover:text-slate-300'
+                  }`}
                 >
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveTab(folderName);
-                    }}
-                    className={`px-3 md:px-4 py-2 text-sm md:text-base font-medium transition-colors whitespace-nowrap ${
-                      isFolderOpen
-                        ? 'text-teal-300 border-b-2 border-teal-400'
-                        : 'text-slate-400 hover:text-slate-300'
-                    }`}
-                  >
-                    📁 {folderName}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      closeFolderTab(folderName);
-                    }}
-                    className="ml-1 text-slate-400 hover:text-red-400 transition-colors p-1"
-                    title="Close folder"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              );
-            })}
+                  📁 {folderName}
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setActiveTab('all');
+                  }}
+                  className="ml-1 text-slate-400 hover:text-red-400 transition-colors p-1"
+                  title="Close folder"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
 
             {/* Deck Tabs */}
             {openDecks.map((deckId) => {
