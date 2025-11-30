@@ -1109,9 +1109,16 @@ export const InventoryTab = ({
                 }}
                 onDrop={(e) => {
                   e.preventDefault();
+                  e.stopPropagation();
                   e.currentTarget.classList.remove('bg-teal-700/60', 'border-teal-300');
                   const cardName = e.dataTransfer.getData('cardName');
-                  moveCardToFolder(cardName, folderName);
+                  const deckCardDataStr = e.dataTransfer.getData('deckCardData');
+                  if (deckCardDataStr) {
+                    const deckCardData = JSON.parse(deckCardDataStr);
+                    moveCardFromDeckToFolder(deckCardData, folderName);
+                  } else if (cardName) {
+                    moveCardToFolder(cardName, folderName);
+                  }
                 }}
                 className={`w-full text-left p-3 rounded-lg transition-colors ${
                   isSelected
