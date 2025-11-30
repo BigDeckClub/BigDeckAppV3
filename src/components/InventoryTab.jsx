@@ -207,8 +207,7 @@ export const InventoryTab = ({
   
   const renderCardGroup = ([cardName, items]) => {
     const totalQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
-    const availableQty = items.reduce((sum, item) => sum + (item.available_quantity || 0), 0);
-    const reservedQty = totalQty - availableQty;
+    const available = totalQty;
     
     const sixtyDaysAgo = new Date();
     sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
@@ -242,8 +241,7 @@ export const InventoryTab = ({
           <div className="flex-1 flex items-center justify-center min-h-0">
             <div className="text-center">
               <div className="text-slate-500 text-[7px] md:text-[8px]">Available</div>
-              <div className="text-2xl md:text-3xl font-bold text-green-300 leading-tight">{availableQty}</div>
-              {reservedQty > 0 && <div className="text-[7px] md:text-[8px] text-yellow-400">({reservedQty} reserved)</div>}
+              <div className="text-2xl md:text-3xl font-bold text-green-300 leading-tight">{available}</div>
             </div>
           </div>
           
@@ -271,8 +269,7 @@ export const InventoryTab = ({
                 <h3 className="text-sm font-bold text-slate-100 break-words mb-1">{cardName}</h3>
                 <div className="flex gap-4 text-xs">
                   <div><span className="text-slate-500">Qty:</span> <span className={`${totalQty === 0 ? 'text-slate-500' : 'text-teal-300'} font-semibold`}>{totalQty}</span></div>
-                  <div><span className="text-slate-500">Available:</span> <span className="text-green-300 font-semibold">{availableQty}</span></div>
-                  {reservedQty > 0 && <div><span className="text-slate-500">Reserved:</span> <span className="text-yellow-400 font-semibold">{reservedQty}</span></div>}
+                  <div><span className="text-slate-500">Available:</span> <span className="text-green-300 font-semibold">{available}</span></div>
                   <div><span className="text-slate-500">Cost/ea:</span> <span className="text-blue-300 font-semibold">${avgPrice.toFixed(2)}</span></div>
                   <div><span className="text-slate-500">Total:</span> <span className="text-amber-400 font-semibold">${formatTotal(totalValue)}</span></div>
                 </div>
