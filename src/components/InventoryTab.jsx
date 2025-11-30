@@ -811,7 +811,20 @@ export const InventoryTab = ({
                         </div>
                         <div className="space-y-0.5 max-h-16 overflow-y-auto">
                           {setItems.map((item) => (
-                            <div key={item.id} className="text-[9px] text-slate-300 bg-slate-600/50 rounded px-1.5 py-0.5 flex justify-between items-center group hover:bg-slate-600 transition-colors">
+                            <div 
+                              key={item.id} 
+                              draggable
+                              onDragStart={(e) => {
+                                e.stopPropagation();
+                                e.dataTransfer.effectAllowed = 'move';
+                                const deckId = openDecks.find(id => `deck-${id}` === activeTab);
+                                const deckCardData = {
+                                  ...item,
+                                  deck_id: deckId
+                                };
+                                e.dataTransfer.setData('deckCardData', JSON.stringify(deckCardData));
+                              }}
+                              className="text-[9px] text-slate-300 bg-slate-600/50 rounded px-1.5 py-0.5 flex justify-between items-center group hover:bg-slate-600 transition-colors cursor-grab active:cursor-grabbing">
                               <span>{item.quantity_reserved}x @ ${parseFloat(item.purchase_price || 0).toFixed(2)}</span>
                               <div className="flex items-center gap-1">
                                 <span className="text-slate-400">{item.original_folder}</span>
@@ -868,7 +881,20 @@ export const InventoryTab = ({
                       </div>
                       <div className="space-y-0.5 max-h-16 overflow-y-auto">
                         {setItems.map((item) => (
-                          <div key={item.id} className="text-[9px] text-slate-300 bg-slate-600/50 rounded px-1.5 py-0.5 flex justify-between items-center group hover:bg-slate-600 transition-colors">
+                          <div 
+                            key={item.id} 
+                            draggable
+                            onDragStart={(e) => {
+                              e.stopPropagation();
+                              e.dataTransfer.effectAllowed = 'move';
+                              const deckId = openDecks.find(id => `deck-${id}` === activeTab);
+                              const deckCardData = {
+                                ...item,
+                                deck_id: deckId
+                              };
+                              e.dataTransfer.setData('deckCardData', JSON.stringify(deckCardData));
+                            }}
+                            className="text-[9px] text-slate-300 bg-slate-600/50 rounded px-1.5 py-0.5 flex justify-between items-center group hover:bg-slate-600 transition-colors cursor-grab active:cursor-grabbing">
                             <span>{item.quantity_reserved}x @ ${parseFloat(item.purchase_price || 0).toFixed(2)}</span>
                             <div className="flex items-center gap-1">
                               <span className="text-slate-400">{item.original_folder}</span>
