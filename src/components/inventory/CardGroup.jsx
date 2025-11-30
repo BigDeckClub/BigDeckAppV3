@@ -174,7 +174,7 @@ export const CardGroup = memo(function CardGroup({
             e.dataTransfer.setData('skuData', JSON.stringify(items[0]));
           }
         }}
-        className="relative bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 hover:border-teal-500 rounded-lg p-3 transition-all flex flex-col h-28 md:h-32 hover:shadow-lg hover:shadow-teal-500/20 cursor-grab active:cursor-grabbing group" 
+        className="relative bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 hover:border-teal-500 rounded-lg p-4 transition-all flex flex-col h-36 md:h-40 hover:shadow-lg hover:shadow-teal-500/20 cursor-grab active:cursor-grabbing group" 
         onClick={() => setExpandedCards(isExpanded ? {} : {[cardName]: true})}
       >
         <button
@@ -187,34 +187,36 @@ export const CardGroup = memo(function CardGroup({
         >
           <X className="w-5 h-5" />
         </button>
-        <div className="text-center px-1 cursor-pointer flex items-center justify-center gap-1">
-          <h3 className="text-xs font-semibold text-slate-50 line-clamp-1 break-words flex-1">
+        <div className="text-center px-1 cursor-pointer flex items-center justify-center gap-1 mb-1">
+          <h3 className="text-xs md:text-sm font-semibold text-slate-50 line-clamp-2 break-words flex-1">
             {cardName.split('//')[0].trim()}
           </h3>
         </div>
         
-        <div className="flex items-baseline justify-center gap-1 py-1">
-          <div className="text-slate-400 text-[8px] font-semibold uppercase">Available</div>
-          <div className="text-lg md:text-xl font-bold text-green-400 leading-tight">{available}</div>
+        <div className="flex-1 flex items-center justify-center min-h-0 py-2">
+          <div className="text-center">
+            <div className="text-slate-400 text-[9px] md:text-xs font-semibold uppercase tracking-wider mb-1">Available</div>
+            <div className="text-2xl md:text-3xl font-bold text-green-400 leading-tight">{available}</div>
+          </div>
         </div>
         
-        <div className="grid grid-cols-3 gap-1 text-center pt-1">
-          <div>
-            <div className="text-slate-500 text-[7px] font-semibold uppercase">Qty</div>
-            <div className="h-3 flex items-center justify-center">
-              <div className={`font-bold leading-none text-[9px] ${totalQty === 0 ? 'text-slate-500' : 'text-teal-300'}`}>{totalQty}</div>
+        <div className="grid grid-cols-3 gap-2 text-center pt-2 border-t border-slate-700/50">
+          <div className="space-y-1">
+            <div className="text-slate-500 text-[7px] md:text-[9px] font-semibold uppercase">Qty</div>
+            <div className="h-4 flex items-center justify-center">
+              <div className={`font-bold leading-none ${getStatFontSize(totalQty)} ${totalQty === 0 ? 'text-slate-500' : 'text-teal-300'}`}>{totalQty}</div>
             </div>
           </div>
-          <div>
-            <div className="text-slate-500 text-[7px] font-semibold uppercase">Cost</div>
-            <div className="h-3 flex items-center justify-center">
-              <div className={`font-bold leading-none text-[9px] text-blue-300`}>${avgPrice.toFixed(2)}</div>
+          <div className="space-y-1">
+            <div className="text-slate-500 text-[7px] md:text-[9px] font-semibold uppercase">Cost</div>
+            <div className="h-4 flex items-center justify-center">
+              <div className={`font-bold leading-none text-blue-300 ${getStatFontSize(avgPrice.toFixed(2))}`}>${avgPrice.toFixed(2)}</div>
             </div>
           </div>
-          <div>
-            <div className="text-slate-500 text-[7px] font-semibold uppercase">Total</div>
-            <div className="h-3 flex items-center justify-center">
-              <div className={`font-bold leading-none text-[9px] text-amber-400`}>${formatTotal(totalValue)}</div>
+          <div className="space-y-1">
+            <div className="text-slate-500 text-[7px] md:text-[9px] font-semibold uppercase">Total</div>
+            <div className="h-4 flex items-center justify-center">
+              <div className={`font-bold leading-none text-amber-400 ${getStatFontSize(formatTotal(totalValue))}`}>${formatTotal(totalValue)}</div>
             </div>
           </div>
         </div>
