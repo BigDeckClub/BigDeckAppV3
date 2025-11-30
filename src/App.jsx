@@ -18,6 +18,7 @@ import { LoginForm } from "./components/LoginForm";
 import { UserDropdown } from "./components/UserDropdown";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { useApi } from "./hooks/useApi";
+import { TutorialModal } from "./components/TutorialModal";
 
 const API_BASE = "/api";
 
@@ -33,6 +34,7 @@ function MTGInventoryTrackerContent() {
   const [imports, setImports] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [deckRefreshTrigger, setDeckRefreshTrigger] = useState(0);
+  const [showTutorial, setShowTutorial] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
@@ -314,6 +316,15 @@ function MTGInventoryTrackerContent() {
         <div className="max-w-7xl mx-auto px-4 py-4 app-header flex items-center justify-between">
           <div className="desktop-nav flex gap-2 items-center">
             <button
+              onClick={() => setShowTutorial(true)}
+              className="px-3 py-2 text-slate-400 hover:text-teal-400 text-sm font-medium transition"
+              title="View tutorial"
+            >
+              ?
+            </button>
+          </div>
+          <div className="desktop-nav flex gap-2 items-center">
+            <button
               onClick={() => setActiveTab("inventory")}
               className={`px-4 py-2 nav-tab inactive ${activeTab === "inventory" ? "btn-primary" : "hover:shadow-lg"}`}
             >
@@ -457,6 +468,9 @@ function MTGInventoryTrackerContent() {
         )}
 
       </main>
+
+      {/* Tutorial Modal */}
+      <TutorialModal isOpen={showTutorial} onClose={() => setShowTutorial(false)} />
     </div>
   );
 }

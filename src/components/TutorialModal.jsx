@@ -1,0 +1,202 @@
+import React, { useState } from 'react';
+import { X, ChevronRight, ChevronLeft, Layers, Download, BarChart3, BookOpen, TrendingUp, Zap } from 'lucide-react';
+
+const tutorialSteps = [
+  {
+    title: 'Welcome to BigDeck.app',
+    icon: Layers,
+    description: 'Your professional Magic: The Gathering inventory management solution',
+    details: [
+      'Track your entire MTG collection in one place',
+      'Manage cards, decks, and sales',
+      'Get real-time card pricing and analytics',
+      'Organize your cards by folder'
+    ]
+  },
+  {
+    title: 'Inventory Tab - Add Cards',
+    icon: Layers,
+    description: 'Build and organize your card collection',
+    details: [
+      '1. Search for a card using the search bar',
+      '2. Select from the dropdown (results show in real-time)',
+      '3. Choose quantity, purchase date, and price',
+      '4. Assign to a folder for organization',
+      '5. Click "Add Card" to save to your inventory'
+    ]
+  },
+  {
+    title: 'Inventory Tab - Manage Cards',
+    icon: Layers,
+    description: 'Edit and organize your collection',
+    details: [
+      'Click any card to expand its details',
+      'Click the pencil icon to edit quantity, price, or folder',
+      'Cards are automatically sorted alphabetically',
+      'Use folders to organize by set, rarity, or purpose',
+      'Hover over prices to see real-time card values'
+    ]
+  },
+  {
+    title: 'Imports Tab - Bulk Add',
+    icon: Download,
+    description: 'Import cards from decklist text',
+    details: [
+      'Paste a decklist in standard format:',
+      '  4x Black Lotus',
+      '  3x Counterspell',
+      '  2x Tarmogoyf',
+      'Cards are validated against Scryfall database',
+      'Import all at once into your inventory'
+    ]
+  },
+  {
+    title: 'Analytics Tab - Track Value',
+    icon: BarChart3,
+    description: 'Visualize your collection performance',
+    details: [
+      'View total portfolio value in real-time',
+      'See spending trends over time',
+      'Break down collection by rarity',
+      'Track average card price and quantity',
+      'Monitor your MTG investment growth'
+    ]
+  },
+  {
+    title: 'Decks Tab - Build Decks',
+    icon: BookOpen,
+    description: 'Create and manage Magic decks',
+    details: [
+      '1. Create a new deck with a name',
+      '2. Add cards from your inventory',
+      '3. System reserves specific cards for the deck',
+      '4. View deck total value and card count',
+      '5. Missing cards are marked - know what to buy',
+      '6. Delete decks when no longer needed'
+    ]
+  },
+  {
+    title: 'Sales Tab - Track Profit',
+    icon: TrendingUp,
+    description: 'Record sales and monitor profit',
+    details: [
+      'Log individual card sales with price',
+      'Calculate profit (sell price vs purchase price)',
+      'Track deck sales as single transactions',
+      'View complete sales history',
+      'Monitor ROI on your collection'
+    ]
+  },
+  {
+    title: 'Tips & Best Practices',
+    icon: Zap,
+    description: 'Get the most out of BigDeck',
+    details: [
+      '💡 Use folders to organize by format (Standard, Modern, Legacy)',
+      '💡 Check real-time prices before buying/selling',
+      '💡 Review analytics monthly to track portfolio growth',
+      '💡 Log all sales to calculate true profit',
+      '💡 Import decks before building to track value',
+      '💡 Your data is saved automatically'
+    ]
+  }
+];
+
+export function TutorialModal({ isOpen, onClose }) {
+  const [currentStep, setCurrentStep] = useState(0);
+  const step = tutorialSteps[currentStep];
+  const Icon = step.icon;
+
+  if (!isOpen) return null;
+
+  const handleNext = () => {
+    if (currentStep < tutorialSteps.length - 1) {
+      setCurrentStep(currentStep + 1);
+    }
+  };
+
+  const handlePrev = () => {
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-gradient-to-b from-slate-800 to-slate-900 rounded-xl border border-slate-700 max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+        {/* Header */}
+        <div className="sticky top-0 bg-slate-800/95 backdrop-blur border-b border-slate-700 px-8 py-6 flex items-start justify-between">
+          <div className="flex items-start gap-4 flex-1">
+            <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-teal-500/30 to-cyan-500/30 border border-teal-500/50 flex items-center justify-center flex-shrink-0 mt-1">
+              <Icon className="w-6 h-6 text-teal-400" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-white">{step.title}</h2>
+              <p className="text-slate-400 text-sm mt-1">{step.description}</p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-slate-400 hover:text-white transition p-1"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="px-8 py-6">
+          <ul className="space-y-3">
+            {step.details.map((detail, index) => (
+              <li key={index} className="flex gap-3 items-start">
+                <div className="w-6 h-6 rounded-full bg-teal-500/20 border border-teal-500/40 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <span className="text-xs font-semibold text-teal-400">{index + 1}</span>
+                </div>
+                <span className="text-slate-300 leading-relaxed">{detail}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Navigation */}
+        <div className="sticky bottom-0 bg-slate-800/95 backdrop-blur border-t border-slate-700 px-8 py-4 flex items-center justify-between">
+          <button
+            onClick={handlePrev}
+            disabled={currentStep === 0}
+            className="flex items-center gap-2 px-4 py-2 text-slate-300 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition"
+          >
+            <ChevronLeft className="w-5 h-5" />
+            Previous
+          </button>
+
+          <div className="flex items-center gap-2">
+            <div className="text-sm text-slate-400">
+              Step <span className="font-semibold text-white">{currentStep + 1}</span> of <span className="font-semibold text-white">{tutorialSteps.length}</span>
+            </div>
+            <div className="flex gap-1">
+              {tutorialSteps.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setCurrentStep(index)}
+                  className={`h-2 rounded-full transition ${
+                    index === currentStep 
+                      ? 'bg-teal-400 w-6' 
+                      : 'bg-slate-600 w-2 hover:bg-slate-500'
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+
+          <button
+            onClick={handleNext}
+            disabled={currentStep === tutorialSteps.length - 1}
+            className="flex items-center gap-2 px-4 py-2 bg-teal-500 hover:bg-teal-600 disabled:bg-teal-500/50 text-white font-medium rounded-lg transition disabled:cursor-not-allowed"
+          >
+            Next
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
