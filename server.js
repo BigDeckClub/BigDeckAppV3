@@ -4,6 +4,7 @@ import bodyParser from 'body-parser';
 import pkg from 'pg';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import compression from 'compression';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { mtgjsonService } from './server/mtgjsonPriceService.js';
@@ -32,6 +33,9 @@ app.use(cors({
 }));
 
 app.use(bodyParser.json());
+
+// Enable gzip/brotli compression for all responses
+app.use(compression());
 
 // ========== RATE LIMITING ==========
 const priceLimiter = rateLimit({
@@ -1601,7 +1605,10 @@ async function startServer() {
     }
 
     // ========== SERVE STATIC ASSETS ==========
-    app.use(express.static('dist'));
+    app.use(express.static('dist', {
+      maxAge: '1d', // Cache static assets for 1 day
+      etag: true,
+    }));
 
     // ========== CATCH-ALL HANDLER - SPA ROUTING ==========
     app.use((req, res) => {
