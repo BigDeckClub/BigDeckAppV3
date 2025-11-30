@@ -619,11 +619,10 @@ export const InventoryTab = ({
                               <input type="number" min="1" placeholder="Qty" value={editForm.quantity} onChange={(e) => setEditForm({...editForm, quantity: e.target.value})} className="w-1/2 bg-slate-600 border border-slate-500 rounded px-2 py-0.5 text-white text-xs" />
                               <input type="number" step="0.01" placeholder="$" value={editForm.purchase_price} onChange={(e) => setEditForm({...editForm, purchase_price: e.target.value})} className="w-1/2 bg-slate-600 border border-slate-500 rounded px-2 py-0.5 text-white text-xs" />
                             </div>
-                            <input type="date" value={editForm.purchase_date} onChange={(e) => setEditForm({...editForm, purchase_date: e.target.value})} className="w-full bg-slate-600 border border-slate-500 rounded px-2 py-0.5 text-white text-xs" />
                           </div>
                           <div className="flex gap-1 mt-1">
-                            <button onClick={() => updateInventoryItem(firstItem.id)} className="flex-1 bg-green-600 hover:bg-green-700 rounded px-2 py-0.5 text-xs font-semibold">Save</button>
-                            <button onClick={() => setEditForm({})} className="flex-1 bg-slate-500 hover:bg-slate-400 rounded px-2 py-0.5 text-xs">Cancel</button>
+                            <button onClick={() => updateInventoryItem(firstItem.id, {...editForm, quantity: parseInt(editForm.quantity), purchase_price: parseFloat(editForm.purchase_price), purchase_date: new Date().toISOString().split('T')[0]})} className="flex-1 bg-green-600 hover:bg-green-700 rounded px-2 py-0.5 text-xs font-semibold">Save</button>
+                            <button onClick={() => { setEditForm({}); }} className="flex-1 bg-slate-500 hover:bg-slate-400 rounded px-2 py-0.5 text-xs">Cancel</button>
                           </div>
                         </div>
                       ) : (
