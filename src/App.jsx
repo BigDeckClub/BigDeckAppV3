@@ -4,12 +4,14 @@ import {
   Download,
   BarChart3,
   BookOpen,
+  History,
 } from "lucide-react";
 import { useDebounce } from "./utils/useDebounce";
 import { InventoryTab } from "./components/InventoryTab";
 import { ImportTab } from "./components/ImportTab";
 import { AnalyticsTab } from "./components/AnalyticsTab";
 import { DeckTab } from "./components/DeckTab";
+import { ChangeLogTab } from "./components/ChangeLogTab";
 import { PriceCacheProvider, usePriceCache } from "./context/PriceCacheContext";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { useApi } from "./hooks/useApi";
@@ -194,7 +196,12 @@ function MTGInventoryTrackerContent() {
 
   const updateInventoryItem = async (id, updates) => {
     try {
-      await put(`${API_BASE}/inventory/${id}`, updates);
+      // Add last_modified timestamp to track changes
+      const updateWithTimestamp = {
+        ...updates,
+        last_modified: new Date().toISOString(),
+      };
+      await put(`${API_BASE}/inventory/${id}`, updateWithTimestamp);
       await loadInventory();
       setEditingId(null);
       setSuccessMessage("Card updated!");
