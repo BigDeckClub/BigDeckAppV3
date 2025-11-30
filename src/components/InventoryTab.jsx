@@ -133,12 +133,12 @@ export const InventoryTab = ({
   };
 
   // Remove card from deck reservation
-  const removeCardFromDeck = async (deckId, reservationId) => {
+  const removeCardFromDeck = async (deckId, reservationId, quantity = 1) => {
     try {
       const response = await fetch(`/api/deck-instances/${deckId}/remove-card`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reservation_id: reservationId })
+        body: JSON.stringify({ reservation_id: reservationId, quantity: quantity })
       });
       if (response.ok) {
         await loadDeckDetails(deckId);
@@ -653,7 +653,7 @@ export const InventoryTab = ({
               onClick={(e) => {
                 e.stopPropagation();
                 const deckId = openDecks.find(id => `deck-${id}` === activeTab);
-                items.forEach(item => removeCardFromDeck(deckId, item.id));
+                items.forEach(item => removeCardFromDeck(deckId, item.id, item.quantity_reserved));
               }}
               className="text-red-400 hover:text-red-300 p-0.5"
               title="Remove all from deck"
@@ -692,7 +692,7 @@ export const InventoryTab = ({
                     onClick={(e) => {
                       e.stopPropagation();
                       const deckId = openDecks.find(id => `deck-${id}` === activeTab);
-                      items.forEach(item => removeCardFromDeck(deckId, item.id));
+                      items.forEach(item => removeCardFromDeck(deckId, item.id, item.quantity_reserved));
                     }}
                     className="text-red-400 hover:text-red-300 p-0.5 flex-shrink-0"
                     title="Remove all from deck"
@@ -807,7 +807,7 @@ export const InventoryTab = ({
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   const deckId = openDecks.find(id => `deck-${id}` === activeTab);
-                                  removeCardFromDeck(deckId, item.id);
+                                  removeCardFromDeck(deckId, item.id, item.quantity_reserved);
                                 }}
                                 className="text-red-400 hover:text-red-300 p-0.5"
                               >
