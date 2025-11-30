@@ -197,7 +197,12 @@ export const InventoryTab = ({
                         <div className="space-y-1.5">
                           <div className="text-xs font-bold text-teal-300 mb-1">{firstItem.set?.toUpperCase() || 'N/A'}</div>
                           <div className="space-y-1">
-                            <input type="text" placeholder="Folder" value={editForm.folder || ''} onChange={(e) => setEditForm({...editForm, folder: e.target.value || 'Uncategorized'})} className="w-full bg-slate-600 border border-slate-500 rounded px-2 py-0.5 text-white text-xs" />
+                            <select value={editForm.folder || 'Uncategorized'} onChange={(e) => setEditForm({...editForm, folder: e.target.value})} className="w-full bg-slate-600 border border-slate-500 rounded px-2 py-0.5 text-white text-xs">
+                              <option value="Uncategorized">Uncategorized</option>
+                              {createdFolders.map(folder => (
+                                <option key={folder} value={folder}>{folder}</option>
+                              ))}
+                            </select>
                             <div className="flex gap-1">
                               <input type="number" min="1" placeholder="Qty" value={editForm.quantity} onChange={(e) => setEditForm({...editForm, quantity: e.target.value})} className="w-1/2 bg-slate-600 border border-slate-500 rounded px-2 py-0.5 text-white text-xs" />
                               <input type="number" step="0.01" placeholder="$" value={editForm.purchase_price} onChange={(e) => setEditForm({...editForm, purchase_price: e.target.value})} className="w-1/2 bg-slate-600 border border-slate-500 rounded px-2 py-0.5 text-white text-xs" />
@@ -269,7 +274,12 @@ export const InventoryTab = ({
                       <div className="space-y-1.5">
                         <div className="text-xs font-bold text-teal-300 mb-1">{firstItem.set?.toUpperCase() || 'N/A'}</div>
                         <div className="space-y-1">
-                          <input type="text" placeholder="Folder" value={editForm.folder || ''} onChange={(e) => setEditForm({...editForm, folder: e.target.value || 'Uncategorized'})} className="w-full bg-slate-600 border border-slate-500 rounded px-2 py-0.5 text-white text-xs" />
+                          <select value={editForm.folder || 'Uncategorized'} onChange={(e) => setEditForm({...editForm, folder: e.target.value})} className="w-full bg-slate-600 border border-slate-500 rounded px-2 py-0.5 text-white text-xs">
+                            <option value="Uncategorized">Uncategorized</option>
+                            {createdFolders.map(folder => (
+                              <option key={folder} value={folder}>{folder}</option>
+                            ))}
+                          </select>
                           <div className="flex gap-1">
                             <input type="number" min="1" placeholder="Qty" value={editForm.quantity} onChange={(e) => setEditForm({...editForm, quantity: e.target.value})} className="w-1/2 bg-slate-600 border border-slate-500 rounded px-2 py-0.5 text-white text-xs" />
                             <input type="number" step="0.01" placeholder="$" value={editForm.purchase_price} onChange={(e) => setEditForm({...editForm, purchase_price: e.target.value})} className="w-1/2 bg-slate-600 border border-slate-500 rounded px-2 py-0.5 text-white text-xs" />
