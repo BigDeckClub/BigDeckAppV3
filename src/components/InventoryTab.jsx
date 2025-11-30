@@ -125,6 +125,9 @@ export const InventoryTab = ({
     if (activeTab === folderName) {
       setActiveTab('all');
     }
+    if (selectedFolder === folderName) {
+      setSelectedFolder(null);
+    }
   };
 
   // Release deck and return cards to inventory
@@ -1116,7 +1119,6 @@ export const InventoryTab = ({
                 key={folderName}
                 onClick={() => {
                   if (isSelected) {
-                    setSelectedFolder(null);
                     closeFolderTab(folderName);
                   } else {
                     setSelectedFolder(folderName);
@@ -1171,7 +1173,6 @@ export const InventoryTab = ({
                   key={folder}
                   onClick={() => {
                     if (isSelected) {
-                      setSelectedFolder(null);
                       closeFolderTab(folder);
                     } else {
                       setSelectedFolder(folder);
