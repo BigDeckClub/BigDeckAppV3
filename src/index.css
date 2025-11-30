@@ -62,15 +62,15 @@ h3 {
 
 /* Card styling - Modern glassmorphism */
 .card {
-  @apply bg-gradient-to-br from-slate-800/40 to-slate-900/40 backdrop-blur-xl rounded-2xl border border-slate-700/30 shadow-2xl hover:shadow-cyan-500/10 hover:border-cyan-500/40 transition-all duration-300;
-  background: linear-gradient(135deg, rgba(30, 41, 59, 0.3) 0%, rgba(15, 23, 42, 0.3) 100%);
+  @apply bg-gradient-to-br from-slate-800/50 to-slate-900/30 backdrop-blur-2xl rounded-2xl border border-slate-600/20 shadow-2xl hover:shadow-cyan-500/20 hover:border-cyan-500/50 hover:bg-slate-800/60 transition-all duration-300;
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.2) 100%);
   -webkit-backdrop-filter: blur(20px);
   backdrop-filter: blur(20px);
 }
 
 .card-sm {
-  @apply bg-gradient-to-br from-slate-800/40 to-slate-900/40 backdrop-blur-lg rounded-xl border border-slate-700/30 shadow-xl;
-  background: linear-gradient(135deg, rgba(30, 41, 59, 0.3) 0%, rgba(15, 23, 42, 0.3) 100%);
+  @apply bg-gradient-to-br from-slate-800/50 to-slate-900/30 backdrop-blur-lg rounded-xl border border-slate-600/20 shadow-xl hover:shadow-cyan-500/15 hover:border-cyan-400/30 transition-all duration-300;
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.2) 100%);
   -webkit-backdrop-filter: blur(16px);
   backdrop-filter: blur(16px);
 }
