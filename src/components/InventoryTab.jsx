@@ -184,6 +184,9 @@ export const InventoryTab = ({
       // Store original state in case we need to rollback
       const originalInventory = inventory;
       
+      // Update state immediately
+      setInventory(updatedInventory);
+      
       // Show the change immediately
       setSuccessMessage(`Moved "${cardName}" to ${targetFolder}`);
       
