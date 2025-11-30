@@ -121,7 +121,7 @@ export const AnalyticsTab = ({ inventory }) => {
           }`}
         >
           <History className="w-4 h-4" />
-          Change Log
+          History
         </button>
       </div>
 
