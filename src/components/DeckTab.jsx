@@ -617,6 +617,16 @@ export const DeckTab = () => {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
+                          previewCopyToDeck(deck);
+                        }}
+                        className="text-slate-400 hover:text-green-400 transition-colors"
+                        title="Copy to Inventory Deck"
+                      >
+                        <Download className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
                           setEditingDeck(deck.id);
                         }}
                         className="text-slate-400 hover:text-teal-300 transition-colors"
@@ -743,6 +753,76 @@ export const DeckTab = () => {
             <p className="text-xs text-slate-500 mt-4">
               Created: {new Date(selectedDeck.created_at).toLocaleDateString()}
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* Copy to Deck Modal */}
+      {showCopyModal && copyingDeck && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-800 rounded-lg border border-teal-500 p-6 max-w-md w-full">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-teal-300">Copy to Inventory Deck</h2>
+              <button
+                onClick={() => {
+                  setShowCopyModal(false);
+                  setCopyingDeck(null);
+                  setCopyDeckName('');
+                }}
+                className="text-slate-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <p className="text-slate-300 mb-4">
+              This will create a deck in your Inventory tab and reserve the cheapest available copies of each card.
+            </p>
+            
+            <div className="mb-4">
+              <label className="block text-sm text-slate-400 mb-1">Deck Name</label>
+              <input
+                type="text"
+                value={copyDeckName}
+                onChange={(e) => setCopyDeckName(e.target.value)}
+                placeholder="Enter deck name"
+                className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white"
+                autoFocus
+              />
+            </div>
+            
+            <div className="bg-slate-900 rounded p-3 mb-4">
+              <p className="text-sm text-slate-400">
+                Source: <span className="text-teal-300">{copyingDeck.name}</span>
+              </p>
+              <p className="text-sm text-slate-400">
+                Cards: <span className="text-teal-300">{(copyingDeck.cards || []).reduce((sum, c) => sum + (c.quantity || 1), 0)}</span>
+              </p>
+              <p className="text-sm text-slate-400">
+                Format: <span className="text-teal-300">{copyingDeck.format}</span>
+              </p>
+            </div>
+            
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  setShowCopyModal(false);
+                  setCopyingDeck(null);
+                  setCopyDeckName('');
+                }}
+                className="flex-1 bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded font-medium transition-colors disabled:bg-slate-600 disabled:cursor-not-allowed"
+                disabled={isCopying}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={executeCopyToDeck}
+                disabled={isCopying || !copyDeckName.trim()}
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded font-medium transition-colors disabled:bg-slate-600 disabled:cursor-not-allowed"
+              >
+                {isCopying ? 'Copying...' : 'Copy to Deck'}
+              </button>
+            </div>
           </div>
         </div>
       )}
