@@ -1307,10 +1307,12 @@ export const InventoryTab = ({
                   </button>
                   <button
                     onClick={(e) => {
+                      e.preventDefault();
                       e.stopPropagation();
                       setActiveTab('all');
+                      setSidebarOpen(false);
                     }}
-                    className="ml-1 text-slate-400 hover:text-red-400 transition-colors"
+                    className="ml-1 text-slate-400 hover:text-red-400 transition-colors p-1"
                     title="Close folder"
                   >
                     <X className="w-4 h-4" />
