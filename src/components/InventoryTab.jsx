@@ -1364,7 +1364,9 @@ export const InventoryTab = ({
                 acc[cardName].push(res);
                 return acc;
               }, {});
-              const reservationEntries = Object.entries(groupedReservations);
+              const reservationEntries = Object.entries(groupedReservations).filter(([cardName]) => 
+                inventorySearch === '' || cardName.toLowerCase().includes(inventorySearch.toLowerCase())
+              );
 
               return (
                 <div 
@@ -1467,6 +1469,8 @@ export const InventoryTab = ({
                                 .reduce((sum, r) => sum + parseInt(r.quantity_reserved || 0), 0);
                               const needed = Math.max(0, (card.quantity || 1) - reservedQty);
                               if (needed === 0) return null;
+                              const matchesSearch = inventorySearch === '' || card.name.toLowerCase().includes(inventorySearch.toLowerCase());
+                              if (!matchesSearch) return null;
                               return (
                                 <div key={idx} className="flex justify-between items-center text-sm bg-slate-800 p-2 rounded mb-1">
                                   <div className="flex-1">
