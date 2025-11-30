@@ -1504,8 +1504,22 @@ app.post('/api/sales', async (req, res) => {
       [itemType, itemId || null, itemName, purchasePrice, sellPrice, profit, quantity || 1]
     );
 
-    // If selling a deck, delete the deck and its reservations
+    // If selling a deck, delete the reserved inventory items and the deck
     if (itemType === 'deck' && itemId) {
+      // Get all reserved inventory items for this deck
+      const reservationsResult = await pool.query(
+        `SELECT inventory_item_id FROM deck_reservations WHERE deck_id = $1`,
+        [itemId]
+      );
+      
+      // Delete those inventory items (this updates analytics automatically)
+      if (reservationsResult.rows.length > 0) {
+        const inventoryIds = reservationsResult.rows.map(r => r.inventory_item_id);
+        const placeholders = inventoryIds.map((_, i) => `$${i + 1}`).join(',');
+        await pool.query(`DELETE FROM inventory WHERE id IN (${placeholders})`, inventoryIds);
+      }
+      
+      // Delete the deck and its reservations
       await pool.query(`DELETE FROM deck_missing_cards WHERE deck_id = $1`, [itemId]);
       await pool.query(`DELETE FROM deck_reservations WHERE deck_id = $1`, [itemId]);
       await pool.query(`DELETE FROM decks WHERE id = $1 AND is_deck_instance = TRUE`, [itemId]);
