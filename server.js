@@ -1756,20 +1756,24 @@ app.post('/api/auth/login', async (req, res) => {
     }
 
     if (!supabaseUrl || !supabaseAnonKey) {
+      console.error('[AUTH] Supabase not configured - URL:', supabaseUrl, 'Key exists:', !!supabaseAnonKey);
       return res.status(500).json({ error: 'Supabase not configured' });
     }
 
+    console.log('[AUTH] Login attempt for:', email, 'with Supabase URL:', supabaseUrl);
     const supabase = createClient(supabaseUrl, supabaseAnonKey);
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     
     if (error) {
-      return res.status(401).json({ error: error.message });
+      console.error('[AUTH] Supabase login error:', error.message, error.status);
+      return res.status(error.status || 401).json({ error: error.message });
     }
 
+    console.log('[AUTH] Login successful for:', email);
     res.json(data);
   } catch (error) {
-    console.error('[AUTH] Login error:', error.message);
-    res.status(500).json({ error: 'Login failed' });
+    console.error('[AUTH] Login error:', error.message, error);
+    res.status(500).json({ error: error.message || 'Login failed' });
   }
 });
 
