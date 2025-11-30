@@ -1156,7 +1156,7 @@ export const InventoryTab = ({
                           });
                           setShowSellModal(true);
                         }}
-                        className="ml-2 text-green-400 hover:text-green-300 transition-colors opacity-0 group-hover:opacity-100"
+                        className="ml-2 text-green-400 opacity-0 group-hover:opacity-100 transition-all duration-200 hover:text-green-200 hover:scale-125 hover:drop-shadow-lg"
                         title="Sell this deck"
                       >
                         <DollarSign className="w-4 h-4" />
