@@ -1121,6 +1121,16 @@ app.post('/api/deck-instances/:id/release', async (req, res) => {
   const { id } = req.params;
   
   try {
+    // Get all reservations for this deck before deleting
+    const reservationsResult = await pool.query('SELECT inventory_item_id FROM deck_reservations WHERE deck_id = $1', [id]);
+    
+    // Move all reserved cards back to Uncategorized
+    if (reservationsResult.rows.length > 0) {
+      const inventoryIds = reservationsResult.rows.map(r => r.inventory_item_id);
+      const placeholders = inventoryIds.map((_, i) => `$${i + 1}`).join(',');
+      await pool.query(`UPDATE inventory SET folder = 'Uncategorized' WHERE id IN (${placeholders})`, inventoryIds);
+    }
+    
     await pool.query('DELETE FROM deck_reservations WHERE deck_id = $1', [id]);
     await pool.query('DELETE FROM deck_missing_cards WHERE deck_id = $1', [id]);
     await pool.query('DELETE FROM decks WHERE id = $1 AND is_deck_instance = TRUE', [id]);
