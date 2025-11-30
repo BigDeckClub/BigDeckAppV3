@@ -496,10 +496,10 @@ export const InventoryTab = ({
               );
             })}
 
-          {/* Deck Instances Section */}
+          {/* Decks Section */}
           {deckInstances.length > 0 && (
             <div className="pt-3 border-t border-slate-700 mt-3">
-              <h3 className="text-sm font-semibold text-teal-300 mb-2">🎴 Deck Instances</h3>
+              <h3 className="text-sm font-semibold text-teal-300 mb-2">🎴 Decks</h3>
               {deckInstances.map((deck) => {
                 const isSelected = selectedFolder === `deck-${deck.id}`;
                 return (
