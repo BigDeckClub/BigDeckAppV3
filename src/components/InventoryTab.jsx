@@ -157,19 +157,55 @@ export const InventoryTab = ({
   const moveCardToFolder = async (cardName, targetFolder) => {
     try {
       const cardItems = inventory.filter(item => item.name === cardName);
+      if (cardItems.length === 0) {
+        alert('Card not found');
+        return;
+      }
       for (const item of cardItems) {
-        await fetch(`/api/inventory/${item.id}`, {
+        const response = await fetch(`/api/inventory/${item.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ folder: targetFolder })
         });
+        if (!response.ok) {
+          const error = await response.json();
+          console.error('API error:', error);
+          throw new Error(error.error || 'Failed to update folder');
+        }
       }
       await loadInventory();
       setSuccessMessage(`Moved "${cardName}" to ${targetFolder}`);
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error) {
       console.error('Failed to move card:', error);
-      alert('Error moving card');
+      setSuccessMessage(`Error moving card: ${error.message}`);
+      setTimeout(() => setSuccessMessage(''), 5000);
+    }
+  };
+
+  // Move individual card SKU to deck
+  const moveCardSkuToDeck = async (inventoryItem, deckId) => {
+    try {
+      const response = await fetch(`/api/deck-instances/${deckId}/add-card`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          inventory_item_id: inventoryItem.id,
+          quantity: inventoryItem.quantity
+        })
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to add card to deck');
+      }
+      await loadInventory();
+      await refreshDeckInstances();
+      setSuccessMessage(`Added ${inventoryItem.quantity}x ${inventoryItem.name} to deck`);
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (error) {
+      console.error('Failed to add card to deck:', error);
+      setSuccessMessage(`Error: ${error.message}`);
+      setTimeout(() => setSuccessMessage(''), 5000);
     }
   };
 
@@ -360,7 +396,16 @@ export const InventoryTab = ({
                           {setItems.length > 1 && (
                             <div className="space-y-0.5 max-h-16 overflow-y-auto">
                               {setItems.map((item) => (
-                                <div key={item.id} className="text-[9px] text-slate-300 bg-slate-600/50 rounded px-1.5 py-0.5 flex justify-between">
+                                <div 
+                                  key={item.id} 
+                                  draggable
+                                  onDragStart={(e) => {
+                                    e.dataTransfer.effectAllowed = 'move';
+                                    e.dataTransfer.setData('skuData', JSON.stringify(item));
+                                  }}
+                                  className="text-[9px] text-slate-300 bg-slate-600/50 rounded px-1.5 py-0.5 flex justify-between cursor-grab active:cursor-grabbing hover:bg-slate-600"
+                                  title="Drag to a deck tab to add"
+                                >
                                   <span>{item.quantity}x @ ${parseFloat(item.purchase_price || 0).toFixed(2)}</span>
                                   <span className="text-slate-400">{new Date(item.purchase_date).toLocaleDateString()}</span>
                                 </div>
@@ -863,7 +908,27 @@ export const InventoryTab = ({
               const deck = deckInstances.find(d => d.id === deckId);
               if (!deck) return null;
               return (
-                <div key={`deck-tab-${deckId}`} className="flex items-center">
+                <div 
+                  key={`deck-tab-${deckId}`} 
+                  className="flex items-center"
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.currentTarget.classList.add('opacity-75');
+                  }}
+                  onDragLeave={(e) => {
+                    e.currentTarget.classList.remove('opacity-75');
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.currentTarget.classList.remove('opacity-75');
+                    try {
+                      const skuData = JSON.parse(e.dataTransfer.getData('skuData'));
+                      moveCardSkuToDeck(skuData, deckId);
+                    } catch (err) {
+                      console.error('Error parsing drag data:', err);
+                    }
+                  }}
+                >
                   <button
                     onClick={() => setActiveTab(`deck-${deckId}`)}
                     className={`px-3 md:px-4 py-2 text-sm md:text-base font-medium transition-colors whitespace-nowrap ${
