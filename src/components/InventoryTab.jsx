@@ -1721,18 +1721,19 @@ export const InventoryTab = ({
             ) : (
               <p className="text-slate-400 text-center py-12">No unsorted cards.</p>
             )
-          ) : groupedByFolder[activeTab] ? (
+          ) : createdFolders.includes(activeTab) || Object.keys(groupedByFolder).includes(activeTab) ? (
             /* Show folder's cards - only include in-stock cards */
             (() => {
-              const folderCards = Object.entries(groupedByFolder[activeTab]).filter(([cardName, items]) => {
+              const folderData = groupedByFolder[activeTab] || {};
+              const folderCards = Object.entries(folderData).filter(([cardName, items]) => {
                 const matchesSearch = inventorySearch === '' || cardName.toLowerCase().includes(inventorySearch.toLowerCase());
                 const totalQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
                 const reservedQty = items.reduce((sum, item) => sum + (parseInt(item.reserved_quantity) || 0), 0);
                 return matchesSearch && (totalQty - reservedQty) > 0;
               });
-              const uniqueCards = Object.keys(groupedByFolder[activeTab] || {}).length;
-              const totalCards = Object.values(groupedByFolder[activeTab] || {}).reduce((sum, items) => sum + items.reduce((s, item) => s + (item.quantity || 0), 0), 0);
-              const totalCost = Object.values(groupedByFolder[activeTab] || {}).reduce((sum, items) => sum + items.reduce((s, item) => s + ((item.purchase_price || 0) * (item.quantity || 0)), 0), 0);
+              const uniqueCards = Object.keys(folderData).length;
+              const totalCards = Object.values(folderData).reduce((sum, items) => sum + items.reduce((s, item) => s + (item.quantity || 0), 0), 0);
+              const totalCost = Object.values(folderData).reduce((sum, items) => sum + items.reduce((s, item) => s + ((item.purchase_price || 0) * (item.quantity || 0)), 0), 0);
               const folderDesc = folderMetadata[activeTab]?.description || '';
               
               return (
@@ -1807,48 +1808,48 @@ export const InventoryTab = ({
                     </div>
                   </div>
                   {folderCards.length > 0 ? (
-                viewMode === 'card' ? (
-                  <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-3">
-                    {folderCards.map(([cardName, items]) => (
-                      <CardGroup
-                        key={cardName}
-                        cardName={cardName}
-                        items={items}
-                        viewMode={viewMode}
-                        expandedCards={expandedCards}
-                        setExpandedCards={setExpandedCards}
-                        editingId={editingId}
-                        editForm={editForm}
-                        setEditForm={setEditForm}
-                        startEditingItem={startEditingItem}
-                        updateInventoryItem={updateInventoryItem}
-                        deleteInventoryItem={deleteInventoryItem}
-                        createdFolders={createdFolders}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {folderCards.map(([cardName, items]) => (
-                      <CardGroup
-                        key={cardName}
-                        cardName={cardName}
-                        items={items}
-                        viewMode={viewMode}
-                        expandedCards={expandedCards}
-                        setExpandedCards={setExpandedCards}
-                        editingId={editingId}
-                        editForm={editForm}
-                        setEditForm={setEditForm}
-                        startEditingItem={startEditingItem}
-                        updateInventoryItem={updateInventoryItem}
-                        deleteInventoryItem={deleteInventoryItem}
-                        createdFolders={createdFolders}
-                      />
-                    ))}
-                  </div>
-                )
-              ) : (
+                    viewMode === 'card' ? (
+                      <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-3">
+                        {folderCards.map(([cardName, items]) => (
+                          <CardGroup
+                            key={cardName}
+                            cardName={cardName}
+                            items={items}
+                            viewMode={viewMode}
+                            expandedCards={expandedCards}
+                            setExpandedCards={setExpandedCards}
+                            editingId={editingId}
+                            editForm={editForm}
+                            setEditForm={setEditForm}
+                            startEditingItem={startEditingItem}
+                            updateInventoryItem={updateInventoryItem}
+                            deleteInventoryItem={deleteInventoryItem}
+                            createdFolders={createdFolders}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {folderCards.map(([cardName, items]) => (
+                          <CardGroup
+                            key={cardName}
+                            cardName={cardName}
+                            items={items}
+                            viewMode={viewMode}
+                            expandedCards={expandedCards}
+                            setExpandedCards={setExpandedCards}
+                            editingId={editingId}
+                            editForm={editForm}
+                            setEditForm={setEditForm}
+                            startEditingItem={startEditingItem}
+                            updateInventoryItem={updateInventoryItem}
+                            deleteInventoryItem={deleteInventoryItem}
+                            createdFolders={createdFolders}
+                          />
+                        ))}
+                      </div>
+                    )
+                  ) : (
                     <p className="text-slate-400 text-center py-12">No cards in this folder.</p>
                   )}
                 </>
