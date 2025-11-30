@@ -703,6 +703,14 @@ export const InventoryTab = ({
       return value >= 100 ? value.toFixed(0) : value.toFixed(2);
     };
     
+    const getStatFontSize = (value) => {
+      const strValue = String(value).length;
+      if (strValue <= 2) return 'text-[11px] md:text-[13px]';
+      if (strValue <= 3) return 'text-[10px] md:text-[11px]';
+      if (strValue <= 4) return 'text-[9px] md:text-[10px]';
+      return 'text-[8px] md:text-[9px]';
+    };
+    
     const isExpanded = expandedCards[cardName];
     
     return (
@@ -720,7 +728,7 @@ export const InventoryTab = ({
             };
             e.dataTransfer.setData('deckCardData', JSON.stringify(deckCardData));
           }}
-          className="relative bg-gradient-to-br from-slate-800 to-slate-900 border border-green-600 hover:border-green-400 rounded p-1.5 transition-colors flex flex-col h-32 md:h-36 hover:shadow-lg hover:shadow-green-500/20 cursor-grab active:cursor-grabbing" 
+          className="relative bg-gradient-to-br from-slate-800 to-slate-900 border border-green-600 hover:border-green-400 rounded-lg p-4 transition-all flex flex-col h-36 md:h-40 hover:shadow-lg hover:shadow-green-500/20 cursor-grab active:cursor-grabbing group" 
           onClick={() => setExpandedCards(isExpanded ? {} : {[cardName]: true})}
         >
           <button
@@ -729,32 +737,42 @@ export const InventoryTab = ({
               const deckId = openDecks.find(id => `deck-${id}` === activeTab);
               items.forEach(item => removeCardFromDeck(deckId, item.id, item.quantity_reserved));
             }}
-            className="close-btn absolute top-1 right-1"
+            className="absolute top-2 right-2 p-1.5 bg-slate-700/60 hover:bg-slate-600 text-slate-300 hover:text-red-400 rounded-lg transition-all opacity-0 group-hover:opacity-100 z-20"
             title="Remove all from deck"
           >
-            <X className="w-3 h-3" />
+            <X className="w-5 h-5" />
           </button>
           <div className="text-center px-1 cursor-pointer flex items-center justify-center gap-1 mb-1">
-            <h3 className="text-[11px] md:text-sm font-bold text-slate-100 line-clamp-2 break-words flex-1">
+            <h3 className="text-xs md:text-sm font-semibold text-slate-50 line-clamp-2 break-words flex-1">
               {cardName.split('//')[0].trim()}
             </h3>
           </div>
           
-          <div className="flex-1 flex items-center justify-center min-h-0">
+          <div className="flex-1 flex items-center justify-center min-h-0 py-2">
             <div className="text-center">
-              <div className="text-slate-400 text-[8px] md:text-xs font-semibold">Reserved</div>
-              <div className="text-xl md:text-2xl font-bold text-green-300 leading-tight">{totalQty}</div>
+              <div className="text-slate-400 text-[9px] md:text-xs font-semibold uppercase tracking-wider mb-1">Reserved</div>
+              <div className="text-2xl md:text-3xl font-bold text-green-400 leading-tight">{totalQty}</div>
             </div>
           </div>
           
-          <div className="grid grid-cols-2 gap-1 text-center">
-            <div className="space-y-0.5">
-              <div className="text-slate-400 text-[8px] md:text-xs font-bold">Cost</div>
-              <div className="font-bold text-[9px] md:text-[10px] text-blue-200">${avgPrice.toFixed(2)}</div>
+          <div className="grid grid-cols-3 gap-2 text-center pt-2 border-t border-slate-700/50">
+            <div className="space-y-1">
+              <div className="text-slate-500 text-[7px] md:text-[9px] font-semibold uppercase">Reserved</div>
+              <div className="h-4 flex items-center justify-center">
+                <div className={`font-bold leading-none text-green-400 ${getStatFontSize(totalQty)}`}>{totalQty}</div>
+              </div>
             </div>
-            <div className="space-y-0.5">
-              <div className="text-slate-400 text-[8px] md:text-xs font-bold">Total</div>
-              <div className="font-bold text-[9px] md:text-[10px] text-amber-300">${formatTotal(totalValue)}</div>
+            <div className="space-y-1">
+              <div className="text-slate-500 text-[7px] md:text-[9px] font-semibold uppercase">Cost</div>
+              <div className="h-4 flex items-center justify-center">
+                <div className={`font-bold leading-none text-blue-300 ${getStatFontSize(avgPrice.toFixed(2))}`}>${avgPrice.toFixed(2)}</div>
+              </div>
+            </div>
+            <div className="space-y-1">
+              <div className="text-slate-500 text-[7px] md:text-[9px] font-semibold uppercase">Total</div>
+              <div className="h-4 flex items-center justify-center">
+                <div className={`font-bold leading-none text-amber-400 ${getStatFontSize(formatTotal(totalValue))}`}>${formatTotal(totalValue)}</div>
+              </div>
             </div>
           </div>
         </div>
@@ -772,7 +790,7 @@ export const InventoryTab = ({
               };
               e.dataTransfer.setData('deckCardData', JSON.stringify(deckCardData));
             }}
-            className="relative bg-gradient-to-br from-slate-800 to-slate-900 border border-green-600 hover:border-green-400 rounded p-3 transition-colors cursor-grab active:cursor-grabbing hover:shadow-lg hover:shadow-green-500/20"
+            className="relative bg-gradient-to-br from-slate-800 to-slate-900 border border-green-600 hover:border-green-400 rounded-lg p-4 transition-all cursor-grab active:cursor-grabbing hover:shadow-lg hover:shadow-green-500/20 group"
             onClick={() => setExpandedCards(isExpanded ? {} : {[cardName]: true})}
           >
             <button
@@ -781,23 +799,23 @@ export const InventoryTab = ({
                 const deckId = openDecks.find(id => `deck-${id}` === activeTab);
                 items.forEach(item => removeCardFromDeck(deckId, item.id, item.quantity_reserved));
               }}
-              className="close-btn absolute top-1 right-1"
+              className="absolute top-3 right-3 p-1.5 bg-slate-700/60 hover:bg-slate-600 text-slate-300 hover:text-red-400 rounded-lg transition-all opacity-0 group-hover:opacity-100 z-20"
               title="Remove all from deck"
             >
-              <X className="w-4 h-4" />
+              <X className="w-5 h-5" />
             </button>
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center justify-between gap-6">
               <div className="flex-1 min-w-0 cursor-pointer">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-bold text-slate-100 break-words mb-1">{cardName}</h3>
+                <div className="flex items-center gap-3">
+                  <h3 className="text-sm font-semibold text-slate-50 break-words">{cardName}</h3>
+                </div>
+                <div className="flex gap-6 text-xs mt-2">
+                  <div><span className="text-slate-400">Reserved:</span> <span className="ml-1 font-semibold text-green-400">{totalQty}</span></div>
+                  <div><span className="text-slate-400">Cost/ea:</span> <span className="ml-1 text-blue-300 font-semibold">${avgPrice.toFixed(2)}</span></div>
+                  <div><span className="text-slate-400">Total:</span> <span className="ml-1 text-amber-400 font-semibold">${formatTotal(totalValue)}</span></div>
                 </div>
               </div>
-              <div className="flex gap-4 text-xs">
-                <div><span className="text-slate-500">Reserved:</span> <span className="text-green-300 font-semibold">{totalQty}</span></div>
-                <div><span className="text-slate-500">Cost/ea:</span> <span className="text-blue-300 font-semibold">${avgPrice.toFixed(2)}</span></div>
-                <div><span className="text-slate-500">Total:</span> <span className="text-amber-400 font-semibold">${formatTotal(totalValue)}</span></div>
-              </div>
-              <div className="text-green-400 text-sm flex-shrink-0">
+              <div className="text-green-400 text-sm flex-shrink-0 cursor-pointer">
                 {isExpanded ? '▼' : '▶'}
               </div>
             </div>
