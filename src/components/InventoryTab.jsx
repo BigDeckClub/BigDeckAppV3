@@ -789,22 +789,22 @@ export const InventoryTab = ({
             };
             e.dataTransfer.setData('deckCardData', JSON.stringify(deckCardData));
           }}
-          className="bg-gradient-to-br from-slate-800 to-slate-900 border border-green-600 hover:border-green-400 rounded p-1.5 transition-colors flex flex-col h-32 md:h-36 hover:shadow-lg hover:shadow-green-500/20 cursor-grab active:cursor-grabbing" 
+          className="relative bg-gradient-to-br from-slate-800 to-slate-900 border border-green-600 hover:border-green-400 rounded p-1.5 transition-colors flex flex-col h-32 md:h-36 hover:shadow-lg hover:shadow-green-500/20 cursor-grab active:cursor-grabbing" 
           onClick={() => setExpandedCards(isExpanded ? {} : {[cardName]: true})}
         >
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              const deckId = openDecks.find(id => `deck-${id}` === activeTab);
+              items.forEach(item => removeCardFromDeck(deckId, item.id, item.quantity_reserved));
+            }}
+            className="close-btn absolute top-1 right-1"
+            title="Remove all from deck"
+          >
+            <X className="w-3 h-3" />
+          </button>
           <div className="text-center px-1 cursor-pointer flex items-center justify-center gap-1">
             <h3 className="text-[10px] md:text-xs font-bold text-slate-100 line-clamp-2 break-words flex-1">{cardName}</h3>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                const deckId = openDecks.find(id => `deck-${id}` === activeTab);
-                items.forEach(item => removeCardFromDeck(deckId, item.id, item.quantity_reserved));
-              }}
-              className="close-btn"
-              title="Remove all from deck"
-            >
-              <X className="w-3 h-3" />
-            </button>
           </div>
           
           <div className="flex-1 flex items-center justify-center min-h-0">
@@ -839,12 +839,8 @@ export const InventoryTab = ({
               };
               e.dataTransfer.setData('deckCardData', JSON.stringify(deckCardData));
             }}
-            className="bg-gradient-to-br from-slate-800 to-slate-900 border border-green-600 hover:border-green-400 rounded p-3 transition-colors cursor-grab active:cursor-grabbing hover:shadow-lg hover:shadow-green-500/20">
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setExpandedCards(isExpanded ? {} : {[cardName]: true})}>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-bold text-slate-100 break-words mb-1">{cardName}</h3>
-                  <button
+            className="relative bg-gradient-to-br from-slate-800 to-slate-900 border border-green-600 hover:border-green-400 rounded p-3 transition-colors cursor-grab active:cursor-grabbing hover:shadow-lg hover:shadow-green-500/20">
+            <button
                     onClick={(e) => {
                       e.stopPropagation();
                       const deckId = openDecks.find(id => `deck-${id}` === activeTab);
