@@ -1260,7 +1260,7 @@ export const InventoryTab = ({
                     }`}
                   >
                     <div className="font-medium text-sm text-slate-100">{deck.name}</div>
-                    <div className="text-xs text-green-300">{deck.reserved_count}/{totalCards} reserved</div>
+                    <div className="text-xs text-green-300">{deck.reserved_count} reserved</div>
                     {deck.missing_count > 0 && (
                       <div className="text-xs text-yellow-400">{deck.missing_count} missing</div>
                     )}
