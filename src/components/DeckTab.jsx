@@ -594,7 +594,7 @@ export const DeckTab = ({ onDeckCreatedOrDeleted }) => {
                           e.stopPropagation();
                           deleteDeck(deck.id);
                         }}
-                        className="text-slate-400 hover:text-red-400 transition-colors"
+                        className="text-slate-400 hover:text-cyan-400 transition-colors"
                         title="Delete"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -668,7 +668,7 @@ export const DeckTab = ({ onDeckCreatedOrDeleted }) => {
               </div>
               <button
                 onClick={() => deleteDeck(selectedDeck.id)}
-                className="text-slate-400 hover:text-red-400 transition-colors"
+                className="text-slate-400 hover:text-cyan-400 transition-colors"
                 title="Delete"
               >
                 <Trash2 className="w-5 h-5" />

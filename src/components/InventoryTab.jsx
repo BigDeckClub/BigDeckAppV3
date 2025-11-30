@@ -499,7 +499,7 @@ export const InventoryTab = ({
                 e.stopPropagation();
                 items.forEach(item => deleteInventoryItem(item.id));
               }}
-              className="text-red-400 hover:text-red-300 p-0.5"
+              className="text-cyan-400 hover:text-cyan-300 p-0.5 transition-colors"
               title="Delete all copies"
             >
               <X className="w-3 h-3" />
@@ -729,7 +729,7 @@ export const InventoryTab = ({
                                     e.stopPropagation();
                                     deleteInventoryItem(item.id);
                                   }}
-                                  className="text-red-400 hover:text-red-300 p-0.5"
+                                  className="text-cyan-400 hover:text-cyan-300 p-0.5 transition-colors"
                                   title="Delete card"
                                 >
                                   <X className="w-3 h-3" />
@@ -800,7 +800,7 @@ export const InventoryTab = ({
                 const deckId = openDecks.find(id => `deck-${id}` === activeTab);
                 items.forEach(item => removeCardFromDeck(deckId, item.id, item.quantity_reserved));
               }}
-              className="text-red-400 hover:text-red-300 p-0.5"
+              className="text-cyan-400 hover:text-cyan-300 p-0.5 transition-colors"
               title="Remove all from deck"
             >
               <X className="w-3 h-3" />
@@ -921,7 +921,7 @@ export const InventoryTab = ({
                                     const deckId = openDecks.find(id => `deck-${id}` === activeTab);
                                     removeCardFromDeck(deckId, item.id);
                                   }}
-                                  className="text-red-400 hover:text-red-300 p-0.5"
+                                  className="text-cyan-400 hover:text-cyan-300 p-0.5 transition-colors"
                                 >
                                   <X className="w-3 h-3" />
                                 </button>
@@ -991,7 +991,7 @@ export const InventoryTab = ({
                                   const deckId = openDecks.find(id => `deck-${id}` === activeTab);
                                   removeCardFromDeck(deckId, item.id, item.quantity_reserved);
                                 }}
-                                className="text-red-400 hover:text-red-300 p-0.5"
+                                className="text-cyan-400 hover:text-cyan-300 p-0.5 transition-colors"
                               >
                                 <X className="w-3 h-3" />
                               </button>
@@ -1345,7 +1345,7 @@ export const InventoryTab = ({
                       setActiveTab('all');
                     }
                   }}
-                  className="ml-1 text-slate-400 opacity-0 group-hover:opacity-100 hover:text-red-400 transition-all duration-200 p-1"
+                  className="ml-1 text-slate-400 opacity-0 group-hover:opacity-100 hover:text-cyan-400 transition-all duration-200 p-1"
                   title="Close folder"
                 >
                   <X className="w-4 h-4" />
@@ -1374,7 +1374,7 @@ export const InventoryTab = ({
                   </button>
                   <button
                     onClick={() => closeDeckTab(deckId)}
-                    className="ml-1 text-slate-400 hover:text-red-400 transition-colors"
+                    className="ml-1 text-slate-400 hover:text-cyan-400 transition-colors"
                     title="Close deck"
                   >
                     <X className="w-4 h-4" />
@@ -1483,7 +1483,7 @@ export const InventoryTab = ({
                         </button>
                         <button
                           onClick={() => releaseDeck(deck.id)}
-                          className="text-red-400 hover:text-red-300 p-2"
+                          className="text-cyan-400 hover:text-cyan-300 p-2 transition-colors"
                           title="Delete deck and return cards to unsorted"
                         >
                           <Trash2 className="w-5 h-5" />

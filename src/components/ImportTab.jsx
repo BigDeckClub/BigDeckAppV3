@@ -383,7 +383,7 @@ export const ImportTab = ({
                   )}
                   <button
                     onClick={() => handleDeleteImport(imp.id)}
-                    className="px-3 py-1 bg-red-500/20 text-red-300 rounded hover:bg-red-500/30 transition flex items-center gap-1 text-sm"
+                    className="px-3 py-1 bg-cyan-500/20 text-cyan-300 rounded hover:bg-cyan-500/30 transition flex items-center gap-1 text-sm"
                   >
                     <Trash2 className="w-4 h-4" />
                     Delete
