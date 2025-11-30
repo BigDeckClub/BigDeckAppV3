@@ -865,19 +865,15 @@ app.get('/api/analytics/card-metrics', async (req, res) => {
     const allRows = availableResult.rows || [];
     const totalAvailable = allRows.reduce((sum, row) => sum + parseInt(row.available_count || 0), 0);
     
-    // Purchased in last 60 days (from transaction history)
-    const purchasedResult = await pool.query(
-      'SELECT SUM(quantity) as count FROM inventory_transactions WHERE transaction_type = $1 AND transaction_date >= CURRENT_DATE - INTERVAL \'60 days\'',
-      ['PURCHASE']
-    );
-    const purchasedLast60d = parseInt(purchasedResult.rows[0].count) || 0;
-    
     // Sold in last 60 days (from transaction history)
     const soldResult = await pool.query(
       'SELECT SUM(quantity) as count FROM inventory_transactions WHERE transaction_type = $1 AND transaction_date >= CURRENT_DATE - INTERVAL \'60 days\'',
       ['SALE']
     );
     const totalSoldLast60d = parseInt(soldResult.rows[0].count) || 0;
+    
+    // Purchased in last 60 days = current inventory + sold in period (since current reflects post-sale)
+    const purchasedLast60d = totalCards + totalSoldLast60d;
     
     // Lifetime totals (from transaction history)
     const lifetimePurchasedResult = await pool.query(
