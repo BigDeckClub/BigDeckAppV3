@@ -1592,7 +1592,7 @@ export const InventoryTab = ({
                   )}
 
                   {/* Missing Cards */}
-                  {deckDetails.missingCards && deckDetails.missingCards.length > 0 && (
+                  {(deckDetails.missingCount > 0 || (deckDetails.missingCards && deckDetails.missingCards.length > 0)) && (
                     <div>
                       <button
                         onClick={() => setExpandedMissingCards(prev => ({
@@ -1601,17 +1601,23 @@ export const InventoryTab = ({
                         }))}
                         className="w-full flex items-center justify-between p-3 bg-slate-800 rounded-lg hover:bg-slate-700 transition-colors"
                       >
-                        <h3 className="text-lg font-semibold text-yellow-400">❌ Missing Cards ({deckDetails.missingCount})</h3>
+                        <h3 className="text-lg font-semibold text-yellow-400">❌ Missing Cards ({deckDetails.missingCount || 0})</h3>
                         <ChevronDown className={`w-5 h-5 text-yellow-400 transition-transform ${expandedMissingCards[deckId] ? 'rotate-180' : ''}`} />
                       </button>
                       {expandedMissingCards[deckId] && (
                         <div className="bg-slate-900 rounded-b-lg p-3 space-y-2 max-h-48 overflow-y-auto mt-2">
-                          {deckDetails.missingCards.map((missing, idx) => (
-                            <div key={idx} className="flex justify-between items-center text-sm text-slate-300 bg-slate-800 p-2 rounded">
-                              <span className="text-white">{missing.quantity_needed}x {missing.card_name}</span>
-                              <span className="text-xs text-slate-500">{missing.set_code}</span>
+                          {deckDetails.missingCards && deckDetails.missingCards.length > 0 ? (
+                            deckDetails.missingCards.map((missing, idx) => (
+                              <div key={idx} className="flex justify-between items-center text-sm text-slate-300 bg-slate-800 p-2 rounded">
+                                <span className="text-white">{missing.quantity_needed}x {missing.card_name}</span>
+                                <span className="text-xs text-slate-500">{missing.set_code}</span>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="text-sm text-slate-400 p-2">
+                              {deckDetails.missingCount} cards needed from inventory. Add them from All Cards or Unsorted to reserve them in this deck.
                             </div>
-                          ))}
+                          )}
                         </div>
                       )}
                     </div>
