@@ -974,6 +974,26 @@ export const InventoryTab = ({
               Unsorted
             </button>
             
+            {/* Folder Tabs */}
+            {[...createdFolders, ...Object.keys(groupedByFolder).filter(f => f !== 'Uncategorized' && !createdFolders.includes(f))].map((folderName) => {
+              const isFolderOpen = activeTab === folderName;
+              return (
+                <button
+                  key={`folder-tab-${folderName}`}
+                  onClick={() => {
+                    setActiveTab(folderName);
+                  }}
+                  className={`px-3 md:px-4 py-2 text-sm md:text-base font-medium transition-colors whitespace-nowrap ${
+                    isFolderOpen
+                      ? 'text-teal-300 border-b-2 border-teal-400'
+                      : 'text-slate-400 hover:text-slate-300'
+                  }`}
+                >
+                  📁 {folderName}
+                </button>
+              );
+            })}
+
             {/* Deck Tabs */}
             {openDecks.map((deckId) => {
               const deck = deckInstances.find(d => d.id === deckId);
@@ -1205,21 +1225,23 @@ export const InventoryTab = ({
             ) : (
               <p className="text-slate-400 text-center py-12">No unsorted cards.</p>
             )
-          ) : (
-            /* Show selected folder's cards */
-            groupedByFolder[selectedFolder] && Object.keys(groupedByFolder[selectedFolder]).length > 0 ? (
+          ) : groupedByFolder[activeTab] ? (
+            /* Show folder's cards */
+            Object.keys(groupedByFolder[activeTab]).length > 0 ? (
               viewMode === 'card' ? (
                 <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-3">
-                  {Object.entries(groupedByFolder[selectedFolder]).map(renderCardGroup)}
+                  {Object.entries(groupedByFolder[activeTab]).map(renderCardGroup)}
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {Object.entries(groupedByFolder[selectedFolder]).map(renderCardGroup)}
+                  {Object.entries(groupedByFolder[activeTab]).map(renderCardGroup)}
                 </div>
               )
             ) : (
-              <p className="text-slate-400 text-center py-12">No cards in this folder yet.</p>
+              <p className="text-slate-400 text-center py-12">No cards in this folder.</p>
             )
+          ) : (
+            <p className="text-slate-400 text-center py-12">Select a view to display cards.</p>
           )}
           </div>
         )}
