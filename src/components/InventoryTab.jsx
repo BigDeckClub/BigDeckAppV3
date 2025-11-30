@@ -355,6 +355,10 @@ export const InventoryTab = ({
           onDragStart={(e) => {
             e.dataTransfer.effectAllowed = 'move';
             e.dataTransfer.setData('cardName', cardName);
+            // Also set skuData for deck drops (use first item as representative)
+            if (items.length > 0) {
+              e.dataTransfer.setData('skuData', JSON.stringify(items[0]));
+            }
           }}
           className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 hover:border-teal-500 rounded p-1.5 transition-colors flex flex-col h-32 md:h-36 hover:shadow-lg hover:shadow-teal-500/20 cursor-grab active:cursor-grabbing" 
           onClick={() => setExpandedCards(isExpanded ? {} : {[cardName]: true})}
