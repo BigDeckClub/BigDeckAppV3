@@ -20,8 +20,47 @@ export const DeckTab = () => {
   const [showImportArchidekt, setShowImportArchidekt] = useState(false);
   const [archidektUrl, setArchidektUrl] = useState('');
   const [isImporting, setIsImporting] = useState(false);
+  const [showCopyModal, setShowCopyModal] = useState(false);
+  const [copyingDeck, setCopyingDeck] = useState(null);
+  const [copyDeckName, setCopyDeckName] = useState('');
+  const [isCopying, setIsCopying] = useState(false);
 
   const formats = ['Standard', 'Modern', 'Commander', 'Casual', 'Limited', 'Pioneer'];
+
+  const previewCopyToDeck = (deck) => {
+    setCopyingDeck(deck);
+    setCopyDeckName(deck.name);
+    setShowCopyModal(true);
+  };
+
+  const executeCopyToDeck = async () => {
+    if (!copyingDeck || !copyDeckName.trim()) return;
+    
+    setIsCopying(true);
+    try {
+      const response = await fetch(`${API_BASE}/decks/${copyingDeck.id}/copy-to-inventory`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: copyDeckName })
+      });
+      
+      if (!response.ok) throw new Error('Failed to copy deck');
+      
+      const result = await response.json();
+      
+      setShowCopyModal(false);
+      setCopyingDeck(null);
+      setCopyDeckName('');
+      setSuccessMessage(`Deck created! ${result.reservedCount} cards reserved, ${result.missingCount} cards missing.`);
+      setTimeout(() => setSuccessMessage(''), 5000);
+      
+    } catch (error) {
+      console.error('Failed to copy deck:', error);
+      alert('Error copying deck to inventory');
+    } finally {
+      setIsCopying(false);
+    }
+  };
 
   const importFromArchidekt = async () => {
     if (!archidektUrl.trim()) {
