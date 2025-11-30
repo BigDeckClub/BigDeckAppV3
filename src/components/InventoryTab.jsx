@@ -453,7 +453,16 @@ export const InventoryTab = ({
         ) : (
         <div>
           {/* List View */}
-          <div className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 hover:border-teal-500 rounded p-3 transition-colors cursor-pointer hover:shadow-lg hover:shadow-teal-500/20">
+          <div 
+            draggable
+            onDragStart={(e) => {
+              e.dataTransfer.effectAllowed = 'move';
+              e.dataTransfer.setData('cardName', cardName);
+              if (items.length > 0) {
+                e.dataTransfer.setData('skuData', JSON.stringify(items[0]));
+              }
+            }}
+            className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 hover:border-teal-500 rounded p-3 transition-colors cursor-grab active:cursor-grabbing hover:shadow-lg hover:shadow-teal-500/20">
             <div className="flex items-center justify-between gap-4">
               <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setExpandedCards(isExpanded ? {} : {[cardName]: true})}>
                 <div className="flex items-center gap-2">
