@@ -213,6 +213,7 @@ export const InventoryTab = ({
       if (response.ok) {
         await loadDeckDetails(deckId, true); // Force refresh to get latest data
         await refreshDeckInstances();
+        debouncedLoadInventory(); // Refresh main inventory to show returned cards in Unsorted
       }
     } catch (error) {
 
