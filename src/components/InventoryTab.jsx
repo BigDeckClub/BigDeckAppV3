@@ -176,17 +176,6 @@ export const InventoryTab = ({
         return;
       }
       
-      // Optimistic update: update local state immediately
-      const updatedInventory = inventory.map(item => 
-        item.name === cardName ? { ...item, folder: targetFolder } : item
-      );
-      
-      // Store original state in case we need to rollback
-      const originalInventory = inventory;
-      
-      // Update state immediately
-      setInventory(updatedInventory);
-      
       // Show the change immediately
       setSuccessMessage(`Moved "${cardName}" to ${targetFolder}`);
       
@@ -206,7 +195,8 @@ export const InventoryTab = ({
         }
       }
       
-      // If successful, keep the optimistic update (no need to refetch)
+      // Refresh inventory to show changes
+      await refreshInventory();
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error) {
       console.error('Failed to move card:', error);
