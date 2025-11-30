@@ -33,7 +33,8 @@ export const InventoryTab = ({
   updateInventoryItem,
   deleteInventoryItem,
   handleSearch,
-  deckRefreshTrigger
+  deckRefreshTrigger,
+  onLoadInventory
 }) => {
   const [expandedFolders, setExpandedFolders] = useState({});
   const [newFolderName, setNewFolderName] = useState('');
