@@ -145,13 +145,19 @@ export const InventoryTab = ({
     }
   }, [deckDetailsCache, deckInstances]);
 
-  // Open a deck in a new tab
+  // Open a deck in a new tab (or close if already active - toggle behavior)
   const openDeckTab = (deck) => {
-    if (!openDecks.includes(deck.id)) {
-      setOpenDecks([...openDecks, deck.id]);
+    if (activeTab === `deck-${deck.id}`) {
+      // If this deck is already active, close it (toggle behavior like folders)
+      closeDeckTab(deck.id);
+    } else {
+      // Otherwise, open it
+      if (!openDecks.includes(deck.id)) {
+        setOpenDecks([...openDecks, deck.id]);
+      }
+      setActiveTab(`deck-${deck.id}`);
+      loadDeckDetails(deck.id);
     }
-    setActiveTab(`deck-${deck.id}`);
-    loadDeckDetails(deck.id);
   };
 
   // Close a deck tab
