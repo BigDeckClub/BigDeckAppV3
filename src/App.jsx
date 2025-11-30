@@ -312,7 +312,6 @@ function MTGInventoryTrackerContent() {
       {/* Desktop Navigation */}
       <nav className="bg-gradient-to-r from-slate-900 to-slate-800 border-b border-slate-700 sticky top-0 z-50 shadow-xl shadow-slate-900/50">
         <div className="max-w-7xl mx-auto px-4 py-4 app-header flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-teal-300">BigDeck.app</h1>
           <div className="desktop-nav flex gap-2 items-center">
             <button
               onClick={() => setActiveTab("inventory")}
@@ -349,10 +348,8 @@ function MTGInventoryTrackerContent() {
               <TrendingUp className="w-5 h-5 inline mr-2" />
               Sales
             </button>
-            <div className="ml-auto">
-              <UserDropdown />
-            </div>
           </div>
+          <UserDropdown />
         </div>
       </nav>
 
