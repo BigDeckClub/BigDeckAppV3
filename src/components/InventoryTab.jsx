@@ -207,7 +207,8 @@ export const InventoryTab = ({
   
   const renderCardGroup = ([cardName, items]) => {
     const totalQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
-    const available = totalQty;
+    const reservedQty = items.reduce((sum, item) => sum + (parseInt(item.reserved_quantity) || 0), 0);
+    const available = totalQty - reservedQty;
     
     const sixtyDaysAgo = new Date();
     sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
@@ -436,6 +437,169 @@ export const InventoryTab = ({
     );
   };
   
+  // Render function for deck cards using same grid structure as inventory
+  const renderDeckCardGroup = ([cardName, items]) => {
+    const totalQty = items.reduce((sum, item) => sum + (item.quantity_reserved || 0), 0);
+    
+    const itemsForAvg = items;
+    let avgPrice = 0;
+    if (itemsForAvg.length > 0) {
+      const totalPrice = itemsForAvg.reduce((sum, item) => sum + (parseFloat(item.purchase_price) || 0), 0);
+      avgPrice = totalPrice / itemsForAvg.length;
+    }
+    
+    const totalValue = totalQty * avgPrice;
+    const formatTotal = (value) => {
+      return value >= 100 ? value.toFixed(0) : value.toFixed(2);
+    };
+    
+    const isExpanded = expandedCards[cardName];
+    
+    return (
+      <div key={cardName}>
+        {/* Card View */}
+        {viewMode === 'card' ? (
+        <div 
+          className="bg-gradient-to-br from-slate-800 to-slate-900 border border-green-600 hover:border-green-400 rounded p-1.5 transition-colors flex flex-col h-32 md:h-36 hover:shadow-lg hover:shadow-green-500/20" 
+          onClick={() => setExpandedCards(isExpanded ? {} : {[cardName]: true})}
+        >
+          <div className="text-center px-1 cursor-pointer">
+            <h3 className="text-[10px] md:text-xs font-bold text-slate-100 line-clamp-2 break-words">{cardName}</h3>
+          </div>
+          
+          <div className="flex-1 flex items-center justify-center min-h-0">
+            <div className="text-center">
+              <div className="text-slate-500 text-[7px] md:text-[8px]">Reserved</div>
+              <div className="text-2xl md:text-3xl font-bold text-green-300 leading-tight">{totalQty}</div>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-1 text-center text-[7px] md:text-[8px]">
+            <div className="space-y-0.5">
+              <div className="text-slate-500">Cost</div>
+              <div className="font-semibold text-blue-300">${avgPrice.toFixed(2)}</div>
+            </div>
+            <div className="space-y-0.5">
+              <div className="text-slate-500">Total</div>
+              <div className="font-semibold text-amber-400">${formatTotal(totalValue)}</div>
+            </div>
+          </div>
+        </div>
+        ) : (
+        <div>
+          {/* List View */}
+          <div className="bg-gradient-to-br from-slate-800 to-slate-900 border border-green-600 hover:border-green-400 rounded p-3 transition-colors cursor-pointer hover:shadow-lg hover:shadow-green-500/20">
+            <div className="flex items-center justify-between gap-4" onClick={() => setExpandedCards(isExpanded ? {} : {[cardName]: true})}>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-sm font-bold text-slate-100 break-words mb-1">{cardName}</h3>
+                <div className="flex gap-4 text-xs">
+                  <div><span className="text-slate-500">Reserved:</span> <span className="text-green-300 font-semibold">{totalQty}</span></div>
+                  <div><span className="text-slate-500">Cost/ea:</span> <span className="text-blue-300 font-semibold">${avgPrice.toFixed(2)}</span></div>
+                  <div><span className="text-slate-500">Total:</span> <span className="text-amber-400 font-semibold">${formatTotal(totalValue)}</span></div>
+                </div>
+              </div>
+              <div className="text-green-400 text-sm flex-shrink-0">
+                {isExpanded ? '▼' : '▶'}
+              </div>
+            </div>
+          </div>
+
+          {isExpanded && (
+            <div className="bg-slate-800 rounded-lg border border-slate-600 p-3 shadow-lg mt-2">
+              <div className="flex flex-wrap gap-3">
+                {Object.values(
+                  items.reduce((acc, item) => {
+                    const setKey = `${item.set || 'unknown'}`;
+                    if (!acc[setKey]) {
+                      acc[setKey] = [];
+                    }
+                    acc[setKey].push(item);
+                    return acc;
+                  }, {})
+                ).map((setItems) => {
+                  const firstItem = setItems[0];
+                  const totalQtyInSet = setItems.reduce((sum, item) => sum + (item.quantity_reserved || 0), 0);
+                  const avgSetPrice = setItems.reduce((sum, item) => sum + (parseFloat(item.purchase_price) || 0), 0) / setItems.length;
+                  
+                  return (
+                    <div key={`${firstItem.set}-${firstItem.id}`} className="flex-1 min-w-[160px] bg-slate-700 rounded-lg p-2 border border-slate-500">
+                      <div className="space-y-1">
+                        <div className="flex justify-between items-center pb-1 border-b border-slate-500">
+                          <span className="text-xs font-bold text-green-300">{firstItem.set?.toUpperCase() || 'N/A'}</span>
+                          <span className="text-[9px] text-slate-400 bg-slate-600 px-1 py-0.5 rounded">{setItems.length}</span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <div><span className="text-slate-400">Qty: </span><span className="text-green-300 font-bold">{totalQtyInSet}</span></div>
+                          <div><span className="text-slate-400">Avg: </span><span className="text-blue-300 font-bold">${avgSetPrice.toFixed(2)}</span></div>
+                        </div>
+                        {setItems.length > 1 && (
+                          <div className="space-y-0.5 max-h-16 overflow-y-auto">
+                            {setItems.map((item) => (
+                              <div key={item.id} className="text-[9px] text-slate-300 bg-slate-600/50 rounded px-1.5 py-0.5 flex justify-between">
+                                <span>{item.quantity_reserved}x @ ${parseFloat(item.purchase_price || 0).toFixed(2)}</span>
+                                <span className="text-slate-400">{item.original_folder}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+        )}
+        {isExpanded && viewMode === 'card' && (
+          <div className="bg-slate-800 rounded-lg border border-slate-600 p-3 shadow-lg mt-2">
+            <div className="flex flex-wrap gap-3">
+              {Object.values(
+                items.reduce((acc, item) => {
+                  const setKey = `${item.set || 'unknown'}`;
+                  if (!acc[setKey]) {
+                    acc[setKey] = [];
+                  }
+                  acc[setKey].push(item);
+                  return acc;
+                }, {})
+              ).map((setItems) => {
+                const firstItem = setItems[0];
+                const totalQtyInSet = setItems.reduce((sum, item) => sum + (item.quantity_reserved || 0), 0);
+                const avgSetPrice = setItems.reduce((sum, item) => sum + (parseFloat(item.purchase_price) || 0), 0) / setItems.length;
+                
+                return (
+                  <div key={`${firstItem.set}-${firstItem.id}`} className="flex-1 min-w-[160px] bg-slate-700 rounded-lg p-2 border border-slate-500">
+                    <div className="space-y-1">
+                      <div className="flex justify-between items-center pb-1 border-b border-slate-500">
+                        <span className="text-xs font-bold text-green-300">{firstItem.set?.toUpperCase() || 'N/A'}</span>
+                        <span className="text-[9px] text-slate-400 bg-slate-600 px-1 py-0.5 rounded">{setItems.length}</span>
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <div><span className="text-slate-400">Qty: </span><span className="text-green-300 font-bold">{totalQtyInSet}</span></div>
+                        <div><span className="text-slate-400">Avg: </span><span className="text-blue-300 font-bold">${avgSetPrice.toFixed(2)}</span></div>
+                      </div>
+                      {setItems.length > 1 && (
+                        <div className="space-y-0.5 max-h-16 overflow-y-auto">
+                          {setItems.map((item) => (
+                            <div key={item.id} className="text-[9px] text-slate-300 bg-slate-600/50 rounded px-1.5 py-0.5 flex justify-between">
+                              <span>{item.quantity_reserved}x @ ${parseFloat(item.purchase_price || 0).toFixed(2)}</span>
+                              <span className="text-slate-400">{item.original_folder}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="flex gap-6 min-h-screen bg-slate-900">
       {successMessage && successMessage.includes('Error') && (
@@ -707,53 +871,65 @@ export const InventoryTab = ({
               const deckDetails = deckDetailsCache[deckId];
               if (!deck || !deckDetails) return null;
 
+              // Group reservations by card name for grid view
+              const groupedReservations = (deckDetails.reservations || []).reduce((acc, res) => {
+                const cardName = res.name;
+                if (!acc[cardName]) {
+                  acc[cardName] = [];
+                }
+                acc[cardName].push(res);
+                return acc;
+              }, {});
+              const reservationEntries = Object.entries(groupedReservations);
+
               return (
-                <div className="bg-slate-800 rounded-lg border border-slate-600 p-4">
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h2 className="text-2xl font-bold text-green-300">{deck.name}</h2>
-                      <p className="text-sm text-slate-400">{deck.format}</p>
-                      {deckDetails.totalCost > 0 && (
-                        <p className="text-sm text-green-400 font-semibold mt-1">Total Cost: ${deckDetails.totalCost?.toFixed(2) || '0.00'}</p>
-                      )}
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => reoptimizeDeck(deck.id)}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm transition-colors"
-                        title="Re-optimize for cheapest cards"
-                      >
-                        🔄
-                      </button>
-                      <button
-                        onClick={() => releaseDeck(deck.id)}
-                        className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm transition-colors"
-                        title="Release deck and return cards"
-                      >
-                        Release
-                      </button>
+                <div className="space-y-4">
+                  {/* Deck Header */}
+                  <div className="bg-slate-800 rounded-lg border border-slate-600 p-4">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h2 className="text-2xl font-bold text-green-300">{deck.name}</h2>
+                        <p className="text-sm text-slate-400">{deck.format}</p>
+                        {deckDetails.totalCost > 0 && (
+                          <p className="text-sm text-green-400 font-semibold mt-1">Total Cost: ${deckDetails.totalCost?.toFixed(2) || '0.00'}</p>
+                        )}
+                        <p className="text-sm text-slate-400 mt-1">
+                          {deckDetails.reservedCount} reserved
+                          {deckDetails.missingCount > 0 && <span className="text-yellow-400"> • {deckDetails.missingCount} missing</span>}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => reoptimizeDeck(deck.id)}
+                          className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm transition-colors"
+                          title="Re-optimize for cheapest cards"
+                        >
+                          🔄
+                        </button>
+                        <button
+                          onClick={() => releaseDeck(deck.id)}
+                          className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm transition-colors"
+                          title="Release deck and return cards"
+                        >
+                          Release
+                        </button>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Reserved Cards */}
-                  {deckDetails.reservations && deckDetails.reservations.length > 0 && (
-                    <div className="mb-4">
-                      <h3 className="text-lg font-semibold text-green-400 mb-2">✅ Reserved Cards ({deckDetails.reservedCount})</h3>
-                      <div className="bg-slate-900 rounded p-3 space-y-2 max-h-48 overflow-y-auto">
-                        {deckDetails.reservations.map((res, idx) => (
-                          <div key={idx} className="flex justify-between text-sm text-slate-300 bg-slate-800 p-2 rounded">
-                            <div>
-                              <span className="text-white font-medium">{res.quantity_reserved}x {res.name}</span>
-                              <span className="text-slate-500 ml-2">({res.set})</span>
-                              <span className="text-xs text-slate-600 ml-2">from {res.original_folder}</span>
-                            </div>
-                            <div className="text-right">
-                              <div className="text-green-400">${(parseFloat(res.purchase_price || 0) * res.quantity_reserved).toFixed(2)}</div>
-                              <div className="text-xs text-slate-500">${parseFloat(res.purchase_price || 0).toFixed(2)} each</div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                  {/* Reserved Cards Grid */}
+                  {reservationEntries.length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-semibold text-green-400 mb-3">✅ Reserved Cards ({deckDetails.reservedCount})</h3>
+                      {viewMode === 'card' ? (
+                        <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-3">
+                          {reservationEntries.map(renderDeckCardGroup)}
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          {reservationEntries.map(renderDeckCardGroup)}
+                        </div>
+                      )}
                     </div>
                   )}
 
