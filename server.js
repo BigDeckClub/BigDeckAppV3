@@ -1298,11 +1298,11 @@ app.post('/api/deck-instances/:id/release', validateId, async (req, res) => {
     // Get all reservations for this deck before deleting
     const reservationsResult = await pool.query('SELECT inventory_item_id FROM deck_reservations WHERE deck_id = $1', [id]);
     
-    // Move all reserved cards back to Unsorted and clear reserved_quantity
+    // Move all reserved cards back to Uncategorized
     if (reservationsResult.rows.length > 0) {
       const inventoryIds = reservationsResult.rows.map(r => r.inventory_item_id);
       const placeholders = inventoryIds.map((_, i) => `$${i + 1}`).join(',');
-      await pool.query(`UPDATE inventory SET folder = 'Unsorted', reserved_quantity = 0 WHERE id IN (${placeholders})`, inventoryIds);
+      await pool.query(`UPDATE inventory SET folder = 'Uncategorized' WHERE id IN (${placeholders})`, inventoryIds);
     }
     
     await pool.query('DELETE FROM deck_reservations WHERE deck_id = $1', [id]);
@@ -1504,19 +1504,27 @@ app.post('/api/sales', async (req, res) => {
       [itemType, itemId || null, itemName, purchasePrice, sellPrice, profit, quantity || 1]
     );
 
-    // If selling a deck, delete the reserved inventory items and the deck
+    // If selling a deck, reduce quantities of reserved inventory items and the deck
     if (itemType === 'deck' && itemId) {
-      // Get all reserved inventory items for this deck
+      // Get all reserved inventory items with quantities for this deck
       const reservationsResult = await pool.query(
-        `SELECT inventory_item_id FROM deck_reservations WHERE deck_id = $1`,
+        `SELECT inventory_item_id, quantity_reserved FROM deck_reservations WHERE deck_id = $1`,
         [itemId]
       );
       
-      // Delete those inventory items (this updates analytics automatically)
+      // Reduce inventory quantities (only delete if quantity goes to 0)
       if (reservationsResult.rows.length > 0) {
-        const inventoryIds = reservationsResult.rows.map(r => r.inventory_item_id);
-        const placeholders = inventoryIds.map((_, i) => `$${i + 1}`).join(',');
-        await pool.query(`DELETE FROM inventory WHERE id IN (${placeholders})`, inventoryIds);
+        for (const reservation of reservationsResult.rows) {
+          await pool.query(
+            `UPDATE inventory SET quantity = GREATEST(0, quantity - $1) WHERE id = $2`,
+            [reservation.quantity_reserved, reservation.inventory_item_id]
+          );
+          // Delete the inventory item if quantity is now 0
+          await pool.query(
+            `DELETE FROM inventory WHERE id = $1 AND quantity <= 0`,
+            [reservation.inventory_item_id]
+          );
+        }
       }
       
       // Delete the deck and its reservations
