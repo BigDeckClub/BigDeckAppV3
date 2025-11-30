@@ -3,8 +3,12 @@ import { createClient } from '@supabase/supabase-js';
 
 export const AuthContext = createContext();
 
-const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('Missing Supabase configuration:', { url: !!supabaseUrl, key: !!supabaseAnonKey });
+}
 
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
@@ -30,15 +34,31 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = async (email, password) => {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw error;
-    return data;
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        console.error('Supabase login error:', error);
+        throw error;
+      }
+      return data;
+    } catch (err) {
+      console.error('Login failed:', err);
+      throw err;
+    }
   };
 
   const signup = async (email, password) => {
-    const { data, error } = await supabase.auth.signUp({ email, password });
-    if (error) throw error;
-    return data;
+    try {
+      const { data, error } = await supabase.auth.signUp({ email, password });
+      if (error) {
+        console.error('Supabase signup error:', error);
+        throw error;
+      }
+      return data;
+    } catch (err) {
+      console.error('Signup failed:', err);
+      throw err;
+    }
   };
 
   const logout = async () => {
