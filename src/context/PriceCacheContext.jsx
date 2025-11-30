@@ -14,6 +14,7 @@ async function fetchCardPrices(name, setCode) {
 const SOFT_TTL_MS = 1000 * 60 * 10; // 10 minutes - return cached, refresh in background
 const HARD_TTL_MS = 1000 * 60 * 60; // 1 hour - always fetch from backend
 const STORAGE_KEY = "mtg-card-price-cache";
+const MAX_CACHE_ENTRIES = 500; // Maximum number of cached entries to prevent unbounded growth
 
 /**
  * PriceCacheProvider
@@ -36,10 +37,21 @@ export function PriceCacheProvider({ children }) {
     } catch (err) {}
   }, []);
 
-  // Persist cache to localStorage whenever it changes
+  // Persist cache to localStorage whenever it changes, with size limiting
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(cache));
+      const entries = Object.entries(cache);
+      if (entries.length > MAX_CACHE_ENTRIES) {
+        // Keep newest entries based on fetchedAt
+        const sorted = entries.sort((a, b) => 
+          (b[1].fetchedAt || 0) - (a[1].fetchedAt || 0)
+        );
+        const trimmed = Object.fromEntries(sorted.slice(0, MAX_CACHE_ENTRIES));
+        setCache(trimmed);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(trimmed));
+      } else {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(cache));
+      }
     } catch (err) {}
   }, [cache]);
 
