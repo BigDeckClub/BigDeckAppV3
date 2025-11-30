@@ -276,6 +276,21 @@ async function initializeDatabase() {
       )
     `);
 
+    // Sales history table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS sales_history (
+        id SERIAL PRIMARY KEY,
+        item_type VARCHAR(50) NOT NULL,
+        item_id INTEGER,
+        item_name VARCHAR(255) NOT NULL,
+        purchase_price REAL NOT NULL,
+        sell_price REAL NOT NULL,
+        profit REAL,
+        quantity INTEGER DEFAULT 1,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
     // ========== PERFORMANCE INDEXES ==========
     // Note: .catch() logs all errors for debugging - CREATE INDEX IF NOT EXISTS rarely fails
     // Index for case-insensitive card name lookups
@@ -1467,6 +1482,53 @@ app.put('/api/deck-instances/:id', validateId, async (req, res) => {
   } catch (error) {
     console.error('[DECKS] Error updating deck:', error.message);
     res.status(500).json({ error: 'Failed to update deck' });
+  }
+});
+
+// ========== SALES ENDPOINTS ==========
+
+// POST /api/sales - Record a sale for folder or deck
+app.post('/api/sales', async (req, res) => {
+  const { itemType, itemId, itemName, purchasePrice, sellPrice, quantity } = req.body;
+  
+  try {
+    if (!itemType || !itemName || sellPrice === undefined || purchasePrice === undefined) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    const profit = (sellPrice - purchasePrice) * (quantity || 1);
+    
+    const result = await pool.query(
+      `INSERT INTO sales_history (item_type, item_id, item_name, purchase_price, sell_price, profit, quantity)
+       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+      [itemType, itemId || null, itemName, purchasePrice, sellPrice, profit, quantity || 1]
+    );
+
+    // If selling a deck, delete the deck and its reservations
+    if (itemType === 'deck' && itemId) {
+      await pool.query(`DELETE FROM deck_missing_cards WHERE deck_id = $1`, [itemId]);
+      await pool.query(`DELETE FROM deck_reservations WHERE deck_id = $1`, [itemId]);
+      await pool.query(`DELETE FROM decks WHERE id = $1 AND is_deck_instance = TRUE`, [itemId]);
+    }
+
+    res.json({ success: true, sale: result.rows[0] });
+  } catch (error) {
+    console.error('[SALES] Error recording sale:', error.message);
+    res.status(500).json({ error: 'Failed to record sale' });
+  }
+});
+
+// GET /api/sales - Fetch all sales history
+app.get('/api/sales', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT * FROM sales_history 
+      ORDER BY created_at DESC
+    `);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('[SALES] Error fetching sales:', error.message);
+    res.status(500).json({ error: 'Failed to fetch sales history' });
   }
 });
 
