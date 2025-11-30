@@ -320,7 +320,7 @@ export const InventoryTab = ({
     }
   };
 
-  // Move individual card SKU to deck (with optimistic updates)
+  // Move individual card SKU to deck (with retry for quantity conflicts)
   const moveCardSkuToDeck = async (inventoryItem, deckId, skipRefresh = false, attemptQty = null) => {
     try {
       const deck = deckInstances.find(d => d.id === deckId);
@@ -331,7 +331,29 @@ export const InventoryTab = ({
       // Use attempted quantity if provided (for retries), otherwise use item's full quantity
       const qtyToUse = attemptQty !== null ? attemptQty : (inventoryItem.quantity || 1);
       
-      // Optimistic update: update deck details cache immediately
+      // Show immediate feedback
+      setSuccessMessage(`Adding ${qtyToUse}x ${inventoryItem.name} to deck...`);
+      
+      // Make API call first (no optimistic update until success)
+      const response = await fetch(`/api/deck-instances/${deckId}/add-card`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          inventory_item_id: inventoryItem.id,
+          quantity: qtyToUse
+        })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        // If not enough available, retry with 1 less quantity (accounts for cards reserved in other decks)
+        if (errorData.error?.includes('Not enough available') && qtyToUse > 1) {
+          return moveCardSkuToDeck(inventoryItem, deckId, skipRefresh, qtyToUse - 1);
+        }
+        throw new Error(errorData.error || 'Failed to add card to deck');
+      }
+      
+      // Only update UI after API succeeds
       const optimisticReservation = {
         name: inventoryItem.name,
         set: inventoryItem.set,
@@ -352,34 +374,7 @@ export const InventoryTab = ({
         }));
       }
       
-      // Update deck instances with optimistic count
-      const updatedDeckInstances = deckInstances.map(d => 
-        d.id === deckId 
-          ? { ...d, reserved_count: (d.reserved_count || 0) + 1 }
-          : d
-      );
-      
-      // Show immediate feedback
       setSuccessMessage(`Added ${qtyToUse}x ${inventoryItem.name} to deck`);
-      
-      // Update API in the background
-      const response = await fetch(`/api/deck-instances/${deckId}/add-card`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          inventory_item_id: inventoryItem.id,
-          quantity: qtyToUse
-        })
-      });
-      
-      if (!response.ok) {
-        const error = await response.json();
-        // If not enough available, retry with 1 less quantity (accounts for cards reserved in other decks)
-        if (error.error?.includes('Not enough available') && qtyToUse > 1) {
-          return moveCardSkuToDeck(inventoryItem, deckId, skipRefresh, qtyToUse - 1);
-        }
-        throw new Error(error.error || 'Failed to add card to deck');
-      }
       
       // Only refresh immediately if not called from auto-fill (which does its own refresh)
       if (!skipRefresh) {
