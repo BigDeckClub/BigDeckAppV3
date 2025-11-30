@@ -1023,6 +1023,24 @@ export const InventoryTab = ({
                   <button
                     key={`deck-${deck.id}`}
                     onClick={() => openDeckTab(deck)}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.currentTarget.classList.add('bg-green-700/60', 'border-green-300');
+                    }}
+                    onDragLeave={(e) => {
+                      e.currentTarget.classList.remove('bg-green-700/60', 'border-green-300');
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      e.currentTarget.classList.remove('bg-green-700/60', 'border-green-300');
+                      try {
+                        const skuData = JSON.parse(e.dataTransfer.getData('skuData'));
+                        moveCardSkuToDeck(skuData, deck.id);
+                      } catch (err) {
+                        console.error('Error adding card to deck from sidebar:', err);
+                      }
+                    }}
                     className={`w-full text-left p-3 rounded-lg transition-colors ${
                       isDeckOpen
                         ? 'bg-green-600/40 border-l-4 border-green-400'
@@ -1203,7 +1221,27 @@ export const InventoryTab = ({
               const reservationEntries = Object.entries(groupedReservations);
 
               return (
-                <div className="space-y-4">
+                <div 
+                  className="space-y-4"
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.currentTarget.classList.add('opacity-50');
+                  }}
+                  onDragLeave={(e) => {
+                    e.currentTarget.classList.remove('opacity-50');
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.currentTarget.classList.remove('opacity-50');
+                    try {
+                      const skuData = JSON.parse(e.dataTransfer.getData('skuData'));
+                      moveCardSkuToDeck(skuData, deckId);
+                    } catch (err) {
+                      console.error('Error adding card to deck:', err);
+                    }
+                  }}
+                >
                   {/* Deck Header */}
                   <div className="bg-slate-800 rounded-lg border border-slate-600 p-4">
                     <div className="flex justify-between items-start">
