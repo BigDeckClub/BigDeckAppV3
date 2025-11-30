@@ -208,6 +208,53 @@ export const InventoryTab = ({
     }
   };
 
+  // Move card from deck to folder
+  const moveCardFromDeckToFolder = async (deckCardData, targetFolder) => {
+    try {
+      const deckId = deckCardData.deck_id;
+      const reservationId = deckCardData.id;
+      const quantity = deckCardData.quantity_reserved;
+      
+      // Show the change immediately
+      setSuccessMessage(`Moved card to ${targetFolder}`);
+      
+      // First remove the card from the deck (which moves it to Uncategorized)
+      const removeResponse = await fetch(`/api/deck-instances/${deckId}/remove-card`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reservation_id: reservationId, quantity: quantity })
+      });
+      
+      if (!removeResponse.ok) {
+        throw new Error('Failed to remove card from deck');
+      }
+      
+      // Then move it to the target folder
+      const moveResponse = await fetch(`/api/inventory/${deckCardData.inventory_item_id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ folder: targetFolder })
+      });
+      
+      if (!moveResponse.ok) {
+        throw new Error('Failed to move card to folder');
+      }
+      
+      // Refresh both deck and inventory
+      await loadDeckDetails(deckId, true);
+      await refreshDeckInstances();
+      if (onLoadInventory) {
+        await onLoadInventory();
+      }
+      
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (error) {
+      console.error('Failed to move card from deck to folder:', error);
+      setSuccessMessage(`Error: ${error.message}`);
+      setTimeout(() => setSuccessMessage(''), 5000);
+    }
+  };
+
   // Move individual card SKU to deck (with optimistic updates)
   const moveCardSkuToDeck = async (inventoryItem, deckId) => {
     try {
@@ -645,7 +692,17 @@ export const InventoryTab = ({
         {/* Card View */}
         {viewMode === 'card' ? (
         <div 
-          className="bg-gradient-to-br from-slate-800 to-slate-900 border border-green-600 hover:border-green-400 rounded p-1.5 transition-colors flex flex-col h-32 md:h-36 hover:shadow-lg hover:shadow-green-500/20" 
+          draggable
+          onDragStart={(e) => {
+            e.dataTransfer.effectAllowed = 'move';
+            const deckId = openDecks.find(id => `deck-${id}` === activeTab);
+            const deckCardData = {
+              ...items[0],
+              deck_id: deckId
+            };
+            e.dataTransfer.setData('deckCardData', JSON.stringify(deckCardData));
+          }}
+          className="bg-gradient-to-br from-slate-800 to-slate-900 border border-green-600 hover:border-green-400 rounded p-1.5 transition-colors flex flex-col h-32 md:h-36 hover:shadow-lg hover:shadow-green-500/20 cursor-grab active:cursor-grabbing" 
           onClick={() => setExpandedCards(isExpanded ? {} : {[cardName]: true})}
         >
           <div className="text-center px-1 cursor-pointer flex items-center justify-center gap-1">
@@ -684,7 +741,18 @@ export const InventoryTab = ({
         ) : (
         <div>
           {/* List View */}
-          <div className="bg-gradient-to-br from-slate-800 to-slate-900 border border-green-600 hover:border-green-400 rounded p-3 transition-colors cursor-pointer hover:shadow-lg hover:shadow-green-500/20">
+          <div 
+            draggable
+            onDragStart={(e) => {
+              e.dataTransfer.effectAllowed = 'move';
+              const deckId = openDecks.find(id => `deck-${id}` === activeTab);
+              const deckCardData = {
+                ...items[0],
+                deck_id: deckId
+              };
+              e.dataTransfer.setData('deckCardData', JSON.stringify(deckCardData));
+            }}
+            className="bg-gradient-to-br from-slate-800 to-slate-900 border border-green-600 hover:border-green-400 rounded p-3 transition-colors cursor-grab active:cursor-grabbing hover:shadow-lg hover:shadow-green-500/20">
             <div className="flex items-center justify-between gap-4">
               <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setExpandedCards(isExpanded ? {} : {[cardName]: true})}>
                 <div className="flex items-center gap-2">
@@ -1000,9 +1068,16 @@ export const InventoryTab = ({
                   }}
                   onDrop={(e) => {
                     e.preventDefault();
+                    e.stopPropagation();
                     e.currentTarget.classList.remove('bg-teal-700/60', 'border-teal-300');
                     const cardName = e.dataTransfer.getData('cardName');
-                    moveCardToFolder(cardName, folder);
+                    const deckCardDataStr = e.dataTransfer.getData('deckCardData');
+                    if (deckCardDataStr) {
+                      const deckCardData = JSON.parse(deckCardDataStr);
+                      moveCardFromDeckToFolder(deckCardData, folder);
+                    } else if (cardName) {
+                      moveCardToFolder(cardName, folder);
+                    }
                   }}
                   className={`w-full text-left p-3 rounded-lg transition-colors ${
                     isSelected
