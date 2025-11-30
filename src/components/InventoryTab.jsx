@@ -1053,11 +1053,11 @@ export const InventoryTab = ({
       </button>
 
       {/* LEFT SIDEBAR - Folders */}
-      <div className={`fixed md:static left-0 w-64 flex-shrink-0 space-y-4 h-full md:h-auto overflow-y-auto md:overflow-visible bg-slate-900 md:bg-transparent z-30 transition-transform duration-300 ${
+      <div className={`fixed md:static left-0 w-64 flex-shrink-0 space-y-4 h-full overflow-y-auto bg-slate-900 md:bg-transparent z-30 transition-transform duration-300 ${
         sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
       }`}>
         {/* Folder List */}
-        <div className="rounded-lg p-4 border-2 border-teal-500/50 bg-gradient-to-br from-slate-900/50 to-slate-800/50 space-y-3 max-h-96 overflow-y-auto">
+        <div className="rounded-lg p-4 border-2 border-teal-500/50 bg-gradient-to-br from-slate-900/50 to-slate-800/50 space-y-3 max-h-[calc(100vh-220px)] overflow-y-auto scrollbar-thumb-rounded">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold text-teal-300">📁 Folders</h3>
             {!showCreateFolder && (
