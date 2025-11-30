@@ -1833,22 +1833,18 @@ export const InventoryTab = ({
               const folderData = groupedByFolder[activeTab] || {};
               const folderCards = Object.entries(folderData).filter(([cardName, items]) => {
                 const matchesSearch = inventorySearch === '' || cardName.toLowerCase().includes(inventorySearch.toLowerCase());
-                // Hide cards that have ANY reserved quantity (they're in a deck)
-                const hasAnyReserved = items.some(item => (parseInt(item.reserved_quantity) || 0) > 0);
                 const totalQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
                 const reservedQty = items.reduce((sum, item) => sum + (parseInt(item.reserved_quantity) || 0), 0);
-                return matchesSearch && (totalQty - reservedQty) > 0 && !hasAnyReserved;
+                return matchesSearch && (totalQty - reservedQty) > 0;
               });
-              // Count only cards that have NO reserved quantity (not in any deck)
+              // Count all cards in folder that have available quantity
               const availableCardsStats = Object.entries(folderData).reduce((acc, [_, items]) => {
-                const hasAnyReserved = items.some(item => (parseInt(item.reserved_quantity) || 0) > 0);
-                const hasAvailable = !hasAnyReserved && items.some(item => {
-                  const totalQty = item.quantity || 0;
-                  return totalQty > 0;
-                });
-                if (hasAvailable) acc.uniqueCount++;
-                if (!hasAnyReserved) {
-                  acc.totalCount += items.reduce((s, item) => s + (item.quantity || 0), 0);
+                const totalQty = items.reduce((s, item) => s + (item.quantity || 0), 0);
+                const reservedQty = items.reduce((s, item) => s + (parseInt(item.reserved_quantity) || 0), 0);
+                const availableQty = totalQty - reservedQty;
+                if (availableQty > 0) {
+                  acc.uniqueCount++;
+                  acc.totalCount += availableQty;
                   acc.totalCost += items.reduce((s, item) => s + ((item.purchase_price || 0) * (item.quantity || 0)), 0);
                 }
                 return acc;
