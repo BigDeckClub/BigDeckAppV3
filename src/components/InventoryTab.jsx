@@ -264,6 +264,10 @@ export const InventoryTab = ({
       
       // Refresh deck instances to sync with backend
       await refreshDeckInstances();
+      // Refresh inventory to show updated available quantities
+      if (onLoadInventory) {
+        await onLoadInventory();
+      }
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error) {
       console.error('Failed to add card to deck:', error);
