@@ -535,15 +535,15 @@ export const InventoryTab = ({
           <div className="grid grid-cols-3 gap-1 text-center">
             <div className="space-y-0.5">
               <div className="text-slate-400 text-[8px] md:text-xs font-bold">Qty</div>
-              <div className={`font-bold text-[10px] md:text-xs ${totalQty === 0 ? 'text-slate-400' : 'text-teal-200'}`}>{totalQty}</div>
+              <div className={`font-bold text-[9px] md:text-[10px] ${totalQty === 0 ? 'text-slate-400' : 'text-teal-200'}`}>{totalQty}</div>
             </div>
             <div className="space-y-0.5">
               <div className="text-slate-400 text-[8px] md:text-xs font-bold">Cost</div>
-              <div className="font-bold text-[10px] md:text-xs text-blue-200">${avgPrice.toFixed(2)}</div>
+              <div className="font-bold text-[9px] md:text-[10px] text-blue-200">${avgPrice.toFixed(2)}</div>
             </div>
             <div className="space-y-0.5">
               <div className="text-slate-400 text-[8px] md:text-xs font-bold">Total</div>
-              <div className="font-bold text-[10px] md:text-xs text-amber-300">${formatTotal(totalValue)}</div>
+              <div className="font-bold text-[9px] md:text-[10px] text-amber-300">${formatTotal(totalValue)}</div>
             </div>
           </div>
         </div>
@@ -838,11 +838,11 @@ export const InventoryTab = ({
           <div className="grid grid-cols-2 gap-1 text-center">
             <div className="space-y-0.5">
               <div className="text-slate-400 text-[8px] md:text-xs font-bold">Cost</div>
-              <div className="font-bold text-[10px] md:text-xs text-blue-200">${avgPrice.toFixed(2)}</div>
+              <div className="font-bold text-[9px] md:text-[10px] text-blue-200">${avgPrice.toFixed(2)}</div>
             </div>
             <div className="space-y-0.5">
               <div className="text-slate-400 text-[8px] md:text-xs font-bold">Total</div>
-              <div className="font-bold text-[10px] md:text-xs text-amber-300">${formatTotal(totalValue)}</div>
+              <div className="font-bold text-[9px] md:text-[10px] text-amber-300">${formatTotal(totalValue)}</div>
             </div>
           </div>
         </div>
