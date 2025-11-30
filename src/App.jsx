@@ -13,14 +13,30 @@ import { AnalyticsTab } from "./components/AnalyticsTab";
 import { DeckTab } from "./components/DeckTab";
 import { SalesHistoryTab } from "./components/SalesHistoryTab";
 import { PriceCacheProvider, usePriceCache } from "./context/PriceCacheContext";
+import { AuthProvider, useAuth } from "./context/AuthContext";
+import { LoginForm } from "./components/LoginForm";
+import { LogoutButton } from "./components/LogoutButton";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { useApi } from "./hooks/useApi";
 
 const API_BASE = "/api";
 
 function MTGInventoryTrackerContent() {
+  const { user, loading: authLoading } = useAuth();
   const { getPrice } = usePriceCache();
   const { get, post, put, del } = useApi();
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
+        <div className="w-8 h-8 animate-spin text-teal-400 border-2 border-teal-400 border-t-transparent rounded-full"></div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <LoginForm onSuccess={() => {}} />;
+  }
   
   const [activeTab, setActiveTab] = useState("inventory");
   const [inventory, setInventory] = useState([]);
@@ -293,7 +309,7 @@ function MTGInventoryTrackerContent() {
       <nav className="bg-gradient-to-r from-slate-900 to-slate-800 border-b border-slate-700 sticky top-0 z-50 shadow-xl shadow-slate-900/50">
         <div className="max-w-7xl mx-auto px-4 py-4 app-header flex items-center justify-between">
           <h1 className="text-2xl font-bold text-teal-300">BigDeck.app</h1>
-          <div className="desktop-nav flex gap-2">
+          <div className="desktop-nav flex gap-2 items-center">
             <button
               onClick={() => setActiveTab("inventory")}
               className={`px-4 py-2 nav-tab inactive ${activeTab === "inventory" ? "btn-primary" : "hover:shadow-lg"}`}
@@ -329,6 +345,9 @@ function MTGInventoryTrackerContent() {
               <TrendingUp className="w-5 h-5 inline mr-2" />
               Sales
             </button>
+            <div className="ml-auto">
+              <LogoutButton />
+            </div>
           </div>
         </div>
       </nav>
@@ -441,9 +460,11 @@ function MTGInventoryTrackerContent() {
 function MTGInventoryTracker() {
   return (
     <ErrorBoundary>
-      <PriceCacheProvider>
-        <MTGInventoryTrackerContent />
-      </PriceCacheProvider>
+      <AuthProvider>
+        <PriceCacheProvider>
+          <MTGInventoryTrackerContent />
+        </PriceCacheProvider>
+      </AuthProvider>
     </ErrorBoundary>
   );
 }
