@@ -52,6 +52,7 @@ export const InventoryTab = ({
   const [loadingDeckDetails, setLoadingDeckDetails] = useState(false);
   const [draggedTabData, setDraggedTabData] = useState(null); // {type: 'folder'|'deck', name|id, index}
   const [expandedMissingCards, setExpandedMissingCards] = useState({}); // Track which decks have missing cards expanded
+  const [inventorySearch, setInventorySearch] = useState(''); // Search filter for inventory
 
   // Debounced inventory refresh to prevent excessive API calls
   const debouncedTimeoutRef = React.useRef(null);
@@ -1165,6 +1166,17 @@ export const InventoryTab = ({
 
       {/* RIGHT CONTENT - Cards or Deck Details */}
       <div className="flex-1 pb-24 md:pb-6 px-4 md:px-6">
+        {/* Search Bar */}
+        <div className="mb-4">
+          <input
+            type="text"
+            placeholder="Search inventory by card name..."
+            value={inventorySearch}
+            onChange={(e) => setInventorySearch(e.target.value)}
+            className="w-full px-4 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:border-teal-400 focus:ring-1 focus:ring-teal-400 transition-colors"
+          />
+        </div>
+
         {/* Tabs and View Mode */}
         <div className="flex flex-col md:flex-row gap-3 md:gap-4 mb-6 border-b border-slate-700 pb-4 items-start md:items-center justify-between">
           <div className="flex gap-2 w-full md:w-auto overflow-x-auto flex-wrap">
