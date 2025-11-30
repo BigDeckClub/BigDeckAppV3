@@ -677,16 +677,14 @@ export const InventoryTab = ({
                           <div><span className="text-slate-400">Qty: </span><span className="text-green-300 font-bold">{totalQtyInSet}</span></div>
                           <div><span className="text-slate-400">Avg: </span><span className="text-blue-300 font-bold">${avgSetPrice.toFixed(2)}</span></div>
                         </div>
-                        {setItems.length > 1 && (
-                          <div className="space-y-0.5 max-h-16 overflow-y-auto">
-                            {setItems.map((item) => (
-                              <div key={item.id} className="text-[9px] text-slate-300 bg-slate-600/50 rounded px-1.5 py-0.5 flex justify-between">
-                                <span>{item.quantity_reserved}x @ ${parseFloat(item.purchase_price || 0).toFixed(2)}</span>
-                                <span className="text-slate-400">{item.original_folder}</span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
+                        <div className="space-y-0.5 max-h-16 overflow-y-auto">
+                          {setItems.map((item) => (
+                            <div key={item.id} className="text-[9px] text-slate-300 bg-slate-600/50 rounded px-1.5 py-0.5 flex justify-between items-center group hover:bg-slate-600 transition-colors">
+                              <span>{item.quantity_reserved}x @ ${parseFloat(item.purchase_price || 0).toFixed(2)}</span>
+                              <span className="text-slate-400">{item.original_folder}</span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   );
@@ -724,16 +722,14 @@ export const InventoryTab = ({
                         <div><span className="text-slate-400">Qty: </span><span className="text-green-300 font-bold">{totalQtyInSet}</span></div>
                         <div><span className="text-slate-400">Avg: </span><span className="text-blue-300 font-bold">${avgSetPrice.toFixed(2)}</span></div>
                       </div>
-                      {setItems.length > 1 && (
-                        <div className="space-y-0.5 max-h-16 overflow-y-auto">
-                          {setItems.map((item) => (
-                            <div key={item.id} className="text-[9px] text-slate-300 bg-slate-600/50 rounded px-1.5 py-0.5 flex justify-between items-center group hover:bg-slate-600 transition-colors">
-                              <span>{item.quantity_reserved}x @ ${parseFloat(item.purchase_price || 0).toFixed(2)}</span>
-                              <span className="text-slate-400">{item.original_folder}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                      <div className="space-y-0.5 max-h-16 overflow-y-auto">
+                        {setItems.map((item) => (
+                          <div key={item.id} className="text-[9px] text-slate-300 bg-slate-600/50 rounded px-1.5 py-0.5 flex justify-between items-center group hover:bg-slate-600 transition-colors">
+                            <span>{item.quantity_reserved}x @ ${parseFloat(item.purchase_price || 0).toFixed(2)}</span>
+                            <span className="text-slate-400">{item.original_folder}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 );
