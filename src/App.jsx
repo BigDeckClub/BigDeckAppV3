@@ -403,6 +403,11 @@ function MTGInventoryTrackerContent() {
           <DeckTab onDeckCreatedOrDeleted={() => setDeckRefreshTrigger(prev => prev + 1)} />
         )}
 
+        {/* Change Log Tab */}
+        {activeTab === "changelog" && !isLoading && (
+          <ChangeLogTab inventory={inventory} />
+        )}
+
       </main>
     </div>
   );
