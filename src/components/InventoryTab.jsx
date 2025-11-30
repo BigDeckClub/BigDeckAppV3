@@ -1731,9 +1731,30 @@ export const InventoryTab = ({
                 const reservedQty = items.reduce((sum, item) => sum + (parseInt(item.reserved_quantity) || 0), 0);
                 return matchesSearch && (totalQty - reservedQty) > 0;
               });
-              const uniqueCards = Object.keys(folderData).length;
-              const totalCards = Object.values(folderData).reduce((sum, items) => sum + items.reduce((s, item) => s + (item.quantity || 0), 0), 0);
-              const totalCost = Object.values(folderData).reduce((sum, items) => sum + items.reduce((s, item) => s + ((item.purchase_price || 0) * (item.quantity || 0)), 0), 0);
+              // Count only available (unreserved) cards for stats
+              const availableCardsStats = Object.entries(folderData).reduce((acc, [_, items]) => {
+                const hasAvailable = items.some(item => {
+                  const totalQty = item.quantity || 0;
+                  const reservedQty = parseInt(item.reserved_quantity) || 0;
+                  return (totalQty - reservedQty) > 0;
+                });
+                if (hasAvailable) acc.uniqueCount++;
+                acc.totalCount += items.reduce((s, item) => {
+                  const totalQty = item.quantity || 0;
+                  const reservedQty = parseInt(item.reserved_quantity) || 0;
+                  return s + Math.max(0, totalQty - reservedQty);
+                }, 0);
+                acc.totalCost += items.reduce((s, item) => {
+                  const totalQty = item.quantity || 0;
+                  const reservedQty = parseInt(item.reserved_quantity) || 0;
+                  const availableQty = Math.max(0, totalQty - reservedQty);
+                  return s + ((item.purchase_price || 0) * availableQty);
+                }, 0);
+                return acc;
+              }, { uniqueCount: 0, totalCount: 0, totalCost: 0 });
+              const uniqueCards = availableCardsStats.uniqueCount;
+              const totalCards = availableCardsStats.totalCount;
+              const totalCost = availableCardsStats.totalCost;
               const folderDesc = folderMetadata[activeTab]?.description || '';
               
               return (
