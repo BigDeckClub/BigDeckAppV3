@@ -277,35 +277,36 @@ async function initializeDatabase() {
     `);
 
     // ========== PERFORMANCE INDEXES ==========
+    // Note: .catch() is intentional - indexes may already exist, which is expected behavior
     // Index for case-insensitive card name lookups
     await pool.query(`
       CREATE INDEX IF NOT EXISTS idx_inventory_name_lower 
       ON inventory(LOWER(TRIM(name)));
-    `).catch(() => {});
+    `).catch(err => console.log('[DB] Index idx_inventory_name_lower:', err.code === '42P07' ? 'already exists' : err.message));
 
     // Index for deck reservation lookups by deck
     await pool.query(`
       CREATE INDEX IF NOT EXISTS idx_deck_reservations_deck_id 
       ON deck_reservations(deck_id);
-    `).catch(() => {});
+    `).catch(err => console.log('[DB] Index idx_deck_reservations_deck_id:', err.code === '42P07' ? 'already exists' : err.message));
 
     // Index for deck reservation lookups by inventory item
     await pool.query(`
       CREATE INDEX IF NOT EXISTS idx_deck_reservations_inventory_id 
       ON deck_reservations(inventory_item_id);
-    `).catch(() => {});
+    `).catch(err => console.log('[DB] Index idx_deck_reservations_inventory_id:', err.code === '42P07' ? 'already exists' : err.message));
 
     // Index for inventory folder filtering
     await pool.query(`
       CREATE INDEX IF NOT EXISTS idx_inventory_folder 
       ON inventory(folder);
-    `).catch(() => {});
+    `).catch(err => console.log('[DB] Index idx_inventory_folder:', err.code === '42P07' ? 'already exists' : err.message));
 
     // Index for deck instances lookup
     await pool.query(`
       CREATE INDEX IF NOT EXISTS idx_decks_is_instance 
       ON decks(is_deck_instance);
-    `).catch(() => {});
+    `).catch(err => console.log('[DB] Index idx_decks_is_instance:', err.code === '42P07' ? 'already exists' : err.message));
 
     console.log('[DB] ✓ Database initialized successfully');
   } catch (err) {
@@ -386,6 +387,41 @@ function validateId(req, res, next) {
   }
   req.params.id = id;
   next();
+}
+
+// ========== BATCH INSERT HELPERS ==========
+// Insert multiple deck reservations in a single query
+// Columns: deck_id, inventory_item_id, quantity_reserved, original_folder
+async function batchInsertReservations(reservations) {
+  if (reservations.length === 0) return;
+  const COLS_PER_ROW = 4;
+  const values = reservations.map((r, i) => 
+    `($${i*COLS_PER_ROW+1}, $${i*COLS_PER_ROW+2}, $${i*COLS_PER_ROW+3}, $${i*COLS_PER_ROW+4})`
+  ).join(', ');
+  const params = reservations.flatMap(r => [
+    r.deck_id, r.inventory_item_id, r.quantity_reserved, r.original_folder
+  ]);
+  await pool.query(`
+    INSERT INTO deck_reservations (deck_id, inventory_item_id, quantity_reserved, original_folder)
+    VALUES ${values}
+  `, params);
+}
+
+// Insert multiple missing cards in a single query
+// Columns: deck_id, card_name, set_code, quantity_needed
+async function batchInsertMissingCards(missingCards) {
+  if (missingCards.length === 0) return;
+  const COLS_PER_ROW = 4;
+  const values = missingCards.map((m, i) => 
+    `($${i*COLS_PER_ROW+1}, $${i*COLS_PER_ROW+2}, $${i*COLS_PER_ROW+3}, $${i*COLS_PER_ROW+4})`
+  ).join(', ');
+  const params = missingCards.flatMap(m => [
+    m.deck_id, m.card_name, m.set_code, m.quantity_needed
+  ]);
+  await pool.query(`
+    INSERT INTO deck_missing_cards (deck_id, card_name, set_code, quantity_needed)
+    VALUES ${values}
+  `, params);
 }
 
 // ========== HEALTH CHECK ==========
@@ -1100,32 +1136,10 @@ app.post('/api/decks/:id/copy-to-inventory', validateId, async (req, res) => {
     }
     
     // Step 5: Batch insert reservations (if any)
-    if (reservations.length > 0) {
-      const reservationValues = reservations.map((r, i) => 
-        `($${i*4+1}, $${i*4+2}, $${i*4+3}, $${i*4+4})`
-      ).join(', ');
-      const reservationParams = reservations.flatMap(r => [
-        r.deck_id, r.inventory_item_id, r.quantity_reserved, r.original_folder
-      ]);
-      await pool.query(`
-        INSERT INTO deck_reservations (deck_id, inventory_item_id, quantity_reserved, original_folder)
-        VALUES ${reservationValues}
-      `, reservationParams);
-    }
+    await batchInsertReservations(reservations);
     
     // Step 6: Batch insert missing cards (if any)
-    if (missingCards.length > 0) {
-      const missingValues = missingCards.map((m, i) => 
-        `($${i*4+1}, $${i*4+2}, $${i*4+3}, $${i*4+4})`
-      ).join(', ');
-      const missingParams = missingCards.flatMap(m => [
-        m.deck_id, m.card_name, m.set_code, m.quantity_needed
-      ]);
-      await pool.query(`
-        INSERT INTO deck_missing_cards (deck_id, card_name, set_code, quantity_needed)
-        VALUES ${missingValues}
-      `, missingParams);
-    }
+    await batchInsertMissingCards(missingCards);
     
     res.status(201).json({
       deck: newDeck,
@@ -1334,32 +1348,10 @@ app.post('/api/deck-instances/:id/reoptimize', validateId, async (req, res) => {
     }
     
     // Step 5: Batch insert reservations (if any)
-    if (reservations.length > 0) {
-      const reservationValues = reservations.map((r, i) => 
-        `($${i*4+1}, $${i*4+2}, $${i*4+3}, $${i*4+4})`
-      ).join(', ');
-      const reservationParams = reservations.flatMap(r => [
-        r.deck_id, r.inventory_item_id, r.quantity_reserved, r.original_folder
-      ]);
-      await pool.query(`
-        INSERT INTO deck_reservations (deck_id, inventory_item_id, quantity_reserved, original_folder)
-        VALUES ${reservationValues}
-      `, reservationParams);
-    }
+    await batchInsertReservations(reservations);
     
     // Step 6: Batch insert missing cards (if any)
-    if (missingCards.length > 0) {
-      const missingValues = missingCards.map((m, i) => 
-        `($${i*4+1}, $${i*4+2}, $${i*4+3}, $${i*4+4})`
-      ).join(', ');
-      const missingParams = missingCards.flatMap(m => [
-        m.deck_id, m.card_name, m.set_code, m.quantity_needed
-      ]);
-      await pool.query(`
-        INSERT INTO deck_missing_cards (deck_id, card_name, set_code, quantity_needed)
-        VALUES ${missingValues}
-      `, missingParams);
-    }
+    await batchInsertMissingCards(missingCards);
     
     res.json({
       success: true,
