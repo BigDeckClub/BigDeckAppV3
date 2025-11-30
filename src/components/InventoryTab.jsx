@@ -1291,13 +1291,13 @@ export const InventoryTab = ({
       {/* RIGHT CONTENT - Cards or Deck Details */}
       <div className="flex-1 pb-24 md:pb-6 px-4 md:px-6">
         {/* Search Bar */}
-        <div className="mb-4">
+        <div className="mb-6">
           <input
             type="text"
             placeholder="Search inventory by card name..."
             value={inventorySearch}
             onChange={(e) => setInventorySearch(e.target.value)}
-            className="w-full px-4 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:border-teal-400 focus:ring-1 focus:ring-teal-400 transition-colors"
+            className="w-full px-4 py-2.5 bg-slate-800 border border-slate-600 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:border-teal-400 focus:ring-1 focus:ring-teal-400 transition-colors font-medium"
           />
         </div>
 
