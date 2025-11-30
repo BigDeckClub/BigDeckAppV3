@@ -993,7 +993,7 @@ export const InventoryTab = ({
       </button>
 
       {/* LEFT SIDEBAR - Folders */}
-      <div className={`fixed md:static left-0 w-64 flex-shrink-0 space-y-4 h-full overflow-y-auto bg-slate-900 md:bg-transparent z-30 transition-transform duration-300 md:px-0 px-4 ${
+      <div className={`fixed md:static left-0 w-64 flex-shrink-0 space-y-4 h-full overflow-y-auto bg-slate-900 md:bg-transparent z-30 transition-transform duration-300 md:px-0 px-4 md:pt-20 pt-20 ${
         sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
       }`}>
         {/* Folder List */}
@@ -1313,9 +1313,9 @@ export const InventoryTab = ({
       )}
 
       {/* RIGHT CONTENT - Cards or Deck Details */}
-      <div className="flex-1 pb-24 md:pb-6 px-4 md:px-6 md:ml-0">
+      <div className="flex-1 pb-24 md:pb-6 px-4 md:px-6 md:ml-0 pt-16">
         {/* Search Bar */}
-        <div className="mb-8">
+        <div className="mb-10">
           <div className="relative">
             <input
               type="text"
@@ -1331,7 +1331,7 @@ export const InventoryTab = ({
         </div>
 
         {/* Tabs and View Mode */}
-        <div className="flex flex-col md:flex-row gap-3 md:gap-4 mb-6 border-b border-slate-700 pb-4 items-start md:items-center justify-between">
+        <div className="flex flex-col md:flex-row gap-3 md:gap-4 mb-8 border-b border-slate-700 pb-4 items-start md:items-center justify-between">
           <div className="flex gap-1 w-full md:w-auto overflow-x-auto flex-wrap bg-slate-800/50 rounded-lg p-1.5 border border-slate-700">
             <button
               onClick={() => { setActiveTab('all'); setSidebarOpen(false); }}
