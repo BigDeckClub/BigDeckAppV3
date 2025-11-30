@@ -164,8 +164,14 @@ export const InventoryTab = ({
         method: 'POST'
       });
       if (response.ok) {
-        setSelectedDeck(null);
-        setDeckDetails(null);
+        // Close the deck tab if it's open
+        closeDeckTab(deckId);
+        // Clear cached details for this deck
+        setDeckDetailsCache(prev => {
+          const updated = { ...prev };
+          delete updated[deckId];
+          return updated;
+        });
         await refreshDeckInstances();
         setSuccessMessage('Deck deleted! Cards returned to unsorted.');
         setTimeout(() => setSuccessMessage(''), 3000);
