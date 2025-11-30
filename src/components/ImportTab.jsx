@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Download, Plus, Trash2, CheckCircle, Clock, Layers, X } from 'lucide-react';
 
 export const ImportTab = ({ 
@@ -23,6 +23,21 @@ export const ImportTab = ({
 }) => {
   const [showImportForm, setShowImportForm] = useState(false);
   const [createdFolders, setCreatedFolders] = useState([]);
+  const searchContainerRef = useRef(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target)) {
+        setShowDropdown(false);
+      }
+    };
+
+    if (showDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showDropdown, setShowDropdown]);
 
   // Load folders from localStorage
   React.useEffect(() => {
@@ -134,7 +149,7 @@ export const ImportTab = ({
               </select>
             </div>
           </div>
-          <div className="relative">
+          <div className="relative" ref={searchContainerRef}>
             <input
               type="text"
               placeholder="Search for a card..."
