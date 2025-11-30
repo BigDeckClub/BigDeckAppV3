@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import PropTypes from 'prop-types';
-import { BarChart3, TrendingUp, Package, DollarSign } from 'lucide-react';
+import { BarChart3, TrendingUp, Package, DollarSign, History, Filter } from 'lucide-react';
 
 export const AnalyticsTab = ({ inventory }) => {
   const [marketValues, setMarketValues] = useState({ cardkingdom: 0, tcgplayer: 0 });
@@ -12,6 +12,8 @@ export const AnalyticsTab = ({ inventory }) => {
     totalPurchasedLast60d: 0,
     lifetimeTotalCards: 0
   });
+  const [showChangeLog, setShowChangeLog] = useState(false);
+  const [filterSection, setFilterSection] = useState('all');
 
   useEffect(() => {
     const fetchAnalytics = async () => {
@@ -67,15 +69,142 @@ export const AnalyticsTab = ({ inventory }) => {
     .sort((a, b) => ((b.quantity || 0) * (parseFloat(b.purchase_price) || 0)) - ((a.quantity || 0) * (parseFloat(a.purchase_price) || 0)))
     .slice(0, 5);
 
+  // Change Log data
+  const allFolders = useMemo(() => {
+    const folders = new Set(inventory.map(item => item.folder || 'Uncategorized'));
+    return Array.from(folders).sort();
+  }, [inventory]);
+
+  const changeLog = useMemo(() => {
+    return inventory
+      .filter(item => item.last_modified)
+      .map(item => ({
+        id: item.id,
+        cardName: item.name,
+        folder: item.folder || 'Uncategorized',
+        quantity: item.quantity,
+        price: item.purchase_price,
+        timestamp: new Date(item.last_modified),
+        date: new Date(item.last_modified).toLocaleDateString(),
+        time: new Date(item.last_modified).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      }))
+      .sort((a, b) => b.timestamp - a.timestamp);
+  }, [inventory]);
+
+  const filteredLog = useMemo(() => {
+    return changeLog.filter(entry => {
+      if (filterSection === 'all') return true;
+      if (filterSection === 'unsorted') return entry.folder === 'Uncategorized';
+      return entry.folder === filterSection;
+    });
+  }, [changeLog, filterSection]);
+
+  const sectionOptions = [
+    { value: 'all', label: 'All Sections' },
+    { value: 'unsorted', label: 'Unsorted' },
+    ...allFolders.map(folder => ({ value: folder, label: `📁 ${folder}` })),
+  ];
+
   return (
     <div className="flex-1 p-6 bg-slate-900 overflow-y-auto">
-      <h2 className="text-2xl font-bold text-teal-300 mb-6 flex items-center gap-2">
-        <BarChart3 className="w-6 h-6" />
-        Analytics
-      </h2>
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-2xl font-bold text-teal-300 flex items-center gap-2">
+          <BarChart3 className="w-6 h-6" />
+          Analytics
+        </h2>
+        <button
+          onClick={() => setShowChangeLog(!showChangeLog)}
+          className={`px-4 py-2 rounded-lg font-semibold flex items-center gap-2 transition-all ${
+            showChangeLog
+              ? 'bg-amber-600 text-white shadow-lg'
+              : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+          }`}
+        >
+          <History className="w-4 h-4" />
+          Change Log
+        </button>
+      </div>
 
-      {/* Key Metrics */}
-      <div className="mb-8">
+      {/* Change Log View */}
+      {showChangeLog ? (
+        <div className="space-y-6">
+          <div className="bg-gradient-to-r from-teal-900/30 to-cyan-900/30 border border-teal-600/30 rounded-lg p-4">
+            <h3 className="text-xl font-bold text-teal-300 mb-4 flex items-center gap-2">
+              <Filter className="w-5 h-5" />
+              Filter Changes
+            </h3>
+            
+            <div className="flex-1">
+              <label className="block text-sm text-slate-400 mb-2">Filter by Section</label>
+              <select 
+                value={filterSection} 
+                onChange={(e) => setFilterSection(e.target.value)}
+                className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-white text-sm hover:border-teal-500 transition-colors"
+              >
+                {sectionOptions.map(option => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {filteredLog.length > 0 ? (
+            <div className="space-y-2">
+              <div className="text-sm text-slate-400 mb-3">
+                {filteredLog.length} recent edit{filteredLog.length !== 1 ? 's' : ''}
+              </div>
+              
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {filteredLog.map((entry, idx) => (
+                  <div 
+                    key={`${entry.id}-${idx}`}
+                    className="bg-gradient-to-r from-slate-800 to-slate-900 border border-slate-600 rounded-lg p-4 hover:border-teal-500 transition-colors"
+                  >
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                      <div className="flex-1">
+                        <div className="font-bold text-teal-300 text-lg mb-2">{entry.cardName}</div>
+                        <div className="space-y-1 text-sm">
+                          <div>
+                            <span className="text-slate-500">Folder:</span>
+                            <span className="text-slate-300 ml-2">
+                              {entry.folder === 'Uncategorized' ? '📂 Unsorted' : `📁 ${entry.folder}`}
+                            </span>
+                          </div>
+                          <div className="flex gap-4 flex-wrap">
+                            <div>
+                              <span className="text-slate-500">Qty:</span>
+                              <span className="text-teal-300 font-semibold ml-2">{entry.quantity}</span>
+                            </div>
+                            <div>
+                              <span className="text-slate-500">Price:</span>
+                              <span className="text-blue-300 font-semibold ml-2">${parseFloat(entry.price || 0).toFixed(2)}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="md:text-right">
+                        <div className="text-xs text-slate-500 mb-1">Modified</div>
+                        <div className="text-sm font-mono text-amber-400">{entry.date}</div>
+                        <div className="text-xs text-slate-400">{entry.time}</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="bg-slate-800 border border-slate-600 rounded-lg p-8 text-center">
+              <p className="text-slate-400">No edits recorded yet. Start editing cards to see their change history!</p>
+            </div>
+          )}
+        </div>
+      ) : (
+        <>
+          {/* Key Metrics */}
+          <div className="mb-8">
         <h3 className="text-sm font-semibold text-slate-400 mb-3">Purchase Value</h3>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
           {/* Card Metrics Box */}
@@ -182,6 +311,8 @@ export const AnalyticsTab = ({ inventory }) => {
             ))}
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 };
