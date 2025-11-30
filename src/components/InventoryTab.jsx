@@ -321,18 +321,21 @@ export const InventoryTab = ({
   };
 
   // Move individual card SKU to deck (with optimistic updates)
-  const moveCardSkuToDeck = async (inventoryItem, deckId, skipRefresh = false) => {
+  const moveCardSkuToDeck = async (inventoryItem, deckId, skipRefresh = false, attemptQty = null) => {
     try {
       const deck = deckInstances.find(d => d.id === deckId);
       if (!deck) {
         throw new Error('Deck not found');
       }
       
+      // Use attempted quantity if provided (for retries), otherwise use item's full quantity
+      const qtyToUse = attemptQty !== null ? attemptQty : (inventoryItem.quantity || 1);
+      
       // Optimistic update: update deck details cache immediately
       const optimisticReservation = {
         name: inventoryItem.name,
         set: inventoryItem.set,
-        quantity_reserved: inventoryItem.quantity,
+        quantity_reserved: qtyToUse,
         purchase_price: inventoryItem.purchase_price,
         original_folder: inventoryItem.folder
       };
@@ -344,7 +347,7 @@ export const InventoryTab = ({
             ...prev[deckId],
             reservations: [...(prev[deckId].reservations || []), optimisticReservation],
             reservedCount: (prev[deckId].reservedCount || 0) + 1,
-            totalCost: (prev[deckId].totalCost || 0) + (inventoryItem.purchase_price * inventoryItem.quantity || 0)
+            totalCost: (prev[deckId].totalCost || 0) + (inventoryItem.purchase_price * qtyToUse || 0)
           }
         }));
       }
@@ -357,7 +360,7 @@ export const InventoryTab = ({
       );
       
       // Show immediate feedback
-      setSuccessMessage(`Added ${inventoryItem.quantity}x ${inventoryItem.name} to deck`);
+      setSuccessMessage(`Added ${qtyToUse}x ${inventoryItem.name} to deck`);
       
       // Update API in the background
       const response = await fetch(`/api/deck-instances/${deckId}/add-card`, {
@@ -365,12 +368,16 @@ export const InventoryTab = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           inventory_item_id: inventoryItem.id,
-          quantity: inventoryItem.quantity
+          quantity: qtyToUse
         })
       });
       
       if (!response.ok) {
         const error = await response.json();
+        // If not enough available, retry with 1 less quantity (accounts for cards reserved in other decks)
+        if (error.error?.includes('Not enough available') && qtyToUse > 1) {
+          return moveCardSkuToDeck(inventoryItem, deckId, skipRefresh, qtyToUse - 1);
+        }
         throw new Error(error.error || 'Failed to add card to deck');
       }
       
