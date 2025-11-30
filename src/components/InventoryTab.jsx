@@ -57,6 +57,9 @@ export const InventoryTab = ({
   const [inventorySearch, setInventorySearch] = useState(''); // Search filter for inventory
   const [showSellModal, setShowSellModal] = useState(false);
   const [sellModalData, setSellModalData] = useState(null);
+  const [folderMetadata, setFolderMetadata] = useState({}); // Store folder descriptions and metadata
+  const [editingFolderName, setEditingFolderName] = useState(null);
+  const [editingFolderDesc, setEditingFolderDesc] = useState('');
 
   // Debounced inventory refresh to prevent excessive API calls
   const debouncedTimeoutRef = React.useRef(null);
@@ -1026,21 +1029,6 @@ export const InventoryTab = ({
                 >
                   <div className="font-medium text-sm text-slate-100">{folderName}</div>
                   <div className="text-xs text-teal-300">{totalCards} {totalCards === 1 ? 'card' : 'cards'}</div>
-                </button>
-                <button
-                  onClick={() => {
-                    setSellModalData({
-                      itemType: 'folder',
-                      itemId: null,
-                      itemName: folderName,
-                      purchasePrice: folderCost
-                    });
-                    setShowSellModal(true);
-                  }}
-                  className="w-full px-3 py-1 text-xs bg-green-600/20 hover:bg-green-600/40 text-green-400 rounded-b-lg transition-colors border-t border-green-600/30"
-                  title="Sell this folder"
-                >
-                  Sell Folder
                 </button>
               </div>
             );
