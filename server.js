@@ -849,7 +849,7 @@ app.get('/api/analytics/market-values', async (req, res) => {
 
 app.get('/api/analytics/card-metrics', async (req, res) => {
   try {
-    // Total cards and unique cards (count distinct card names)
+    // Current inventory (total cards and unique cards)
     const totalResult = await pool.query('SELECT COUNT(DISTINCT LOWER(TRIM(name))) as unique_count, SUM(quantity) as total_count FROM inventory');
     const totalRow = totalResult.rows[0];
     const totalCards = parseInt(totalRow.total_count) || 0;
@@ -865,30 +865,27 @@ app.get('/api/analytics/card-metrics', async (req, res) => {
     const allRows = availableResult.rows || [];
     const totalAvailable = allRows.reduce((sum, row) => sum + parseInt(row.available_count || 0), 0);
     
-    // Cards purchased in last 60 days (only inventory items, not sales)
-    const sixtyDaysAgo = new Date();
-    sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
-    
+    // Purchased in last 60 days (from transaction history)
     const purchasedResult = await pool.query(
-      'SELECT SUM(quantity) as count FROM inventory WHERE purchase_date >= $1',
-      [sixtyDaysAgo.toISOString().split('T')[0]]
+      'SELECT SUM(quantity) as count FROM inventory_transactions WHERE transaction_type = $1 AND transaction_date >= CURRENT_DATE - INTERVAL \'60 days\'',
+      ['PURCHASE']
     );
     const purchasedLast60d = parseInt(purchasedResult.rows[0].count) || 0;
     
-    // Cards sold in last 60 days
+    // Sold in last 60 days (from transaction history)
     const soldResult = await pool.query(
-      'SELECT SUM(quantity) as count FROM sales_history WHERE created_at >= NOW() - INTERVAL \'60 days\'',
-      []
+      'SELECT SUM(quantity) as count FROM inventory_transactions WHERE transaction_type = $1 AND transaction_date >= CURRENT_DATE - INTERVAL \'60 days\'',
+      ['SALE']
     );
     const totalSoldLast60d = parseInt(soldResult.rows[0].count) || 0;
     
-    // Lifetime total cards = current inventory + all cards ever sold
-    const lifetimeSoldResult = await pool.query(
-      'SELECT SUM(quantity) as count FROM sales_history',
-      []
+    // Lifetime totals (from transaction history)
+    const lifetimePurchasedResult = await pool.query(
+      'SELECT SUM(quantity) as count FROM inventory_transactions WHERE transaction_type = $1',
+      ['PURCHASE']
     );
-    const lifetimeSold = parseInt(lifetimeSoldResult.rows[0].count) || 0;
-    const lifetimeTotalCards = totalCards + lifetimeSold;
+    const lifetimePurchased = parseInt(lifetimePurchasedResult.rows[0].count) || 0;
+    const lifetimeTotalCards = lifetimePurchased;
     
     res.json({
       totalCards,
@@ -1527,6 +1524,13 @@ app.post('/api/sales', async (req, res) => {
       `INSERT INTO sales_history (item_type, item_id, item_name, purchase_price, sell_price, profit, quantity)
        VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
       [itemType, itemId || null, itemName, purchasePrice, sellPrice, profit, quantity || 1]
+    );
+    
+    // Log transaction to inventory_transactions
+    await pool.query(
+      `INSERT INTO inventory_transactions (card_name, transaction_type, quantity, purchase_price, sale_price, transaction_date)
+       VALUES ($1, $2, $3, $4, $5, CURRENT_DATE)`,
+      [itemName, 'SALE', quantity || 1, purchasePrice, sellPrice]
     );
 
     // If selling a deck, reduce the reserved inventory items and the deck
