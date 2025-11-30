@@ -219,7 +219,7 @@ export const AnalyticsTab = ({ inventory }) => {
               </div>
               <div>
                 <div className="text-slate-400 text-xs font-semibold mb-1">Available</div>
-                <div className="text-2xl font-bold text-blue-300">{cardMetrics.totalAvailable}</div>
+                <div className="text-2xl font-bold text-blue-300">{totalAvailable}</div>
               </div>
               <div>
                 <div className="text-slate-400 text-xs font-semibold mb-1">Unique Cards</div>
