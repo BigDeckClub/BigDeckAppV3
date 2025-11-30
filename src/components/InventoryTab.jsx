@@ -153,6 +153,26 @@ export const InventoryTab = ({
     }
   };
 
+  // Move cards to folder via drag-drop
+  const moveCardToFolder = async (cardName, targetFolder) => {
+    try {
+      const cardItems = inventory.filter(item => item.name === cardName);
+      for (const item of cardItems) {
+        await fetch(`/api/inventory/${item.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ folder: targetFolder })
+        });
+      }
+      await loadInventory();
+      setSuccessMessage(`Moved "${cardName}" to ${targetFolder}`);
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (error) {
+      console.error('Failed to move card:', error);
+      alert('Error moving card');
+    }
+  };
+
   // Initial load and refresh of deck instances
   useEffect(() => {
     refreshDeckInstances();
@@ -232,7 +252,12 @@ export const InventoryTab = ({
         {/* Card View */}
         {viewMode === 'card' ? (
         <div 
-          className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 hover:border-teal-500 rounded p-1.5 transition-colors flex flex-col h-32 md:h-36 hover:shadow-lg hover:shadow-teal-500/20" 
+          draggable
+          onDragStart={(e) => {
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('cardName', cardName);
+          }}
+          className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 hover:border-teal-500 rounded p-1.5 transition-colors flex flex-col h-32 md:h-36 hover:shadow-lg hover:shadow-teal-500/20 cursor-grab active:cursor-grabbing" 
           onClick={() => setExpandedCards(isExpanded ? {} : {[cardName]: true})}
         >
           <div className="text-center px-1 cursor-pointer">
@@ -705,6 +730,19 @@ export const InventoryTab = ({
               <button
                 key={folderName}
                 onClick={() => setSelectedFolder(isSelected ? null : folderName)}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.currentTarget.classList.add('bg-teal-700/60', 'border-teal-300');
+                }}
+                onDragLeave={(e) => {
+                  e.currentTarget.classList.remove('bg-teal-700/60', 'border-teal-300');
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  e.currentTarget.classList.remove('bg-teal-700/60', 'border-teal-300');
+                  const cardName = e.dataTransfer.getData('cardName');
+                  moveCardToFolder(cardName, folderName);
+                }}
                 className={`w-full text-left p-3 rounded-lg transition-colors ${
                   isSelected
                     ? 'bg-teal-600/40 border-l-4 border-teal-400'
@@ -731,6 +769,19 @@ export const InventoryTab = ({
                 <button
                   key={folder}
                   onClick={() => setSelectedFolder(isSelected ? null : folder)}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.currentTarget.classList.add('bg-teal-700/60', 'border-teal-300');
+                  }}
+                  onDragLeave={(e) => {
+                    e.currentTarget.classList.remove('bg-teal-700/60', 'border-teal-300');
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.currentTarget.classList.remove('bg-teal-700/60', 'border-teal-300');
+                    const cardName = e.dataTransfer.getData('cardName');
+                    moveCardToFolder(cardName, folder);
+                  }}
                   className={`w-full text-left p-3 rounded-lg transition-colors ${
                     isSelected
                       ? 'bg-teal-600/40 border-l-4 border-teal-400'
