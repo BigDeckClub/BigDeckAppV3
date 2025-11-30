@@ -339,22 +339,31 @@ export const DeckTab = ({ onDeckCreatedOrDeleted }) => {
   };
 
   const updateDeckName = async (id, newName) => {
-    if (!newName.trim()) return;
+    const trimmedName = newName.trim();
+    if (!trimmedName) {
+      setEditingDeck(null);
+      return;
+    }
     try {
       const response = await fetch(`${API_BASE}/decks/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newName })
+        body: JSON.stringify({ name: trimmedName })
       });
 
       if (response.ok) {
-        await loadDecks();
         setEditingDeck(null);
+        await loadDecks();
         setSuccessMessage('Deck updated!');
         setTimeout(() => setSuccessMessage(''), 3000);
+      } else {
+        setEditingDeck(null);
+        alert('Failed to update deck');
       }
     } catch (error) {
       console.error('Failed to update deck:', error);
+      setEditingDeck(null);
+      alert('Error updating deck');
     }
   };
 
@@ -367,17 +376,17 @@ export const DeckTab = ({ onDeckCreatedOrDeleted }) => {
       });
 
       if (response.ok) {
+        // Update selected deck locally first for immediate feedback
+        setSelectedDeck(prev => prev?.id === id ? { ...prev, description: newDescription } : prev);
         await loadDecks();
-        // Update selected deck if it's the one being edited
-        if (selectedDeck?.id === id) {
-          const updated = decks.find(d => d.id === id);
-          if (updated) setSelectedDeck(updated);
-        }
-        setSuccessMessage('Deck description updated!');
+        setSuccessMessage('Deck updated!');
         setTimeout(() => setSuccessMessage(''), 3000);
+      } else {
+        alert('Failed to update deck');
       }
     } catch (error) {
       console.error('Failed to update description:', error);
+      alert('Error updating deck');
     }
   };
 
@@ -664,13 +673,12 @@ export const DeckTab = ({ onDeckCreatedOrDeleted }) => {
                       placeholder="Deck name"
                       className="w-full bg-slate-700 border border-teal-600 rounded px-2 py-1 text-white text-sm mb-2"
                       onBlur={(e) => {
-                        if (e.target.value.trim()) {
-                          updateDeckName(deck.id, e.target.value);
-                        }
+                        updateDeckName(deck.id, e.target.value);
                       }}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
-                          updateDeckName(deck.id, e.target.value);
+                          e.preventDefault();
+                          updateDeckName(deck.id, e.currentTarget.value);
                         }
                         if (e.key === 'Escape') {
                           setEditingDeck(null);

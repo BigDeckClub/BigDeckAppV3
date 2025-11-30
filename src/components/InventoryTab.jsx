@@ -44,6 +44,9 @@ export const InventoryTab = ({
   const [viewMode, setViewMode] = useState('card'); // 'card' or 'list'
   const [sidebarOpen, setSidebarOpen] = useState(false); // Mobile sidebar toggle
   const [deckInstances, setDeckInstances] = useState([]);
+  const [selectedDeck, setSelectedDeck] = useState(null);
+  const [deckDetails, setDeckDetails] = useState(null);
+  const [loadingDeckDetails, setLoadingDeckDetails] = useState(false);
 
   // Load created folders from localStorage
   useEffect(() => {
@@ -63,6 +66,68 @@ export const InventoryTab = ({
       }
     } catch (error) {
       console.error('Failed to fetch deck instances:', error);
+    }
+  };
+
+  // Load full details of a deck instance
+  const loadDeckDetails = async (deckId) => {
+    setLoadingDeckDetails(true);
+    try {
+      const response = await fetch(`/api/deck-instances/${deckId}/details`);
+      if (response.ok) {
+        const data = await response.json();
+        setDeckDetails(data);
+      }
+    } catch (error) {
+      console.error('Failed to load deck details:', error);
+      alert('Failed to load deck details');
+    } finally {
+      setLoadingDeckDetails(false);
+    }
+  };
+
+  // Release deck and return cards to inventory
+  const releaseDeck = async (deckId) => {
+    if (!window.confirm('Are you sure you want to release this deck? All cards will be returned to inventory.')) {
+      return;
+    }
+    try {
+      const response = await fetch(`/api/deck-instances/${deckId}/release`, {
+        method: 'POST'
+      });
+      if (response.ok) {
+        setSelectedDeck(null);
+        setDeckDetails(null);
+        await refreshDeckInstances();
+        setSuccessMessage('Deck released! Cards returned to inventory.');
+        setTimeout(() => setSuccessMessage(''), 3000);
+      } else {
+        alert('Failed to release deck');
+      }
+    } catch (error) {
+      console.error('Failed to release deck:', error);
+      alert('Error releasing deck');
+    }
+  };
+
+  // Reoptimize deck to find cheapest cards
+  const reoptimizeDeck = async (deckId) => {
+    try {
+      const response = await fetch(`/api/deck-instances/${deckId}/reoptimize`, {
+        method: 'POST'
+      });
+      if (response.ok) {
+        const result = await response.json();
+        await loadDeckDetails(deckId);
+        await refreshDeckInstances();
+        setSuccessMessage(`Deck reoptimized! ${result.reservedCount} cards reserved.`);
+        setTimeout(() => setSuccessMessage(''), 3000);
+      } else {
+        alert('Failed to reoptimize deck');
+      }
+    } catch (error) {
+      console.error('Failed to reoptimize deck:', error);
+      alert('Error reoptimizing deck');
     }
   };
 
@@ -501,19 +566,29 @@ export const InventoryTab = ({
             <div className="pt-3 border-t border-slate-700 mt-3">
               <h3 className="text-sm font-semibold text-teal-300 mb-2">🎴 Decks</h3>
               {deckInstances.map((deck) => {
-                const isSelected = selectedFolder === `deck-${deck.id}`;
+                const isDeckSelected = selectedDeck?.id === deck.id;
+                const totalCards = (deck.cards || []).reduce((sum, c) => sum + (c.quantity || 1), 0);
                 return (
                   <button
                     key={`deck-${deck.id}`}
-                    onClick={() => setSelectedFolder(isSelected ? null : `deck-${deck.id}`)}
+                    onClick={() => {
+                      if (isDeckSelected) {
+                        setSelectedDeck(null);
+                        setDeckDetails(null);
+                      } else {
+                        setSelectedDeck(deck);
+                        setSelectedFolder(null);
+                        loadDeckDetails(deck.id);
+                      }
+                    }}
                     className={`w-full text-left p-3 rounded-lg transition-colors ${
-                      isSelected
+                      isDeckSelected
                         ? 'bg-green-600/40 border-l-4 border-green-400'
                         : 'bg-slate-800 border-l-4 border-transparent hover:bg-slate-700'
                     }`}
                   >
                     <div className="font-medium text-sm text-slate-100">{deck.name}</div>
-                    <div className="text-xs text-green-300">{deck.reserved_count} reserved</div>
+                    <div className="text-xs text-green-300">{deck.reserved_count}/{totalCards} reserved</div>
                     {deck.missing_count > 0 && (
                       <div className="text-xs text-yellow-400">{deck.missing_count} missing</div>
                     )}
@@ -533,8 +608,99 @@ export const InventoryTab = ({
         />
       )}
 
-      {/* RIGHT CONTENT - Cards */}
+      {/* RIGHT CONTENT - Cards or Deck Details */}
       <div className="flex-1 pb-24 md:pb-6 px-2 md:px-0">
+        {/* Deck Details View */}
+        {selectedDeck && deckDetails && (
+          <div className="space-y-4">
+            <button
+              onClick={() => {
+                setSelectedDeck(null);
+                setDeckDetails(null);
+              }}
+              className="text-teal-300 hover:text-teal-200 text-sm flex items-center gap-1 mb-2"
+            >
+              ← Back
+            </button>
+
+            <div className="bg-slate-800 rounded-lg border border-slate-600 p-4">
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h2 className="text-2xl font-bold text-teal-300">{selectedDeck.name}</h2>
+                  <p className="text-sm text-slate-400">{selectedDeck.format}</p>
+                  {deckDetails.totalCost > 0 && (
+                    <p className="text-sm text-green-400 font-semibold mt-1">Total Cost: ${deckDetails.totalCost?.toFixed(2) || '0.00'}</p>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => reoptimizeDeck(selectedDeck.id)}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm transition-colors"
+                    title="Re-optimize for cheapest cards"
+                  >
+                    🔄
+                  </button>
+                  <button
+                    onClick={() => releaseDeck(selectedDeck.id)}
+                    className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm transition-colors"
+                    title="Release deck and return cards"
+                  >
+                    Release
+                  </button>
+                </div>
+              </div>
+
+              {loadingDeckDetails ? (
+                <div className="text-center py-8">
+                  <div className="w-6 h-6 animate-spin mx-auto text-teal-400 border-2 border-teal-400 border-t-transparent rounded-full"></div>
+                </div>
+              ) : (
+                <>
+                  {/* Reserved Cards */}
+                  {deckDetails.reservations && deckDetails.reservations.length > 0 && (
+                    <div className="mb-4">
+                      <h3 className="text-lg font-semibold text-green-400 mb-2">✅ Reserved Cards ({deckDetails.reservedCount})</h3>
+                      <div className="bg-slate-900 rounded p-3 space-y-2 max-h-48 overflow-y-auto">
+                        {deckDetails.reservations.map((res, idx) => (
+                          <div key={idx} className="flex justify-between text-sm text-slate-300 bg-slate-800 p-2 rounded">
+                            <div>
+                              <span className="text-white font-medium">{res.quantity_reserved}x {res.name}</span>
+                              <span className="text-slate-500 ml-2">({res.set})</span>
+                              <span className="text-xs text-slate-600 ml-2">from {res.original_folder}</span>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-green-400">${(parseFloat(res.purchase_price || 0) * res.quantity_reserved).toFixed(2)}</div>
+                              <div className="text-xs text-slate-500">${parseFloat(res.purchase_price || 0).toFixed(2)} each</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Missing Cards */}
+                  {deckDetails.missingCards && deckDetails.missingCards.length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-semibold text-yellow-400 mb-2">❌ Missing Cards ({deckDetails.missingCount})</h3>
+                      <div className="bg-slate-900 rounded p-3 space-y-2 max-h-48 overflow-y-auto">
+                        {deckDetails.missingCards.map((missing, idx) => (
+                          <div key={idx} className="flex justify-between items-center text-sm text-slate-300 bg-slate-800 p-2 rounded">
+                            <span className="text-white">{missing.quantity_needed}x {missing.card_name}</span>
+                            <span className="text-xs text-slate-500">{missing.set_code}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Regular Inventory View */}
+        {!selectedDeck &&
+        {!selectedDeck && <>
         {/* Tabs and View Mode */}
         <div className="flex flex-col md:flex-row gap-3 md:gap-4 mb-6 border-b border-slate-700 pb-4 items-start md:items-center justify-between">
           <div className="flex gap-2 w-full md:w-auto">
