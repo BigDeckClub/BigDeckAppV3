@@ -648,8 +648,8 @@ export const DeckTab = ({ onDeckCreatedOrDeleted }) => {
                           e.stopPropagation();
                           setEditingDeck(deck.id);
                         }}
-                        className="text-slate-400 hover:text-teal-300 transition-colors"
-                        title="Edit"
+                        className="text-slate-400 hover:text-teal-400 transition-colors bg-slate-700 hover:bg-slate-600 p-1.5 rounded"
+                        title="Edit deck name"
                       >
                         <Edit2 className="w-4 h-4" />
                       </button>
