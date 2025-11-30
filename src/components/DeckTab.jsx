@@ -643,10 +643,11 @@ export const DeckTab = ({ onDeckCreatedOrDeleted }) => {
                           e.stopPropagation();
                           previewCopyToDeck(deck);
                         }}
-                        className="text-slate-400 hover:text-green-400 transition-colors"
-                        title="Copy to Inventory Deck"
+                        className="text-slate-300 hover:text-green-400 hover:bg-green-600/20 px-2.5 py-1.5 rounded text-xs font-semibold transition-colors flex items-center gap-1.5"
+                        title="Copy to Inventory - Name your deck instance"
                       >
                         <Download className="w-4 h-4" />
+                        Copy
                       </button>
                       <button
                         onClick={(e) => {
