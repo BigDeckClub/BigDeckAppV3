@@ -98,6 +98,10 @@ export const InventoryTab = ({
       if (response.ok) {
         const data = await response.json();
         setDeckDetailsCache(prev => ({ ...prev, [deckId]: data }));
+        // Expand missing cards section if there are missing cards
+        if (data.missingCards && data.missingCards.length > 0) {
+          setExpandedMissingCards(prev => ({ ...prev, [deckId]: true }));
+        }
       } else {
         const error = await response.json();
         console.error('Error loading deck details:', error);
