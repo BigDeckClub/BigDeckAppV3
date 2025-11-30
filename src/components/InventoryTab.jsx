@@ -613,9 +613,14 @@ export const InventoryTab = ({
     }
   };
   
+  // Filter inventory to exclude 0 qty items (memoized)
+  const filteredInventory = useMemo(() => {
+    return inventory.filter(item => (item.quantity || 0) > 0);
+  }, [inventory]);
+
   // Group inventory by folder, then by card name (memoized)
   const groupedByFolder = useMemo(() => {
-    return inventory.reduce((acc, item) => {
+    return filteredInventory.reduce((acc, item) => {
       const folder = item.folder || 'Uncategorized';
       if (!acc[folder]) {
         acc[folder] = {};
@@ -626,19 +631,19 @@ export const InventoryTab = ({
       acc[folder][item.name].push(item);
       return acc;
     }, {});
-  }, [inventory]);
+  }, [filteredInventory]);
 
   
   // Legacy: group by card name for backwards compatibility (memoized)
   const groupedInventory = useMemo(() => {
-    return inventory.reduce((acc, item) => {
+    return filteredInventory.reduce((acc, item) => {
       if (!acc[item.name]) {
         acc[item.name] = [];
       }
       acc[item.name].push(item);
       return acc;
     }, {});
-  }, [inventory]);
+  }, [filteredInventory]);
   
   // Memoize in-stock and out-of-stock card lists with search filtering (exclude 0 qty items)
   const { inStockCards, outOfStockCards } = useMemo(() => {
