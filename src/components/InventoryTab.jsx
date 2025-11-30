@@ -1018,7 +1018,13 @@ export const InventoryTab = ({
               const reservedQty = items.reduce((sum, item) => sum + (parseInt(item.reserved_quantity) || 0), 0);
               return matchesSearch && (totalQty - reservedQty) > 0;
             });
-            const totalCards = inStockCards.length;
+            const uniqueCards = inStockCards.length;
+            const totalAvailableCards = inStockCards.reduce((sum, [_, items]) => {
+              return sum + items.reduce((itemSum, item) => {
+                const available = (item.quantity || 0) - (parseInt(item.reserved_quantity) || 0);
+                return itemSum + Math.max(0, available);
+              }, 0);
+            }, 0);
             const folderCost = Object.values(cardsByName).reduce((sum, items) => {
               return sum + items.reduce((s, item) => s + ((item.purchase_price || 0) * (item.quantity || 0)), 0);
             }, 0);
@@ -1066,7 +1072,7 @@ export const InventoryTab = ({
                   }`}
                 >
                   <div className="font-medium text-sm text-slate-100">{folderName}</div>
-                  <div className="text-xs text-teal-300">{totalCards} {totalCards === 1 ? 'card' : 'cards'}</div>
+                  <div className="text-xs text-teal-300">{totalAvailableCards} available • {uniqueCards} {uniqueCards === 1 ? 'unique' : 'unique'}</div>
                 </button>
               </div>
             );
@@ -1080,6 +1086,13 @@ export const InventoryTab = ({
                 const totalQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
                 return totalQty > 0;
               });
+              const uniqueCards = folderInStockCards.length;
+              const totalAvailableCards = folderInStockCards.reduce((sum, [_, items]) => {
+                return sum + items.reduce((itemSum, item) => {
+                  const available = (item.quantity || 0) - (parseInt(item.reserved_quantity) || 0);
+                  return itemSum + Math.max(0, available);
+                }, 0);
+              }, 0);
               const folderCost = Object.values(cardsByName).reduce((sum, items) => {
                 return sum + items.reduce((s, item) => s + ((item.purchase_price || 0) * (item.quantity || 0)), 0);
               }, 0);
