@@ -783,8 +783,8 @@ app.post('/api/decks', async (req, res) => {
   
   try {
     const result = await pool.query(
-      `INSERT INTO decks (name, format, description, cards, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, NOW(), NOW())
+      `INSERT INTO decks (name, format, description, cards, is_deck_instance, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, FALSE, NOW(), NOW())
        RETURNING *`,
       [name, format || 'Casual', description || '', '[]']
     );
