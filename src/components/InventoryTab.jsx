@@ -544,28 +544,26 @@ export const InventoryTab = ({
                           <div><span className="text-slate-400">Qty: </span><span className="text-teal-300 font-bold">{totalQtyInSet}</span></div>
                           <div><span className="text-slate-400">Avg: </span><span className="text-green-300 font-bold">${avgPrice.toFixed(2)}</span></div>
                         </div>
-                        {setItems.length > 1 && (
-                          <div className="space-y-0.5 max-h-16 overflow-y-auto">
-                            {setItems.map((item) => (
-                              <div key={item.id} className="text-[9px] text-slate-300 bg-slate-600/50 rounded px-1.5 py-0.5 flex justify-between items-center group hover:bg-slate-600 transition-colors">
-                                <span>{item.quantity}x @ ${parseFloat(item.purchase_price || 0).toFixed(2)}</span>
-                                <div className="flex items-center gap-1">
-                                  <span className="text-slate-400">{new Date(item.purchase_date).toLocaleDateString()}</span>
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      deleteInventoryItem(item.id);
-                                    }}
-                                    className="opacity-0 group-hover:opacity-100 transition-opacity text-red-400 hover:text-red-300 p-0.5"
-                                    title="Delete card - moves to unsorted"
-                                  >
-                                    <Trash2 className="w-3 h-3" />
-                                  </button>
-                                </div>
+                        <div className="space-y-0.5 max-h-16 overflow-y-auto">
+                          {setItems.map((item) => (
+                            <div key={item.id} className="text-[9px] text-slate-300 bg-slate-600/50 rounded px-1.5 py-0.5 flex justify-between items-center group hover:bg-slate-600 transition-colors">
+                              <span>{item.quantity}x @ ${parseFloat(item.purchase_price || 0).toFixed(2)}</span>
+                              <div className="flex items-center gap-1">
+                                <span className="text-slate-400">{new Date(item.purchase_date).toLocaleDateString()}</span>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    deleteInventoryItem(item.id);
+                                  }}
+                                  className="text-red-400 hover:text-red-300 p-0.5"
+                                  title="Delete card - moves to unsorted"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
                               </div>
-                            ))}
-                          </div>
-                        )}
+                            </div>
+                          ))}
+                        </div>
                         <button 
                           onClick={(e) => { e.stopPropagation(); startEditingItem(firstItem); }}
                           className="w-full text-[9px] text-teal-400 hover:text-teal-300 hover:bg-slate-600 py-0.5 rounded border border-slate-500"
