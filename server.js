@@ -956,9 +956,9 @@ app.post('/api/decks/:id/copy-to-inventory', async (req, res) => {
           ) as available_quantity
         FROM inventory i
         WHERE LOWER(TRIM(i.name)) = LOWER(TRIM($1))
-        HAVING COALESCE(i.quantity, 0) - COALESCE(
-          (SELECT SUM(dr.quantity_reserved) FROM deck_reservations dr WHERE dr.inventory_item_id = i.id), 0
-        ) > 0
+          AND COALESCE(i.quantity, 0) - COALESCE(
+            (SELECT SUM(dr.quantity_reserved) FROM deck_reservations dr WHERE dr.inventory_item_id = i.id), 0
+          ) > 0
         ORDER BY COALESCE(i.purchase_price, 999999) ASC
       `, [cardName]);
       
@@ -1144,9 +1144,9 @@ app.post('/api/deck-instances/:id/reoptimize', async (req, res) => {
           ) as available_quantity
         FROM inventory i
         WHERE LOWER(TRIM(i.name)) = LOWER(TRIM($1))
-        HAVING COALESCE(i.quantity, 0) - COALESCE(
-          (SELECT SUM(dr.quantity_reserved) FROM deck_reservations dr WHERE dr.inventory_item_id = i.id), 0
-        ) > 0
+          AND COALESCE(i.quantity, 0) - COALESCE(
+            (SELECT SUM(dr.quantity_reserved) FROM deck_reservations dr WHERE dr.inventory_item_id = i.id), 0
+          ) > 0
         ORDER BY COALESCE(i.purchase_price, 999999) ASC
       `, [cardName]);
       
