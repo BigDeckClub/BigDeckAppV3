@@ -132,6 +132,23 @@ export const InventoryTab = ({
     }
   };
 
+  // Remove card from deck reservation
+  const removeCardFromDeck = async (deckId, reservationId) => {
+    try {
+      const response = await fetch(`/api/deck-instances/${deckId}/remove-card`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reservation_id: reservationId })
+      });
+      if (response.ok) {
+        await loadDeckDetails(deckId);
+        await refreshDeckInstances();
+      }
+    } catch (error) {
+      console.error('Failed to remove card from deck:', error);
+    }
+  };
+
   // Reoptimize deck to find cheapest cards
   const reoptimizeDeck = async (deckId) => {
     try {
@@ -635,10 +652,11 @@ export const InventoryTab = ({
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                items.forEach(item => deleteInventoryItem(item.id));
+                const deckId = openDecks.find(id => `deck-${id}` === activeTab);
+                items.forEach(item => removeCardFromDeck(deckId, item.id));
               }}
               className="text-red-400 hover:text-red-300 p-0.5"
-              title="Delete all reserved"
+              title="Remove all from deck"
             >
               <X className="w-3 h-3" />
             </button>
@@ -673,10 +691,11 @@ export const InventoryTab = ({
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      items.forEach(item => deleteInventoryItem(item.id));
+                      const deckId = openDecks.find(id => `deck-${id}` === activeTab);
+                      items.forEach(item => removeCardFromDeck(deckId, item.id));
                     }}
                     className="text-red-400 hover:text-red-300 p-0.5 flex-shrink-0"
-                    title="Delete all reserved"
+                    title="Remove all from deck"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -725,7 +744,19 @@ export const InventoryTab = ({
                           {setItems.map((item) => (
                             <div key={item.id} className="text-[9px] text-slate-300 bg-slate-600/50 rounded px-1.5 py-0.5 flex justify-between items-center group hover:bg-slate-600 transition-colors">
                               <span>{item.quantity_reserved}x @ ${parseFloat(item.purchase_price || 0).toFixed(2)}</span>
-                              <span className="text-slate-400">{item.original_folder}</span>
+                              <div className="flex items-center gap-1">
+                                <span className="text-slate-400">{item.original_folder}</span>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const deckId = openDecks.find(id => `deck-${id}` === activeTab);
+                                    removeCardFromDeck(deckId, item.id);
+                                  }}
+                                  className="text-red-400 hover:text-red-300 p-0.5"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -770,7 +801,19 @@ export const InventoryTab = ({
                         {setItems.map((item) => (
                           <div key={item.id} className="text-[9px] text-slate-300 bg-slate-600/50 rounded px-1.5 py-0.5 flex justify-between items-center group hover:bg-slate-600 transition-colors">
                             <span>{item.quantity_reserved}x @ ${parseFloat(item.purchase_price || 0).toFixed(2)}</span>
-                            <span className="text-slate-400">{item.original_folder}</span>
+                            <div className="flex items-center gap-1">
+                              <span className="text-slate-400">{item.original_folder}</span>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const deckId = openDecks.find(id => `deck-${id}` === activeTab);
+                                  removeCardFromDeck(deckId, item.id);
+                                }}
+                                className="text-red-400 hover:text-red-300 p-0.5"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
                           </div>
                         ))}
                       </div>
