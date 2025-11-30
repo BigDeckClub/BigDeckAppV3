@@ -190,16 +190,16 @@ export const CardGroup = memo(function CardGroup({
         
         <div className="grid grid-cols-3 gap-2 text-center pt-2 border-t border-slate-700/50">
           <div className="space-y-1">
-            <div className="text-slate-500 text-[8px] md:text-xs font-semibold uppercase">Qty</div>
-            <div className={`font-bold text-[10px] md:text-xs ${totalQty === 0 ? 'text-slate-500' : 'text-teal-300'}`}>{totalQty}</div>
+            <div className="text-slate-500 text-[7px] md:text-[9px] font-semibold uppercase">Qty</div>
+            <div className={`font-bold text-[9px] md:text-[10px] ${totalQty === 0 ? 'text-slate-500' : 'text-teal-300'}`}>{totalQty}</div>
           </div>
           <div className="space-y-1">
-            <div className="text-slate-500 text-[8px] md:text-xs font-semibold uppercase">Cost</div>
-            <div className="font-bold text-[10px] md:text-xs text-blue-300">${avgPrice.toFixed(2)}</div>
+            <div className="text-slate-500 text-[7px] md:text-[9px] font-semibold uppercase">Cost</div>
+            <div className="font-bold text-[9px] md:text-[10px] text-blue-300">${avgPrice.toFixed(2)}</div>
           </div>
           <div className="space-y-1">
-            <div className="text-slate-500 text-[8px] md:text-xs font-semibold uppercase">Total</div>
-            <div className="font-bold text-[10px] md:text-xs text-amber-400">${formatTotal(totalValue)}</div>
+            <div className="text-slate-500 text-[7px] md:text-[9px] font-semibold uppercase">Total</div>
+            <div className="font-bold text-[9px] md:text-[10px] text-amber-400">${formatTotal(totalValue)}</div>
           </div>
         </div>
       </div>
@@ -231,7 +231,7 @@ export const CardGroup = memo(function CardGroup({
               <div className="flex items-center gap-3">
                 <h3 className="text-sm font-semibold text-slate-50 break-words">{cardName}</h3>
               </div>
-                <div className="flex gap-6 text-sm mt-2">
+                <div className="flex gap-6 text-xs mt-2">
                   <div><span className="text-slate-400">Qty:</span> <span className={`ml-1 font-semibold ${totalQty === 0 ? 'text-slate-500' : 'text-teal-300'}`}>{totalQty}</span></div>
                   <div><span className="text-slate-400">Available:</span> <span className="ml-1 text-green-400 font-semibold">{available}</span></div>
                   <div><span className="text-slate-400">Cost/ea:</span> <span className="ml-1 text-blue-300 font-semibold">${avgPrice.toFixed(2)}</span></div>
