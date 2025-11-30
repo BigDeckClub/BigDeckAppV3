@@ -40,6 +40,11 @@ export const AnalyticsTab = ({ inventory }) => {
 
   // Calculate analytics
   const totalCards = inventory.reduce((sum, item) => sum + (item.quantity || 0), 0);
+  const totalAvailable = inventory.reduce((sum, item) => {
+    const qty = item.quantity || 0;
+    const reserved = parseInt(item.reserved_quantity) || 0;
+    return sum + Math.max(0, qty - reserved);
+  }, 0);
   const totalValue = inventory.reduce((sum, item) => sum + ((item.quantity || 0) * (parseFloat(item.purchase_price) || 0)), 0);
   const uniqueCards = inventory.length;
   const avgPricePerCard = uniqueCards > 0 ? (inventory.reduce((sum, item) => sum + (parseFloat(item.purchase_price) || 0), 0) / uniqueCards).toFixed(2) : 0;
