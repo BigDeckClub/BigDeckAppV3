@@ -15,7 +15,7 @@ import { SalesHistoryTab } from "./components/SalesHistoryTab";
 import { PriceCacheProvider, usePriceCache } from "./context/PriceCacheContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { LoginForm } from "./components/LoginForm";
-import { LogoutButton } from "./components/LogoutButton";
+import { UserDropdown } from "./components/UserDropdown";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { useApi } from "./hooks/useApi";
 
@@ -350,7 +350,7 @@ function MTGInventoryTrackerContent() {
               Sales
             </button>
             <div className="ml-auto">
-              <LogoutButton />
+              <UserDropdown />
             </div>
           </div>
         </div>
