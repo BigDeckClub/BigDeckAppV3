@@ -1,67 +1,83 @@
-import React, { createContext, useState, useEffect, useMemo } from 'react';
+import React, { createContext, useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
 export const AuthContext = createContext();
 
-let supabase = null;
+let supabaseInstance = null;
 
-function getSupabaseClient() {
-  if (supabase) return supabase;
+const initSupabase = () => {
+  if (supabaseInstance) return supabaseInstance;
   
-  const url = import.meta.env.VITE_SUPABASE_URL;
-  const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
-  
-  if (!url || !key) {
-    console.error('Missing Supabase configuration');
+  try {
+    const url = import.meta.env.VITE_SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+    const key = import.meta.env.VITE_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+    
+    if (!url || !key) {
+      console.error('Supabase config missing:', { hasUrl: !!url, hasKey: !!key });
+      return null;
+    }
+    
+    supabaseInstance = createClient(url, key);
+    return supabaseInstance;
+  } catch (err) {
+    console.error('Failed to initialize Supabase:', err);
     return null;
   }
-  
-  supabase = createClient(url, key);
-  return supabase;
-}
+};
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const supabaseClient = useMemo(() => getSupabaseClient(), []);
+  const [supabaseClient] = useState(() => initSupabase());
 
   useEffect(() => {
     if (!supabaseClient) {
-      console.error('Supabase client not initialized');
+      console.error('Supabase client is not available');
       setLoading(false);
       return;
     }
 
-    // Check current session
-    supabaseClient.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user || null);
-      setLoading(false);
-    }).catch(err => {
-      console.error('Error getting session:', err);
-      setLoading(false);
-    });
+    let mounted = true;
 
-    // Listen for auth changes
+    const initAuth = async () => {
+      try {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (mounted) {
+          setUser(session?.user || null);
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error('Error initializing auth:', err);
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    initAuth();
+
     const { data: { subscription } } = supabaseClient.auth.onAuthStateChange(
       (event, session) => {
-        setUser(session?.user || null);
+        if (mounted) {
+          setUser(session?.user || null);
+        }
       }
     );
 
-    return () => subscription?.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription?.unsubscribe();
+    };
   }, [supabaseClient]);
 
   const login = async (email, password) => {
     if (!supabaseClient) throw new Error('Supabase not initialized');
     try {
       const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-      if (error) {
-        console.error('Supabase login error:', error);
-        throw error;
-      }
+      if (error) throw error;
       return data;
     } catch (err) {
-      console.error('Login failed:', err);
+      console.error('Login error:', err);
       throw err;
     }
   };
@@ -70,13 +86,10 @@ export function AuthProvider({ children }) {
     if (!supabaseClient) throw new Error('Supabase not initialized');
     try {
       const { data, error } = await supabaseClient.auth.signUp({ email, password });
-      if (error) {
-        console.error('Supabase signup error:', error);
-        throw error;
-      }
+      if (error) throw error;
       return data;
     } catch (err) {
-      console.error('Signup failed:', err);
+      console.error('Signup error:', err);
       throw err;
     }
   };
