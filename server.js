@@ -87,7 +87,7 @@ pool.on('error', (err, client) => {
 });
 
 pool.on('connect', () => {
-  console.log('[DB] ✓ New client connected to pool');
+  // Silent success - no need to log every connection
 });
 
 // ========== DATABASE INITIALIZATION ==========
@@ -297,31 +297,31 @@ async function initializeDatabase() {
     await pool.query(`
       CREATE INDEX IF NOT EXISTS idx_inventory_name_lower 
       ON inventory(LOWER(TRIM(name)));
-    `).catch(err => console.log('[DB] Index idx_inventory_name_lower error:', err.code, err.message));
+    `).catch(() => {});
 
     // Index for deck reservation lookups by deck
     await pool.query(`
       CREATE INDEX IF NOT EXISTS idx_deck_reservations_deck_id 
       ON deck_reservations(deck_id);
-    `).catch(err => console.log('[DB] Index idx_deck_reservations_deck_id error:', err.code, err.message));
+    `).catch(() => {});
 
     // Index for deck reservation lookups by inventory item
     await pool.query(`
       CREATE INDEX IF NOT EXISTS idx_deck_reservations_inventory_id 
       ON deck_reservations(inventory_item_id);
-    `).catch(err => console.log('[DB] Index idx_deck_reservations_inventory_id error:', err.code, err.message));
+    `).catch(() => {});
 
     // Index for inventory folder filtering
     await pool.query(`
       CREATE INDEX IF NOT EXISTS idx_inventory_folder 
       ON inventory(folder);
-    `).catch(err => console.log('[DB] Index idx_inventory_folder error:', err.code, err.message));
+    `).catch(() => {});
 
     // Index for deck instances lookup
     await pool.query(`
       CREATE INDEX IF NOT EXISTS idx_decks_is_instance 
       ON decks(is_deck_instance);
-    `).catch(err => console.log('[DB] Index idx_decks_is_instance error:', err.code, err.message));
+    `).catch(() => {});
 
     console.log('[DB] ✓ Database initialized successfully');
   } catch (err) {
@@ -385,10 +385,8 @@ async function fetchRetry(url, options = {}, retries = 2) {
     return response;
   } catch (err) {
     if (retries > 0) {
-      console.log(`[FETCH] Retry ${3 - retries}/2 for ${url}`);
       return fetchRetry(url, options, retries - 1);
     }
-    console.error(`[FETCH] Failed after retries: ${url}`);
     return null;
   }
 }
@@ -497,11 +495,8 @@ app.get('/api/prices/:cardName/:setCode', priceLimiter, async (req, res) => {
   // Check cache first
   const cachedResult = getCachedPrice(cacheKey);
   if (cachedResult) {
-    console.log(`[PRICES] Cache hit for: card="${cardName}", set="${setCode}"`);
     return res.status(200).json(cachedResult);
   }
-  
-  console.log(`[PRICES] Lookup request: card="${cardName}", set="${setCode}"`);
   
   try {
     let tcgPrice = 'N/A';
@@ -511,18 +506,15 @@ app.get('/api/prices/:cardName/:setCode', priceLimiter, async (req, res) => {
     
     if (setCode && setCode.length > 0) {
       const exactUrl = `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(cardName)}&set=${setCode.toLowerCase()}`;
-      console.log(`[PRICES] Trying Scryfall exact match: ${exactUrl}`);
       scryfallRes = await fetchRetry(exactUrl);
       
       if (!scryfallRes?.ok) {
-        console.log(`[PRICES] Exact match failed, trying fuzzy search...`);
         scryfallRes = null;
       }
     }
     
     if (!scryfallRes) {
       const fuzzyUrl = `https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(cardName)}`;
-      console.log(`[PRICES] Trying Scryfall fuzzy search: ${fuzzyUrl}`);
       scryfallRes = await fetchRetry(fuzzyUrl);
     }
     
@@ -532,10 +524,9 @@ app.get('/api/prices/:cardName/:setCode', priceLimiter, async (req, res) => {
         const price = parseFloat(cardData.prices?.usd);
         if (price > 0) {
           tcgPrice = `$${price.toFixed(2)}`;
-          console.log(`[PRICES] ✓ TCG price found: ${tcgPrice}`);
         }
       } catch (parseErr) {
-        console.error(`[PRICES] ✗ Failed to parse Scryfall response:`, parseErr.message);
+        console.error(`[PRICES] Failed to parse Scryfall response:`, parseErr.message);
       }
     }
     
@@ -548,13 +539,10 @@ app.get('/api/prices/:cardName/:setCode', priceLimiter, async (req, res) => {
           const ckPriceResult = mtgjsonService.getCardKingdomPriceByScryfallId(scryfallId);
           if (ckPriceResult) {
             ckPrice = ckPriceResult;
-            console.log(`[PRICES] ✓ CK price found via MTGJSON: ${ckPrice}`);
-          } else {
-            console.log(`[PRICES] No CK price found in MTGJSON for Scryfall ID: ${scryfallId}`);
           }
         }
       } catch (err) {
-        console.error(`[PRICES] ✗ Failed to get CK price from MTGJSON:`, err.message);
+        console.error(`[PRICES] Failed to get CK price from MTGJSON:`, err.message);
       }
     }
     
