@@ -33,7 +33,7 @@ export const InventoryTab = ({
   updateInventoryItem,
   deleteInventoryItem,
   handleSearch,
-  onDeckInstancesRefresh
+  deckRefreshTrigger
 }) => {
   const [expandedFolders, setExpandedFolders] = useState({});
   const [newFolderName, setNewFolderName] = useState('');
@@ -135,14 +135,10 @@ export const InventoryTab = ({
     }
   };
 
-  // Initial load of deck instances
+  // Initial load and refresh of deck instances
   useEffect(() => {
     refreshDeckInstances();
-    // Pass refresh function to parent so DeckTab can trigger updates
-    if (onDeckInstancesRefresh) {
-      onDeckInstancesRefresh(refreshDeckInstances);
-    }
-  }, [onDeckInstancesRefresh]);
+  }, [deckRefreshTrigger]);
 
   // Collapse all cards when switching tabs or folders
   useEffect(() => {
