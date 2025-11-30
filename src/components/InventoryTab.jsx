@@ -372,6 +372,43 @@ export const InventoryTab = ({
     }
   };
 
+  // Auto-fill a single card type from inventory (oldest and cheapest first)
+  const autoFillSingleCard = async (decklistCard, needed, deckId) => {
+    try {
+      setSuccessMessage(`Auto-filling ${needed}x ${decklistCard.name}...`);
+      
+      // Find matching inventory items, sorted by date (oldest first) then price (cheapest first)
+      const matchingItems = (inventory || [])
+        .filter(i => i.name.toLowerCase() === decklistCard.name.toLowerCase() && (i.quantity || 0) > 0)
+        .sort((a, b) => {
+          const dateA = new Date(a.created_at || 0).getTime();
+          const dateB = new Date(b.created_at || 0).getTime();
+          if (dateA !== dateB) return dateA - dateB; // Oldest first
+          return (parseFloat(a.purchase_price) || 999) - (parseFloat(b.purchase_price) || 999); // Cheapest first
+        });
+      
+      let added = 0;
+      let stillNeeded = needed;
+      for (const item of matchingItems) {
+        if (stillNeeded <= 0) break;
+        const qtyToAdd = Math.min(stillNeeded, item.quantity || 0);
+        if (qtyToAdd > 0) {
+          await moveCardSkuToDeck({ ...item, quantity: qtyToAdd }, deckId);
+          added++;
+          stillNeeded -= qtyToAdd;
+        }
+      }
+      
+      setSuccessMessage(`✅ Added ${added} item(s) to deck`);
+      await loadDeckDetails(deckId, true);
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (error) {
+      console.error('Failed to auto-fill card:', error);
+      setSuccessMessage(`Error: ${error.message}`);
+      setTimeout(() => setSuccessMessage(''), 5000);
+    }
+  };
+
   // Auto-fill missing cards from inventory (oldest and cheapest first)
   const autoFillMissingCards = async (deck, deckId) => {
     try {
@@ -1625,11 +1662,10 @@ export const InventoryTab = ({
                       <div className="flex gap-2">
                         <button
                           onClick={() => autoFillMissingCards(deck, deck.id)}
-                          className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded text-sm transition-colors flex items-center gap-1"
+                          className="bg-teal-600 hover:bg-teal-500 text-white p-2 rounded transition-colors flex items-center"
                           title="Auto-fill missing cards from inventory (oldest & cheapest first)"
                         >
                           <Wand2 className="w-4 h-4" />
-                          Auto-Fill
                         </button>
                         <button
                           onClick={() => releaseDeck(deck.id)}
@@ -1684,8 +1720,17 @@ export const InventoryTab = ({
                               if (needed === 0) return null;
                               return (
                                 <div key={idx} className="flex justify-between items-center text-sm bg-slate-800 p-2 rounded mb-1">
-                                  <span className="text-white">{needed}x {card.name}</span>
-                                  <span className="text-xs text-slate-500">{card.set || 'Unknown'}</span>
+                                  <div className="flex-1">
+                                    <span className="text-white">{needed}x {card.name}</span>
+                                    <span className="text-xs text-slate-500 ml-2">{card.set || 'Unknown'}</span>
+                                  </div>
+                                  <button
+                                    onClick={() => autoFillSingleCard(card, needed, deck.id)}
+                                    className="bg-teal-600 hover:bg-teal-500 text-white p-1 rounded transition-colors flex items-center ml-2"
+                                    title="Auto-fill this card from inventory"
+                                  >
+                                    <Wand2 className="w-3 h-3" />
+                                  </button>
                                 </div>
                               );
                             }).filter(Boolean)}
