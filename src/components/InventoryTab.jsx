@@ -323,6 +323,60 @@ export const InventoryTab = ({
     }
   };
 
+  // Move card from one deck to another
+  const moveCardBetweenDecks = async (deckCardData, targetDeckId) => {
+    try {
+      const sourceDeckId = deckCardData.deck_id;
+      if (sourceDeckId === targetDeckId) {
+        return; // Same deck, do nothing
+      }
+
+      const reservationId = deckCardData.id;
+      const quantity = deckCardData.quantity_reserved;
+      const inventoryItemId = deckCardData.inventory_item_id;
+      
+      // Show immediate feedback
+      setSuccessMessage(`Moving card to deck...`);
+      
+      // Remove from source deck
+      const removeResponse = await fetch(`/api/deck-instances/${sourceDeckId}/remove-card`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reservation_id: reservationId, quantity: quantity })
+      });
+      
+      if (!removeResponse.ok) {
+        throw new Error('Failed to remove card from source deck');
+      }
+      
+      // Add to target deck
+      const addResponse = await fetch(`/api/deck-instances/${targetDeckId}/add-card`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ inventory_item_id: inventoryItemId, quantity: quantity })
+      });
+      
+      if (!addResponse.ok) {
+        throw new Error('Failed to add card to target deck');
+      }
+      
+      // Refresh both decks
+      await loadDeckDetails(sourceDeckId, true);
+      await loadDeckDetails(targetDeckId, true);
+      await refreshDeckInstances();
+      if (onLoadInventory) {
+        await onLoadInventory();
+      }
+      
+      setSuccessMessage(`Card moved to deck`);
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (error) {
+      console.error('Failed to move card between decks:', error);
+      setSuccessMessage(`Error: ${error.message}`);
+      setTimeout(() => setSuccessMessage(''), 5000);
+    }
+  };
+
   // Initial load and refresh of deck instances
   useEffect(() => {
     refreshDeckInstances();
@@ -1151,8 +1205,16 @@ export const InventoryTab = ({
                       e.stopPropagation();
                       e.currentTarget.classList.remove('bg-green-700/60', 'border-green-300');
                       try {
-                        const skuData = JSON.parse(e.dataTransfer.getData('skuData'));
-                        moveCardSkuToDeck(skuData, deck.id);
+                        const deckCardDataStr = e.dataTransfer.getData('deckCardData');
+                        const skuDataStr = e.dataTransfer.getData('skuData');
+                        
+                        if (deckCardDataStr) {
+                          const deckCardData = JSON.parse(deckCardDataStr);
+                          moveCardBetweenDecks(deckCardData, deck.id);
+                        } else if (skuDataStr) {
+                          const skuData = JSON.parse(skuDataStr);
+                          moveCardSkuToDeck(skuData, deck.id);
+                        }
                       } catch (err) {
                         console.error('Error adding card to deck from sidebar:', err);
                       }
