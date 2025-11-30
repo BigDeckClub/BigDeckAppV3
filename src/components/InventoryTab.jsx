@@ -1188,10 +1188,10 @@ export const InventoryTab = ({
                         moveCardToFolder(cardName, folder);
                       }
                     }}
-                    className={`w-full text-left p-3 rounded-lg transition-colors ${
+                    className={`w-full text-left p-3 rounded-lg transition-all duration-300 border-l-4 ${
                       isSelected
-                        ? 'bg-teal-600/40 border-l-4 border-teal-400'
-                        : 'bg-slate-800 border-l-4 border-transparent hover:bg-slate-700'
+                        ? 'bg-gradient-to-r from-teal-600/50 to-cyan-600/30 border-l-teal-400 shadow-md shadow-teal-500/10'
+                        : 'bg-gradient-to-r from-slate-700/50 to-slate-800/50 border-l-transparent hover:from-slate-600/50 hover:to-slate-700/50 hover:shadow-md hover:shadow-slate-600/20'
                     }`}
                   >
                     <div className="font-medium text-sm text-slate-100">{folder}</div>
@@ -1315,35 +1315,40 @@ export const InventoryTab = ({
       {/* RIGHT CONTENT - Cards or Deck Details */}
       <div className="flex-1 pb-24 md:pb-6 px-4 md:px-6 md:ml-0">
         {/* Search Bar */}
-        <div className="mb-6">
-          <input
-            type="text"
-            placeholder="Search inventory by card name..."
-            value={inventorySearch}
-            onChange={(e) => setInventorySearch(e.target.value)}
-            className="w-full px-4 py-2.5 bg-slate-800 border border-slate-600 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:border-teal-400 focus:ring-1 focus:ring-teal-400 transition-colors font-medium"
-          />
+        <div className="mb-8">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search inventory by card name..."
+              value={inventorySearch}
+              onChange={(e) => setInventorySearch(e.target.value)}
+              className="w-full px-5 py-3 bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 hover:border-teal-500 focus:border-teal-400 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-opacity-30 transition-all duration-300 font-medium shadow-lg shadow-slate-900/50"
+            />
+            <svg className="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
         </div>
 
         {/* Tabs and View Mode */}
         <div className="flex flex-col md:flex-row gap-3 md:gap-4 mb-6 border-b border-slate-700 pb-4 items-start md:items-center justify-between">
-          <div className="flex gap-2 w-full md:w-auto overflow-x-auto flex-wrap">
+          <div className="flex gap-1 w-full md:w-auto overflow-x-auto flex-wrap bg-slate-800/50 rounded-lg p-1.5 border border-slate-700">
             <button
               onClick={() => { setActiveTab('all'); setSidebarOpen(false); }}
-              className={`px-3 md:px-4 py-2 text-sm md:text-base font-medium transition-colors whitespace-nowrap ${
+              className={`px-4 py-2 text-sm md:text-base font-medium transition-all duration-300 whitespace-nowrap rounded-lg ${
                 activeTab === 'all'
-                  ? 'text-teal-300 border-b-2 border-teal-400'
-                  : 'text-slate-400 hover:text-slate-300'
+                  ? 'bg-gradient-to-r from-teal-600 to-teal-700 text-white shadow-lg shadow-teal-500/30'
+                  : 'text-slate-300 hover:text-slate-100 hover:bg-slate-700/30'
               }`}
             >
               All Cards
             </button>
             <button
               onClick={() => { setActiveTab('unsorted'); setSidebarOpen(false); }}
-              className={`px-3 md:px-4 py-2 text-sm md:text-base font-medium transition-colors whitespace-nowrap ${
+              className={`px-4 py-2 text-sm md:text-base font-medium transition-all duration-300 whitespace-nowrap rounded-lg ${
                 activeTab === 'unsorted'
-                  ? 'text-teal-300 border-b-2 border-teal-400'
-                  : 'text-slate-400 hover:text-slate-300'
+                  ? 'bg-gradient-to-r from-teal-600 to-teal-700 text-white shadow-lg shadow-teal-500/30'
+                  : 'text-slate-300 hover:text-slate-100 hover:bg-slate-700/30'
               }`}
             >
               Unsorted
@@ -1380,10 +1385,10 @@ export const InventoryTab = ({
                 <button
                   type="button"
                   onClick={() => setActiveTab(folderName)}
-                  className={`px-3 md:px-4 py-2 text-sm md:text-base font-medium transition-colors whitespace-nowrap cursor-grab active:cursor-grabbing ${
+                  className={`px-4 py-2 text-sm md:text-base font-medium transition-all duration-300 whitespace-nowrap cursor-grab active:cursor-grabbing rounded-lg ${
                     activeTab === folderName
-                      ? 'text-teal-300 border-b-2 border-teal-400'
-                      : 'text-slate-400 hover:text-slate-300'
+                      ? 'bg-gradient-to-r from-cyan-600 to-teal-600 text-white shadow-lg shadow-cyan-500/30'
+                      : 'text-slate-300 hover:text-slate-100 hover:bg-slate-700/30'
                   }`}
                 >
                   📁 {folderName}
@@ -1440,10 +1445,10 @@ export const InventoryTab = ({
                 >
                   <button
                     onClick={() => setActiveTab(`deck-${deckId}`)}
-                    className={`px-3 md:px-4 py-2 text-sm md:text-base font-medium transition-colors whitespace-nowrap cursor-grab active:cursor-grabbing ${
+                    className={`px-4 py-2 text-sm md:text-base font-medium transition-all duration-300 whitespace-nowrap cursor-grab active:cursor-grabbing rounded-lg ${
                       activeTab === `deck-${deckId}`
-                        ? 'text-green-300 border-b-2 border-green-400'
-                        : 'text-slate-400 hover:text-slate-300'
+                        ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg shadow-green-500/30'
+                        : 'text-slate-300 hover:text-slate-100 hover:bg-slate-700/30'
                     }`}
                   >
                     {deck.name}
@@ -1461,13 +1466,13 @@ export const InventoryTab = ({
           </div>
           
           {/* View Mode Toggle */}
-          <div className="flex gap-2">
+          <div className="flex gap-1 bg-slate-800/50 rounded-lg p-1.5 border border-slate-700">
             <button
               onClick={() => setViewMode('card')}
-              className={`p-2 rounded transition-colors ${
+              className={`p-2 rounded-lg transition-all duration-300 ${
                 viewMode === 'card'
-                  ? 'bg-teal-600 text-white'
-                  : 'bg-slate-800 text-slate-400 hover:text-slate-300'
+                  ? 'bg-gradient-to-br from-teal-600 to-teal-700 text-white shadow-lg shadow-teal-500/30'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/30'
               }`}
               title="Card View"
             >
@@ -1475,10 +1480,10 @@ export const InventoryTab = ({
             </button>
             <button
               onClick={() => setViewMode('list')}
-              className={`p-2 rounded transition-colors ${
+              className={`p-2 rounded-lg transition-all duration-300 ${
                 viewMode === 'list'
-                  ? 'bg-teal-600 text-white'
-                  : 'bg-slate-800 text-slate-400 hover:text-slate-300'
+                  ? 'bg-gradient-to-br from-teal-600 to-teal-700 text-white shadow-lg shadow-teal-500/30'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/30'
               }`}
               title="List View"
             >
