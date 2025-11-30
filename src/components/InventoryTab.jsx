@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import PropTypes from 'prop-types';
-import { Plus, Trash2, X, ChevronDown, ChevronRight, Grid3X3, List, Menu, Wand2 } from 'lucide-react';
+import { Plus, Trash2, X, ChevronDown, ChevronRight, Grid3X3, List, Menu, Wand2, DollarSign } from 'lucide-react';
 import { usePriceCache } from "../context/PriceCacheContext";
 import { CardGroup } from './inventory/CardGroup';
+import { SellModal } from './SellModal';
 
 // Simple normalize functions
 const normalizeCardName = (name) => (name || "").trim();
@@ -35,7 +36,8 @@ export const InventoryTab = ({
   deleteInventoryItem,
   handleSearch,
   deckRefreshTrigger,
-  onLoadInventory
+  onLoadInventory,
+  onSell
 }) => {
   const [expandedFolders, setExpandedFolders] = useState({});
   const [newFolderName, setNewFolderName] = useState('');
@@ -53,6 +55,8 @@ export const InventoryTab = ({
   const [draggedTabData, setDraggedTabData] = useState(null); // {type: 'folder'|'deck', name|id, index}
   const [expandedMissingCards, setExpandedMissingCards] = useState({}); // Track which decks have missing cards expanded
   const [inventorySearch, setInventorySearch] = useState(''); // Search filter for inventory
+  const [showSellModal, setShowSellModal] = useState(false);
+  const [sellModalData, setSellModalData] = useState(null);
 
   // Debounced inventory refresh to prevent excessive API calls
   const debouncedTimeoutRef = React.useRef(null);
@@ -1417,6 +1421,21 @@ export const InventoryTab = ({
                           title="Auto-fill missing cards from inventory (oldest & cheapest first)"
                         >
                           <Wand2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSellModalData({
+                              itemType: 'deck',
+                              itemId: deck.id,
+                              itemName: deck.name,
+                              purchasePrice: parseFloat(deckDetails.totalCost) || 0
+                            });
+                            setShowSellModal(true);
+                          }}
+                          className="bg-green-600 hover:bg-green-500 text-white p-2 rounded transition-colors flex items-center"
+                          title="Sell deck and track profit"
+                        >
+                          <DollarSign className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => releaseDeck(deck.id)}
