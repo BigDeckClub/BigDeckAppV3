@@ -1727,29 +1727,24 @@ export const InventoryTab = ({
               const folderData = groupedByFolder[activeTab] || {};
               const folderCards = Object.entries(folderData).filter(([cardName, items]) => {
                 const matchesSearch = inventorySearch === '' || cardName.toLowerCase().includes(inventorySearch.toLowerCase());
+                // Hide cards that have ANY reserved quantity (they're in a deck)
+                const hasAnyReserved = items.some(item => (parseInt(item.reserved_quantity) || 0) > 0);
                 const totalQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
                 const reservedQty = items.reduce((sum, item) => sum + (parseInt(item.reserved_quantity) || 0), 0);
-                return matchesSearch && (totalQty - reservedQty) > 0;
+                return matchesSearch && (totalQty - reservedQty) > 0 && !hasAnyReserved;
               });
-              // Count only available (unreserved) cards for stats
+              // Count only cards that have NO reserved quantity (not in any deck)
               const availableCardsStats = Object.entries(folderData).reduce((acc, [_, items]) => {
-                const hasAvailable = items.some(item => {
+                const hasAnyReserved = items.some(item => (parseInt(item.reserved_quantity) || 0) > 0);
+                const hasAvailable = !hasAnyReserved && items.some(item => {
                   const totalQty = item.quantity || 0;
-                  const reservedQty = parseInt(item.reserved_quantity) || 0;
-                  return (totalQty - reservedQty) > 0;
+                  return totalQty > 0;
                 });
                 if (hasAvailable) acc.uniqueCount++;
-                acc.totalCount += items.reduce((s, item) => {
-                  const totalQty = item.quantity || 0;
-                  const reservedQty = parseInt(item.reserved_quantity) || 0;
-                  return s + Math.max(0, totalQty - reservedQty);
-                }, 0);
-                acc.totalCost += items.reduce((s, item) => {
-                  const totalQty = item.quantity || 0;
-                  const reservedQty = parseInt(item.reserved_quantity) || 0;
-                  const availableQty = Math.max(0, totalQty - reservedQty);
-                  return s + ((item.purchase_price || 0) * availableQty);
-                }, 0);
+                if (!hasAnyReserved) {
+                  acc.totalCount += items.reduce((s, item) => s + (item.quantity || 0), 0);
+                  acc.totalCost += items.reduce((s, item) => s + ((item.purchase_price || 0) * (item.quantity || 0)), 0);
+                }
                 return acc;
               }, { uniqueCount: 0, totalCount: 0, totalCost: 0 });
               const uniqueCards = availableCardsStats.uniqueCount;
