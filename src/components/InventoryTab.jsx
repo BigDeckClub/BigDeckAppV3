@@ -993,7 +993,7 @@ export const InventoryTab = ({
       </button>
 
       {/* LEFT SIDEBAR - Folders */}
-      <div className={`fixed md:static left-0 w-64 flex-shrink-0 space-y-4 h-full overflow-y-auto bg-slate-900 md:bg-transparent z-30 transition-transform duration-300 md:px-0 px-4 md:pt-20 pt-20 ${
+      <div className={`fixed md:static left-0 w-64 flex-shrink-0 space-y-4 h-full overflow-y-auto bg-slate-900 md:bg-transparent z-30 transition-transform duration-300 md:px-0 px-4 md:pl-8 md:pt-16 pt-20 ${
         sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
       }`}>
         {/* Folder List */}
@@ -1313,7 +1313,7 @@ export const InventoryTab = ({
       )}
 
       {/* RIGHT CONTENT - Cards or Deck Details */}
-      <div className="flex-1 pb-24 md:pb-6 px-4 md:px-6 md:ml-0 pt-16">
+      <div className="flex-1 pb-24 md:pb-6 px-4 md:px-8 md:ml-0 pt-16">
         {/* Search Bar */}
         <div className="mb-10">
           <div className="relative">
