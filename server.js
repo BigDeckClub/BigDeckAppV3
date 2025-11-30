@@ -1744,35 +1744,40 @@ app.get('/api/sales', async (req, res) => {
 });
 
 // ========== SUPABASE AUTH PROXY ==========
-// Initialize Supabase client on server side
-const supabaseUrl = process.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY;
+// Initialize Supabase client with service role key (server-side auth operations)
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+// Create single Supabase instance for all auth operations
+const supabaseServer = supabaseUrl && supabaseServiceRoleKey 
+  ? createClient(supabaseUrl, supabaseServiceRoleKey)
+  : null;
 
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
+    
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password required' });
     }
 
-    if (!supabaseUrl || !supabaseAnonKey) {
-      console.error('[AUTH] Supabase not configured - URL:', supabaseUrl, 'Key exists:', !!supabaseAnonKey);
+    if (!supabaseServer) {
+      console.error('[AUTH] Supabase not configured');
       return res.status(500).json({ error: 'Supabase not configured' });
     }
 
-    console.log('[AUTH] Login attempt for:', email, 'with Supabase URL:', supabaseUrl);
-    const supabase = createClient(supabaseUrl, supabaseAnonKey);
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    console.log('[AUTH] Login attempt for:', email);
+    const { data, error } = await supabaseServer.auth.signInWithPassword({ email, password });
     
     if (error) {
-      console.error('[AUTH] Supabase login error:', error.message, error.status);
+      console.error('[AUTH] Login error:', error.message);
       return res.status(error.status || 401).json({ error: error.message });
     }
 
     console.log('[AUTH] Login successful for:', email);
     res.json(data);
   } catch (error) {
-    console.error('[AUTH] Login error:', error.message, error);
+    console.error('[AUTH] Login exception:', error.message);
     res.status(500).json({ error: error.message || 'Login failed' });
   }
 });
@@ -1780,29 +1785,61 @@ app.post('/api/auth/login', async (req, res) => {
 app.post('/api/auth/signup', async (req, res) => {
   try {
     const { email, password } = req.body;
+    
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password required' });
     }
 
-    if (!supabaseUrl || !supabaseAnonKey) {
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters' });
+    }
+
+    if (!supabaseServer) {
       console.error('[AUTH] Supabase not configured');
       return res.status(500).json({ error: 'Supabase not configured' });
     }
 
     console.log('[AUTH] Signup attempt for:', email);
-    const supabase = createClient(supabaseUrl, supabaseAnonKey);
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await supabaseServer.auth.signUp({ email, password });
     
     if (error) {
-      console.error('[AUTH] Supabase signup error:', error.message, error.status);
-      return res.status(error.status || 400).json({ error: error.message });
+      console.error('[AUTH] Signup error:', error.message);
+      return res.status(400).json({ error: error.message });
     }
 
     console.log('[AUTH] Signup successful for:', email);
     res.json(data);
   } catch (error) {
-    console.error('[AUTH] Signup error:', error.message, error);
+    console.error('[AUTH] Signup exception:', error.message);
     res.status(500).json({ error: error.message || 'Signup failed' });
+  }
+});
+
+// Get current session endpoint
+app.get('/api/auth/session', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.json({ user: null });
+    }
+    
+    const token = authHeader.split(' ')[1];
+    
+    if (!supabaseServer) {
+      return res.json({ user: null });
+    }
+
+    const { data: { user }, error } = await supabaseServer.auth.getUser(token);
+    
+    if (error || !user) {
+      return res.json({ user: null });
+    }
+    
+    res.json({ user });
+  } catch (err) {
+    console.error('[AUTH] Session error:', err.message);
+    res.json({ user: null });
   }
 });
 
