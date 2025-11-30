@@ -1448,12 +1448,18 @@ export const InventoryTab = ({
                       <div>
                         <h2 className="text-2xl font-bold text-green-300">{deck.name}</h2>
                         <p className="text-sm text-slate-400">{deck.format}</p>
+                        {deckDetails.originalDecklist && (
+                          <p className="text-sm text-cyan-400 mt-1">
+                            From: <span className="font-semibold">{deckDetails.originalDecklist.name}</span> ({deckDetails.originalDecklist.cardCount} cards)
+                          </p>
+                        )}
                         {deckDetails.totalCost > 0 && (
                           <p className="text-sm text-green-400 font-semibold mt-1">Total Cost: ${deckDetails.totalCost?.toFixed(2) || '0.00'}</p>
                         )}
                         <p className="text-sm text-slate-400 mt-1">
                           {deckDetails.reservedCount} reserved
                           {deckDetails.missingCount > 0 && <span className="text-yellow-400"> • {deckDetails.missingCount} missing</span>}
+                          {deckDetails.extraCount > 0 && <span className="text-blue-400"> • {deckDetails.extraCount} extras</span>}
                         </p>
                       </div>
                       <div className="flex gap-2">

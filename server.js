@@ -893,6 +893,15 @@ app.get('/api/deck-instances/:id/details', async (req, res) => {
     }
     const deck = deckResult.rows[0];
     
+    // Fetch original decklist if it exists
+    let originalDecklist = null;
+    if (deck.decklist_id) {
+      const decklistResult = await pool.query('SELECT id, name, cards FROM decks WHERE id = $1', [deck.decklist_id]);
+      if (decklistResult.rows.length > 0) {
+        originalDecklist = decklistResult.rows[0];
+      }
+    }
+    
     const reservationsResult = await pool.query(`
       SELECT dr.*, i.name, i.set, i.purchase_price, i.folder as original_folder, i.quantity as inventory_quantity
       FROM deck_reservations dr
@@ -920,13 +929,29 @@ app.get('/api/deck-instances/:id/details', async (req, res) => {
       missingCount += parseInt(m.quantity_needed) || 0;
     });
     
+    // Calculate extras (cards in deck not in original decklist)
+    const decklistCardNames = originalDecklist && originalDecklist.cards 
+      ? new Set(originalDecklist.cards.map(c => c.name.toLowerCase().trim()))
+      : new Set();
+    
+    const extraCount = reservationsResult.rows.filter(r => 
+      !decklistCardNames.has(r.name.toLowerCase().trim())
+    ).reduce((sum, r) => sum + parseInt(r.quantity_reserved || 0), 0);
+    
+    // Calculate original decklist card count
+    const decklistCardCount = originalDecklist && originalDecklist.cards
+      ? originalDecklist.cards.reduce((sum, c) => sum + (c.quantity || 1), 0)
+      : 0;
+    
     res.json({
       deck: deck,
       reservations: reservationsResult.rows,
       missingCards: missingResult.rows,
       totalCost: totalCost,
       reservedCount: reservedCount,
-      missingCount: missingCount
+      missingCount: missingCount,
+      originalDecklist: originalDecklist ? { id: originalDecklist.id, name: originalDecklist.name, cardCount: decklistCardCount } : null,
+      extraCount: extraCount
     });
   } catch (error) {
     console.error('[DECKS] Error fetching deck details:', error.message);
