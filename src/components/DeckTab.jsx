@@ -165,24 +165,32 @@ export const DeckTab = ({ onDeckCreatedOrDeleted }) => {
   };
 
   // Load decks from API
-  useEffect(() => {
-    loadDecks();
-  }, []);
-
   const loadDecks = async () => {
     try {
       setIsLoading(true);
       const response = await fetch(`${API_BASE}/decks`);
       if (response.ok) {
         const data = await response.json();
-        setDecks(data);
+        setDecks(Array.isArray(data) ? data : []);
+      } else {
+        console.error('Failed to load decks:', response.status);
+        setDecks([]);
       }
     } catch (error) {
       console.error('Failed to load decks:', error);
+      setDecks([]);
     } finally {
       setIsLoading(false);
     }
   };
+
+  // Load decks on mount
+  useEffect(() => {
+    loadDecks();
+    // Reload decks every 3 seconds to stay in sync
+    const interval = setInterval(loadDecks, 3000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Parse deck list text in MTG format (e.g., "4 Black Lotus" or "4x Black Lotus")
   const parseDeckList = (text) => {
