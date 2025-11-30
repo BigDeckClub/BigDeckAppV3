@@ -285,37 +285,6 @@ export const DeckTab = ({ onDeckCreatedOrDeleted }) => {
     }
   };
 
-  const createEmptyDeck = async () => {
-    if (!buildDeckName.trim()) {
-      alert('Please enter a deck name');
-      return;
-    }
-
-    try {
-      const response = await fetch(`${API_BASE}/decks`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: buildDeckName,
-          format: buildDeckFormat,
-          description: ''
-        })
-      });
-
-      if (!response.ok) throw new Error('Failed to create deck');
-
-      await loadDecks();
-      setBuildDeckName('');
-      setBuildDeckFormat('Standard');
-      setShowBuildDeck(false);
-      setSuccessMessage('Empty deck created!');
-      setTimeout(() => setSuccessMessage(''), 3000);
-    } catch (error) {
-
-      alert('Error creating deck');
-    }
-  };
-
   const deleteDeck = async (id) => {
     if (window.confirm('Are you sure you want to delete this deck?')) {
       try {
