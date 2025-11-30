@@ -22,7 +22,7 @@ BigDeck.app is a streamlined Magic: The Gathering inventory management system. I
 - **Pricing**: Real-time market prices from Scryfall API
 - **Two-tier Decks**: Decklists (templates) vs Deck Instances (inventory folders with reservations)
 
-## Latest Changes (November 30, 2025 - Two-Tier Deck System Complete)
+## Latest Changes (November 30, 2025 - Complete Deck & Inventory Integration)
 - ✅ **Two-tier deck system fully implemented** - Decklists (templates) in Decks tab, Deck instances (inventory) in Inventory tab
 - ✅ **Deck-to-Inventory workflow** - Copy decklists to create inventory decks with automatic cheapest-card reservation
 - ✅ **Event-driven deck refresh** - Decks sidebar updates instantly on create/delete (no polling)
@@ -30,6 +30,9 @@ BigDeck.app is a streamlined Magic: The Gathering inventory management system. I
 - ✅ **Deck reservations tracking** - Cards reserved per deck, missing cards tracked, total cost calculated
 - ✅ **Reoptimize & Release features** - Recalculate reservations or free all cards back to inventory
 - ✅ **Mobile-responsive deck UI** - Sidebar deck list with reserved/missing card counts, detail view in main area
+- ✅ **Multi-tab deck viewing** - Click deck to open in tab, view multiple decks simultaneously
+- ✅ **Inventory reservation display** - Shows Available (not reserved) vs Total, displays reserved counts
+- ✅ **Cheapest-first algorithm** - Reserves lowest-cost card copies for each deck, recalculates on inventory changes
 
 ## Core Features
 
