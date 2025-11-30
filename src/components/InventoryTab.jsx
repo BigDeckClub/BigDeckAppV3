@@ -527,23 +527,23 @@ export const InventoryTab = ({
           
           <div className="flex-1 flex items-center justify-center min-h-0">
             <div className="text-center">
-              <div className="text-slate-500 text-[8px] md:text-xs">Available</div>
-              <div className="text-3xl md:text-4xl font-bold text-green-300 leading-tight">{available}</div>
+              <div className="text-slate-400 text-[8px] md:text-xs font-semibold">Available</div>
+              <div className="text-2xl md:text-3xl font-bold text-green-300 leading-tight">{available}</div>
             </div>
           </div>
           
-          <div className="grid grid-cols-3 gap-1.5 text-center">
+          <div className="grid grid-cols-3 gap-1 text-center">
             <div className="space-y-0.5">
-              <div className="text-slate-500 text-[8px] md:text-xs font-medium">Qty</div>
-              <div className={`font-bold text-sm md:text-base ${totalQty === 0 ? 'text-slate-500' : 'text-teal-300'}`}>{totalQty}</div>
+              <div className="text-slate-400 text-[8px] md:text-xs font-bold">Qty</div>
+              <div className={`font-bold text-xs md:text-sm ${totalQty === 0 ? 'text-slate-400' : 'text-teal-200'}`}>{totalQty}</div>
             </div>
             <div className="space-y-0.5">
-              <div className="text-slate-500 text-[8px] md:text-xs font-medium">Cost</div>
-              <div className="font-bold text-sm md:text-base text-blue-300">${avgPrice.toFixed(2)}</div>
+              <div className="text-slate-400 text-[8px] md:text-xs font-bold">Cost</div>
+              <div className="font-bold text-xs md:text-sm text-blue-200">${avgPrice.toFixed(2)}</div>
             </div>
             <div className="space-y-0.5">
-              <div className="text-slate-500 text-[8px] md:text-xs font-medium">Total</div>
-              <div className="font-bold text-sm md:text-base text-amber-400">${formatTotal(totalValue)}</div>
+              <div className="text-slate-400 text-[8px] md:text-xs font-bold">Total</div>
+              <div className="font-bold text-xs md:text-sm text-amber-300">${formatTotal(totalValue)}</div>
             </div>
           </div>
         </div>
@@ -830,19 +830,19 @@ export const InventoryTab = ({
           
           <div className="flex-1 flex items-center justify-center min-h-0">
             <div className="text-center">
-              <div className="text-slate-500 text-[8px] md:text-xs">Reserved</div>
-              <div className="text-3xl md:text-4xl font-bold text-green-300 leading-tight">{totalQty}</div>
+              <div className="text-slate-400 text-[8px] md:text-xs font-semibold">Reserved</div>
+              <div className="text-2xl md:text-3xl font-bold text-green-300 leading-tight">{totalQty}</div>
             </div>
           </div>
           
-          <div className="grid grid-cols-2 gap-1.5 text-center">
+          <div className="grid grid-cols-2 gap-1 text-center">
             <div className="space-y-0.5">
-              <div className="text-slate-500 text-[8px] md:text-xs font-medium">Cost</div>
-              <div className="font-bold text-sm md:text-base text-blue-300">${avgPrice.toFixed(2)}</div>
+              <div className="text-slate-400 text-[8px] md:text-xs font-bold">Cost</div>
+              <div className="font-bold text-xs md:text-sm text-blue-200">${avgPrice.toFixed(2)}</div>
             </div>
             <div className="space-y-0.5">
-              <div className="text-slate-500 text-[8px] md:text-xs font-medium">Total</div>
-              <div className="font-bold text-sm md:text-base text-amber-400">${formatTotal(totalValue)}</div>
+              <div className="text-slate-400 text-[8px] md:text-xs font-bold">Total</div>
+              <div className="font-bold text-xs md:text-sm text-amber-300">${formatTotal(totalValue)}</div>
             </div>
           </div>
         </div>
