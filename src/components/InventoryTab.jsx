@@ -1270,7 +1270,8 @@ export const InventoryTab = ({
                         if (missing > 0) {
                           return `${reserved} reserved ${missing} missing`;
                         } else {
-                          return `${reserved} reserved${extras > 0 ? ` +${extras} extra` : ''}`;
+                          const displayReserved = decklistTotal > 0 ? decklistTotal : reserved;
+                          return `${displayReserved} reserved${extras > 0 ? ` +${extras} extra` : ''}`;
                         }
                       })()}
                     </div>
