@@ -436,6 +436,8 @@ app.get('/api/prices/:cardName/:setCode', priceLimiter, async (req, res) => {
       }
     }
     
+    const result = { tcg: tcgPrice, ck: ckPrice };
+    setCachedPrice(cacheKey, result);
     res.setHeader('Content-Type', 'application/json');
     res.status(200).json(result);
   } catch (error) {
