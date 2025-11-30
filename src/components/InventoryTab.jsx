@@ -997,7 +997,7 @@ export const InventoryTab = ({
         sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
       }`}>
         {/* Folder List */}
-        <div className="rounded-lg p-4 border-2 border-teal-500/50 bg-gradient-to-br from-slate-900/50 to-slate-800/50 space-y-3 max-h-[calc(100vh-220px)] overflow-y-auto scrollbar-thumb-rounded">
+        <div className="rounded-lg p-4 border-2 border-teal-500/40 bg-gradient-to-br from-slate-800/60 to-slate-900/40 space-y-3 max-h-[calc(100vh-220px)] overflow-y-auto scrollbar-thumb-rounded shadow-xl shadow-slate-900/50">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold text-teal-300">📁 Folders</h3>
             {!showCreateFolder && (
@@ -1214,10 +1214,10 @@ export const InventoryTab = ({
                 return (
                   <div
                     key={`deck-${deck.id}`}
-                    className={`group text-left p-2 rounded-lg transition-colors mb-1.5 border-l-4 cursor-pointer ${
+                    className={`group text-left p-2.5 rounded-lg transition-all duration-200 mb-1.5 border-l-4 cursor-pointer ${
                       isDeckOpen
-                        ? 'bg-green-600/40 border-l-4 border-green-400'
-                        : 'bg-slate-800 border-l-4 border-transparent hover:bg-slate-700'
+                        ? 'bg-gradient-to-r from-green-600/40 to-green-700/30 border-l-4 border-green-400 shadow-md shadow-green-500/10'
+                        : 'bg-gradient-to-r from-slate-700 to-slate-800 border-l-4 border-transparent hover:from-slate-600 hover:to-slate-700 hover:shadow-md hover:shadow-slate-600/20'
                     }`}
                     onClick={() => openDeckTab(deck)}
                     onDragOver={(e) => {

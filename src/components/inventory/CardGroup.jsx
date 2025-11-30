@@ -174,7 +174,7 @@ export const CardGroup = memo(function CardGroup({
             e.dataTransfer.setData('skuData', JSON.stringify(items[0]));
           }
         }}
-        className="relative bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 hover:border-teal-500 rounded-lg p-4 transition-all flex flex-col h-36 md:h-40 hover:shadow-lg hover:shadow-teal-500/20 cursor-grab active:cursor-grabbing group" 
+        className="relative bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 hover:border-teal-400 rounded-lg p-4 transition-all duration-300 flex flex-col h-36 md:h-40 hover:shadow-2xl hover:shadow-teal-500/30 hover:-translate-y-1 cursor-grab active:cursor-grabbing group" 
         onClick={() => setExpandedCards(isExpanded ? {} : {[cardName]: true})}
       >
         <button
@@ -182,7 +182,7 @@ export const CardGroup = memo(function CardGroup({
             e.stopPropagation();
             items.forEach(item => deleteInventoryItem(item.id));
           }}
-          className="absolute top-2 right-2 p-1.5 bg-slate-700/60 hover:bg-slate-600 text-slate-300 hover:text-red-400 rounded-lg transition-all opacity-0 group-hover:opacity-100 z-20"
+          className="absolute top-2 right-2 p-1.5 bg-slate-700/80 hover:bg-red-600/60 text-slate-300 hover:text-white rounded-lg transition-all opacity-0 group-hover:opacity-100 z-20 duration-200"
           title="Delete all copies"
         >
           <X className="w-5 h-5" />
@@ -233,7 +233,7 @@ export const CardGroup = memo(function CardGroup({
               e.dataTransfer.setData('skuData', JSON.stringify(items[0]));
             }
           }}
-          className="relative bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 hover:border-teal-500 rounded-lg p-4 transition-all cursor-grab active:cursor-grabbing hover:shadow-lg hover:shadow-teal-500/20 group">
+          className="relative bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 hover:border-teal-400 rounded-lg p-4 transition-all duration-300 cursor-grab active:cursor-grabbing hover:shadow-2xl hover:shadow-teal-500/30 group">
           <button
             onClick={(e) => {
               e.stopPropagation();
