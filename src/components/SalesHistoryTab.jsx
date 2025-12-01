@@ -26,7 +26,6 @@ export const SalesHistoryTab = () => {
   const totalCOGS = sales.reduce((sum, sale) => sum + (sale.purchase_price * (sale.quantity || 1)), 0);
   const totalGrossProfit = totalRevenue - totalCOGS;
   const profitMargin = totalCOGS > 0 ? ((totalGrossProfit / totalCOGS) * 100) : 0;
-  const totalCardsSold = sales.reduce((sum, sale) => sum + (sale.quantity || 1), 0);
 
   if (isLoading) {
     return <div className="text-slate-400 text-center py-8">Loading sales history...</div>;
@@ -55,8 +54,10 @@ export const SalesHistoryTab = () => {
           </p>
         </div>
         <div className="bg-slate-800 rounded-lg p-4 border border-slate-600">
-          <p className="text-slate-400 text-sm mb-1">Total Cards Sold</p>
-          <p className="text-2xl font-bold text-purple-400">{totalCardsSold}</p>
+          <p className="text-slate-400 text-sm mb-1">Markup %</p>
+          <p className={`text-2xl font-bold ${profitMargin >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+            {profitMargin.toFixed(1)}%
+          </p>
         </div>
       </div>
 
