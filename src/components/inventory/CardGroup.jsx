@@ -236,8 +236,8 @@ export const CardGroup = memo(function CardGroup({
         <button
           onClick={(e) => {
             e.stopPropagation();
-            if (items.length > 0) {
-              handleToggleLowInventory(items[0], e);
+            if (items.length > 0 && onToggleLowInventory) {
+              onToggleLowInventory(items[0].id);
             }
           }}
           className="absolute top-2 left-2 p-1.5 bg-slate-700/80 hover:bg-yellow-600/60 text-slate-300 hover:text-yellow-300 rounded-lg transition-all z-20 duration-200"
