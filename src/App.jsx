@@ -5,6 +5,7 @@ import {
   BarChart3,
   BookOpen,
   TrendingUp,
+  Settings,
 } from "lucide-react";
 import { useDebounce } from "./utils/useDebounce";
 import { InventoryTab } from "./components/InventoryTab";
@@ -19,6 +20,7 @@ import { UserDropdown } from "./components/UserDropdown";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { useApi } from "./hooks/useApi";
 import { TutorialModal } from "./components/TutorialModal";
+import { SettingsTab } from "./components/SettingsTab";
 import { getCachedSearch, setCachedSearch, getPopularCardMatches } from "./utils/popularCards";
 
 const API_BASE = "/api";
@@ -36,6 +38,7 @@ function MTGInventoryTrackerContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [deckRefreshTrigger, setDeckRefreshTrigger] = useState(0);
   const [showTutorial, setShowTutorial] = useState(false);
+  const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
