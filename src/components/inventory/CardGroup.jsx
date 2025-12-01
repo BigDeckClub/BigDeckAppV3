@@ -234,13 +234,21 @@ export const CardGroup = memo(function CardGroup({
         onClick={() => setExpandedCards(isExpanded ? {} : {[cardName]: true})}
       >
         <button
+          type="button"
           onClick={(e) => {
+            e.preventDefault();
             e.stopPropagation();
             if (items.length > 0 && onToggleLowInventory) {
               onToggleLowInventory(items[0].id);
             }
           }}
-          className="absolute top-2 left-2 p-1.5 bg-slate-700/80 hover:bg-yellow-600/60 text-slate-300 hover:text-yellow-300 rounded-lg transition-all z-20 duration-200"
+          onTouchStart={(e) => {
+            e.stopPropagation();
+          }}
+          onTouchEnd={(e) => {
+            e.stopPropagation();
+          }}
+          className="absolute top-2 left-2 p-1.5 bg-slate-700/80 hover:bg-yellow-600/60 text-slate-300 hover:text-yellow-300 rounded-lg transition-all z-20 duration-200 pointer-events-auto"
           title={items[0]?.low_inventory_alert ? "Alert enabled" : "Enable low inventory alert"}
         >
           {items[0]?.low_inventory_alert ? <Bell className="w-5 h-5" /> : <BellOff className="w-5 h-5" />}
