@@ -1,6 +1,6 @@
-import React, { memo } from 'react';
+import React, { memo, useState } from 'react';
 import PropTypes from 'prop-types';
-import { X, Trash2 } from 'lucide-react';
+import { X, Trash2, Bell, BellOff } from 'lucide-react';
 
 /**
  * Calculate average price for a set of items
@@ -41,8 +41,10 @@ export const CardGroup = memo(function CardGroup({
   updateInventoryItem,
   deleteInventoryItem,
   createdFolders,
-  onCancelEdit
+  onCancelEdit,
+  onToggleLowInventory
 }) {
+  const [togglingId, setTogglingId] = useState(null);
   const totalQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
   const reservedQty = items.reduce((sum, item) => sum + (parseInt(item.reserved_quantity) || 0), 0);
   const available = totalQty - reservedQty;
@@ -68,6 +70,19 @@ export const CardGroup = memo(function CardGroup({
   const handleCancelEdit = () => {
     setEditForm({});
     if (onCancelEdit) onCancelEdit();
+  };
+
+  // Handle toggle low inventory alert
+  const handleToggleLowInventory = async (item, e) => {
+    e.stopPropagation();
+    setTogglingId(item.id);
+    try {
+      if (onToggleLowInventory) {
+        await onToggleLowInventory(item.id);
+      }
+    } finally {
+      setTogglingId(null);
+    }
   };
 
   // Render set items section - shared between list and card view to reduce duplication
@@ -119,6 +134,14 @@ export const CardGroup = memo(function CardGroup({
                 >
                   <span>{item.quantity}x @ ${parseFloat(item.purchase_price || 0).toFixed(2)}</span>
                   <div className="flex items-center gap-1">
+                    <button
+                      onClick={(e) => handleToggleLowInventory(item, e)}
+                      className={`p-0.5 rounded transition-colors ${item.low_inventory_alert ? 'text-yellow-400 hover:text-yellow-300' : 'text-slate-500 hover:text-yellow-400'}`}
+                      title={item.low_inventory_alert ? 'Alert enabled' : 'Enable low inventory alert'}
+                      disabled={togglingId === item.id}
+                    >
+                      {item.low_inventory_alert ? <Bell className="w-3 h-3" /> : <BellOff className="w-3 h-3" />}
+                    </button>
                     <span className="text-slate-400">{new Date(item.purchase_date).toLocaleDateString()}</span>
                     <button
                       onClick={(e) => {

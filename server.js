@@ -145,6 +145,7 @@ async function initializeDatabase() {
     await pool.query(`ALTER TABLE inventory ADD COLUMN IF NOT EXISTS scryfall_id VARCHAR(255)`).catch(() => {});
     await pool.query(`ALTER TABLE inventory ADD COLUMN IF NOT EXISTS user_id VARCHAR(255) REFERENCES users(id) ON DELETE CASCADE`).catch(() => {});
     await pool.query(`ALTER TABLE inventory ADD COLUMN IF NOT EXISTS folder VARCHAR(255) DEFAULT 'Uncategorized'`).catch(() => {});
+    await pool.query(`ALTER TABLE inventory ADD COLUMN IF NOT EXISTS low_inventory_alert BOOLEAN DEFAULT false`).catch(() => {});
     await pool.query(`ALTER TABLE inventory DROP COLUMN IF EXISTS location`).catch(() => {});
     await pool.query(`ALTER TABLE inventory DROP COLUMN IF EXISTS is_shared_location`).catch(() => {});
 
@@ -663,7 +664,7 @@ app.post('/api/inventory', async (req, res) => {
 
 app.put('/api/inventory/:id', validateId, async (req, res) => {
   const id = req.validatedId;
-  const { quantity, purchase_price, purchase_date, reorder_type, folder } = req.body;
+  const { quantity, purchase_price, purchase_date, reorder_type, folder, low_inventory_alert } = req.body;
 
   try {
     const updates = [];
@@ -689,6 +690,10 @@ app.put('/api/inventory/:id', validateId, async (req, res) => {
     if (folder !== undefined) {
       updates.push(`folder = $${paramCount++}`);
       values.push(folder);
+    }
+    if (low_inventory_alert !== undefined) {
+      updates.push(`low_inventory_alert = $${paramCount++}`);
+      values.push(low_inventory_alert);
     }
 
     if (updates.length === 0) {
@@ -727,6 +732,27 @@ app.delete('/api/inventory/:id', validateId, async (req, res) => {
   } catch (error) {
     console.error('[INVENTORY] Error deleting:', error.message);
     res.status(500).json({ error: 'Failed to delete inventory item' });
+  }
+});
+
+// Toggle low inventory alert for a specific card
+app.post('/api/inventory/:id/toggle-alert', validateId, async (req, res) => {
+  const id = req.validatedId;
+
+  try {
+    const result = await pool.query(
+      'UPDATE inventory SET low_inventory_alert = NOT low_inventory_alert WHERE id = $1 RETURNING *',
+      [id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Inventory item not found' });
+    }
+    
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('[INVENTORY] Error toggling alert:', error.message);
+    res.status(500).json({ error: 'Failed to toggle alert' });
   }
 });
 
