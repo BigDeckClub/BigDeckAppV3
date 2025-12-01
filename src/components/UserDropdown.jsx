@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { LogOut, User } from 'lucide-react';
+import { LogOut, User, Settings } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
-export function UserDropdown() {
+export function UserDropdown({ setActiveTab, activeTab }) {
   const { logout, user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -18,6 +18,11 @@ export function UserDropdown() {
       setLoading(false);
       setIsOpen(false);
     }
+  };
+
+  const handleSettings = () => {
+    setActiveTab('settings');
+    setIsOpen(false);
   };
 
   // Close dropdown when clicking outside
@@ -48,6 +53,17 @@ export function UserDropdown() {
             <div className="text-xs text-slate-500 mb-1">Account</div>
             <div className="font-medium text-teal-300 truncate">{user?.email}</div>
           </div>
+          <button
+            onClick={handleSettings}
+            className={`w-full px-4 py-3 text-left flex items-center gap-2 transition-all duration-200 group border-t border-slate-700/50 ${
+              activeTab === 'settings' 
+                ? 'bg-teal-600/20 text-teal-300' 
+                : 'text-slate-300 hover:bg-teal-600/20 hover:text-teal-300'
+            }`}
+          >
+            <Settings className="w-4 h-4" />
+            <span className="font-medium">Settings</span>
+          </button>
           <button
             onClick={handleLogout}
             disabled={loading}

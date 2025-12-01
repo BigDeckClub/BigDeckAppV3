@@ -362,6 +362,7 @@ function MTGInventoryTrackerContent() {
     { id: "analytics", icon: BarChart3, label: "Analytics" },
     { id: "decks", icon: BookOpen, label: "Decks" },
     { id: "sales", icon: TrendingUp, label: "Sales" },
+    { id: "settings", icon: Settings, label: "Settings" },
   ];
 
   return (
@@ -415,7 +416,7 @@ function MTGInventoryTrackerContent() {
               Sales
             </button>
           </div>
-          <UserDropdown />
+          <UserDropdown setActiveTab={setActiveTab} activeTab={activeTab} />
         </div>
       </nav>
 
@@ -521,6 +522,11 @@ function MTGInventoryTrackerContent() {
         {/* Sales History Tab */}
         {activeTab === "sales" && !isLoading && (
           <SalesHistoryTab />
+        )}
+
+        {/* Settings Tab */}
+        {activeTab === "settings" && !isLoading && (
+          <SettingsTab inventory={inventory} />
         )}
 
       </main>
