@@ -236,7 +236,7 @@ export const AnalyticsTab = ({ inventory }) => {
                 <div className="text-2xl font-bold text-green-300">{cardMetrics.totalPurchasedLast60d}</div>
               </div>
               <div>
-                <div className="text-slate-400 text-xs font-semibold mb-1">Lifetime Total</div>
+                <div className="text-slate-400 text-xs font-semibold mb-1">Total Cards Sold</div>
                 <div className="text-2xl font-bold text-amber-300">{cardMetrics.lifetimeTotalCards}</div>
               </div>
             </div>
