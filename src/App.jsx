@@ -19,6 +19,7 @@ import { UserDropdown } from "./components/UserDropdown";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { useApi } from "./hooks/useApi";
 import { TutorialModal } from "./components/TutorialModal";
+import { getCachedSearch, setCachedSearch, getPopularCardMatches } from "./utils/popularCards";
 
 const API_BASE = "/api";
 
@@ -40,6 +41,7 @@ function MTGInventoryTrackerContent() {
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [searchIsLoading, setSearchIsLoading] = useState(false);
   const [selectedCardSets, setSelectedCardSets] = useState([]);
 
   const [newEntry, setNewEntry] = useState({
@@ -132,7 +134,15 @@ function MTGInventoryTrackerContent() {
       return;
     }
 
-    setIsSearching(true);
+    // Check cache first
+    const cached = getCachedSearch(query);
+    if (cached) {
+      setSearchResults(cached);
+      setShowDropdown(true);
+      return;
+    }
+
+    setSearchIsLoading(true);
     try {
       const response = await fetch(
         `https://api.scryfall.com/cards/search?q=${encodeURIComponent(query)}&unique=prints`
@@ -161,21 +171,37 @@ function MTGInventoryTrackerContent() {
         return scoreB - scoreA; // Descending order
       });
 
+      // Limit to top 15 results
+      results = results.slice(0, 15);
+
+      // Cache the results
+      setCachedSearch(query, results);
+
       setSearchResults(results);
       setShowDropdown(results.length > 0);
     } catch (error) {
       setSearchResults([]);
       setShowDropdown(false);
     } finally {
-      setIsSearching(false);
+      setSearchIsLoading(false);
     }
   };
 
   useEffect(() => {
     if (debouncedSearchQuery) {
       handleSearch(debouncedSearchQuery);
+    } else {
+      // Show popular cards when search is empty
+      const popular = getPopularCardMatches(searchQuery);
+      if (searchQuery.length > 0 && popular.length > 0) {
+        setSearchResults(popular);
+        setShowDropdown(true);
+      } else if (searchQuery.length === 0) {
+        setSearchResults([]);
+        setShowDropdown(false);
+      }
     }
-  }, [debouncedSearchQuery]);
+  }, [debouncedSearchQuery, searchQuery]);
 
   useEffect(() => {
     if (!user) return; // Guard inside effect - don't load data without user
@@ -406,6 +432,7 @@ function MTGInventoryTrackerContent() {
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
             searchResults={searchResults}
+            searchIsLoading={searchIsLoading}
             showDropdown={showDropdown}
             setShowDropdown={setShowDropdown}
             selectCard={selectCard}
