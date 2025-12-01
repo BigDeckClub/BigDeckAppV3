@@ -106,7 +106,33 @@ function MTGInventoryTrackerContent() {
     // Starts with query (high priority)
     if (lowerName.startsWith(lowerQuery)) return 500;
     
-    // Word boundary match (e.g., "Black" in "Black Dragon")
+    // Multi-word query matching (e.g., "sol r" -> "Sol Ring")
+    const queryWords = lowerQuery.split(/\s+/).filter(w => w.length > 0);
+    const cardWords = lowerName.split(/\s+/);
+    
+    if (queryWords.length > 1) {
+      // Check if each query word matches a card word at the start (in order)
+      let matchCount = 0;
+      let cardWordIdx = 0;
+      
+      for (const qWord of queryWords) {
+        while (cardWordIdx < cardWords.length) {
+          if (cardWords[cardWordIdx].startsWith(qWord)) {
+            matchCount++;
+            cardWordIdx++;
+            break;
+          }
+          cardWordIdx++;
+        }
+      }
+      
+      // If all query words matched card words in order, give high score
+      if (matchCount === queryWords.length) {
+        return 450; // Just below exact starts-with match
+      }
+    }
+    
+    // Single word or partial word boundary match
     const words = lowerName.split(/\s+/);
     if (words.some(word => word.startsWith(lowerQuery))) return 400;
     
