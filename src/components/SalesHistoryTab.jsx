@@ -21,18 +21,10 @@ export const SalesHistoryTab = () => {
     }
   };
 
-  const totalRevenue = sales.reduce((sum, sale) => {
-    const qty = parseFloat(sale.quantity) || 1;
-    const price = parseFloat(sale.sell_price) || 0;
-    return sum + (price * qty);
-  }, 0);
-  const totalCOGS = sales.reduce((sum, sale) => {
-    const qty = parseFloat(sale.quantity) || 1;
-    const price = parseFloat(sale.purchase_price) || 0;
-    return sum + (price * qty);
-  }, 0);
+  const totalSales = sales.reduce((sum, sale) => sum + (sale.profit || 0), 0);
+  const totalRevenue = sales.reduce((sum, sale) => sum + (sale.sell_price * (sale.quantity || 1)), 0);
+  const totalCOGS = sales.reduce((sum, sale) => sum + (sale.purchase_price * (sale.quantity || 1)), 0);
   const totalGrossProfit = totalRevenue - totalCOGS;
-  const totalQuantity = sales.reduce((sum, sale) => sum + (parseFloat(sale.quantity) || 1), 0);
   const profitMargin = totalCOGS > 0 ? ((totalGrossProfit / totalCOGS) * 100) : 0;
 
   if (isLoading) {
@@ -44,8 +36,8 @@ export const SalesHistoryTab = () => {
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <div className="bg-slate-800 rounded-lg p-4 border border-slate-600">
-          <p className="text-slate-400 text-sm mb-1">Total Qty Sold</p>
-          <p className="text-2xl font-bold text-cyan-400">{totalQuantity}</p>
+          <p className="text-slate-400 text-sm mb-1">Total Transactions</p>
+          <p className="text-2xl font-bold text-cyan-400">{sales.length}</p>
         </div>
         <div className="bg-slate-800 rounded-lg p-4 border border-slate-600">
           <p className="text-slate-400 text-sm mb-1">Total Revenue</p>
