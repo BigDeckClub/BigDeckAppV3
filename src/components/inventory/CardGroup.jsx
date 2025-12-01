@@ -236,6 +236,18 @@ export const CardGroup = memo(function CardGroup({
         <button
           onClick={(e) => {
             e.stopPropagation();
+            if (items.length > 0) {
+              handleToggleLowInventory(items[0], e);
+            }
+          }}
+          className="absolute top-2 left-2 p-1.5 bg-slate-700/80 hover:bg-yellow-600/60 text-slate-300 hover:text-yellow-300 rounded-lg transition-all z-20 duration-200"
+          title={items[0]?.low_inventory_alert ? "Alert enabled" : "Enable low inventory alert"}
+        >
+          {items[0]?.low_inventory_alert ? <Bell className="w-5 h-5" /> : <BellOff className="w-5 h-5" />}
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
             items.forEach(item => deleteInventoryItem(item.id));
           }}
           className="absolute top-2 right-2 p-1.5 bg-slate-700/80 hover:bg-red-600/60 text-slate-300 hover:text-white rounded-lg transition-all opacity-0 group-hover:opacity-100 z-20 duration-200"
