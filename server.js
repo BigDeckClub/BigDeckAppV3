@@ -146,6 +146,7 @@ async function initializeDatabase() {
     await pool.query(`ALTER TABLE inventory ADD COLUMN IF NOT EXISTS user_id VARCHAR(255) REFERENCES users(id) ON DELETE CASCADE`).catch(() => {});
     await pool.query(`ALTER TABLE inventory ADD COLUMN IF NOT EXISTS folder VARCHAR(255) DEFAULT 'Uncategorized'`).catch(() => {});
     await pool.query(`ALTER TABLE inventory ADD COLUMN IF NOT EXISTS low_inventory_alert BOOLEAN DEFAULT false`).catch(() => {});
+    await pool.query(`ALTER TABLE inventory ADD COLUMN IF NOT EXISTS low_inventory_threshold INTEGER DEFAULT 0`).catch(() => {});
     await pool.query(`ALTER TABLE inventory DROP COLUMN IF EXISTS location`).catch(() => {});
     await pool.query(`ALTER TABLE inventory DROP COLUMN IF EXISTS is_shared_location`).catch(() => {});
 
@@ -664,7 +665,7 @@ app.post('/api/inventory', async (req, res) => {
 
 app.put('/api/inventory/:id', validateId, async (req, res) => {
   const id = req.validatedId;
-  const { quantity, purchase_price, purchase_date, reorder_type, folder, low_inventory_alert } = req.body;
+  const { quantity, purchase_price, purchase_date, reorder_type, folder, low_inventory_alert, low_inventory_threshold } = req.body;
 
   try {
     const updates = [];
@@ -694,6 +695,10 @@ app.put('/api/inventory/:id', validateId, async (req, res) => {
     if (low_inventory_alert !== undefined) {
       updates.push(`low_inventory_alert = $${paramCount++}`);
       values.push(low_inventory_alert);
+    }
+    if (low_inventory_threshold !== undefined) {
+      updates.push(`low_inventory_threshold = $${paramCount++}`);
+      values.push(low_inventory_threshold);
     }
 
     if (updates.length === 0) {
@@ -753,6 +758,32 @@ app.post('/api/inventory/:id/toggle-alert', validateId, async (req, res) => {
   } catch (error) {
     console.error('[INVENTORY] Error toggling alert:', error.message);
     res.status(500).json({ error: 'Failed to toggle alert' });
+  }
+});
+
+// Set low inventory threshold for a specific card
+app.post('/api/inventory/:id/set-threshold', validateId, async (req, res) => {
+  const id = req.validatedId;
+  const { threshold } = req.body;
+
+  try {
+    if (threshold === undefined || threshold < 0) {
+      return res.status(400).json({ error: 'Invalid threshold value' });
+    }
+
+    const result = await pool.query(
+      'UPDATE inventory SET low_inventory_threshold = $1 WHERE id = $2 RETURNING *',
+      [threshold, id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Inventory item not found' });
+    }
+    
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('[INVENTORY] Error setting threshold:', error.message);
+    res.status(500).json({ error: 'Failed to set threshold' });
   }
 });
 

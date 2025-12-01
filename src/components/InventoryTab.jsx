@@ -1692,6 +1692,26 @@ export const InventoryTab = ({
                           updateInventoryItem={updateInventoryItem}
                           deleteInventoryItem={deleteInventoryItem}
                           createdFolders={createdFolders}
+                          onToggleLowInventory={async (itemId) => {
+                            try {
+                              await fetch(`/api/inventory/${itemId}/toggle-alert`, { method: 'POST' });
+                              onLoadInventory?.();
+                            } catch (error) {
+                              console.error('Error toggling alert:', error);
+                            }
+                          }}
+                          onSetThreshold={async (itemId, threshold) => {
+                            try {
+                              await fetch(`/api/inventory/${itemId}/set-threshold`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ threshold })
+                              });
+                              onLoadInventory?.();
+                            } catch (error) {
+                              console.error('Error setting threshold:', error);
+                            }
+                          }}
                         />
                       ))}
                     </div>
@@ -1759,6 +1779,26 @@ export const InventoryTab = ({
                           updateInventoryItem={updateInventoryItem}
                           deleteInventoryItem={deleteInventoryItem}
                           createdFolders={createdFolders}
+                          onToggleLowInventory={async (itemId) => {
+                            try {
+                              await fetch(`/api/inventory/${itemId}/toggle-alert`, { method: 'POST' });
+                              onLoadInventory?.();
+                            } catch (error) {
+                              console.error('Error toggling alert:', error);
+                            }
+                          }}
+                          onSetThreshold={async (itemId, threshold) => {
+                            try {
+                              await fetch(`/api/inventory/${itemId}/set-threshold`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ threshold })
+                              });
+                              onLoadInventory?.();
+                            } catch (error) {
+                              console.error('Error setting threshold:', error);
+                            }
+                          }}
                         />
                       ))}
                     </div>

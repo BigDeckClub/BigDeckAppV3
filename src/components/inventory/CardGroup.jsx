@@ -42,9 +42,12 @@ export const CardGroup = memo(function CardGroup({
   deleteInventoryItem,
   createdFolders,
   onCancelEdit,
-  onToggleLowInventory
+  onToggleLowInventory,
+  onSetThreshold
 }) {
   const [togglingId, setTogglingId] = useState(null);
+  const [settingThresholdId, setSettingThresholdId] = useState(null);
+  const [thresholdInput, setThresholdInput] = useState({});
   const totalQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
   const reservedQty = items.reduce((sum, item) => sum + (parseInt(item.reserved_quantity) || 0), 0);
   const available = totalQty - reservedQty;
@@ -82,6 +85,21 @@ export const CardGroup = memo(function CardGroup({
       }
     } finally {
       setTogglingId(null);
+    }
+  };
+
+  // Handle set threshold
+  const handleSetThreshold = async (itemId, e) => {
+    e.stopPropagation();
+    const threshold = parseInt(thresholdInput[itemId]) || 0;
+    setSettingThresholdId(itemId);
+    try {
+      if (onSetThreshold) {
+        await onSetThreshold(itemId, threshold);
+        setThresholdInput(prev => ({ ...prev, [itemId]: '' }));
+      }
+    } finally {
+      setSettingThresholdId(null);
     }
   };
 
@@ -134,14 +152,29 @@ export const CardGroup = memo(function CardGroup({
                 >
                   <span>{item.quantity}x @ ${parseFloat(item.purchase_price || 0).toFixed(2)}</span>
                   <div className="flex items-center gap-1">
-                    <button
-                      onClick={(e) => handleToggleLowInventory(item, e)}
-                      className={`p-0.5 rounded transition-colors ${item.low_inventory_alert ? 'text-yellow-400 hover:text-yellow-300' : 'text-slate-500 hover:text-yellow-400'}`}
-                      title={item.low_inventory_alert ? 'Alert enabled' : 'Enable low inventory alert'}
-                      disabled={togglingId === item.id}
-                    >
-                      {item.low_inventory_alert ? <Bell className="w-3 h-3" /> : <BellOff className="w-3 h-3" />}
-                    </button>
+                    <div className="flex items-center gap-0.5">
+                      <button
+                        onClick={(e) => handleToggleLowInventory(item, e)}
+                        className={`p-0.5 rounded transition-colors ${item.low_inventory_alert ? 'text-yellow-400 hover:text-yellow-300' : 'text-slate-500 hover:text-yellow-400'}`}
+                        title={item.low_inventory_alert ? 'Alert enabled' : 'Enable alert'}
+                        disabled={togglingId === item.id}
+                      >
+                        {item.low_inventory_alert ? <Bell className="w-3 h-3" /> : <BellOff className="w-3 h-3" />}
+                      </button>
+                      {item.low_inventory_alert && (
+                        <input
+                          type="number"
+                          min="0"
+                          value={thresholdInput[item.id] !== undefined ? thresholdInput[item.id] : item.low_inventory_threshold || ''}
+                          onChange={(e) => setThresholdInput(prev => ({ ...prev, [item.id]: e.target.value }))}
+                          onBlur={(e) => handleSetThreshold(item.id, e)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleSetThreshold(item.id, e)}
+                          placeholder="qty"
+                          className="w-6 bg-slate-600 border border-slate-500 rounded px-1 py-0 text-white text-[8px] text-center"
+                          disabled={settingThresholdId === item.id}
+                        />
+                      )}
+                    </div>
                     <span className="text-slate-400">{new Date(item.purchase_date).toLocaleDateString()}</span>
                     <button
                       onClick={(e) => {
