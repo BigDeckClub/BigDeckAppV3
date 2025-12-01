@@ -25,7 +25,7 @@ export const SalesHistoryTab = () => {
   const totalRevenue = sales.reduce((sum, sale) => sum + (sale.sell_price * (sale.quantity || 1)), 0);
   const totalCOGS = sales.reduce((sum, sale) => sum + (sale.purchase_price * (sale.quantity || 1)), 0);
   const totalGrossProfit = totalRevenue - totalCOGS;
-  const profitMargin = totalRevenue > 0 ? ((totalGrossProfit / totalRevenue) * 100) : 0;
+  const profitMargin = totalCOGS > 0 ? ((totalGrossProfit / totalCOGS) * 100) : 0;
 
   if (isLoading) {
     return <div className="text-slate-400 text-center py-8">Loading sales history...</div>;
@@ -54,7 +54,7 @@ export const SalesHistoryTab = () => {
           </p>
         </div>
         <div className="bg-slate-800 rounded-lg p-4 border border-slate-600">
-          <p className="text-slate-400 text-sm mb-1">Profit Margin</p>
+          <p className="text-slate-400 text-sm mb-1">Markup %</p>
           <p className={`text-2xl font-bold ${profitMargin >= 0 ? 'text-green-400' : 'text-red-400'}`}>
             {profitMargin.toFixed(1)}%
           </p>
@@ -88,7 +88,7 @@ export const SalesHistoryTab = () => {
                   const cogs = sale.purchase_price * qty;
                   const revenue = sale.sell_price * qty;
                   const grossProfit = revenue - cogs;
-                  const margin = revenue > 0 ? ((grossProfit / revenue) * 100) : 0;
+                  const markup = cogs > 0 ? ((grossProfit / cogs) * 100) : 0;
                   
                   return (
                     <tr key={sale.id} className="border-b border-slate-700 hover:bg-slate-700/50 transition-colors">
@@ -111,9 +111,9 @@ export const SalesHistoryTab = () => {
                         ${grossProfit.toFixed(2)}
                       </td>
                       <td className={`px-4 py-3 text-right font-semibold ${
-                        margin >= 0 ? 'text-green-400' : 'text-red-400'
+                        markup >= 0 ? 'text-green-400' : 'text-red-400'
                       }`}>
-                        {margin.toFixed(1)}%
+                        {markup.toFixed(1)}%
                       </td>
                       <td className="px-4 py-3 text-slate-400 text-xs">
                         {new Date(sale.created_at).toLocaleDateString()}
