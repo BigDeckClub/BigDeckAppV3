@@ -981,12 +981,12 @@ app.get('/api/analytics/card-metrics', async (req, res) => {
     // Purchased in last 60 days = current inventory + sold in period (since current reflects post-sale)
     const purchasedLast60d = totalCards + totalSoldLast60d;
     
-    // Lifetime totals = sum all PURCHASE transactions (correct equation)
-    const lifetimePurchasedResult = await pool.query(
+    // Lifetime totals = sum all SALE transactions
+    const lifetimeSoldResult = await pool.query(
       'SELECT SUM(quantity) as count FROM inventory_transactions WHERE transaction_type = $1',
-      ['PURCHASE']
+      ['SALE']
     );
-    const lifetimeTotalCards = parseInt(lifetimePurchasedResult.rows[0].count) || 0;
+    const lifetimeTotalCards = parseInt(lifetimeSoldResult.rows[0].count) || 0;
     
     // Lifetime value = sum all PURCHASE transaction values (correct equation)
     const lifetimePurchaseValueResult = await pool.query(
