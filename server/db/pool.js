@@ -7,6 +7,11 @@ const dbUrl = process.env.REPLIT_DEPLOYMENT
   ? (process.env.PRODUCTION_DATABASE_URL || process.env.DATABASE_URL)
   : process.env.DATABASE_URL;
 
+if (!dbUrl) {
+  console.error('[DB] ✗ DATABASE_URL environment variable is not set');
+  // Allow the application to start but log a warning - pool operations will fail
+}
+
 const pool = new Pool({
   connectionString: dbUrl,
   idleTimeoutMillis: 30000,

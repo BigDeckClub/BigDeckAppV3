@@ -8,7 +8,7 @@ const serverStartTime = Date.now();
 
 // ========== HEALTH CHECK ==========
 router.get('/health', async (req, res) => {
-  let dbStatus = 'disconnected'; // Default to disconnected for safety
+  let dbStatus;
   try {
     await pool.query('SELECT 1');
     dbStatus = 'connected';

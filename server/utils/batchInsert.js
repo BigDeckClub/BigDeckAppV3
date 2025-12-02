@@ -5,7 +5,9 @@ const BATCH_INSERT_CHUNK_SIZE = 1000;
 
 // Insert multiple deck reservations in a single query
 // Columns: deck_id, inventory_item_id, quantity_reserved, original_folder
-export async function batchInsertReservations(reservations, client) {
+// @param {Array} reservations - Array of reservation objects
+// @param {Object} queryExecutor - Database pool or transaction client that has a query() method
+export async function batchInsertReservations(reservations, queryExecutor) {
   if (reservations.length === 0) return;
   
   const COLS_PER_ROW = 4;
@@ -20,7 +22,7 @@ export async function batchInsertReservations(reservations, client) {
       const params = chunk.flatMap(r => [
         r.deck_id, r.inventory_item_id, r.quantity_reserved, r.original_folder
       ]);
-      await client.query(`
+      await queryExecutor.query(`
         INSERT INTO deck_reservations (deck_id, inventory_item_id, quantity_reserved, original_folder)
         VALUES ${values}
       `, params);
@@ -33,7 +35,9 @@ export async function batchInsertReservations(reservations, client) {
 
 // Insert multiple missing cards in a single query
 // Columns: deck_id, card_name, set_code, quantity_needed
-export async function batchInsertMissingCards(missingCards, client) {
+// @param {Array} missingCards - Array of missing card objects
+// @param {Object} queryExecutor - Database pool or transaction client that has a query() method
+export async function batchInsertMissingCards(missingCards, queryExecutor) {
   if (missingCards.length === 0) return;
   
   const COLS_PER_ROW = 4;
@@ -48,7 +52,7 @@ export async function batchInsertMissingCards(missingCards, client) {
       const params = chunk.flatMap(m => [
         m.deck_id, m.card_name, m.set_code, m.quantity_needed
       ]);
-      await client.query(`
+      await queryExecutor.query(`
         INSERT INTO deck_missing_cards (deck_id, card_name, set_code, quantity_needed)
         VALUES ${values}
       `, params);

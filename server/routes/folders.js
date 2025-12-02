@@ -1,5 +1,6 @@
 import express from 'express';
 import { pool } from '../db/pool.js';
+import { validateId } from '../middleware/index.js';
 
 const router = express.Router();
 
@@ -45,15 +46,11 @@ router.post('/api/folders', async (req, res) => {
 });
 
 // PUT /api/folders/:id - Update folder
-router.put('/api/folders/:id', async (req, res) => {
-  const { id } = req.params;
+router.put('/api/folders/:id', validateId, async (req, res) => {
+  const id = req.validatedId;
   const { name, description } = req.body;
   
   try {
-    if (!id || isNaN(id)) {
-      return res.status(400).json({ error: 'Invalid folder ID' });
-    }
-    
     const updates = [];
     const values = [];
     let paramCount = 1;
@@ -91,14 +88,10 @@ router.put('/api/folders/:id', async (req, res) => {
 });
 
 // DELETE /api/folders/:id - Delete folder
-router.delete('/api/folders/:id', async (req, res) => {
-  const { id } = req.params;
+router.delete('/api/folders/:id', validateId, async (req, res) => {
+  const id = req.validatedId;
   
   try {
-    if (!id || isNaN(id)) {
-      return res.status(400).json({ error: 'Invalid folder ID' });
-    }
-    
     const result = await pool.query(
       `DELETE FROM folders WHERE id = $1 RETURNING *`,
       [id]

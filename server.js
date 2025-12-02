@@ -95,6 +95,3 @@ async function startServer() {
 }
 
 startServer();
-
-// Export pool for use in routes that may need direct access
-export { pool };

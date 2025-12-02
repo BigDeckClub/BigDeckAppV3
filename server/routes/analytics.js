@@ -42,13 +42,16 @@ router.get('/api/analytics/card-metrics', async (req, res) => {
     
     // Available cards (total - reserved)
     const availableResult = await pool.query(`
-      SELECT COALESCE(SUM(i.quantity), 0) as available_count
+      SELECT COALESCE(SUM(
+        COALESCE(i.quantity, 0) - COALESCE((
+          SELECT SUM(dr.quantity_reserved)
+          FROM deck_reservations dr
+          WHERE dr.inventory_item_id = i.id
+        ), 0)
+      ), 0) as available_count
       FROM inventory i
-      LEFT JOIN deck_reservations dr ON i.id = dr.inventory_item_id
-      GROUP BY i.id
     `);
-    const allRows = availableResult.rows || [];
-    const totalAvailable = allRows.reduce((sum, row) => sum + parseInt(row.available_count || 0), 0);
+    const totalAvailable = parseInt(availableResult.rows[0].available_count) || 0;
     
     // Sold in last 60 days (from transaction history)
     const soldResult = await pool.query(

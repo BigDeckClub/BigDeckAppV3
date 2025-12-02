@@ -4,6 +4,11 @@ export function errorHandler(err, req, res, next) {
   console.error('[ERROR]', err.message);
   console.error('[ERROR] Stack:', err.stack);
   
+  // If response already sent, delegate to default Express error handler
+  if (res.headersSent) {
+    return next(err);
+  }
+  
   // Don't expose internal error details in production
   const statusCode = err.statusCode || 500;
   const message = statusCode === 500 ? 'Internal server error' : err.message;
