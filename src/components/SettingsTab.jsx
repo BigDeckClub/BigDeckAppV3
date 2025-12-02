@@ -33,24 +33,54 @@ export const SettingsTab = ({ inventory }) => {
   const [smartSuggestions, setSmartSuggestions] = useState({});
   const [loadingCalculations, setLoadingCalculations] = useState(false);
 
-  // Save threshold settings to localStorage when they change
+  // Step 7: Save threshold settings to localStorage AND backend when they change
   useEffect(() => {
     localStorage.setItem('thresholdSettings', JSON.stringify(thresholdSettings));
     console.log('[Settings] Threshold settings saved to localStorage:', thresholdSettings);
+    
+    // Save to backend
+    fetch('/api/settings/thresholdSettings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ value: thresholdSettings })
+    }).catch(err => console.error('[Settings] Error saving to backend:', err));
   }, [thresholdSettings]);
 
-  // Load threshold settings from localStorage on mount
+  // Load threshold settings from localStorage/backend on mount
   useEffect(() => {
-    const saved = localStorage.getItem('thresholdSettings');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        setThresholdSettings(parsed);
-        console.log('[Settings] Threshold settings loaded from localStorage:', parsed);
-      } catch (err) {
-        console.error('[Settings] Failed to parse saved threshold settings:', err);
-      }
-    }
+    // Try to load from backend first (Step 7)
+    fetch('/api/settings/thresholdSettings')
+      .then(res => res.json())
+      .then(data => {
+        if (data) {
+          setThresholdSettings(data);
+          console.log('[Settings] Threshold settings loaded from backend:', data);
+        } else {
+          // Fallback to localStorage if backend has no data
+          const saved = localStorage.getItem('thresholdSettings');
+          if (saved) {
+            try {
+              const parsed = JSON.parse(saved);
+              setThresholdSettings(parsed);
+              console.log('[Settings] Threshold settings loaded from localStorage:', parsed);
+            } catch (err) {
+              console.error('[Settings] Failed to parse saved threshold settings:', err);
+            }
+          }
+        }
+      })
+      .catch(err => {
+        console.error('[Settings] Error loading from backend, falling back to localStorage:', err);
+        const saved = localStorage.getItem('thresholdSettings');
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved);
+            setThresholdSettings(parsed);
+          } catch (err) {
+            console.error('[Settings] Failed to parse saved threshold settings:', err);
+          }
+        }
+      });
   }, []);
 
   // Fetch sales history and calculate smart thresholds

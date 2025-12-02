@@ -150,6 +150,16 @@ async function initializeDatabase() {
     await pool.query(`ALTER TABLE inventory DROP COLUMN IF EXISTS location`).catch(() => {});
     await pool.query(`ALTER TABLE inventory DROP COLUMN IF EXISTS is_shared_location`).catch(() => {});
 
+    // Settings table (Step 7: Store user settings in backend)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS settings (
+        key VARCHAR(255) PRIMARY KEY,
+        value TEXT,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
     // Decklists table
     await pool.query(`
       CREATE TABLE IF NOT EXISTS decklists (
@@ -1845,6 +1855,47 @@ app.get('/api/transactions', async (req, res) => {
   } catch (error) {
     console.error('[TRANSACTIONS] Error fetching transactions:', error.message);
     res.status(500).json({ error: 'Failed to fetch transactions' });
+  }
+});
+
+// ========== STEP 7: SETTINGS ENDPOINTS ==========
+// GET /api/settings/:key - Retrieve a setting
+app.get('/api/settings/:key', async (req, res) => {
+  try {
+    const { key } = req.params;
+    const result = await pool.query('SELECT value FROM settings WHERE key = $1', [key]);
+    
+    if (result.rows.length === 0) {
+      return res.json(null);
+    }
+    
+    try {
+      res.json(JSON.parse(result.rows[0].value));
+    } catch (parseErr) {
+      res.json(result.rows[0].value);
+    }
+  } catch (error) {
+    console.error('[SETTINGS] Error fetching setting:', error.message);
+    res.status(500).json({ error: 'Failed to fetch setting' });
+  }
+});
+
+// POST /api/settings/:key - Store a setting
+app.post('/api/settings/:key', async (req, res) => {
+  try {
+    const { key } = req.params;
+    const { value } = req.body;
+    
+    await pool.query(
+      'INSERT INTO settings (key, value, updated_at) VALUES ($1, $2, NOW()) ON CONFLICT (key) DO UPDATE SET value = $2, updated_at = NOW()',
+      [key, JSON.stringify(value)]
+    );
+    
+    console.log('[SETTINGS] Setting saved:', key);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('[SETTINGS] Error saving setting:', error.message);
+    res.status(500).json({ error: 'Failed to save setting' });
   }
 });
 
