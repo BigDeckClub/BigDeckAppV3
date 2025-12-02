@@ -1,6 +1,16 @@
-import React, { memo } from 'react';
+import React, { memo, useCallback, useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { FixedSizeList as List } from 'react-window';
+
+/**
+ * Get the number of columns based on screen width
+ * Matches the CSS grid breakpoints: grid-cols-3 md:grid-cols-4 lg:grid-cols-6
+ */
+function getColumnsForWidth(width) {
+  if (width >= 1024) return 6; // lg breakpoint
+  if (width >= 768) return 4;  // md breakpoint
+  return 3; // default mobile
+}
 
 /**
  * VirtualizedCardList - Renders large card lists with virtualization
@@ -19,18 +29,33 @@ export const VirtualizedCardList = memo(function VirtualizedCardList({
   containerHeight = 600,
   viewMode = 'card'
 }) {
-  // For card view, we need to calculate rows based on grid layout
-  // Default to 6 columns for large screens (matches existing grid: grid-cols-3 md:grid-cols-4 lg:grid-cols-6)
-  const columnsPerRow = viewMode === 'card' ? 6 : 1;
+  // Track window width for responsive column count
+  const [columnsPerRow, setColumnsPerRow] = useState(() => 
+    typeof window !== 'undefined' ? getColumnsForWidth(window.innerWidth) : 6
+  );
+  
+  // Update columns on window resize
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    const handleResize = () => {
+      setColumnsPerRow(getColumnsForWidth(window.innerWidth));
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const effectiveColumns = viewMode === 'card' ? columnsPerRow : 1;
   const adjustedItemHeight = viewMode === 'card' ? 180 : itemHeight;
   
   // Calculate total rows needed
-  const totalRows = Math.ceil(items.length / columnsPerRow);
+  const totalRows = Math.ceil(items.length / effectiveColumns);
   
-  // Row renderer for card grid view
-  const CardRowRenderer = ({ index, style }) => {
-    const startIdx = index * columnsPerRow;
-    const endIdx = Math.min(startIdx + columnsPerRow, items.length);
+  // Memoized row renderer for card grid view
+  const CardRowRenderer = useCallback(({ index, style }) => {
+    const startIdx = index * effectiveColumns;
+    const endIdx = Math.min(startIdx + effectiveColumns, items.length);
     const rowItems = items.slice(startIdx, endIdx);
     
     return (
@@ -42,10 +67,10 @@ export const VirtualizedCardList = memo(function VirtualizedCardList({
         ))}
       </div>
     );
-  };
+  }, [items, renderCard, effectiveColumns]);
   
-  // Row renderer for list view
-  const ListRowRenderer = ({ index, style }) => {
+  // Memoized row renderer for list view
+  const ListRowRenderer = useCallback(({ index, style }) => {
     const [cardName, cardItems] = items[index];
     
     return (
@@ -53,7 +78,7 @@ export const VirtualizedCardList = memo(function VirtualizedCardList({
         {renderCard([cardName, cardItems])}
       </div>
     );
-  };
+  }, [items, renderCard]);
 
   if (viewMode === 'card') {
     return (
