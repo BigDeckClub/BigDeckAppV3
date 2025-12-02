@@ -212,64 +212,107 @@ export const SettingsTab = ({ inventory }) => {
     }));
   };
 
-  // Step 4: Apply Smart Thresholds to ALL Inventory (FIXED: Bulk update instead of sequential calls)
+  // Step 4: Apply Smart Thresholds to ALL Inventory (DEBUG VERSION)
   const handleApplySmartThresholds = async () => {
-    const confirmMsg = `This will:
-• Calculate optimal thresholds for all ${inventory.length} items
-• Enable low inventory alerts on all items
-• Use your current slider settings
-
-Continue?`;
-
-    if (!window.confirm(confirmMsg)) return;
+    console.log('=== SMART THRESHOLDS DEBUG START ===');
+    console.log('1. Button clicked');
+    console.log('2. Inventory loaded?', !!inventory, 'Count:', inventory?.length);
+    console.log('3. thresholdSettings:', thresholdSettings);
     
+    if (!inventory || inventory.length === 0) {
+      alert('❌ No inventory loaded. Please wait for inventory to load first.');
+      console.log('ABORTED: No inventory');
+      return;
+    }
+    
+    const confirmMsg = `This will calculate and apply thresholds for ${inventory.length} items. Continue?`;
+    
+    if (!window.confirm(confirmMsg)) {
+      console.log('ABORTED: User cancelled');
+      return;
+    }
+    
+    console.log('4. User confirmed, starting process...');
     setSaving(prev => ({ ...prev, applying: true }));
     setApplyProgress({ current: 0, total: inventory.length });
     
     try {
-      console.log('[BulkUpdate] Fetching sales history...');
+      // Step 1: Fetch sales history
+      console.log('5. Fetching sales history...');
       let salesHistory = [];
       try {
         const salesResponse = await fetch('/api/sales');
+        console.log('6. Sales response status:', salesResponse.status);
         if (salesResponse.ok) {
           salesHistory = await salesResponse.json();
+          console.log('7. Sales history loaded:', salesHistory.length, 'records');
+        } else {
+          console.log('7. Sales fetch failed, continuing without sales data');
         }
       } catch (err) {
-        console.warn('[BulkUpdate] Could not fetch sales history, using base calculations:', err);
+        console.warn('7. Sales fetch error (continuing anyway):', err.message);
       }
       
-      console.log('[BulkUpdate] Calculating thresholds for', inventory.length, 'items...');
-      const updates = inventory.map((item, index) => {
-        const { suggested } = calculateSmartThreshold(item, salesHistory, thresholdSettings);
+      // Step 2: Calculate thresholds
+      console.log('8. Calculating thresholds for', inventory.length, 'items...');
+      const updates = [];
+      
+      for (let i = 0; i < inventory.length; i++) {
+        const item = inventory[i];
         
-        // Update progress every 10 items
-        if (index % 10 === 0) {
-          setApplyProgress({ current: index, total: inventory.length });
+        try {
+          const result = calculateSmartThreshold(item, salesHistory, thresholdSettings);
+          
+          updates.push({
+            id: item.id,
+            threshold: result.suggested,
+            enableAlert: true
+          });
+          
+          // Update progress every 10 items
+          if (i % 10 === 0) {
+            setApplyProgress({ current: i, total: inventory.length });
+          }
+        } catch (calcErr) {
+          console.error('Calculation error for item', item.id, item.name, ':', calcErr);
         }
-        
-        return {
-          id: item.id,
-          threshold: suggested,
-          enableAlert: true
-        };
-      });
+      }
+      
+      console.log('9. Calculated', updates.length, 'thresholds');
+      console.log('10. Sample updates:', updates.slice(0, 3));
       
       setApplyProgress({ current: inventory.length, total: inventory.length });
-      console.log('[BulkUpdate] Calculated', updates.length, 'thresholds, sending bulk update...');
       
-      // Single bulk update request
+      // Step 3: Send bulk update
+      console.log('11. Sending bulk update to /api/inventory/bulk-threshold...');
+      
       const response = await fetch('/api/inventory/bulk-threshold', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ updates })
       });
       
-      if (!response.ok) {
-        throw new Error(`Bulk update failed: ${response.status}`);
+      console.log('12. Response status:', response.status);
+      console.log('13. Response ok:', response.ok);
+      
+      const responseText = await response.text();
+      console.log('14. Response text:', responseText);
+      
+      let result;
+      try {
+        result = JSON.parse(responseText);
+        console.log('15. Parsed result:', result);
+      } catch (parseErr) {
+        console.error('15. JSON parse error:', parseErr);
+        throw new Error(`Invalid JSON response: ${responseText.substring(0, 100)}`);
       }
       
-      const result = await response.json();
-      console.log('[BulkUpdate] Result:', result);
+      if (!response.ok) {
+        throw new Error(result.error || `HTTP ${response.status}`);
+      }
+      
+      // Step 4: Success
+      console.log('16. SUCCESS! Updated:', result.updated, 'Errors:', result.errors);
       
       if (result.errors > 0) {
         alert(`✅ Updated ${result.updated} items!\n⚠️ ${result.errors} errors occurred.`);
@@ -281,13 +324,15 @@ Continue?`;
       setTimeout(() => setSuccessMessage(''), 5000);
       
     } catch (error) {
-      console.error('[BulkUpdate] Error:', error);
-      alert(`❌ Error: ${error.message}\n\nCheck console for details.`);
+      console.error('=== ERROR ===', error);
+      alert(`❌ Error: ${error.message}\n\nCheck browser console for details.`);
       setSuccessMessage('Error applying smart thresholds');
       setTimeout(() => setSuccessMessage(''), 3000);
     } finally {
+      console.log('19. Cleanup - resetting state');
       setSaving(prev => ({ ...prev, applying: false }));
       setApplyProgress({ current: 0, total: 0 });
+      console.log('=== SMART THRESHOLDS DEBUG END ===');
     }
   };
 
@@ -395,28 +440,23 @@ Continue?`;
           </p>
         </div>
         
-        {/* Apply to All Button */}
+        {/* Apply to All Button - DEBUG VERSION */}
         <button
-          onClick={handleApplySmartThresholds}
-          disabled={saving.applying || loadingCalculations}
+          onClick={() => {
+            console.log('Button onClick fired');
+            console.log('saving state:', saving);
+            console.log('inventory:', inventory?.length);
+            handleApplySmartThresholds();
+          }}
+          disabled={saving?.applying || loadingCalculations}
           className="w-full px-4 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-slate-600 text-white font-medium rounded-lg transition-colors"
         >
-          {saving.applying ? (
-            <span className="flex items-center justify-center gap-2">
-              <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-              </svg>
-              {applyProgress.total > 0 ? (
-                <span>Updating {applyProgress.current}/{applyProgress.total}...</span>
-              ) : (
-                <span>Calculating...</span>
-              )}
+          {saving?.applying ? (
+            <span>
+              ⏳ Processing... {applyProgress.current}/{applyProgress.total}
             </span>
-          ) : loadingCalculations ? (
-            <span>Calculating & Applying...</span>
           ) : (
-            <span>🚀 Apply Smart Thresholds to All Inventory</span>
+            <span>🚀 Apply Smart Thresholds ({inventory?.length || 0} items)</span>
           )}
         </button>
       </div>

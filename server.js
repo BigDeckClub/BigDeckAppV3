@@ -1858,16 +1858,25 @@ app.get('/api/transactions', async (req, res) => {
   }
 });
 
-// POST /api/inventory/bulk-threshold - Bulk update thresholds and alerts (FIXED: Single request instead of 200+ sequential calls)
+// POST /api/inventory/bulk-threshold - Bulk update thresholds and alerts (DEBUG VERSION)
 app.post('/api/inventory/bulk-threshold', async (req, res) => {
+  console.log('[BULK-THRESHOLD] Endpoint hit');
+  console.log('[BULK-THRESHOLD] Request body:', JSON.stringify(req.body).substring(0, 500));
+  
   try {
     const { updates } = req.body;
     
-    if (!Array.isArray(updates) || updates.length === 0) {
+    if (!updates) {
+      console.log('[BULK-THRESHOLD] ERROR: No updates in body');
       return res.status(400).json({ error: 'Updates array is required' });
     }
     
-    console.log(`[BULK-UPDATE] Processing ${updates.length} inventory items...`);
+    if (!Array.isArray(updates)) {
+      console.log('[BULK-THRESHOLD] ERROR: Updates is not an array:', typeof updates);
+      return res.status(400).json({ error: 'Updates must be an array' });
+    }
+    
+    console.log(`[BULK-THRESHOLD] Processing ${updates.length} updates`);
     
     let successCount = 0;
     let errorCount = 0;
@@ -1877,6 +1886,8 @@ app.post('/api/inventory/bulk-threshold', async (req, res) => {
     const updatePromises = updates.map(async (update) => {
       try {
         const { id, threshold, enableAlert } = update;
+        
+        console.log(`[BULK-THRESHOLD] Updating item ${id}: threshold=${threshold}, alert=${enableAlert}`);
         
         await pool.query(
           `UPDATE inventory 
@@ -1888,6 +1899,7 @@ app.post('/api/inventory/bulk-threshold', async (req, res) => {
         
         successCount++;
       } catch (err) {
+        console.error('[BULK-THRESHOLD] Item error:', update.id, err.message);
         errorCount++;
         errors.push({ id: update.id, error: err.message });
       }
@@ -1895,17 +1907,17 @@ app.post('/api/inventory/bulk-threshold', async (req, res) => {
     
     await Promise.allSettled(updatePromises);
     
-    console.log(`[BULK-UPDATE] Complete: ${successCount} success, ${errorCount} errors`);
+    console.log(`[BULK-THRESHOLD] Complete: ${successCount} success, ${errorCount} errors`);
     
     res.json({ 
       success: true, 
       updated: successCount, 
       errors: errorCount,
-      errorDetails: errors 
+      errorDetails: errors.slice(0, 10)
     });
   } catch (error) {
-    console.error('[BULK-UPDATE] Error:', error.message);
-    res.status(500).json({ error: 'Failed to bulk update thresholds' });
+    console.error('[BULK-THRESHOLD] Fatal error:', error);
+    res.status(500).json({ error: error.message || 'Failed to bulk update thresholds' });
   }
 });
 
