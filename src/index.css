@@ -598,3 +598,104 @@ select {
 .animate-pulse {
   animation: skeleton-pulse 1.5s ease-in-out infinite;
 }
+
+/* Custom Slider Styling for Threshold Settings */
+.threshold-slider {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(to right, #334155, #475569);
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.threshold-slider:hover {
+  background: linear-gradient(to right, #3b4a5a, #5a6a7a);
+}
+
+.threshold-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.threshold-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.threshold-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.threshold-slider::-moz-range-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.threshold-slider:focus {
+  outline: none;
+}
+
+/* Yellow variant (Base Stock) */
+.threshold-slider-yellow::-webkit-slider-thumb {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+}
+
+.threshold-slider-yellow::-moz-range-thumb {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+}
+
+.threshold-slider-yellow:focus::-webkit-slider-thumb {
+  box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.4);
+}
+
+.threshold-slider-yellow:focus::-moz-range-thumb {
+  box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.4);
+}
+
+/* Green variant (Land Multiplier) */
+.threshold-slider-green::-webkit-slider-thumb {
+  background: linear-gradient(135deg, #4ade80, #22c55e);
+}
+
+.threshold-slider-green::-moz-range-thumb {
+  background: linear-gradient(135deg, #4ade80, #22c55e);
+}
+
+.threshold-slider-green:focus::-webkit-slider-thumb {
+  box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.4);
+}
+
+.threshold-slider-green:focus::-moz-range-thumb {
+  box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.4);
+}
+
+/* Blue variant (Sales Buffer) */
+.threshold-slider-blue::-webkit-slider-thumb {
+  background: linear-gradient(135deg, #60a5fa, #3b82f6);
+}
+
+.threshold-slider-blue::-moz-range-thumb {
+  background: linear-gradient(135deg, #60a5fa, #3b82f6);
+}
+
+.threshold-slider-blue:focus::-webkit-slider-thumb {
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.4);
+}
+
+.threshold-slider-blue:focus::-moz-range-thumb {
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.4);
+}
