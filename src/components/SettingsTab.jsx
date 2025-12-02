@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, AlertCircle, Zap } from 'lucide-react';
+import { Bell, AlertCircle, Zap, Lightbulb } from 'lucide-react';
 import { useApi } from '../hooks/useApi';
+import { calculateSmartThreshold } from '../utils/thresholdCalculator';
 
 const THRESHOLD_PRESETS = {
   'Basic Land': { threshold: 100, description: 'Stock heavily for casual decks' },
@@ -27,6 +28,11 @@ export const SettingsTab = ({ inventory }) => {
     velocityWeeks: 4,        // How many weeks of buffer stock (range: 1-8)
   });
 
+  // Step 2: Smart Threshold Calculator
+  const [salesHistory, setSalesHistory] = useState([]);
+  const [smartSuggestions, setSmartSuggestions] = useState({});
+  const [loadingCalculations, setLoadingCalculations] = useState(false);
+
   // Save threshold settings to localStorage when they change
   useEffect(() => {
     localStorage.setItem('thresholdSettings', JSON.stringify(thresholdSettings));
@@ -46,6 +52,38 @@ export const SettingsTab = ({ inventory }) => {
       }
     }
   }, []);
+
+  // Fetch sales history and calculate smart thresholds
+  useEffect(() => {
+    const fetchAndCalculate = async () => {
+      setLoadingCalculations(true);
+      try {
+        // Fetch sales history
+        const response = await fetch('/api/sales-history');
+        if (response.ok) {
+          const data = await response.json();
+          setSalesHistory(data || []);
+          
+          // Calculate smart thresholds for all cards with alerts
+          const suggestions = {};
+          Object.values(cardsWithAlerts).flat().forEach(card => {
+            const calc = calculateSmartThreshold(card, data || [], thresholdSettings);
+            suggestions[card.id] = calc;
+          });
+          setSmartSuggestions(suggestions);
+          console.log('[Settings] Smart suggestions calculated:', suggestions);
+        }
+      } catch (error) {
+        console.error('[Settings] Error fetching sales history:', error);
+      } finally {
+        setLoadingCalculations(false);
+      }
+    };
+
+    if (Object.keys(cardsWithAlerts).length > 0) {
+      fetchAndCalculate();
+    }
+  }, [thresholdSettings, cardsWithAlerts]);
 
   // Group inventory with alerts enabled by card name
   const cardsWithAlerts = inventory
@@ -141,6 +179,33 @@ export const SettingsTab = ({ inventory }) => {
     }));
   };
 
+  const handleApplySmartThresholds = async () => {
+    setSaving(prev => ({ ...prev, applying: true }));
+    try {
+      const cardsToUpdate = Object.entries(smartSuggestions).map(([cardId, calc]) => ({
+        id: parseInt(cardId),
+        threshold: calc.suggested
+      }));
+
+      const results = await Promise.allSettled(
+        cardsToUpdate.map(card =>
+          put(`/api/inventory/${card.id}`, {
+            low_inventory_threshold: card.threshold
+          })
+        )
+      );
+      const successful = results.filter(r => r.status === 'fulfilled').length;
+      setSuccessMessage(`Applied smart thresholds to ${successful} card(s)`);
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (error) {
+      console.error('Error applying smart thresholds:', error);
+      setSuccessMessage('Error applying smart thresholds');
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } finally {
+      setSaving(prev => ({ ...prev, applying: false }));
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Success Message */}
@@ -230,6 +295,52 @@ export const SettingsTab = ({ inventory }) => {
           </div>
         </div>
       </div>
+
+      {/* Smart Threshold Suggestions - Step 2 */}
+      {Object.keys(smartSuggestions).length > 0 && (
+        <div className="bg-slate-800 rounded-lg border border-slate-600 p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <Lightbulb className="w-6 h-6 text-yellow-400" />
+            <h2 className="text-xl font-bold text-slate-100">Smart Threshold Suggestions</h2>
+          </div>
+
+          <div className="space-y-4">
+            <div className="bg-slate-700/50 rounded-lg p-4 border border-slate-600">
+              <p className="text-sm text-slate-300 mb-3">
+                Based on your sales velocity and settings, here are optimized thresholds:
+              </p>
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {Object.entries(cardsWithAlerts).map(([cardName, items]) =>
+                  items.map(item => {
+                    const suggestion = smartSuggestions[item.id];
+                    if (!suggestion) return null;
+                    return (
+                      <div key={item.id} className="flex justify-between items-center bg-slate-600/50 p-2 rounded text-xs">
+                        <div>
+                          <p className="text-slate-300 font-semibold">{item.name}</p>
+                          <p className="text-slate-400">{suggestion.reason}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-slate-400">Current: {item.low_inventory_threshold || 0}</p>
+                          <p className="text-yellow-300 font-bold">→ {suggestion.suggested}</p>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+
+            <button
+              onClick={handleApplySmartThresholds}
+              disabled={saving.applying || loadingCalculations}
+              className="w-full px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loadingCalculations ? 'Calculating...' : saving.applying ? 'Applying...' : 'Apply All Smart Thresholds'}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Threshold Presets Section */}
       <div className="bg-slate-800 rounded-lg border border-slate-600 p-6">
