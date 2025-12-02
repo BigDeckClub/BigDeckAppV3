@@ -346,49 +346,35 @@ export const SettingsTab = ({ inventory }) => {
     };
   }, [inventory, computedSmartSuggestions]);
 
-  // Step 4: Apply Smart Thresholds to ALL Inventory (DEBUG VERSION)
+  // Step 4: Apply Smart Thresholds to ALL Inventory
   const handleApplySmartThresholds = async () => {
-    console.log('=== SMART THRESHOLDS DEBUG START ===');
-    console.log('1. Button clicked');
-    console.log('2. Inventory loaded?', !!inventory, 'Count:', inventory?.length);
-    console.log('3. thresholdSettings:', thresholdSettings);
-    
     if (!inventory || inventory.length === 0) {
       alert('❌ No inventory loaded. Please wait for inventory to load first.');
-      console.log('ABORTED: No inventory');
       return;
     }
     
-    const confirmMsg = `This will calculate and apply thresholds for ${inventory.length} items. Continue?`;
+    const confirmMsg = `This will calculate and apply optimal thresholds for all ${inventory.length} items. Continue?`;
     
     if (!window.confirm(confirmMsg)) {
-      console.log('ABORTED: User cancelled');
       return;
     }
     
-    console.log('4. User confirmed, starting process...');
     setSaving(prev => ({ ...prev, applying: true }));
     setApplyProgress({ current: 0, total: inventory.length });
     
     try {
-      // Step 1: Fetch sales history
-      console.log('5. Fetching sales history...');
+      // Fetch sales history for velocity calculations
       let salesHistory = [];
       try {
         const salesResponse = await fetch('/api/sales');
-        console.log('6. Sales response status:', salesResponse.status);
         if (salesResponse.ok) {
           salesHistory = await salesResponse.json();
-          console.log('7. Sales history loaded:', salesHistory.length, 'records');
-        } else {
-          console.log('7. Sales fetch failed, continuing without sales data');
         }
       } catch (err) {
-        console.warn('7. Sales fetch error (continuing anyway):', err.message);
+        console.warn('[Settings] Could not fetch sales history, using base calculations');
       }
       
-      // Step 2: Calculate thresholds
-      console.log('8. Calculating thresholds for', inventory.length, 'items...');
+      // Calculate thresholds for all items
       const updates = [];
       
       for (let i = 0; i < inventory.length; i++) {
@@ -408,45 +394,24 @@ export const SettingsTab = ({ inventory }) => {
             setApplyProgress({ current: i, total: inventory.length });
           }
         } catch (calcErr) {
-          console.error('Calculation error for item', item.id, item.name, ':', calcErr);
+          console.error('[Settings] Calculation error for item', item.name, ':', calcErr.message);
         }
       }
       
-      console.log('9. Calculated', updates.length, 'thresholds');
-      console.log('10. Sample updates:', updates.slice(0, 3));
-      
       setApplyProgress({ current: inventory.length, total: inventory.length });
       
-      // Step 3: Send bulk update
-      console.log('11. Sending bulk update to /api/inventory/bulk-threshold...');
-      
+      // Send bulk update to backend
       const response = await fetch('/api/inventory/bulk-threshold', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ updates })
       });
       
-      console.log('12. Response status:', response.status);
-      console.log('13. Response ok:', response.ok);
-      
-      const responseText = await response.text();
-      console.log('14. Response text:', responseText);
-      
-      let result;
-      try {
-        result = JSON.parse(responseText);
-        console.log('15. Parsed result:', result);
-      } catch (parseErr) {
-        console.error('15. JSON parse error:', parseErr);
-        throw new Error(`Invalid JSON response: ${responseText.substring(0, 100)}`);
-      }
-      
       if (!response.ok) {
-        throw new Error(result.error || `HTTP ${response.status}`);
+        throw new Error(`Bulk update failed: ${response.status}`);
       }
       
-      // Step 4: Success
-      console.log('16. SUCCESS! Updated:', result.updated, 'Errors:', result.errors);
+      const result = await response.json();
       
       if (result.errors > 0) {
         alert(`✅ Updated ${result.updated} items!\n⚠️ ${result.errors} errors occurred.`);
@@ -458,15 +423,13 @@ export const SettingsTab = ({ inventory }) => {
       setTimeout(() => setSuccessMessage(''), 5000);
       
     } catch (error) {
-      console.error('=== ERROR ===', error);
-      alert(`❌ Error: ${error.message}\n\nCheck browser console for details.`);
+      console.error('[Settings] Error applying thresholds:', error.message);
+      alert(`❌ Error: ${error.message}`);
       setSuccessMessage('Error applying smart thresholds');
       setTimeout(() => setSuccessMessage(''), 3000);
     } finally {
-      console.log('19. Cleanup - resetting state');
       setSaving(prev => ({ ...prev, applying: false }));
       setApplyProgress({ current: 0, total: 0 });
-      console.log('=== SMART THRESHOLDS DEBUG END ===');
     }
   };
 
