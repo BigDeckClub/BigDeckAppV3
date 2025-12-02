@@ -743,20 +743,35 @@ app.delete('/api/inventory/:id', validateId, async (req, res) => {
 // Toggle low inventory alert for a specific card
 app.post('/api/inventory/:id/toggle-alert', validateId, async (req, res) => {
   const id = req.validatedId;
+  console.log('[API] TOGGLE-ALERT ENDPOINT HIT with id:', id);
 
   try {
+    console.log('[API] Fetching current state before toggle...');
+    const beforeResult = await pool.query(
+      'SELECT id, name, low_inventory_alert FROM inventory WHERE id = $1',
+      [id]
+    );
+    
+    if (beforeResult.rows.length === 0) {
+      console.log('[API] Item not found:', id);
+      return res.status(404).json({ error: 'Inventory item not found' });
+    }
+    
+    console.log('[API] Before toggle:', beforeResult.rows[0]);
+    
+    console.log('[API] Executing UPDATE query...');
     const result = await pool.query(
       'UPDATE inventory SET low_inventory_alert = NOT low_inventory_alert WHERE id = $1 RETURNING *',
       [id]
     );
     
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Inventory item not found' });
-    }
+    console.log('[API] After toggle:', result.rows[0]);
+    console.log('[API] Success! Updated item:', result.rows[0].id, 'alert=', result.rows[0].low_inventory_alert);
     
     res.json(result.rows[0]);
   } catch (error) {
     console.error('[INVENTORY] Error toggling alert:', error.message);
+    console.error('[INVENTORY] Error stack:', error.stack);
     res.status(500).json({ error: 'Failed to toggle alert' });
   }
 });
