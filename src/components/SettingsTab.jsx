@@ -32,6 +32,9 @@ export const SettingsTab = ({ inventory }) => {
   const [salesHistory, setSalesHistory] = useState([]);
   const [smartSuggestions, setSmartSuggestions] = useState({});
   const [loadingCalculations, setLoadingCalculations] = useState(false);
+  
+  // Progress tracking for bulk apply
+  const [applyProgress, setApplyProgress] = useState({ current: 0, total: 0 });
 
   // Step 7: Save threshold settings to localStorage AND backend when they change
   useEffect(() => {
@@ -209,64 +212,82 @@ export const SettingsTab = ({ inventory }) => {
     }));
   };
 
-  // Step 4: Apply Smart Thresholds to ALL Inventory
+  // Step 4: Apply Smart Thresholds to ALL Inventory (FIXED: Bulk update instead of sequential calls)
   const handleApplySmartThresholds = async () => {
     const confirmMsg = `This will:
 • Calculate optimal thresholds for all ${inventory.length} items
 • Enable low inventory alerts on all items
-• Use your current slider settings (Base: ${thresholdSettings.baseStock}, Land: ${thresholdSettings.landMultiplier}x, Buffer: ${thresholdSettings.velocityWeeks}w)
+• Use your current slider settings
 
 Continue?`;
 
     if (!window.confirm(confirmMsg)) return;
     
     setSaving(prev => ({ ...prev, applying: true }));
-    let updated = 0;
-    let errors = 0;
+    setApplyProgress({ current: 0, total: inventory.length });
     
     try {
-      // Fetch sales history for velocity calculations
-      const salesResponse = await fetch('/api/sales');
-      const salesHistory = await salesResponse.json();
-      console.log('[Step 4] Fetched sales history:', salesHistory?.length || 0, 'records');
-      
-      for (const item of inventory) {
-        try {
-          // Calculate smart threshold using calculator
-          const { suggested } = calculateSmartThreshold(item, salesHistory || [], thresholdSettings);
-          console.log(`[Step 4] ${item.name}: calculated threshold = ${suggested}`);
-          
-          // Set threshold via PUT
-          await put(`/api/inventory/${item.id}`, {
-            low_inventory_threshold: suggested
-          });
-          
-          // Enable alert if not already enabled
-          if (!item.low_inventory_alert) {
-            await put(`/api/inventory/${item.id}`, {
-              low_inventory_alert: true
-            });
-          }
-          
-          updated++;
-        } catch (err) {
-          console.error(`[Step 4] Error updating ${item.name}:`, err);
-          errors++;
+      console.log('[BulkUpdate] Fetching sales history...');
+      let salesHistory = [];
+      try {
+        const salesResponse = await fetch('/api/sales');
+        if (salesResponse.ok) {
+          salesHistory = await salesResponse.json();
         }
+      } catch (err) {
+        console.warn('[BulkUpdate] Could not fetch sales history, using base calculations:', err);
       }
       
-      const msg = `✅ Applied smart thresholds to ${updated}/${inventory.length} items!${errors > 0 ? `\n⚠️ ${errors} errors occurred. Check console for details.` : ''}`;
-      alert(msg);
-      setSuccessMessage(msg.split('\n')[0]);
+      console.log('[BulkUpdate] Calculating thresholds for', inventory.length, 'items...');
+      const updates = inventory.map((item, index) => {
+        const { suggested } = calculateSmartThreshold(item, salesHistory, thresholdSettings);
+        
+        // Update progress every 10 items
+        if (index % 10 === 0) {
+          setApplyProgress({ current: index, total: inventory.length });
+        }
+        
+        return {
+          id: item.id,
+          threshold: suggested,
+          enableAlert: true
+        };
+      });
+      
+      setApplyProgress({ current: inventory.length, total: inventory.length });
+      console.log('[BulkUpdate] Calculated', updates.length, 'thresholds, sending bulk update...');
+      
+      // Single bulk update request
+      const response = await fetch('/api/inventory/bulk-threshold', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ updates })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Bulk update failed: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      console.log('[BulkUpdate] Result:', result);
+      
+      if (result.errors > 0) {
+        alert(`✅ Updated ${result.updated} items!\n⚠️ ${result.errors} errors occurred.`);
+      } else {
+        alert(`✅ Successfully updated all ${result.updated} items with smart thresholds!`);
+      }
+      
+      setSuccessMessage(`✅ Applied smart thresholds to ${result.updated}/${result.updated + result.errors} items`);
       setTimeout(() => setSuccessMessage(''), 5000);
-      console.log('[Step 4] Complete - Updated:', updated, 'Errors:', errors);
+      
     } catch (error) {
-      console.error('[Step 4] Error applying thresholds:', error);
-      alert('Error fetching sales data. Check console for details.');
-      setSuccessMessage('Error fetching sales data');
+      console.error('[BulkUpdate] Error:', error);
+      alert(`❌ Error: ${error.message}\n\nCheck console for details.`);
+      setSuccessMessage('Error applying smart thresholds');
       setTimeout(() => setSuccessMessage(''), 3000);
     } finally {
       setSaving(prev => ({ ...prev, applying: false }));
+      setApplyProgress({ current: 0, total: 0 });
     }
   };
 
@@ -380,10 +401,20 @@ Continue?`;
           disabled={saving.applying || loadingCalculations}
           className="w-full px-4 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-slate-600 text-white font-medium rounded-lg transition-colors"
         >
-          {loadingCalculations ? (
+          {saving.applying ? (
+            <span className="flex items-center justify-center gap-2">
+              <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+              {applyProgress.total > 0 ? (
+                <span>Updating {applyProgress.current}/{applyProgress.total}...</span>
+              ) : (
+                <span>Calculating...</span>
+              )}
+            </span>
+          ) : loadingCalculations ? (
             <span>Calculating & Applying...</span>
-          ) : saving.applying ? (
-            <span>Applying...</span>
           ) : (
             <span>🚀 Apply Smart Thresholds to All Inventory</span>
           )}

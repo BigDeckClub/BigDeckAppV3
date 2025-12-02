@@ -1858,6 +1858,57 @@ app.get('/api/transactions', async (req, res) => {
   }
 });
 
+// POST /api/inventory/bulk-threshold - Bulk update thresholds and alerts (FIXED: Single request instead of 200+ sequential calls)
+app.post('/api/inventory/bulk-threshold', async (req, res) => {
+  try {
+    const { updates } = req.body;
+    
+    if (!Array.isArray(updates) || updates.length === 0) {
+      return res.status(400).json({ error: 'Updates array is required' });
+    }
+    
+    console.log(`[BULK-UPDATE] Processing ${updates.length} inventory items...`);
+    
+    let successCount = 0;
+    let errorCount = 0;
+    const errors = [];
+    
+    // Execute all updates in parallel
+    const updatePromises = updates.map(async (update) => {
+      try {
+        const { id, threshold, enableAlert } = update;
+        
+        await pool.query(
+          `UPDATE inventory 
+           SET low_inventory_threshold = $1,
+               low_inventory_alert = $2
+           WHERE id = $3`,
+          [threshold, enableAlert ? true : false, id]
+        );
+        
+        successCount++;
+      } catch (err) {
+        errorCount++;
+        errors.push({ id: update.id, error: err.message });
+      }
+    });
+    
+    await Promise.allSettled(updatePromises);
+    
+    console.log(`[BULK-UPDATE] Complete: ${successCount} success, ${errorCount} errors`);
+    
+    res.json({ 
+      success: true, 
+      updated: successCount, 
+      errors: errorCount,
+      errorDetails: errors 
+    });
+  } catch (error) {
+    console.error('[BULK-UPDATE] Error:', error.message);
+    res.status(500).json({ error: 'Failed to bulk update thresholds' });
+  }
+});
+
 // ========== STEP 7: SETTINGS ENDPOINTS ==========
 // GET /api/settings/:key - Retrieve a setting
 app.get('/api/settings/:key', async (req, res) => {
