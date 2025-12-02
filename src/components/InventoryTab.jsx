@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { Plus, Trash2, X, ChevronDown, ChevronRight, Grid3X3, List, Menu, Wand2, DollarSign } from 'lucide-react';
 import { usePriceCache } from "../context/PriceCacheContext";
+import { useToast, TOAST_TYPES } from "../context/ToastContext";
+import { useConfirm } from "../context/ConfirmContext";
 import { CardGroup } from './inventory/CardGroup';
 import { SellModal } from './SellModal';
 
@@ -39,6 +41,9 @@ export const InventoryTab = ({
   onLoadInventory,
   onSell
 }) => {
+  const { showToast } = useToast();
+  const { confirm } = useConfirm();
+  
   const [expandedFolders, setExpandedFolders] = useState({});
   const [newFolderName, setNewFolderName] = useState('');
   const [showCreateFolder, setShowCreateFolder] = useState(false);
@@ -237,6 +242,16 @@ export const InventoryTab = ({
 
   // Release deck and return cards to inventory
   const releaseDeck = async (deckId) => {
+    const deck = deckInstances.find(d => d.id === deckId);
+    const confirmed = await confirm({
+      title: 'Delete Deck',
+      message: `Are you sure you want to delete "${deck?.name || 'this deck'}"? Cards will be returned to Unsorted.`,
+      confirmText: 'Delete',
+      variant: 'danger'
+    });
+    
+    if (!confirmed) return;
+    
     try {
       const response = await fetch(`/api/deck-instances/${deckId}/release`, {
         method: 'POST'
@@ -251,14 +266,12 @@ export const InventoryTab = ({
           return updated;
         });
         await refreshDeckInstances();
-        setSuccessMessage('Deck deleted! Cards returned to unsorted.');
-        setTimeout(() => setSuccessMessage(''), 3000);
+        showToast('Deck deleted! Cards returned to unsorted.', TOAST_TYPES.SUCCESS);
       } else {
-        alert('Failed to delete deck');
+        showToast('Failed to delete deck', TOAST_TYPES.ERROR);
       }
     } catch (error) {
-
-      alert('Error deleting deck');
+      showToast('Error deleting deck', TOAST_TYPES.ERROR);
     }
   };
 
@@ -290,14 +303,12 @@ export const InventoryTab = ({
         const result = await response.json();
         await loadDeckDetails(deckId);
         await refreshDeckInstances();
-        setSuccessMessage(`Deck reoptimized! ${result.reservedCount} cards reserved.`);
-        setTimeout(() => setSuccessMessage(''), 3000);
+        showToast(`Deck reoptimized! ${result.reservedCount} cards reserved.`, TOAST_TYPES.SUCCESS);
       } else {
-        alert('Failed to reoptimize deck');
+        showToast('Failed to reoptimize deck', TOAST_TYPES.ERROR);
       }
     } catch (error) {
-
-      alert('Error reoptimizing deck');
+      showToast('Error reoptimizing deck', TOAST_TYPES.ERROR);
     }
   };
 
@@ -306,12 +317,12 @@ export const InventoryTab = ({
     try {
       const item = inventory.find(i => i.id === itemId);
       if (!item) {
-        alert('Item not found');
+        showToast('Item not found', TOAST_TYPES.ERROR);
         return;
       }
       
       // Show the change immediately
-      setSuccessMessage(`Moved ${item.quantity}x ${item.name} to ${targetFolder}`);
+      showToast(`Moved ${item.quantity}x ${item.name} to ${targetFolder}`, TOAST_TYPES.SUCCESS);
       
       // Update API
       const response = await fetch(`/api/inventory/${itemId}`, {
@@ -328,24 +339,22 @@ export const InventoryTab = ({
       if (onLoadInventory) {
         await onLoadInventory();
       }
-      setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error) {
-      setSuccessMessage(`Error moving item: ${error.message}`);
-      setTimeout(() => setSuccessMessage(''), 5000);
+      showToast(`Error moving item: ${error.message}`, TOAST_TYPES.ERROR);
     }
-  }, [inventory, onLoadInventory, setSuccessMessage]);
+  }, [inventory, onLoadInventory, showToast]);
 
   // Move cards to folder via drag-drop (with optimistic updates) (memoized)
   const moveCardToFolder = useCallback(async (cardName, targetFolder) => {
     try {
       const cardItems = inventory.filter(item => item.name === cardName);
       if (cardItems.length === 0) {
-        alert('Card not found');
+        showToast('Card not found', TOAST_TYPES.ERROR);
         return;
       }
       
       // Show the change immediately
-      setSuccessMessage(`Moved "${cardName}" to ${targetFolder}`);
+      showToast(`Moved "${cardName}" to ${targetFolder}`, TOAST_TYPES.SUCCESS);
       
       // Update API in the background
       let hasError = false;
@@ -367,13 +376,10 @@ export const InventoryTab = ({
       if (onLoadInventory) {
         await onLoadInventory();
       }
-      setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error) {
-
-      setSuccessMessage(`Error moving card: ${error.message}`);
-      setTimeout(() => setSuccessMessage(''), 5000);
+      showToast(`Error moving card: ${error.message}`, TOAST_TYPES.ERROR);
     }
-  }, [inventory, onLoadInventory, setSuccessMessage]);
+  }, [inventory, onLoadInventory, showToast]);
 
   // Move card from deck to folder
   const moveCardFromDeckToFolder = async (deckCardData, targetFolder) => {
@@ -383,7 +389,7 @@ export const InventoryTab = ({
       const quantity = deckCardData.quantity_reserved;
       
       // Show the change immediately
-      setSuccessMessage(`Moved card to ${targetFolder}`);
+      showToast(`Moved card to ${targetFolder}`, TOAST_TYPES.SUCCESS);
       
       // First remove the card from the deck (which moves it to Uncategorized)
       const removeResponse = await fetch(`/api/deck-instances/${deckId}/remove-card`, {
@@ -414,12 +420,8 @@ export const InventoryTab = ({
       await new Promise(resolve => setTimeout(resolve, 100)); // Small delay to ensure state updates
       await loadDeckDetails(deckId, true);
       await refreshDeckInstances();
-      
-      setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error) {
-
-      setSuccessMessage(`Error: ${error.message}`);
-      setTimeout(() => setSuccessMessage(''), 5000);
+      showToast(`Error: ${error.message}`, TOAST_TYPES.ERROR);
     }
   };
 
@@ -433,9 +435,6 @@ export const InventoryTab = ({
       
       // Use attempted quantity if provided (for retries), otherwise use item's full quantity
       const qtyToUse = attemptQty !== null ? attemptQty : (inventoryItem.quantity || 1);
-      
-      // Show immediate feedback
-      setSuccessMessage(`Adding ${qtyToUse}x ${inventoryItem.name} to deck...`);
       
       // Make API call first (no optimistic update until success)
       const response = await fetch(`/api/deck-instances/${deckId}/add-card`, {
@@ -477,25 +476,22 @@ export const InventoryTab = ({
         }));
       }
       
-      setSuccessMessage(`Added ${qtyToUse}x ${inventoryItem.name} to deck`);
+      showToast(`Added ${qtyToUse}x ${inventoryItem.name} to deck`, TOAST_TYPES.SUCCESS);
       
       // Only refresh immediately if not called from auto-fill (which does its own refresh)
       if (!skipRefresh) {
         await refreshDeckInstances();
         debouncedLoadInventory();
-        setTimeout(() => setSuccessMessage(''), 3000);
       }
     } catch (error) {
-
-      setSuccessMessage(`Error: ${error.message}`);
-      setTimeout(() => setSuccessMessage(''), 5000);
+      showToast(`Error: ${error.message}`, TOAST_TYPES.ERROR);
     }
   };
 
   // Auto-fill a single card type from inventory (oldest and cheapest first)
   const autoFillSingleCard = async (decklistCard, needed, deckId) => {
     try {
-      setSuccessMessage(`Auto-filling ${needed}x ${decklistCard.name}...`);
+      showToast(`Auto-filling ${needed}x ${decklistCard.name}...`, TOAST_TYPES.INFO);
       
       // Find matching inventory items, sorted by date (oldest first) then price (cheapest first)
       const matchingItems = (inventory || [])
@@ -528,19 +524,16 @@ export const InventoryTab = ({
       await refreshDeckInstances();
       debouncedLoadInventory();
       await loadDeckDetails(deckId, true);
-      setSuccessMessage(`✅ Added ${added} item(s) to deck`);
-      setTimeout(() => setSuccessMessage(''), 3000);
+      showToast(`✅ Added ${added} item(s) to deck`, TOAST_TYPES.SUCCESS);
     } catch (error) {
-
-      setSuccessMessage(`Error: ${error.message}`);
-      setTimeout(() => setSuccessMessage(''), 5000);
+      showToast(`Error: ${error.message}`, TOAST_TYPES.ERROR);
     }
   };
 
   // Auto-fill missing cards from inventory (oldest and cheapest first)
   const autoFillMissingCards = async (deck, deckId) => {
     try {
-      setSuccessMessage('Auto-filling missing cards...');
+      showToast('Auto-filling missing cards...', TOAST_TYPES.INFO);
       
       // For each card in the decklist
       const cardsToAdd = [];
@@ -589,13 +582,10 @@ export const InventoryTab = ({
         await moveCardSkuToDeck(card, deckId);
       }
       
-      setSuccessMessage(`✅ Auto-filled ${cardsToAdd.length} card(s) into deck`);
+      showToast(`✅ Auto-filled ${cardsToAdd.length} card(s) into deck`, TOAST_TYPES.SUCCESS);
       await loadDeckDetails(deckId, true);
-      setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error) {
-
-      setSuccessMessage(`Error: ${error.message}`);
-      setTimeout(() => setSuccessMessage(''), 5000);
+      showToast(`Error: ${error.message}`, TOAST_TYPES.ERROR);
     }
   };
 
@@ -610,9 +600,6 @@ export const InventoryTab = ({
       const reservationId = deckCardData.id;
       const quantity = deckCardData.quantity_reserved;
       const inventoryItemId = deckCardData.inventory_item_id;
-      
-      // Show immediate feedback
-      setSuccessMessage(`Moving card to deck...`);
       
       // Remove from source deck
       const removeResponse = await fetch(`/api/deck-instances/${sourceDeckId}/remove-card`, {
@@ -643,12 +630,9 @@ export const InventoryTab = ({
       // Use debounced refresh for inventory
       debouncedLoadInventory();
       
-      setSuccessMessage(`Card moved to deck`);
-      setTimeout(() => setSuccessMessage(''), 3000);
+      showToast('Card moved to deck', TOAST_TYPES.SUCCESS);
     } catch (error) {
-
-      setSuccessMessage(`Error: ${error.message}`);
-      setTimeout(() => setSuccessMessage(''), 5000);
+      showToast(`Error: ${error.message}`, TOAST_TYPES.ERROR);
     }
   };
 
@@ -1071,8 +1055,7 @@ export const InventoryTab = ({
                     setNewFolderName('');
                     setShowCreateFolder(false);
                     setSelectedFolder(newFolderName.trim());
-                    setSuccessMessage(`Folder "${newFolderName.trim()}" created!`);
-                    setTimeout(() => setSuccessMessage(''), 3000);
+                    showToast(`Folder "${newFolderName.trim()}" created!`, TOAST_TYPES.SUCCESS);
                   }
                   if (e.key === 'Escape') {
                     setNewFolderName('');
@@ -1088,8 +1071,7 @@ export const InventoryTab = ({
                       setNewFolderName('');
                       setShowCreateFolder(false);
                       setSelectedFolder(newFolderName.trim());
-                      setSuccessMessage(`Folder "${newFolderName.trim()}" created!`);
-                      setTimeout(() => setSuccessMessage(''), 3000);
+                      showToast(`Folder "${newFolderName.trim()}" created!`, TOAST_TYPES.SUCCESS);
                     }
                   }}
                   className="flex-1 bg-teal-600 hover:bg-teal-700 text-white px-3 py-1 rounded text-xs font-semibold transition-colors"

@@ -1,10 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { BookOpen, Plus, Trash2, Edit2, X, Download } from 'lucide-react';
+import { useToast, TOAST_TYPES } from '../context/ToastContext';
+import { useConfirm } from '../context/ConfirmContext';
 
 const API_BASE = '/api';
 
 export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
+  const { showToast } = useToast();
+  const { confirm } = useConfirm();
+  
   const [decks, setDecks] = useState([]);
   const [showImportDecklist, setShowImportDecklist] = useState(false);
   const [newDeckName, setNewDeckName] = useState('');
@@ -60,8 +65,7 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
       }
       
     } catch (error) {
-
-      alert('Error copying deck to inventory');
+      showToast('Error copying deck to inventory', TOAST_TYPES.ERROR);
     } finally {
       setIsCopying(false);
     }
@@ -69,7 +73,7 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
 
   const importFromArchidekt = async () => {
     if (!archidektUrl.trim()) {
-      alert('Please enter an Archidekt deck URL');
+      showToast('Please enter an Archidekt deck URL', TOAST_TYPES.WARNING);
       return;
     }
 
@@ -79,7 +83,7 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
       // Archidekt URLs look like: archidekt.com/decks/1234567 or archidekt.com/decks/1234567/
       const match = archidektUrl.match(/archidekt\.com\/decks\/(\d+)/i);
       if (!match) {
-        alert('Invalid Archidekt URL. Please use a URL like: archidekt.com/decks/123456');
+        showToast('Invalid Archidekt URL. Please use a URL like: archidekt.com/decks/123456', TOAST_TYPES.ERROR);
         setIsImporting(false);
         return;
       }
@@ -113,7 +117,7 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
       }
 
       if (cards.length === 0) {
-        alert('No cards found in this deck');
+        showToast('No cards found in this deck', TOAST_TYPES.WARNING);
         setIsImporting(false);
         return;
       }
@@ -154,16 +158,14 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
       await loadDecks();
       setArchidektUrl('');
       setShowImportArchidekt(false);
-      setSuccessMessage(`Deck imported successfully! ${cards.length} cards added.`);
-      setTimeout(() => setSuccessMessage(''), 3000);
+      showToast(`Deck imported successfully! ${cards.length} cards added.`, TOAST_TYPES.SUCCESS);
       
       // Refresh inventory after deck import
       if (onInventoryUpdate) {
         onInventoryUpdate();
       }
     } catch (error) {
-
-      alert(`Error importing deck: ${error.message}`);
+      showToast(`Error importing deck: ${error.message}`, TOAST_TYPES.ERROR);
     } finally {
       setIsImporting(false);
     }
@@ -240,19 +242,19 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
 
   const importFromTextDeck = async () => {
     if (!newDeckName.trim()) {
-      alert('Please enter a deck name');
+      showToast('Please enter a deck name', TOAST_TYPES.WARNING);
       return;
     }
 
     if (!deckListText.trim()) {
-      alert('Please paste a deck list');
+      showToast('Please paste a deck list', TOAST_TYPES.WARNING);
       return;
     }
 
     const cards = parseDeckList(deckListText);
 
     if (cards.length === 0) {
-      alert('No cards found in deck list. Format: "4 Card Name" or "4x Card Name"');
+      showToast('No cards found in deck list. Format: "4 Card Name" or "4x Card Name"', TOAST_TYPES.ERROR);
       return;
     }
 
@@ -285,21 +287,27 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
       setDeckListText('');
       setNewDeckFormat('Standard');
       setShowImportDecklist(false);
-      setSuccessMessage(`Deck created with ${cards.length} cards!`);
-      setTimeout(() => setSuccessMessage(''), 3000);
+      showToast(`Deck created with ${cards.length} cards!`, TOAST_TYPES.SUCCESS);
       
       // Refresh inventory after deck creation
       if (onInventoryUpdate) {
         onInventoryUpdate();
       }
     } catch (error) {
-
-      alert('Error creating deck');
+      showToast('Error creating deck', TOAST_TYPES.ERROR);
     }
   };
 
   const deleteDeck = async (id) => {
-    if (window.confirm('Are you sure you want to delete this deck?')) {
+    const deck = decks.find(d => d.id === id);
+    const confirmed = await confirm({
+      title: 'Delete Deck',
+      message: `Are you sure you want to delete "${deck?.name || 'this deck'}"?`,
+      confirmText: 'Delete',
+      variant: 'danger'
+    });
+    
+    if (confirmed) {
       try {
         const response = await fetch(`${API_BASE}/decks/${id}`, { method: 'DELETE' });
         if (response.ok) {
@@ -307,8 +315,7 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
           if (selectedDeck?.id === id) {
             setSelectedDeck(null);
           }
-          setSuccessMessage('Deck deleted!');
-          setTimeout(() => setSuccessMessage(''), 3000);
+          showToast('Deck deleted!', TOAST_TYPES.SUCCESS);
           
           // Refresh deck instances and inventory after deletion
           if (onDeckCreatedOrDeleted) {
@@ -319,8 +326,7 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
           }
         }
       } catch (error) {
-
-        alert('Error deleting deck');
+        showToast('Error deleting deck', TOAST_TYPES.ERROR);
       }
     }
   };
@@ -341,16 +347,14 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
       if (response.ok) {
         setEditingDeck(null);
         await loadDecks();
-        setSuccessMessage('Deck updated!');
-        setTimeout(() => setSuccessMessage(''), 3000);
+        showToast('Deck updated!', TOAST_TYPES.SUCCESS);
       } else {
         setEditingDeck(null);
-        alert('Failed to update deck');
+        showToast('Failed to update deck', TOAST_TYPES.ERROR);
       }
     } catch (error) {
-
       setEditingDeck(null);
-      alert('Error updating deck');
+      showToast('Error updating deck', TOAST_TYPES.ERROR);
     }
   };
 
@@ -366,14 +370,12 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
         // Update selected deck locally first for immediate feedback
         setSelectedDeck(prev => prev?.id === id ? { ...prev, description: newDescription } : prev);
         await loadDecks();
-        setSuccessMessage('Deck updated!');
-        setTimeout(() => setSuccessMessage(''), 3000);
+        showToast('Deck updated!', TOAST_TYPES.SUCCESS);
       } else {
-        alert('Failed to update deck');
+        showToast('Failed to update deck', TOAST_TYPES.ERROR);
       }
     } catch (error) {
-
-      alert('Error updating deck');
+      showToast('Error updating deck', TOAST_TYPES.ERROR);
     }
   };
 
