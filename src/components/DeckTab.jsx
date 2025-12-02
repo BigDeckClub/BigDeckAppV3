@@ -773,3 +773,5 @@ DeckTab.propTypes = {
   successMessage: PropTypes.string,
   setSuccessMessage: PropTypes.func,
 };
+
+export default DeckTab;

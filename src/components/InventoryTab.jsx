@@ -2136,3 +2136,5 @@ InventoryTab.propTypes = {
   deleteInventoryItem: PropTypes.func.isRequired,
   handleSearch: PropTypes.func.isRequired,
 };
+
+export default InventoryTab;
