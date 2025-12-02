@@ -65,11 +65,20 @@ function MTGInventoryTrackerContent() {
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
   const loadInventory = async () => {
+    console.log('=== LOAD INVENTORY CALLED ===');
     try {
       const data = await get(`${API_BASE}/inventory`);
       const sortedData = (data || []).sort((a, b) => a.name.localeCompare(b.name));
+      console.log('Inventory loaded, total items:', sortedData.length);
+      
+      // Check item 6's alert status
+      const item6 = sortedData.find(i => i.id === 6);
+      console.log('Item 6 low_inventory_alert:', item6?.low_inventory_alert);
+      
       setInventory(sortedData);
+      console.log('setInventory called - state updated');
     } catch (error) {
+      console.error('Error loading inventory:', error);
       setInventory([]);
     }
   };

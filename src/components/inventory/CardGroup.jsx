@@ -27,6 +27,7 @@ function getStatFontSize(value) {
 /**
  * CardGroup - A memoized component for rendering a group of inventory cards
  * Extracted from InventoryTab for performance optimization
+ * Custom memo comparison to force re-render when low_inventory_alert changes
  */
 export const CardGroup = memo(function CardGroup({
   cardName,
@@ -374,6 +375,24 @@ export const CardGroup = memo(function CardGroup({
         </div>
       )}
     </div>
+  );
+}, (prevProps, nextProps) => {
+  // Custom memo comparison - force re-render if low_inventory_alert changes on any item
+  const prevAlerts = (prevProps.items || []).map(i => i.low_inventory_alert).join(',');
+  const nextAlerts = (nextProps.items || []).map(i => i.low_inventory_alert).join(',');
+  
+  if (prevAlerts !== nextAlerts) {
+    console.log('CardGroup: Re-rendering due to low_inventory_alert change');
+    return false; // Force re-render
+  }
+  
+  // For other prop changes, use shallow comparison
+  return (
+    prevProps.cardName === nextProps.cardName &&
+    prevProps.viewMode === nextProps.viewMode &&
+    prevProps.items.length === nextProps.items.length &&
+    prevProps.editingId === nextProps.editingId &&
+    prevProps.expandedCards === nextProps.expandedCards
   );
 });
 
