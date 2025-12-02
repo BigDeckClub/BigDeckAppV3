@@ -205,17 +205,28 @@ export const CardGroup = memo(function CardGroup({
                         {item.low_inventory_alert ? <Bell className="w-3 h-3" /> : <BellOff className="w-3 h-3" />}
                       </button>
                       {item.low_inventory_alert && (
-                        <input
-                          type="number"
-                          min="0"
-                          value={thresholdInput[item.id] !== undefined ? thresholdInput[item.id] : item.low_inventory_threshold || ''}
-                          onChange={(e) => setThresholdInput(prev => ({ ...prev, [item.id]: e.target.value }))}
-                          onBlur={(e) => handleSetThreshold(item.id, e)}
-                          onKeyDown={(e) => e.key === 'Enter' && handleSetThreshold(item.id, e)}
-                          placeholder="qty"
-                          className="w-6 bg-slate-600 border border-slate-500 rounded px-1 py-0 text-white text-[8px] text-center"
-                          disabled={settingThresholdId === item.id}
-                        />
+                        <div className="flex flex-col gap-0.5">
+                          <input
+                            type="number"
+                            min="0"
+                            value={thresholdInput[item.id] !== undefined ? thresholdInput[item.id] : item.low_inventory_threshold || ''}
+                            onChange={(e) => setThresholdInput(prev => ({ ...prev, [item.id]: e.target.value }))}
+                            onBlur={(e) => handleSetThreshold(item.id, e)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleSetThreshold(item.id, e)}
+                            placeholder="qty"
+                            className="w-6 bg-slate-600 border border-slate-500 rounded px-1 py-0 text-white text-[8px] text-center"
+                            disabled={settingThresholdId === item.id}
+                          />
+                          {salesHistory.length > 0 && (() => {
+                            const { suggested, reason } = calculateSmartThreshold(item, salesHistory, thresholdSettings);
+                            return (
+                              <div className="text-[7px] text-slate-400 whitespace-nowrap">
+                                <span className="text-yellow-300 font-medium">{suggested}</span>
+                                <span className="text-slate-500"> suggested</span>
+                              </div>
+                            );
+                          })()}
+                        </div>
                       )}
                     </div>
                     <span className="text-slate-400">{new Date(item.purchase_date).toLocaleDateString()}</span>

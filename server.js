@@ -1825,6 +1825,29 @@ app.get('/api/sales', async (req, res) => {
   }
 });
 
+// GET /api/transactions - Fetch sales transactions (for threshold calculations)
+app.get('/api/transactions', async (req, res) => {
+  try {
+    const { type } = req.query;
+    
+    let query = 'SELECT * FROM inventory_transactions';
+    let params = [];
+    
+    if (type) {
+      query += ' WHERE transaction_type = $1';
+      params.push(type.toUpperCase());
+    }
+    
+    query += ' ORDER BY transaction_date DESC';
+    
+    const transactions = await pool.query(query, params);
+    res.json(transactions.rows);
+  } catch (error) {
+    console.error('[TRANSACTIONS] Error fetching transactions:', error.message);
+    res.status(500).json({ error: 'Failed to fetch transactions' });
+  }
+});
+
 // ========== SUPABASE AUTH PROXY ==========
 // Initialize Supabase client with service role key (server-side auth operations)
 const supabaseUrl = process.env.SUPABASE_URL;
