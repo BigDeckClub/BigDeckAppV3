@@ -32,6 +32,14 @@ export function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([]);
 
   /**
+   * Dismiss a specific toast by ID
+   * @param {string} id - The toast ID to dismiss
+   */
+  const dismissToast = useCallback((id) => {
+    setToasts((prev) => prev.filter((toast) => toast.id !== id));
+  }, []);
+
+  /**
    * Show a toast notification
    * @param {string} message - The message to display
    * @param {string} type - The type of toast (success, error, warning, info)
@@ -63,15 +71,7 @@ export function ToastProvider({ children }) {
     }
 
     return id;
-  }, []);
-
-  /**
-   * Dismiss a specific toast by ID
-   * @param {string} id - The toast ID to dismiss
-   */
-  const dismissToast = useCallback((id) => {
-    setToasts((prev) => prev.filter((toast) => toast.id !== id));
-  }, []);
+  }, [dismissToast]);
 
   /**
    * Dismiss all toasts
