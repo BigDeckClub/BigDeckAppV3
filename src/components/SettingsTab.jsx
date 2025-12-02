@@ -83,6 +83,17 @@ export const SettingsTab = ({ inventory }) => {
       });
   }, []);
 
+  // Group inventory with alerts enabled by card name (MOVED BEFORE useEffect that uses it)
+  const cardsWithAlerts = inventory
+    .filter(item => item.low_inventory_alert)
+    .reduce((acc, item) => {
+      if (!acc[item.name]) {
+        acc[item.name] = [];
+      }
+      acc[item.name].push(item);
+      return acc;
+    }, {});
+
   // Fetch sales history and calculate smart thresholds
   useEffect(() => {
     const fetchAndCalculate = async () => {
@@ -114,17 +125,6 @@ export const SettingsTab = ({ inventory }) => {
       fetchAndCalculate();
     }
   }, [thresholdSettings, cardsWithAlerts]);
-
-  // Group inventory with alerts enabled by card name
-  const cardsWithAlerts = inventory
-    .filter(item => item.low_inventory_alert)
-    .reduce((acc, item) => {
-      if (!acc[item.name]) {
-        acc[item.name] = [];
-      }
-      acc[item.name].push(item);
-      return acc;
-    }, {});
 
   const handleThresholdChange = async (cardName, itemId, newThreshold) => {
     setSaving(prev => ({ ...prev, [itemId]: true }));
