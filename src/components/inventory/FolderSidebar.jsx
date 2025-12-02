@@ -254,15 +254,15 @@ export const FolderSidebar = memo(function FolderSidebar({
                   onClick={() => openDeckTab(deck)}
                   onDragOver={(e) => {
                     e.preventDefault();
-                    e.currentTarget?.classList?.add('bg-green-700/60', 'border-green-300');
+                    e.currentTarget.classList.add('bg-green-700/60', 'border-green-300');
                   }}
                   onDragLeave={(e) => {
-                    e.currentTarget?.classList?.remove('bg-green-700/60', 'border-green-300');
+                    e.currentTarget.classList.remove('bg-green-700/60', 'border-green-300');
                   }}
                   onDrop={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    e.currentTarget?.classList?.remove('bg-green-700/60', 'border-green-300');
+                    e.currentTarget.classList.remove('bg-green-700/60', 'border-green-300');
                     try {
                       const deckCardDataStr = e.dataTransfer.getData('deckCardData');
                       const skuDataStr = e.dataTransfer.getData('skuData');

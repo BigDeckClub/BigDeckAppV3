@@ -37,7 +37,7 @@ export function useInventoryState({
   const debouncedLoadInventory = useCallback(() => {
     if (debouncedTimeoutRef.current) clearTimeout(debouncedTimeoutRef.current);
     debouncedTimeoutRef.current = setTimeout(() => {
-      if (onLoadInventory) onLoadInventory();
+      onLoadInventory?.();
     }, 300);
   }, [onLoadInventory]);
 
@@ -46,9 +46,9 @@ export function useInventoryState({
     try {
       const response = await fetch(`/api/inventory/${itemId}/toggle-alert`, { method: 'POST' });
       await response.json();
-      if (onLoadInventory) onLoadInventory();
+      onLoadInventory?.();
     } catch (error) {
-      console.error('ERROR in toggleAlertHandler:', error);
+      console.error('Error toggling alert:', error);
     }
   }, [onLoadInventory]);
 
@@ -107,7 +107,7 @@ export function useInventoryState({
         setDeckInstances(data);
       }
     } catch (error) {
-      // Handle silently
+      console.error('Error fetching deck instances:', error);
     }
   }, []);
 
@@ -130,7 +130,7 @@ export function useInventoryState({
         }
       }
     } catch (error) {
-      // Handle silently
+      console.error('Error loading deck details:', error);
     } finally {
       setLoadingDeckDetails(false);
     }
@@ -211,7 +211,7 @@ export function useInventoryState({
         debouncedLoadInventory();
       }
     } catch (error) {
-      // Handle silently
+      console.error('Error removing card from deck:', error);
     }
   }, [loadDeckDetails, refreshDeckInstances, debouncedLoadInventory]);
 
@@ -233,7 +233,7 @@ export function useInventoryState({
         const error = await response.json();
         throw new Error(error.error || 'Failed to update folder');
       }
-      if (onLoadInventory) await onLoadInventory();
+      await onLoadInventory?.();
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error) {
       setSuccessMessage(`Error moving item: ${error.message}`);
@@ -260,7 +260,7 @@ export function useInventoryState({
           throw new Error(error.error || 'Failed to update folder');
         }
       }
-      if (onLoadInventory) await onLoadInventory();
+      await onLoadInventory?.();
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error) {
       setSuccessMessage(`Error moving card: ${error.message}`);
@@ -286,7 +286,7 @@ export function useInventoryState({
         body: JSON.stringify({ folder: targetFolder })
       });
       if (!moveResponse.ok) throw new Error('Failed to move card to folder');
-      if (onLoadInventory) await onLoadInventory();
+      await onLoadInventory?.();
       await new Promise(resolve => setTimeout(resolve, 100));
       await loadDeckDetails(deckId, true);
       await refreshDeckInstances();
