@@ -1,6 +1,7 @@
-import React, { memo, useState } from 'react';
+import React, { memo, useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { X, Trash2, Bell, BellOff } from 'lucide-react';
+import { X, Trash2, Bell, BellOff, Lightbulb } from 'lucide-react';
+import { calculateSmartThreshold } from '../../utils/thresholdCalculator';
 
 /**
  * Calculate average price for a set of items
@@ -49,6 +50,31 @@ export const CardGroup = memo(function CardGroup({
   const [togglingId, setTogglingId] = useState(null);
   const [settingThresholdId, setSettingThresholdId] = useState(null);
   const [thresholdInput, setThresholdInput] = useState({});
+  const [salesHistory, setSalesHistory] = useState([]);
+  const [thresholdSettings, setThresholdSettings] = useState({ baseStock: 10, landMultiplier: 10, velocityWeeks: 4 });
+  
+  // Step 5: Load sales history and threshold settings on mount
+  useEffect(() => {
+    // Load threshold settings from localStorage
+    const saved = localStorage.getItem('thresholdSettings');
+    if (saved) {
+      try {
+        setThresholdSettings(JSON.parse(saved));
+      } catch (err) {
+        console.error('[CardGroup] Error loading settings:', err);
+      }
+    }
+    
+    // Fetch sales history
+    fetch('/api/sales')
+      .then(res => res.json())
+      .then(data => {
+        setSalesHistory(data || []);
+        console.log('[CardGroup Step 5] Loaded', data?.length || 0, 'sales records');
+      })
+      .catch(err => console.error('[CardGroup Step 5] Error loading sales:', err));
+  }, []);
+  
   const totalQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
   const reservedQty = items.reduce((sum, item) => sum + (parseInt(item.reserved_quantity) || 0), 0);
   const available = totalQty - reservedQty;
