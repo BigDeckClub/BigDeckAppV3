@@ -70,6 +70,29 @@ export const InventoryTab = ({
     }, 300);
   }, [onLoadInventory]);
 
+  // Centralized handlers for low inventory alerts
+  const toggleAlertHandler = useCallback(async (itemId) => {
+    try {
+      await fetch(`/api/inventory/${itemId}/toggle-alert`, { method: 'POST' });
+      onLoadInventory?.();
+    } catch (error) {
+      console.error('Error toggling alert:', error);
+    }
+  }, [onLoadInventory]);
+
+  const setThresholdHandler = useCallback(async (itemId, threshold) => {
+    try {
+      await fetch(`/api/inventory/${itemId}/set-threshold`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ threshold })
+      });
+      onLoadInventory?.();
+    } catch (error) {
+      console.error('Error setting threshold:', error);
+    }
+  }, [onLoadInventory]);
+
   // Reorder tabs when drag ends
   const reorderTabs = (sourceType, sourceIndex, destIndex) => {
     if (sourceIndex === destIndex) return;
@@ -1953,6 +1976,8 @@ export const InventoryTab = ({
                       updateInventoryItem={updateInventoryItem}
                       deleteInventoryItem={deleteInventoryItem}
                       createdFolders={createdFolders}
+                      onToggleLowInventory={toggleAlertHandler}
+                      onSetThreshold={setThresholdHandler}
                     />
                   ))}
                 </div>
@@ -1973,6 +1998,8 @@ export const InventoryTab = ({
                       updateInventoryItem={updateInventoryItem}
                       deleteInventoryItem={deleteInventoryItem}
                       createdFolders={createdFolders}
+                      onToggleLowInventory={toggleAlertHandler}
+                      onSetThreshold={setThresholdHandler}
                     />
                   ))}
                 </div>
@@ -2096,6 +2123,8 @@ export const InventoryTab = ({
                             updateInventoryItem={updateInventoryItem}
                             deleteInventoryItem={deleteInventoryItem}
                             createdFolders={createdFolders}
+                            onToggleLowInventory={toggleAlertHandler}
+                            onSetThreshold={setThresholdHandler}
                           />
                         ))}
                       </div>
@@ -2116,6 +2145,8 @@ export const InventoryTab = ({
                             updateInventoryItem={updateInventoryItem}
                             deleteInventoryItem={deleteInventoryItem}
                             createdFolders={createdFolders}
+                            onToggleLowInventory={toggleAlertHandler}
+                            onSetThreshold={setThresholdHandler}
                           />
                         ))}
                       </div>
