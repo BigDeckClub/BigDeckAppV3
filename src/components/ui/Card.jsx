@@ -69,15 +69,8 @@ export function Card({
     className,
   ].filter(Boolean).join(' ');
 
-  // Custom background style for glassmorphism
-  const style = {
-    background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.5) 0%, rgba(15, 23, 42, 0.3) 100%)',
-    WebkitBackdropFilter: 'blur(24px)',
-    backdropFilter: 'blur(24px)',
-  };
-
   return (
-    <div className={cardClasses} style={style} {...props}>
+    <div className={cardClasses} {...props}>
       {header && (
         <div className={`border-b border-slate-700/50 ${paddingClasses[padding] || paddingClasses.default} pb-3`}>
           {header}

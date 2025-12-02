@@ -27,6 +27,20 @@ import { X } from 'lucide-react';
  *   <Input label="Name" value={name} onChange={setName} />
  * </Modal>
  */
+
+// Get all focusable elements within a container
+const getFocusableElements = (container) => {
+  const focusableSelectors = [
+    'button:not([disabled])',
+    'a[href]',
+    'input:not([disabled])',
+    'select:not([disabled])',
+    'textarea:not([disabled])',
+    '[tabindex]:not([tabindex="-1"])',
+  ].join(', ');
+  return container.querySelectorAll(focusableSelectors);
+};
+
 export function Modal({
   isOpen,
   onClose,
@@ -41,11 +55,46 @@ export function Modal({
 }) {
   const modalRef = useRef(null);
   const previousActiveElement = useRef(null);
+  const focusableElementsRef = useRef([]);
 
-  // Handle escape key
+  // Update cached focusable elements when modal content changes
+  const updateFocusableElements = useCallback(() => {
+    if (modalRef.current) {
+      focusableElementsRef.current = Array.from(getFocusableElements(modalRef.current));
+    }
+  }, []);
+
+  // Handle escape key and focus trap
   const handleKeyDown = useCallback((e) => {
     if (closeOnEscape && e.key === 'Escape') {
       onClose();
+      return;
+    }
+    
+    // Focus trap: handle Tab and Shift+Tab
+    if (e.key === 'Tab') {
+      const focusableElements = focusableElementsRef.current;
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+      
+      if (focusableElements.length === 0) {
+        e.preventDefault();
+        return;
+      }
+      
+      if (e.shiftKey) {
+        // Shift + Tab: if on first element, go to last
+        if (document.activeElement === firstElement) {
+          e.preventDefault();
+          lastElement?.focus();
+        }
+      } else {
+        // Tab: if on last element, go to first
+        if (document.activeElement === lastElement) {
+          e.preventDefault();
+          firstElement?.focus();
+        }
+      }
     }
   }, [closeOnEscape, onClose]);
 
@@ -63,9 +112,15 @@ export function Modal({
       document.body.style.overflow = 'hidden';
       document.addEventListener('keydown', handleKeyDown);
 
-      // Focus the modal
+      // Cache focusable elements and focus the first one
       if (modalRef.current) {
-        modalRef.current.focus();
+        updateFocusableElements();
+        const focusableElements = focusableElementsRef.current;
+        if (focusableElements.length > 0) {
+          focusableElements[0].focus();
+        } else {
+          modalRef.current.focus();
+        }
       }
 
       return () => {
@@ -76,7 +131,7 @@ export function Modal({
         }
       };
     }
-  }, [isOpen, handleKeyDown]);
+  }, [isOpen, handleKeyDown, updateFocusableElements]);
 
   if (!isOpen) return null;
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Modal, Button, Input } from './ui';
 
 /**
@@ -34,8 +34,15 @@ export const SellModal = ({ isOpen, itemName, purchasePrice, onClose, onSell, it
     }
   };
 
-  const profit = sellPrice ? (parseFloat(sellPrice) - purchasePrice).toFixed(2) : '0.00';
-  const profitClass = profit >= 0 ? 'text-green-400' : 'text-red-400';
+  // Memoize profit calculation to avoid unnecessary recalculations
+  const { profit, profitClass } = useMemo(() => {
+    if (!isOpen) return { profit: '0.00', profitClass: '' };
+    const profitValue = sellPrice ? parseFloat(sellPrice) - purchasePrice : 0;
+    return {
+      profit: profitValue.toFixed(2),
+      profitClass: profitValue >= 0 ? 'text-green-400' : 'text-red-400'
+    };
+  }, [isOpen, sellPrice, purchasePrice]);
 
   return (
     <Modal

@@ -126,7 +126,7 @@ Alert.propTypes = {
     label: PropTypes.string.isRequired,
     onClick: PropTypes.func.isRequired,
   }),
-  /** Custom icon component */
+  /** Custom icon component (pass the component itself, not an instance: `icon={CheckCircle}`) */
   icon: PropTypes.elementType,
   /** Additional CSS classes */
   className: PropTypes.string,

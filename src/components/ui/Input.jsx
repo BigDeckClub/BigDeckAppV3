@@ -1,4 +1,4 @@
-import React, { forwardRef } from 'react';
+import React, { forwardRef, useId } from 'react';
 import PropTypes from 'prop-types';
 
 /**
@@ -28,6 +28,7 @@ import PropTypes from 'prop-types';
  * />
  */
 export const Input = forwardRef(function Input({
+  id: providedId,
   label,
   error,
   helperText,
@@ -40,6 +41,10 @@ export const Input = forwardRef(function Input({
   containerClassName = '',
   ...props
 }, ref) {
+  const generatedId = useId();
+  const inputId = providedId || generatedId;
+  const errorId = `${inputId}-error`;
+  const helperId = `${inputId}-helper`;
   const baseClasses = `
     w-full bg-gradient-to-br from-slate-800 to-slate-900 
     border border-slate-600 hover:border-teal-500 
@@ -75,7 +80,7 @@ export const Input = forwardRef(function Input({
   return (
     <div className={`${fullWidth ? 'w-full' : ''} ${containerClassName}`}>
       {label && (
-        <label className="block text-sm font-medium text-slate-300 mb-2">
+        <label htmlFor={inputId} className="block text-sm font-medium text-slate-300 mb-2">
           {label}
         </label>
       )}
@@ -87,10 +92,11 @@ export const Input = forwardRef(function Input({
         )}
         <input
           ref={ref}
+          id={inputId}
           type={type}
           className={inputClasses}
           aria-invalid={!!error}
-          aria-describedby={error ? 'input-error' : helperText ? 'input-helper' : undefined}
+          aria-describedby={error ? errorId : helperText ? helperId : undefined}
           {...props}
         />
         {iconRight && (
@@ -100,12 +106,12 @@ export const Input = forwardRef(function Input({
         )}
       </div>
       {error && (
-        <p id="input-error" className="mt-1.5 text-sm text-red-400">
+        <p id={errorId} className="mt-1.5 text-sm text-red-400">
           {error}
         </p>
       )}
       {helperText && !error && (
-        <p id="input-helper" className="mt-1.5 text-sm text-slate-400">
+        <p id={helperId} className="mt-1.5 text-sm text-slate-400">
           {helperText}
         </p>
       )}
@@ -114,6 +120,8 @@ export const Input = forwardRef(function Input({
 });
 
 Input.propTypes = {
+  /** Custom ID for the input element (auto-generated if not provided) */
+  id: PropTypes.string,
   /** Input label */
   label: PropTypes.string,
   /** Error message */

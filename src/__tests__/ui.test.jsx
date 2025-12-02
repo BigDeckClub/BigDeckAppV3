@@ -3,10 +3,13 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
+import { Select } from '../components/ui/Select';
+import { Card } from '../components/ui/Card';
 import { Alert } from '../components/ui/Alert';
 import { Badge } from '../components/ui/Badge';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { EmptyState } from '../components/ui/EmptyState';
+import { Skeleton, CardSkeleton, ListItemSkeleton } from '../components/ui/Skeleton';
 
 describe('Button Component', () => {
   it('renders with children text', () => {
@@ -253,5 +256,154 @@ describe('EmptyState Component', () => {
     expect(button).toBeInTheDocument();
     fireEvent.click(button);
     expect(handleClick).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('Card Component', () => {
+  it('renders children content', () => {
+    render(<Card>Card content</Card>);
+    expect(screen.getByText('Card content')).toBeInTheDocument();
+  });
+
+  it('renders with header', () => {
+    render(
+      <Card header={<h3>Card Title</h3>}>
+        Content
+      </Card>
+    );
+    expect(screen.getByText('Card Title')).toBeInTheDocument();
+  });
+
+  it('renders with footer', () => {
+    render(
+      <Card footer={<button>Action</button>}>
+        Content
+      </Card>
+    );
+    expect(screen.getByText('Action')).toBeInTheDocument();
+  });
+
+  it('applies hoverable class when prop is true', () => {
+    const { container } = render(<Card hoverable>Content</Card>);
+    const card = container.firstChild;
+    expect(card.className).toContain('hover:shadow-teal-500/30');
+  });
+
+  it('applies different variants', () => {
+    const { container, rerender } = render(<Card variant="compact">Compact</Card>);
+    expect(container.firstChild.className).toContain('rounded-xl');
+
+    rerender(<Card variant="stat">Stat</Card>);
+    expect(container.firstChild.className).toContain('hover:shadow-lg');
+  });
+});
+
+describe('Select Component', () => {
+  const options = [
+    { value: 'standard', label: 'Standard' },
+    { value: 'modern', label: 'Modern' },
+    { value: 'legacy', label: 'Legacy' },
+  ];
+
+  it('renders with label', () => {
+    render(<Select label="Format" options={options} />);
+    expect(screen.getByText('Format')).toBeInTheDocument();
+  });
+
+  it('renders all options', () => {
+    render(<Select options={options} />);
+    expect(screen.getByText('Standard')).toBeInTheDocument();
+    expect(screen.getByText('Modern')).toBeInTheDocument();
+    expect(screen.getByText('Legacy')).toBeInTheDocument();
+  });
+
+  it('renders with placeholder', () => {
+    render(<Select placeholder="Select a format" options={options} defaultValue="" />);
+    expect(screen.getByText('Select a format')).toBeInTheDocument();
+  });
+
+  it('displays error message', () => {
+    render(<Select error="Please select an option" options={options} />);
+    expect(screen.getByText('Please select an option')).toBeInTheDocument();
+  });
+
+  it('displays helper text', () => {
+    render(<Select helperText="Choose your preferred format" options={options} />);
+    expect(screen.getByText('Choose your preferred format')).toBeInTheDocument();
+  });
+
+  it('handles value changes', () => {
+    const handleChange = vi.fn();
+    render(<Select options={options} onChange={handleChange} />);
+    const select = screen.getByRole('combobox');
+    fireEvent.change(select, { target: { value: 'modern' } });
+    expect(handleChange).toHaveBeenCalled();
+  });
+
+  it('associates label with select element', () => {
+    render(<Select label="Format" options={options} />);
+    const label = screen.getByText('Format');
+    const select = screen.getByRole('combobox');
+    expect(label).toHaveAttribute('for', select.id);
+  });
+});
+
+describe('Skeleton Component', () => {
+  it('renders with default variant', () => {
+    render(<Skeleton />);
+    const skeleton = document.querySelector('[aria-hidden="true"]');
+    expect(skeleton).toHaveClass('rounded-lg');
+  });
+
+  it('renders with text variant', () => {
+    render(<Skeleton variant="text" />);
+    const skeleton = document.querySelector('[aria-hidden="true"]');
+    expect(skeleton).toHaveClass('h-4', 'rounded');
+  });
+
+  it('renders with circular variant', () => {
+    render(<Skeleton variant="circular" />);
+    const skeleton = document.querySelector('[aria-hidden="true"]');
+    expect(skeleton).toHaveClass('rounded-full');
+  });
+
+  it('applies custom width and height', () => {
+    render(<Skeleton width={200} height={100} />);
+    const skeleton = document.querySelector('[aria-hidden="true"]');
+    expect(skeleton).toHaveStyle({ width: '200px', height: '100px' });
+  });
+
+  it('renders multiple skeletons with count prop', () => {
+    render(<Skeleton count={3} />);
+    const skeletons = document.querySelectorAll('[aria-hidden="true"]');
+    expect(skeletons).toHaveLength(3);
+  });
+});
+
+describe('CardSkeleton Component', () => {
+  it('renders with composed skeleton elements', () => {
+    render(<CardSkeleton />);
+    const skeletons = document.querySelectorAll('[aria-hidden="true"]');
+    expect(skeletons.length).toBeGreaterThan(0);
+  });
+
+  it('applies custom className', () => {
+    render(<CardSkeleton className="custom-class" />);
+    const container = document.querySelector('.custom-class');
+    expect(container).toBeInTheDocument();
+  });
+});
+
+describe('ListItemSkeleton Component', () => {
+  it('renders with composed skeleton elements', () => {
+    render(<ListItemSkeleton />);
+    const skeletons = document.querySelectorAll('[aria-hidden="true"]');
+    expect(skeletons.length).toBeGreaterThan(0);
+  });
+
+  it('applies custom className', () => {
+    render(<ListItemSkeleton className="custom-class" />);
+    const container = document.querySelector('.custom-class');
+    expect(container).toBeInTheDocument();
   });
 });

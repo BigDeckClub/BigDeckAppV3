@@ -1,4 +1,4 @@
-import React, { forwardRef } from 'react';
+import React, { forwardRef, useId } from 'react';
 import PropTypes from 'prop-types';
 
 /**
@@ -28,6 +28,7 @@ import PropTypes from 'prop-types';
  * />
  */
 export const Select = forwardRef(function Select({
+  id: providedId,
   label,
   error,
   helperText,
@@ -39,6 +40,10 @@ export const Select = forwardRef(function Select({
   containerClassName = '',
   ...props
 }, ref) {
+  const generatedId = useId();
+  const selectId = providedId || generatedId;
+  const errorId = `${selectId}-error`;
+  const helperId = `${selectId}-helper`;
   const baseClasses = `
     w-full bg-gradient-to-br from-slate-800 to-slate-900 
     border border-slate-600 hover:border-teal-500 
@@ -71,16 +76,17 @@ export const Select = forwardRef(function Select({
   return (
     <div className={`${fullWidth ? 'w-full' : ''} ${containerClassName}`}>
       {label && (
-        <label className="block text-sm font-medium text-slate-300 mb-2">
+        <label htmlFor={selectId} className="block text-sm font-medium text-slate-300 mb-2">
           {label}
         </label>
       )}
       <div className="relative">
         <select
           ref={ref}
+          id={selectId}
           className={selectClasses}
           aria-invalid={!!error}
-          aria-describedby={error ? 'select-error' : helperText ? 'select-helper' : undefined}
+          aria-describedby={error ? errorId : helperText ? helperId : undefined}
           {...props}
         >
           {placeholder && (
@@ -105,12 +111,12 @@ export const Select = forwardRef(function Select({
         </span>
       </div>
       {error && (
-        <p id="select-error" className="mt-1.5 text-sm text-red-400">
+        <p id={errorId} className="mt-1.5 text-sm text-red-400">
           {error}
         </p>
       )}
       {helperText && !error && (
-        <p id="select-helper" className="mt-1.5 text-sm text-slate-400">
+        <p id={helperId} className="mt-1.5 text-sm text-slate-400">
           {helperText}
         </p>
       )}
@@ -119,6 +125,8 @@ export const Select = forwardRef(function Select({
 });
 
 Select.propTypes = {
+  /** Custom ID for the select element (auto-generated if not provided) */
+  id: PropTypes.string,
   /** Select label */
   label: PropTypes.string,
   /** Error message */
