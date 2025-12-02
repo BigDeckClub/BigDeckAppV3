@@ -183,22 +183,6 @@ export const SettingsTab = ({ inventory }) => {
     loadSales();
   }, []); // Empty deps = only runs once
 
-  // Calculate smart thresholds ONLY when thresholdSettings changes (not on every render)
-  useEffect(() => {
-    if (Object.keys(cardsWithAlerts).length === 0 || salesHistory.length === 0) {
-      return;
-    }
-
-    console.log('[Settings] Recalculating smart suggestions due to settings change');
-    const suggestions = {};
-    Object.values(cardsWithAlerts).flat().forEach(card => {
-      const calc = calculateSmartThreshold(card, salesHistory, thresholdSettings);
-      suggestions[card.id] = calc;
-    });
-    setSmartSuggestions(suggestions);
-    console.log('[Settings] Smart suggestions ready:', Object.keys(suggestions).length, 'items');
-  }, [thresholdSettings]); // ONLY depends on thresholdSettings, not cardsWithAlerts!
-
   const handleThresholdChange = async (cardName, itemId, newThreshold) => {
     setSaving(prev => ({ ...prev, [itemId]: true }));
     try {
