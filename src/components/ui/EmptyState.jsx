@@ -34,10 +34,10 @@ export function EmptyState({
 }) {
   return (
     <div className={`flex flex-col items-center justify-center py-12 px-6 text-center ${className}`}>
-      {icon && (
+      {icon && React.isValidElement(icon) && (
         <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-slate-700/50 to-slate-800/50 border border-slate-600/50 flex items-center justify-center mb-4 text-slate-400">
           {React.cloneElement(icon, {
-            className: `w-8 h-8 ${icon.props.className || ''}`,
+            className: `w-8 h-8 ${icon.props?.className || ''}`,
           })}
         </div>
       )}
