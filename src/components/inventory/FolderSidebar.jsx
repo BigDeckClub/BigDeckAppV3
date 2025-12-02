@@ -179,12 +179,6 @@ export const FolderSidebar = memo(function FolderSidebar({
               const totalQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
               return totalQty > 0;
             });
-            const totalAvailableCards = folderInStockCards.reduce((sum, [_, items]) => {
-              return sum + items.reduce((itemSum, item) => {
-                const available = (item.quantity || 0) - (parseInt(item.reserved_quantity) || 0);
-                return itemSum + Math.max(0, available);
-              }, 0);
-            }, 0);
             const isSelected = selectedFolder === folder;
             
             return (

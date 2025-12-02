@@ -495,7 +495,7 @@ export function useInventoryState({
   // Effects
   useEffect(() => {
     setExpandedCards({});
-  }, [activeTab, selectedFolder, setExpandedCards]);
+  }, [activeTab, selectedFolder]);
 
   return {
     // State
