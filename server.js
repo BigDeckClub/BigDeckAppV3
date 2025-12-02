@@ -1887,7 +1887,7 @@ app.post('/api/settings/:key', async (req, res) => {
     const { value } = req.body;
     
     await pool.query(
-      'INSERT INTO settings (key, value, updated_at) VALUES ($1, $2, NOW()) ON CONFLICT (key) DO UPDATE SET value = $2, updated_at = NOW()',
+      'INSERT INTO settings (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = $2',
       [key, JSON.stringify(value)]
     );
     
