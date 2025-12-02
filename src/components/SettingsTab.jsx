@@ -785,20 +785,20 @@ export const SettingsTab = ({ inventory }) => {
             Reset Sliders
           </button>
         </div>
-      </div>
 
-      {/* Help Text Info Box */}
-      <div className="bg-gradient-to-br from-blue-900/30 to-blue-800/20 rounded-xl p-4 border border-blue-500/30">
-        <div className="flex items-start gap-3">
-          <HelpCircle className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
-          <div>
-            <h4 className="font-semibold text-blue-300 mb-1">How Threshold Calculation Works</h4>
-            <ul className="text-sm text-slate-400 space-y-1">
-              <li>• <strong className="text-slate-300">Basic Lands</strong> use Base Stock × Land Multiplier for high-demand staples</li>
-              <li>• <strong className="text-slate-300">Fast Sellers</strong> calculate threshold based on weekly sales velocity × buffer weeks</li>
-              <li>• <strong className="text-slate-300">Budget Cards</strong> (under $0.50) get 1.5× base stock for bulk inventory</li>
-              <li>• <strong className="text-slate-300">Premium Cards</strong> (over $10) use 0.3× base stock to minimize capital in expensive singles</li>
-            </ul>
+        {/* Help Text Info Box */}
+        <div className="bg-gradient-to-br from-blue-900/30 to-blue-800/20 rounded-xl p-4 border border-blue-500/30">
+          <div className="flex items-start gap-3">
+            <HelpCircle className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+            <div>
+              <h4 className="font-semibold text-blue-300 mb-1">How Threshold Calculation Works</h4>
+              <ul className="text-sm text-slate-400 space-y-1">
+                <li>• <strong className="text-slate-300">Basic Lands</strong> use Base Stock × Land Multiplier for high-demand staples</li>
+                <li>• <strong className="text-slate-300">Fast Sellers</strong> calculate threshold based on weekly sales velocity × buffer weeks</li>
+                <li>• <strong className="text-slate-300">Budget Cards</strong> (under $0.50) get 1.5× base stock for bulk inventory</li>
+                <li>• <strong className="text-slate-300">Premium Cards</strong> (over $10) use 0.3× base stock to minimize capital in expensive singles</li>
+              </ul>
+            </div>
           </div>
         </div>
       </div>
