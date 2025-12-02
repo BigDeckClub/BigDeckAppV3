@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Bell, AlertCircle, Zap, Lightbulb } from 'lucide-react';
 import { useApi } from '../hooks/useApi';
 import { calculateSmartThreshold } from '../utils/thresholdCalculator';
@@ -86,48 +86,50 @@ export const SettingsTab = ({ inventory }) => {
       });
   }, []);
 
-  // Group inventory with alerts enabled by card name (MOVED BEFORE useEffect that uses it)
-  const cardsWithAlerts = inventory
-    .filter(item => item.low_inventory_alert)
-    .reduce((acc, item) => {
-      if (!acc[item.name]) {
-        acc[item.name] = [];
-      }
-      acc[item.name].push(item);
-      return acc;
-    }, {});
+  // Group inventory with alerts enabled by card name - MEMOIZED to prevent recreating on every render
+  const cardsWithAlerts = useMemo(() => {
+    return inventory
+      .filter(item => item.low_inventory_alert)
+      .reduce((acc, item) => {
+        if (!acc[item.name]) {
+          acc[item.name] = [];
+        }
+        acc[item.name].push(item);
+        return acc;
+      }, {});
+  }, [inventory]);
 
-  // Fetch sales history and calculate smart thresholds
+  // Fetch sales history ONCE on mount
   useEffect(() => {
-    const fetchAndCalculate = async () => {
-      setLoadingCalculations(true);
+    const loadSales = async () => {
       try {
-        // Fetch sales history
         const response = await fetch('/api/sales');
         if (response.ok) {
           const data = await response.json();
           setSalesHistory(data || []);
-          
-          // Calculate smart thresholds for all cards with alerts
-          const suggestions = {};
-          Object.values(cardsWithAlerts).flat().forEach(card => {
-            const calc = calculateSmartThreshold(card, data || [], thresholdSettings);
-            suggestions[card.id] = calc;
-          });
-          setSmartSuggestions(suggestions);
-          console.log('[Settings] Smart suggestions calculated:', suggestions);
         }
       } catch (error) {
-        console.error('[Settings] Error fetching sales history:', error);
-      } finally {
-        setLoadingCalculations(false);
+        console.warn('[Settings] Error fetching sales history:', error);
       }
     };
+    loadSales();
+  }, []); // Empty deps = only runs once
 
-    if (Object.keys(cardsWithAlerts).length > 0) {
-      fetchAndCalculate();
+  // Calculate smart thresholds ONLY when thresholdSettings changes (not on every render)
+  useEffect(() => {
+    if (Object.keys(cardsWithAlerts).length === 0 || salesHistory.length === 0) {
+      return;
     }
-  }, [thresholdSettings, cardsWithAlerts]);
+
+    console.log('[Settings] Recalculating smart suggestions due to settings change');
+    const suggestions = {};
+    Object.values(cardsWithAlerts).flat().forEach(card => {
+      const calc = calculateSmartThreshold(card, salesHistory, thresholdSettings);
+      suggestions[card.id] = calc;
+    });
+    setSmartSuggestions(suggestions);
+    console.log('[Settings] Smart suggestions ready:', Object.keys(suggestions).length, 'items');
+  }, [thresholdSettings]); // ONLY depends on thresholdSettings, not cardsWithAlerts!
 
   const handleThresholdChange = async (cardName, itemId, newThreshold) => {
     setSaving(prev => ({ ...prev, [itemId]: true }));
@@ -440,23 +442,18 @@ export const SettingsTab = ({ inventory }) => {
           </p>
         </div>
         
-        {/* Apply to All Button - DEBUG VERSION */}
+        {/* Apply to All Button */}
         <button
-          onClick={() => {
-            console.log('Button onClick fired');
-            console.log('saving state:', saving);
-            console.log('inventory:', inventory?.length);
-            handleApplySmartThresholds();
-          }}
-          disabled={saving?.applying || loadingCalculations}
+          onClick={handleApplySmartThresholds}
+          disabled={saving?.applying}
           className="w-full px-4 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-slate-600 text-white font-medium rounded-lg transition-colors"
         >
           {saving?.applying ? (
             <span>
-              ⏳ Processing... {applyProgress.current}/{applyProgress.total}
+              ⏳ Applying... {applyProgress.current}/{applyProgress.total}
             </span>
           ) : (
-            <span>🚀 Apply Smart Thresholds ({inventory?.length || 0} items)</span>
+            <span>🚀 Apply Smart Thresholds to All Inventory</span>
           )}
         </button>
       </div>
