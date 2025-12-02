@@ -179,27 +179,61 @@ export const SettingsTab = ({ inventory }) => {
     }));
   };
 
+  // Step 4: Apply Smart Thresholds to ALL Inventory
   const handleApplySmartThresholds = async () => {
-    setSaving(prev => ({ ...prev, applying: true }));
-    try {
-      const cardsToUpdate = Object.entries(smartSuggestions).map(([cardId, calc]) => ({
-        id: parseInt(cardId),
-        threshold: calc.suggested
-      }));
+    const confirmMsg = `This will:
+• Calculate optimal thresholds for all ${inventory.length} items
+• Enable low inventory alerts on all items
+• Use your current slider settings (Base: ${thresholdSettings.baseStock}, Land: ${thresholdSettings.landMultiplier}x, Buffer: ${thresholdSettings.velocityWeeks}w)
 
-      const results = await Promise.allSettled(
-        cardsToUpdate.map(card =>
-          put(`/api/inventory/${card.id}`, {
-            low_inventory_threshold: card.threshold
-          })
-        )
-      );
-      const successful = results.filter(r => r.status === 'fulfilled').length;
-      setSuccessMessage(`Applied smart thresholds to ${successful} card(s)`);
-      setTimeout(() => setSuccessMessage(''), 3000);
+Continue?`;
+
+    if (!window.confirm(confirmMsg)) return;
+    
+    setSaving(prev => ({ ...prev, applying: true }));
+    let updated = 0;
+    let errors = 0;
+    
+    try {
+      // Fetch sales history for velocity calculations
+      const salesResponse = await fetch('/api/sales');
+      const salesHistory = await salesResponse.json();
+      console.log('[Step 4] Fetched sales history:', salesHistory?.length || 0, 'records');
+      
+      for (const item of inventory) {
+        try {
+          // Calculate smart threshold using calculator
+          const { suggested } = calculateSmartThreshold(item, salesHistory || [], thresholdSettings);
+          console.log(`[Step 4] ${item.name}: calculated threshold = ${suggested}`);
+          
+          // Set threshold via PUT
+          await put(`/api/inventory/${item.id}`, {
+            low_inventory_threshold: suggested
+          });
+          
+          // Enable alert if not already enabled
+          if (!item.low_inventory_alert) {
+            await put(`/api/inventory/${item.id}`, {
+              low_inventory_alert: true
+            });
+          }
+          
+          updated++;
+        } catch (err) {
+          console.error(`[Step 4] Error updating ${item.name}:`, err);
+          errors++;
+        }
+      }
+      
+      const msg = `✅ Applied smart thresholds to ${updated}/${inventory.length} items!${errors > 0 ? `\n⚠️ ${errors} errors occurred. Check console for details.` : ''}`;
+      alert(msg);
+      setSuccessMessage(msg.split('\n')[0]);
+      setTimeout(() => setSuccessMessage(''), 5000);
+      console.log('[Step 4] Complete - Updated:', updated, 'Errors:', errors);
     } catch (error) {
-      console.error('Error applying smart thresholds:', error);
-      setSuccessMessage('Error applying smart thresholds');
+      console.error('[Step 4] Error applying thresholds:', error);
+      alert('Error fetching sales data. Check console for details.');
+      setSuccessMessage('Error fetching sales data');
       setTimeout(() => setSuccessMessage(''), 3000);
     } finally {
       setSaving(prev => ({ ...prev, applying: false }));
