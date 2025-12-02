@@ -1,0 +1,122 @@
+Step 3: Create the Slider UI Component
+Add to Settings tab:
+
+jsx
+{/* Smart Threshold Settings Section */}
+<div className="bg-slate-800 rounded-lg p-4 space-y-6">
+  <div>
+    <h3 className="text-lg font-semibold text-white mb-2">
+      🎯 Smart Threshold Settings
+    </h3>
+    <p className="text-sm text-slate-400">
+      Thresholds are automatically calculated based on how fast cards sell.  
+      Adjust these sliders to fine-tune the calculations.
+    </p>
+  </div>
+  
+  {/* Slider 1: Base Stock Level */}
+  <div className="space-y-2">
+    <div className="flex justify-between items-center">
+      <label className="text-sm font-medium text-white">
+        📦 Base Stock Level
+      </label>
+      <span className="text-sm font-bold text-yellow-400">
+        {thresholdSettings.baseStock}
+      </span>
+    </div>
+    <input
+      type="range"
+      min="2"
+      max="50"
+      value={thresholdSettings.baseStock}
+      onChange={(e) => setThresholdSettings(prev => ({
+        ...prev,
+        baseStock: parseInt(e.target. value)
+      }))}
+      className="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-yellow-500"
+    />
+    <p className="text-xs text-slate-500">
+      Default threshold for cards with no sales history
+    </p>
+  </div>
+  
+  {/* Slider 2: Basic Land Multiplier */}
+  <div className="space-y-2">
+    <div className="flex justify-between items-center">
+      <label className="text-sm font-medium text-white">
+        🏔️ Basic Land Multiplier
+      </label>
+      <span className="text-sm font-bold text-green-400">
+        {thresholdSettings.landMultiplier}x → {thresholdSettings.baseStock * thresholdSettings. landMultiplier}
+      </span>
+    </div>
+    <input
+      type="range"
+      min="2"
+      max="20"
+      value={thresholdSettings. landMultiplier}
+      onChange={(e) => setThresholdSettings(prev => ({
+        ...prev,
+        landMultiplier: parseInt(e.target.value)
+      }))}
+      className="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-green-500"
+    />
+    <p className="text-xs text-slate-500">
+      Plains, Island, Swamp, Mountain, Forest get threshold × this multiplier
+    </p>
+  </div>
+  
+  {/* Slider 3: Velocity Buffer Weeks */}
+  <div className="space-y-2">
+    <div className="flex justify-between items-center">
+      <label className="text-sm font-medium text-white">
+        📈 Sales Buffer (Weeks)
+      </label>
+      <span className="text-sm font-bold text-blue-400">
+        {thresholdSettings.velocityWeeks} weeks
+      </span>
+    </div>
+    <input
+      type="range"
+      min="1"
+      max="8"
+      value={thresholdSettings.velocityWeeks}
+      onChange={(e) => setThresholdSettings(prev => ({
+        ...prev,
+        velocityWeeks: parseInt(e.target.value)
+      }))}
+      className="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-blue-500"
+    />
+    <p className="text-xs text-slate-500">
+      For cards that sell regularly: threshold = weekly sales × this number
+    </p>
+  </div>
+  
+  {/* Example Calculations */}
+  <div className="bg-slate-700 rounded p-3 space-y-1">
+    <p className="text-xs font-medium text-slate-300">Example Calculations:</p>
+    <p className="text-xs text-slate-400">
+      • Basic Land → <span className="text-green-400">{thresholdSettings.baseStock * thresholdSettings.landMultiplier}</span> threshold
+    </p>
+    <p className="text-xs text-slate-400">
+      • Card selling 5/week → <span className="text-blue-400">{5 * thresholdSettings.velocityWeeks}</span> threshold
+    </p>
+    <p className="text-xs text-slate-400">
+      • Card with no sales → <span className="text-yellow-400">{thresholdSettings.baseStock}</span> threshold
+    </p>
+  </div>
+  
+  {/* Apply to All Button */}
+  <button
+    onClick={handleApplySmartThresholds}
+    disabled={isApplying}
+    className="w-full px-4 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-slate-600 
+               text-white font-medium rounded-lg transition-colors"
+  >
+    {isApplying ? (
+      <span>Calculating & Applying...</span>
+    ) : (
+      <span>🚀 Apply Smart Thresholds to All Inventory</span>
+    )}
+  </button>
+</div>
