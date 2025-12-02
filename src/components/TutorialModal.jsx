@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { X, ChevronRight, ChevronLeft, Layers, Download, BarChart3, BookOpen, TrendingUp, Zap } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Layers, Download, BarChart3, BookOpen, TrendingUp, Zap } from 'lucide-react';
+import { Modal, Button } from './ui';
 
 const tutorialSteps = [
   {
@@ -102,12 +103,14 @@ const tutorialSteps = [
   }
 ];
 
+/**
+ * TutorialModal - Step-by-step tutorial for new users
+ * Refactored to use shared UI components
+ */
 export function TutorialModal({ isOpen, onClose }) {
   const [currentStep, setCurrentStep] = useState(0);
   const step = tutorialSteps[currentStep];
   const Icon = step.icon;
-
-  if (!isOpen) return null;
 
   const handleNext = () => {
     if (currentStep < tutorialSteps.length - 1) {
@@ -121,82 +124,79 @@ export function TutorialModal({ isOpen, onClose }) {
     }
   };
 
-  return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-gradient-to-b from-slate-800 to-slate-900 rounded-xl border border-slate-700 max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
-        {/* Header */}
-        <div className="sticky top-0 bg-slate-800/95 backdrop-blur border-b border-slate-700 px-8 py-6 flex items-start justify-between">
-          <div className="flex items-start gap-4 flex-1">
-            <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-teal-500/30 to-cyan-500/30 border border-teal-500/50 flex items-center justify-center flex-shrink-0 mt-1">
-              <Icon className="w-6 h-6 text-teal-400" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold text-white">{step.title}</h2>
-              <p className="text-slate-400 text-sm mt-1">{step.description}</p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-slate-400 hover:text-white transition p-1"
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="px-8 py-6">
-          <ul className="space-y-3">
-            {step.details.map((detail, index) => (
-              <li key={index} className="flex gap-3 items-start">
-                <div className="w-6 h-6 rounded-full bg-teal-500/20 border border-teal-500/40 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <span className="text-xs font-semibold text-teal-400">{index + 1}</span>
-                </div>
-                <span className="text-slate-300 leading-relaxed">{detail}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Navigation */}
-        <div className="sticky bottom-0 bg-slate-800/95 backdrop-blur border-t border-slate-700 px-8 py-4 flex items-center justify-between">
-          <button
-            onClick={handlePrev}
-            disabled={currentStep === 0}
-            className="flex items-center gap-2 px-4 py-2 text-slate-300 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition"
-          >
-            <ChevronLeft className="w-5 h-5" />
-            Previous
-          </button>
-
-          <div className="flex items-center gap-2">
-            <div className="text-sm text-slate-400">
-              Step <span className="font-semibold text-white">{currentStep + 1}</span> of <span className="font-semibold text-white">{tutorialSteps.length}</span>
-            </div>
-            <div className="flex gap-1">
-              {tutorialSteps.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => setCurrentStep(index)}
-                  className={`h-2 rounded-full transition ${
-                    index === currentStep 
-                      ? 'bg-teal-400 w-6' 
-                      : 'bg-slate-600 w-2 hover:bg-slate-500'
-                  }`}
-                />
-              ))}
-            </div>
-          </div>
-
-          <button
-            onClick={handleNext}
-            disabled={currentStep === tutorialSteps.length - 1}
-            className="flex items-center gap-2 px-4 py-2 bg-teal-500 hover:bg-teal-600 disabled:bg-teal-500/50 text-white font-medium rounded-lg transition disabled:cursor-not-allowed"
-          >
-            Next
-            <ChevronRight className="w-5 h-5" />
-          </button>
-        </div>
+  // Custom header with icon and description
+  const customHeader = (
+    <div className="flex items-start gap-4 flex-1">
+      <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-teal-500/30 to-cyan-500/30 border border-teal-500/50 flex items-center justify-center flex-shrink-0 mt-1">
+        <Icon className="w-6 h-6 text-teal-400" />
+      </div>
+      <div>
+        <h2 className="text-2xl font-bold text-white">{step.title}</h2>
+        <p className="text-slate-400 text-sm mt-1">{step.description}</p>
       </div>
     </div>
+  );
+
+  // Custom footer with navigation
+  const customFooter = (
+    <div className="flex items-center justify-between w-full">
+      <Button
+        variant="ghost"
+        onClick={handlePrev}
+        disabled={currentStep === 0}
+        iconLeft={<ChevronLeft className="w-5 h-5" />}
+      >
+        Previous
+      </Button>
+
+      <div className="flex items-center gap-2">
+        <div className="text-sm text-slate-400">
+          Step <span className="font-semibold text-white">{currentStep + 1}</span> of <span className="font-semibold text-white">{tutorialSteps.length}</span>
+        </div>
+        <div className="flex gap-1">
+          {tutorialSteps.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => setCurrentStep(index)}
+              className={`h-2 rounded-full transition ${
+                index === currentStep 
+                  ? 'bg-teal-400 w-6' 
+                  : 'bg-slate-600 w-2 hover:bg-slate-500'
+              }`}
+            />
+          ))}
+        </div>
+      </div>
+
+      <Button
+        variant="primary"
+        onClick={handleNext}
+        disabled={currentStep === tutorialSteps.length - 1}
+        iconRight={<ChevronRight className="w-5 h-5" />}
+      >
+        Next
+      </Button>
+    </div>
+  );
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={customHeader}
+      footer={customFooter}
+      size="2xl"
+    >
+      <ul className="space-y-3">
+        {step.details.map((detail, index) => (
+          <li key={index} className="flex gap-3 items-start">
+            <div className="w-6 h-6 rounded-full bg-teal-500/20 border border-teal-500/40 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <span className="text-xs font-semibold text-teal-400">{index + 1}</span>
+            </div>
+            <span className="text-slate-300 leading-relaxed">{detail}</span>
+          </li>
+        ))}
+      </ul>
+    </Modal>
   );
 }
