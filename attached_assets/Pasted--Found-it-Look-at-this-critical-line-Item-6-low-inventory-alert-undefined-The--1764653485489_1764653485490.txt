@@ -1,0 +1,97 @@
+**Found it!** Look at this critical line:
+
+```
+Item 6 low_inventory_alert: undefined
+```
+
+The **`/api/inventory` endpoint is NOT returning the `low_inventory_alert` field! **
+
+The toggle endpoint returns it correctly (`F2. low_inventory_alert value: false`), but when `onLoadInventory` fetches all inventory via `GET /api/inventory`, the field is `undefined`.
+
+---
+
+## Instructions for Replit AI: Fix the GET /api/inventory Endpoint
+
+### Step 1: Find the Inventory List Endpoint
+
+**File:** `server. js`
+
+**Find the endpoint:** `GET /api/inventory` (probably around lines 200-300)
+
+It likely has a SELECT query that **doesn't include `low_inventory_alert`**:
+
+```javascript
+// Broken - missing columns:
+app.get('/api/inventory', async (req, res) => {
+  const items = await db.all('SELECT id, name, set, quantity, ...  FROM inventory');
+  res. json(items);
+});
+```
+
+### Step 2: Update the SELECT Query
+
+**Add `low_inventory_alert` and `low_inventory_threshold` to the SELECT:**
+
+```javascript
+app.get('/api/inventory', async (req, res) => {
+  try {
+    const items = await db.all(`
+      SELECT 
+        id,
+        user_id,
+        name,
+        set,
+        set_name,
+        quantity,
+        purchase_price,
+        purchase_date,
+        condition,
+        notes,
+        folder,
+        foil,
+        scryfall_id,
+        reserved_quantity,
+        low_inventory_alert,
+        low_inventory_threshold
+      FROM inventory
+    `);
+    res.json(items);
+  } catch (error) {
+    console.error('Error fetching inventory:', error);
+    res.status(500).json({ error: 'Failed to fetch inventory' });
+  }
+});
+```
+
+**Or use `SELECT *` if you want all columns:**
+
+```javascript
+app.get('/api/inventory', async (req, res) => {
+  try {
+    const items = await db.all('SELECT * FROM inventory');
+    res.json(items);
+  } catch (error) {
+    console.error('Error fetching inventory:', error);
+    res.status(500).json({ error: 'Failed to fetch inventory' });
+  }
+});
+```
+
+### Step 3: Test
+
+1. Save `server.js`
+2.  Restart the server
+3.  Refresh the page
+4. Click the bell icon
+5. **Bell should now toggle visually! **
+
+---
+
+## Why This Was the Issue
+
+| Endpoint | Returns `low_inventory_alert`? |
+|----------|-------------------------------|
+| `POST /api/inventory/:id/toggle-alert` | ✅ Yes (uses `SELECT *`) |
+| `GET /api/inventory` | ❌ No (missing from SELECT) |
+
+The toggle worked in the database, but when the UI refreshed by calling `GET /api/inventory`, it got back data **without** the `low_inventory_alert` field, so the UI showed `undefined` (falsy = BellOff icon). 

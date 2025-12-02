@@ -582,6 +582,7 @@ app.get('/api/inventory', async (req, res) => {
     const result = await pool.query(
       `SELECT i.id, i.name, i.set, i.set_name, i.quantity, i.purchase_price, i.purchase_date, 
               i.reorder_type, i.image_url, i.scryfall_id, i.folder, i.created_at,
+              i.low_inventory_alert, i.low_inventory_threshold,
               COALESCE(
                 (SELECT SUM(dr.quantity_reserved) FROM deck_reservations dr WHERE dr.inventory_item_id = i.id), 0
               ) as reserved_quantity
