@@ -68,8 +68,6 @@ export const SettingsTab = ({ inventory }) => {
 
   // Step 2: Smart Threshold Calculator
   const [salesHistory, setSalesHistory] = useState([]);
-  const [smartSuggestions, setSmartSuggestions] = useState({});
-  const [loadingCalculations, setLoadingCalculations] = useState(false);
   
   // Progress tracking for bulk apply
   const [applyProgress, setApplyProgress] = useState({ current: 0, total: 0 });
