@@ -75,7 +75,11 @@ router.post('/api/sales', async (req, res) => {
     await client.query('COMMIT');
     res.json({ success: true, sale: result.rows[0] });
   } catch (error) {
-    await client.query('ROLLBACK');
+    try {
+      await client.query('ROLLBACK');
+    } catch (rollbackError) {
+      console.error('[SALES] Error during rollback:', rollbackError.message);
+    }
     console.error('[SALES] Error recording sale:', error.message);
     res.status(500).json({ error: 'Failed to record sale' });
   } finally {
