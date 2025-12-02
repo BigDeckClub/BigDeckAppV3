@@ -76,6 +76,9 @@ export const SettingsTab = ({ inventory }) => {
   const [saveStatus, setSaveStatus] = useState(''); // '', 'saving', 'saved'
   const saveTimeoutRef = useRef(null);
   const debounceTimeoutRef = useRef(null);
+  
+  // Tab navigation state
+  const [activeTab, setActiveTab] = useState('thresholds');
 
   // Cleanup saveTimeoutRef on unmount to prevent memory leaks
   useEffect(() => {
@@ -477,7 +480,52 @@ export const SettingsTab = ({ inventory }) => {
         </div>
       )}
 
-      {/* Smart Threshold Settings - Redesigned Card-Based UI */}
+      {/* Tab Navigation Bar */}
+      <div className="flex gap-2 border-b border-slate-600 pb-0 overflow-x-auto">
+        <button 
+          onClick={() => setActiveTab('thresholds')}
+          className={`px-4 py-3 font-medium transition-all whitespace-nowrap ${
+            activeTab === 'thresholds' 
+              ? 'border-b-2 border-purple-500 text-purple-400 bg-slate-800/50' 
+              : 'text-slate-400 hover:text-slate-300'
+          }`}
+        >
+          🎯 Smart Thresholds
+        </button>
+        <button 
+          onClick={() => setActiveTab('presets')}
+          className={`px-4 py-3 font-medium transition-all whitespace-nowrap ${
+            activeTab === 'presets' 
+              ? 'border-b-2 border-teal-500 text-teal-400 bg-slate-800/50' 
+              : 'text-slate-400 hover:text-slate-300'
+          }`}
+        >
+          ⚡ Presets
+        </button>
+        <button 
+          onClick={() => setActiveTab('alerts')}
+          className={`px-4 py-3 font-medium transition-all whitespace-nowrap ${
+            activeTab === 'alerts' 
+              ? 'border-b-2 border-yellow-500 text-yellow-400 bg-slate-800/50' 
+              : 'text-slate-400 hover:text-slate-300'
+          }`}
+        >
+          🔔 Alerts
+        </button>
+        <button 
+          onClick={() => setActiveTab('account')}
+          className={`px-4 py-3 font-medium transition-all whitespace-nowrap ${
+            activeTab === 'account' 
+              ? 'border-b-2 border-blue-500 text-blue-400 bg-slate-800/50' 
+              : 'text-slate-400 hover:text-slate-300'
+          }`}
+        >
+          ⚙️ Account
+        </button>
+      </div>
+
+      {/* Smart Threshold Settings Tab */}
+      {activeTab === 'thresholds' && (
       <div className="bg-gradient-to-br from-slate-800/90 to-slate-900/70 rounded-2xl p-6 space-y-6 border border-slate-600/50 shadow-xl">
         {/* Header with icon, title, description, and quick stats badge */}
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
@@ -740,7 +788,7 @@ export const SettingsTab = ({ inventory }) => {
       </div>
 
       {/* Help Text Info Box */}
-      <div className="bg-gradient-to-br from-blue-900/30 to-blue-800/20 rounded-xl p-4 border border-blue-500/30">
+      <div className="bg-gradient-to-br from-blue-900/30 to-blue-800/20 rounded-xl p-4 border border-blue-500/30" style={{ display: activeTab === 'thresholds' ? 'block' : 'none' }}>
         <div className="flex items-start gap-3">
           <HelpCircle className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
           <div>
@@ -754,8 +802,10 @@ export const SettingsTab = ({ inventory }) => {
           </div>
         </div>
       </div>
+      )}
 
-      {/* Threshold Presets Section */}
+      {/* Threshold Presets Tab */}
+      {activeTab === 'presets' && (
       <div className="bg-slate-800 rounded-lg border border-slate-600 p-6">
         <div className="flex items-center gap-3 mb-6">
           <Zap className="w-6 h-6 text-teal-400" />
@@ -834,8 +884,10 @@ export const SettingsTab = ({ inventory }) => {
           </button>
         </div>
       </div>
+      )}
 
-      {/* Low Inventory Alerts Section */}
+      {/* Low Inventory Alerts Tab */}
+      {activeTab === 'alerts' && (
       <div className="bg-slate-800 rounded-lg border border-slate-600 p-6">
         <div className="flex items-center gap-3 mb-6">
           <Bell className="w-6 h-6 text-yellow-400" />
@@ -899,12 +951,16 @@ export const SettingsTab = ({ inventory }) => {
         </ul>
       </div>
 
-      {/* Account Section */}
-      <div className="bg-slate-700/50 rounded-lg border border-slate-600 p-4">
-        <h3 className="font-semibold text-slate-100 mb-3">Account</h3>
-        <p className="text-slate-400 text-sm">Manage your account settings</p>
-        <p className="text-slate-500 text-xs mt-2">More options coming soon...</p>
+      {/* Account Tab */}
+      {activeTab === 'account' && (
+      <div className="space-y-4">
+        <div className="bg-slate-800 rounded-lg border border-slate-600 p-6">
+          <h2 className="text-xl font-bold text-slate-100 mb-4">Account Settings</h2>
+          <p className="text-slate-400 text-sm">Manage your account and preferences</p>
+          <p className="text-slate-500 text-xs mt-2">More options coming soon...</p>
+        </div>
       </div>
+      )}
     </div>
   );
 };
