@@ -939,15 +939,16 @@ export const SettingsTab = ({ inventory }) => {
           </div>
         )}
 
-      {/* Settings Info */}
-      <div className="bg-slate-700/50 rounded-lg border border-slate-600 p-4">
-        <h3 className="font-semibold text-slate-100 mb-2">How to Use Low Inventory Alerts</h3>
-        <ul className="text-sm text-slate-400 space-y-2 list-disc list-inside">
-          <li>Go to the <strong>Inventory</strong> tab and click the bell icon on any card SKU</li>
-          <li>Set a quantity threshold (e.g., 2, 5, 10) for when you want to be alerted</li>
-          <li>Alerts can be customized per card type to track deck staples differently than bulk inventory</li>
-          <li>Manage all your alerts here in the Settings tab</li>
-        </ul>
+        {/* Settings Info */}
+        <div className="bg-slate-700/50 rounded-lg border border-slate-600 p-4">
+          <h3 className="font-semibold text-slate-100 mb-2">How to Use Low Inventory Alerts</h3>
+          <ul className="text-sm text-slate-400 space-y-2 list-disc list-inside">
+            <li>Go to the <strong>Inventory</strong> tab and click the bell icon on any card SKU</li>
+            <li>Set a quantity threshold (e.g., 2, 5, 10) for when you want to be alerted</li>
+            <li>Alerts can be customized per card type to track deck staples differently than bulk inventory</li>
+            <li>Manage all your alerts here in the Settings tab</li>
+          </ul>
+        </div>
       </div>
       )}
 
