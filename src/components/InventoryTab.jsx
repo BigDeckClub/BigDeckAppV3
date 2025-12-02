@@ -87,6 +87,8 @@ export const InventoryTab = ({
       
       const data = await response.json();
       console.log('F. Response data:', data);
+      console.log('F2. low_inventory_alert value:', data.low_inventory_alert);
+      console.log('F3. low_inventory_threshold value:', data.low_inventory_threshold);
       
       if (onLoadInventory) {
         console.log('G. Calling onLoadInventory to refresh');

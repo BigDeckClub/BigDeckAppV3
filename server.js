@@ -746,6 +746,7 @@ app.post('/api/inventory/:id/toggle-alert', validateId, async (req, res) => {
   console.log('[API] TOGGLE-ALERT ENDPOINT HIT with id:', id);
 
   try {
+    // Get current value
     console.log('[API] Fetching current state before toggle...');
     const beforeResult = await pool.query(
       'SELECT id, name, low_inventory_alert FROM inventory WHERE id = $1',
@@ -757,21 +758,29 @@ app.post('/api/inventory/:id/toggle-alert', validateId, async (req, res) => {
       return res.status(404).json({ error: 'Inventory item not found' });
     }
     
-    console.log('[API] Before toggle:', beforeResult.rows[0]);
+    const beforeAlert = beforeResult.rows[0].low_inventory_alert;
+    console.log('[API] TOGGLE BEFORE:', { id, name: beforeResult.rows[0].name, low_inventory_alert: beforeAlert });
     
-    console.log('[API] Executing UPDATE query...');
+    // Toggle the value
+    console.log('[API] Executing UPDATE query to toggle...');
     const result = await pool.query(
       'UPDATE inventory SET low_inventory_alert = NOT low_inventory_alert WHERE id = $1 RETURNING *',
       [id]
     );
     
-    console.log('[API] After toggle:', result.rows[0]);
-    console.log('[API] Success! Updated item:', result.rows[0].id, 'alert=', result.rows[0].low_inventory_alert);
+    if (result.rows.length === 0) {
+      console.log('[API] No rows returned after update');
+      return res.status(404).json({ error: 'Inventory item not found' });
+    }
+    
+    const afterAlert = result.rows[0].low_inventory_alert;
+    console.log('[API] TOGGLE AFTER:', { id, name: result.rows[0].name, low_inventory_alert: afterAlert });
+    console.log('[API] Alert toggled successfully:', beforeAlert, '→', afterAlert);
     
     res.json(result.rows[0]);
   } catch (error) {
-    console.error('[INVENTORY] Error toggling alert:', error.message);
-    console.error('[INVENTORY] Error stack:', error.stack);
+    console.error('[API] TOGGLE ERROR:', error.message);
+    console.error('[API] Error stack:', error.stack);
     res.status(500).json({ error: 'Failed to toggle alert' });
   }
 });

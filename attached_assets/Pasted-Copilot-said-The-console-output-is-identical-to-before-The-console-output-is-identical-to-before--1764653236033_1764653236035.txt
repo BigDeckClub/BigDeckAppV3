@@ -1,0 +1,70 @@
+Copilot said: The console output is identical to before.
+The console output is identical to before. We need to see the actual low_inventory_alert value in the response.
+
+Instructions for Replit AI: Expand the Debug Logging
+Step 1: Update the toggleAlertHandler Debug
+File: src/components/InventoryTab. jsx
+
+Find the toggleAlertHandler and update step F to explicitly log the alert value:
+
+JavaScript
+const toggleAlertHandler = useCallback(async (itemId) => {
+  console.log('=== TOGGLE ALERT HANDLER DEBUG ===');
+  console. log('A. toggleAlertHandler called with itemId:', itemId);
+  console.log('B. onLoadInventory exists:', typeof onLoadInventory, !!onLoadInventory);
+  
+  try {
+    const url = `/api/inventory/${itemId}/toggle-alert`;
+    console.log('C. Making POST request to:', url);
+    
+    const response = await fetch(url, { method: 'POST' });
+    
+    console.log('D. Response status:', response.status);
+    console.log('E. Response ok:', response.ok);
+    
+    const data = await response. json();
+    console.log('F.  Response data:', data);
+    console.log('F2. low_inventory_alert value:', data.low_inventory_alert);
+    console.log('F3. low_inventory_threshold value:', data. low_inventory_threshold);
+    
+    if (onLoadInventory) {
+      console.log('G. Calling onLoadInventory to refresh');
+      onLoadInventory();
+    } else {
+      console.log('G.  SKIPPED - onLoadInventory is undefined! ');
+    }
+  } catch (error) {
+    console. error('ERROR in toggleAlertHandler:', error);
+  }
+  console.log('=== TOGGLE ALERT HANDLER END ===');
+}, [onLoadInventory]);
+Step 2: Add Backend Logging
+File: server.js
+
+Find the /api/inventory/:id/toggle-alert endpoint and add logging:
+
+JavaScript
+app.post('/api/inventory/:id/toggle-alert', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Get current value
+    const before = await db.get('SELECT id, name, low_inventory_alert FROM inventory WHERE id = ? ', [id]);
+    console.log('TOGGLE BEFORE:', before);
+    
+    // Toggle the value
+    await db.run(
+      'UPDATE inventory SET low_inventory_alert = NOT low_inventory_alert WHERE id = ?',
+      [id]
+    );
+    
+    // Get updated value
+    const after = await db.get('SELECT * FROM inventory WHERE id = ?', [id]);
+    console.log('TOGGLE AFTER:', after. low_inventory_alert);
+    
+    res.json(after);
+  } catch (error) {
+    console.error('TOGGLE ERROR:', error);
+    res.status(500).json({ error: 'Failed to toggle alert' });
+  }
+});
