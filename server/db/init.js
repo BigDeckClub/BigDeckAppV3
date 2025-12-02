@@ -209,6 +209,20 @@ export async function initializeDatabase() {
       )
     `);
 
+    // Inventory transactions table - tracks purchases and sales for analytics
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS inventory_transactions (
+        id SERIAL PRIMARY KEY,
+        card_name VARCHAR(255) NOT NULL,
+        transaction_type VARCHAR(20) NOT NULL,
+        quantity INTEGER DEFAULT 1,
+        purchase_price REAL,
+        sale_price REAL,
+        transaction_date DATE DEFAULT CURRENT_DATE,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
     // Sales history table
     await pool.query(`
       CREATE TABLE IF NOT EXISTS sales_history (
