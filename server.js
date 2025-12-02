@@ -1882,7 +1882,7 @@ app.post('/api/inventory/bulk-threshold', async (req, res) => {
     let errorCount = 0;
     const errors = [];
     
-    // Execute all updates in parallel
+    // Execute all updates in parallel - track results properly
     const updatePromises = updates.map(async (update) => {
       try {
         const { id, threshold, enableAlert } = update;
@@ -1897,15 +1897,18 @@ app.post('/api/inventory/bulk-threshold', async (req, res) => {
           [threshold, enableAlert ? true : false, id]
         );
         
-        successCount++;
+        return { success: true, id };
       } catch (err) {
         console.error('[BULK-THRESHOLD] Item error:', update.id, err.message);
-        errorCount++;
         errors.push({ id: update.id, error: err.message });
+        return { success: false, id: update.id };
       }
     });
     
-    await Promise.allSettled(updatePromises);
+    // Collect results from all promises
+    const results = await Promise.allSettled(updatePromises);
+    successCount = results.filter(r => r.status === 'fulfilled' && r.value?.success).length;
+    errorCount = results.filter(r => r.status === 'rejected' || (r.status === 'fulfilled' && !r.value?.success)).length;
     
     console.log(`[BULK-THRESHOLD] Complete: ${successCount} success, ${errorCount} errors`);
     
