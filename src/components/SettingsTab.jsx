@@ -59,7 +59,7 @@ export const SettingsTab = ({ inventory }) => {
       setLoadingCalculations(true);
       try {
         // Fetch sales history
-        const response = await fetch('/api/sales-history');
+        const response = await fetch('/api/sales');
         if (response.ok) {
           const data = await response.json();
           setSalesHistory(data || []);
@@ -216,84 +216,114 @@ export const SettingsTab = ({ inventory }) => {
         </div>
       )}
 
-      {/* Dynamic Threshold Settings with Sliders - Step 1 */}
-      <div className="bg-slate-800 rounded-lg border border-slate-600 p-6">
-        <div className="flex items-center gap-3 mb-6">
-          <Zap className="w-6 h-6 text-cyan-400" />
-          <h2 className="text-xl font-bold text-slate-100">Dynamic Threshold Settings</h2>
+      {/* Smart Threshold Settings - Steps 1, 2 & 3 Combined */}
+      <div className="bg-slate-800 rounded-lg p-6 space-y-6 border border-slate-600">
+        <div>
+          <h3 className="text-lg font-semibold text-white mb-2">
+            🎯 Smart Threshold Settings
+          </h3>
+          <p className="text-sm text-slate-400">
+            Thresholds are automatically calculated based on how fast cards sell. Adjust these sliders to fine-tune the calculations.
+          </p>
         </div>
-
-        <div className="space-y-6">
-          {/* Base Stock Slider */}
-          <div>
-            <div className="flex justify-between items-center mb-2">
-              <label className="text-sm font-semibold text-slate-300">Base Stock Level</label>
-              <span className="text-lg font-bold text-cyan-400">{thresholdSettings.baseStock}</span>
-            </div>
-            <input
-              type="range"
-              min="2"
-              max="50"
-              value={thresholdSettings.baseStock}
-              onChange={(e) => handleSliderChange('baseStock', parseInt(e.target.value))}
-              className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500"
-            />
-            <p className="text-xs text-slate-400 mt-2">
-              Default threshold for all cards. Lower = less inventory needed, Higher = more stock.
-            </p>
+        
+        {/* Slider 1: Base Stock Level */}
+        <div className="space-y-2">
+          <div className="flex justify-between items-center">
+            <label className="text-sm font-medium text-white">
+              📦 Base Stock Level
+            </label>
+            <span className="text-sm font-bold text-yellow-400">
+              {thresholdSettings.baseStock}
+            </span>
           </div>
-
-          {/* Land Multiplier Slider */}
-          <div>
-            <div className="flex justify-between items-center mb-2">
-              <label className="text-sm font-semibold text-slate-300">Basic Land Multiplier</label>
-              <span className="text-lg font-bold text-cyan-400">{thresholdSettings.landMultiplier}x</span>
-            </div>
-            <input
-              type="range"
-              min="2"
-              max="20"
-              value={thresholdSettings.landMultiplier}
-              onChange={(e) => handleSliderChange('landMultiplier', parseInt(e.target.value))}
-              className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500"
-            />
-            <p className="text-xs text-slate-400 mt-2">
-              How many times higher should basic land thresholds be? (Multiplies the base stock)
-            </p>
-          </div>
-
-          {/* Velocity Weeks Slider */}
-          <div>
-            <div className="flex justify-between items-center mb-2">
-              <label className="text-sm font-semibold text-slate-300">Velocity Buffer (Weeks)</label>
-              <span className="text-lg font-bold text-cyan-400">{thresholdSettings.velocityWeeks}w</span>
-            </div>
-            <input
-              type="range"
-              min="1"
-              max="8"
-              value={thresholdSettings.velocityWeeks}
-              onChange={(e) => handleSliderChange('velocityWeeks', parseInt(e.target.value))}
-              className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500"
-            />
-            <p className="text-xs text-slate-400 mt-2">
-              How many weeks of buffer stock based on sales velocity. Step 2 will calculate this automatically.
-            </p>
-          </div>
-
-          {/* Settings Summary */}
-          <div className="bg-slate-700/50 rounded-lg p-4 border border-slate-600 mt-6">
-            <p className="text-sm font-semibold text-slate-300 mb-2">Current Settings Summary:</p>
-            <ul className="text-xs text-slate-400 space-y-1 list-disc list-inside">
-              <li>All cards start with threshold: <strong className="text-cyan-300">{thresholdSettings.baseStock}</strong></li>
-              <li>Basic lands get multiplied by: <strong className="text-cyan-300">{thresholdSettings.landMultiplier}x</strong></li>
-              <li>Sales velocity buffer: <strong className="text-cyan-300">{thresholdSettings.velocityWeeks} weeks</strong></li>
-            </ul>
-            <p className="text-xs text-slate-500 mt-3 italic">
-              These settings will be used in Step 2 to automatically calculate optimal thresholds for each card.
-            </p>
-          </div>
+          <input
+            type="range"
+            min="2"
+            max="50"
+            value={thresholdSettings.baseStock}
+            onChange={(e) => handleSliderChange('baseStock', parseInt(e.target.value))}
+            className="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-yellow-500"
+          />
+          <p className="text-xs text-slate-500">
+            Default threshold for cards with no sales history
+          </p>
         </div>
+        
+        {/* Slider 2: Basic Land Multiplier */}
+        <div className="space-y-2">
+          <div className="flex justify-between items-center">
+            <label className="text-sm font-medium text-white">
+              🏔️ Basic Land Multiplier
+            </label>
+            <span className="text-sm font-bold text-green-400">
+              {thresholdSettings.landMultiplier}x → {thresholdSettings.baseStock * thresholdSettings.landMultiplier}
+            </span>
+          </div>
+          <input
+            type="range"
+            min="2"
+            max="20"
+            value={thresholdSettings.landMultiplier}
+            onChange={(e) => handleSliderChange('landMultiplier', parseInt(e.target.value))}
+            className="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-green-500"
+          />
+          <p className="text-xs text-slate-500">
+            Plains, Island, Swamp, Mountain, Forest get threshold × this multiplier
+          </p>
+        </div>
+        
+        {/* Slider 3: Velocity Buffer Weeks */}
+        <div className="space-y-2">
+          <div className="flex justify-between items-center">
+            <label className="text-sm font-medium text-white">
+              📈 Sales Buffer (Weeks)
+            </label>
+            <span className="text-sm font-bold text-blue-400">
+              {thresholdSettings.velocityWeeks} weeks
+            </span>
+          </div>
+          <input
+            type="range"
+            min="1"
+            max="8"
+            value={thresholdSettings.velocityWeeks}
+            onChange={(e) => handleSliderChange('velocityWeeks', parseInt(e.target.value))}
+            className="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-blue-500"
+          />
+          <p className="text-xs text-slate-500">
+            For cards that sell regularly: threshold = weekly sales × this number
+          </p>
+        </div>
+        
+        {/* Example Calculations */}
+        <div className="bg-slate-700 rounded p-3 space-y-1">
+          <p className="text-xs font-medium text-slate-300">Example Calculations:</p>
+          <p className="text-xs text-slate-400">
+            • Basic Land → <span className="text-green-400">{thresholdSettings.baseStock * thresholdSettings.landMultiplier}</span> threshold
+          </p>
+          <p className="text-xs text-slate-400">
+            • Card selling 5/week → <span className="text-blue-400">{5 * thresholdSettings.velocityWeeks}</span> threshold
+          </p>
+          <p className="text-xs text-slate-400">
+            • Card with no sales → <span className="text-yellow-400">{thresholdSettings.baseStock}</span> threshold
+          </p>
+        </div>
+        
+        {/* Apply to All Button */}
+        <button
+          onClick={handleApplySmartThresholds}
+          disabled={saving.applying || loadingCalculations}
+          className="w-full px-4 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-slate-600 text-white font-medium rounded-lg transition-colors"
+        >
+          {loadingCalculations ? (
+            <span>Calculating & Applying...</span>
+          ) : saving.applying ? (
+            <span>Applying...</span>
+          ) : (
+            <span>🚀 Apply Smart Thresholds to All Inventory</span>
+          )}
+        </button>
       </div>
 
       {/* Smart Threshold Suggestions - Step 2 */}
