@@ -72,12 +72,32 @@ export const InventoryTab = ({
 
   // Centralized handlers for low inventory alerts
   const toggleAlertHandler = useCallback(async (itemId) => {
+    console.log('=== TOGGLE ALERT HANDLER DEBUG ===');
+    console.log('A. toggleAlertHandler called with itemId:', itemId);
+    console.log('B. onLoadInventory exists:', typeof onLoadInventory, !!onLoadInventory);
+    
     try {
-      await fetch(`/api/inventory/${itemId}/toggle-alert`, { method: 'POST' });
-      onLoadInventory?.();
+      const url = `/api/inventory/${itemId}/toggle-alert`;
+      console.log('C. Making POST request to:', url);
+      
+      const response = await fetch(url, { method: 'POST' });
+      
+      console.log('D. Response status:', response.status);
+      console.log('E. Response ok:', response.ok);
+      
+      const data = await response.json();
+      console.log('F. Response data:', data);
+      
+      if (onLoadInventory) {
+        console.log('G. Calling onLoadInventory to refresh');
+        onLoadInventory();
+      } else {
+        console.log('G. SKIPPED - onLoadInventory is undefined!');
+      }
     } catch (error) {
-      console.error('Error toggling alert:', error);
+      console.error('ERROR in toggleAlertHandler:', error);
     }
+    console.log('=== TOGGLE ALERT HANDLER END ===');
   }, [onLoadInventory]);
 
   const setThresholdHandler = useCallback(async (itemId, threshold) => {

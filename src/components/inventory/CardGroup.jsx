@@ -77,14 +77,30 @@ export const CardGroup = memo(function CardGroup({
 
   // Handle toggle low inventory alert
   const handleToggleLowInventory = async (item, e) => {
+    console.log('=== BELL DEBUG START ===');
+    console.log('1. Handler fired');
+    console.log('2. Item received:', item);
+    console.log('3. Item ID:', item?.id);
+    console.log('4. onToggleLowInventory exists:', typeof onToggleLowInventory, !!onToggleLowInventory);
+    console.log('5. items array:', items);
+    console.log('6. items[0]:', items?.[0]);
+    
     e.stopPropagation();
-    setTogglingId(item.id);
+    setTogglingId(item?.id);
+    
     try {
       if (onToggleLowInventory) {
+        console.log('7. Calling onToggleLowInventory with ID:', item.id);
         await onToggleLowInventory(item.id);
+        console.log('8. onToggleLowInventory completed successfully');
+      } else {
+        console.log('7. SKIPPED - onToggleLowInventory is falsy!');
       }
+    } catch (error) {
+      console.error('ERROR in handleToggleLowInventory:', error);
     } finally {
       setTogglingId(null);
+      console.log('=== BELL DEBUG END ===');
     }
   };
 
