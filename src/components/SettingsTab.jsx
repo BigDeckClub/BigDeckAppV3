@@ -788,7 +788,7 @@ export const SettingsTab = ({ inventory }) => {
       </div>
 
       {/* Help Text Info Box */}
-      <div className="bg-gradient-to-br from-blue-900/30 to-blue-800/20 rounded-xl p-4 border border-blue-500/30" style={{ display: activeTab === 'thresholds' ? 'block' : 'none' }}>
+      <div className="bg-gradient-to-br from-blue-900/30 to-blue-800/20 rounded-xl p-4 border border-blue-500/30">
         <div className="flex items-start gap-3">
           <HelpCircle className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
           <div>
@@ -938,7 +938,6 @@ export const SettingsTab = ({ inventory }) => {
             ))}
           </div>
         )}
-      </div>
 
       {/* Settings Info */}
       <div className="bg-slate-700/50 rounded-lg border border-slate-600 p-4">
@@ -950,6 +949,7 @@ export const SettingsTab = ({ inventory }) => {
           <li>Manage all your alerts here in the Settings tab</li>
         </ul>
       </div>
+      )}
 
       {/* Account Tab */}
       {activeTab === 'account' && (
