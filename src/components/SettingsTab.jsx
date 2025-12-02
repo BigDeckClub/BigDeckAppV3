@@ -77,16 +77,19 @@ export const SettingsTab = ({ inventory }) => {
   const saveTimeoutRef = useRef(null);
   const debounceTimeoutRef = useRef(null);
 
+  // Cleanup saveTimeoutRef on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    };
+  }, []);
+
   // Auto-save with debounce (500ms)
   const saveSettingsToBackend = useCallback(async (settings) => {
     setSaveStatus('saving');
     try {
       localStorage.setItem('thresholdSettings', JSON.stringify(settings));
-      await fetch('/api/settings/thresholdSettings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ value: settings })
-      });
+      await post('/settings/thresholdSettings', { value: settings });
       setSaveStatus('saved');
       // Clear saved status after 2 seconds
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
@@ -95,7 +98,7 @@ export const SettingsTab = ({ inventory }) => {
       console.error('[Settings] Error saving to backend:', err);
       setSaveStatus('');
     }
-  }, []);
+  }, [post]);
 
   // Debounced save effect (500ms)
   useEffect(() => {
@@ -292,15 +295,17 @@ export const SettingsTab = ({ inventory }) => {
   };
 
   // Calculate smart suggestions with useMemo to prevent infinite re-render loops
+  // Only calculate for first 20 items for preview, unless needed for full apply
   const computedSmartSuggestions = useMemo(() => {
     if (!inventory || inventory.length === 0) return {};
+    const itemsToCalculate = applyProgress?.total > 0 ? inventory : inventory.slice(0, 20);
     const suggestions = {};
-    inventory.forEach(card => {
+    itemsToCalculate.forEach(card => {
       const calc = calculateSmartThreshold(card, salesHistory, thresholdSettings);
       suggestions[card.id] = calc;
     });
     return suggestions;
-  }, [inventory, salesHistory, thresholdSettings]);
+  }, [inventory, salesHistory, thresholdSettings, applyProgress?.total]);
 
   // Calculate summary stats for what will change
   const summaryStats = useMemo(() => {
@@ -518,6 +523,7 @@ export const SettingsTab = ({ inventory }) => {
                 key={key}
                 onClick={() => handleApplyQuickPreset(key)}
                 className="px-3 py-2 bg-slate-700/50 hover:bg-slate-600/70 border border-slate-600/50 hover:border-purple-500/50 rounded-lg text-xs text-left transition-all duration-200 hover:shadow-lg hover:shadow-purple-500/10 group"
+                aria-label={`Apply ${preset.label} preset: ${preset.description}`}
               >
                 <span className="block font-semibold text-white group-hover:text-purple-300 transition-colors">
                   {preset.label}
@@ -547,6 +553,7 @@ export const SettingsTab = ({ inventory }) => {
               value={thresholdSettings.baseStock}
               onChange={(e) => handleSliderChange('baseStock', parseInt(e.target.value))}
               className="threshold-slider threshold-slider-yellow w-full"
+              aria-label="Base Stock Level"
             />
             <p className="text-xs text-slate-400 mt-2">
               Default threshold for cards with no sales history
@@ -570,6 +577,7 @@ export const SettingsTab = ({ inventory }) => {
               value={thresholdSettings.landMultiplier}
               onChange={(e) => handleSliderChange('landMultiplier', parseInt(e.target.value))}
               className="threshold-slider threshold-slider-green w-full"
+              aria-label="Land Multiplier"
             />
             <p className="text-xs text-slate-400 mt-2">
               Plains, Island, Swamp, Mountain, Forest multiplier
@@ -593,6 +601,7 @@ export const SettingsTab = ({ inventory }) => {
               value={thresholdSettings.velocityWeeks}
               onChange={(e) => handleSliderChange('velocityWeeks', parseInt(e.target.value))}
               className="threshold-slider threshold-slider-blue w-full"
+              aria-label="Sales Buffer Weeks"
             />
             <p className="text-xs text-slate-400 mt-2">
               Weeks of buffer stock for selling cards

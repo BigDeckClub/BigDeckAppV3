@@ -602,6 +602,7 @@ select {
 /* Custom Slider Styling for Threshold Settings */
 .threshold-slider {
   -webkit-appearance: none;
+  -moz-appearance: none;
   appearance: none;
   height: 8px;
   border-radius: 4px;
@@ -616,7 +617,6 @@ select {
 
 .threshold-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
-  appearance: none;
   width: 20px;
   height: 20px;
   border-radius: 50%;
@@ -647,14 +647,6 @@ select {
 
 .threshold-slider:focus {
   outline: none;
-}
-
-.threshold-slider:focus::-webkit-slider-thumb {
-  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.4);
-}
-
-.threshold-slider:focus::-moz-range-thumb {
-  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.4);
 }
 
 /* Yellow variant (Base Stock) */
