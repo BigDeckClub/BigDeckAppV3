@@ -84,7 +84,7 @@ router.post('/api/history/changes', async (req, res) => {
       `INSERT INTO change_history (card_id, card_name, field_changed, old_value, new_value, user_id)
        VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
-      [card_id || null, card_name, field_changed, old_value?.toString() || null, new_value?.toString() || null, user_id || null]
+      [card_id || null, card_name, field_changed, old_value?.toString() ?? null, new_value?.toString() ?? null, user_id || null]
     );
     res.status(201).json(result.rows[0]);
   } catch (error) {
@@ -262,7 +262,7 @@ export async function recordChange({ cardId, cardName, fieldChanged, oldValue, n
     await pool.query(
       `INSERT INTO change_history (card_id, card_name, field_changed, old_value, new_value, user_id)
        VALUES ($1, $2, $3, $4, $5, $6)`,
-      [cardId || null, cardName, fieldChanged, oldValue?.toString() || null, newValue?.toString() || null, userId || null]
+      [cardId || null, cardName, fieldChanged, oldValue?.toString() ?? null, newValue?.toString() ?? null, userId || null]
     );
   } catch (error) {
     console.error('[HISTORY] Error recording change:', error.message);

@@ -249,6 +249,4 @@ export const AuditLog = () => {
   );
 };
 
-AuditLog.propTypes = {};
-
 export default AuditLog;

@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Filter, ArrowRight, RefreshCw } from 'lucide-react';
-import PropTypes from 'prop-types';
 import { useApi } from '../hooks/useApi';
 
 /**
@@ -188,7 +187,5 @@ export const ChangeLogTab = () => {
     </div>
   );
 };
-
-ChangeLogTab.propTypes = {};
 
 export default ChangeLogTab;

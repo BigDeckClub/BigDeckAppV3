@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Activity, Package, FileUp, Trash2, FolderPlus, LayoutGrid, RefreshCw } from 'lucide-react';
-import PropTypes from 'prop-types';
 import { useApi } from '../hooks/useApi';
 
 /**
@@ -170,7 +169,5 @@ export const ActivityFeed = () => {
     </div>
   );
 };
-
-ActivityFeed.propTypes = {};
 
 export default ActivityFeed;

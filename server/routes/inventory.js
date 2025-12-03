@@ -143,7 +143,7 @@ router.put('/api/inventory/:id', validateId, async (req, res) => {
     if (purchase_price !== undefined) {
       updates.push(`purchase_price = $${paramCount++}`);
       values.push(purchase_price);
-      if (parseFloat(currentItem.purchase_price) !== parseFloat(purchase_price)) {
+      if (parseFloat(currentItem.purchase_price || 0) !== parseFloat(purchase_price || 0)) {
         changes.push({ field: 'purchase_price', old: currentItem.purchase_price, new: purchase_price });
       }
     }
