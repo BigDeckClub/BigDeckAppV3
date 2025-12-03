@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, startTransition } from 'react';
 import { LogOut, User, Settings } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -21,7 +21,7 @@ export function UserDropdown({ setActiveTab, activeTab }) {
   };
 
   const handleSettings = () => {
-    setActiveTab('settings');
+    startTransition(() => setActiveTab('settings'));
     setIsOpen(false);
   };
 
