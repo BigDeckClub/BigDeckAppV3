@@ -60,7 +60,6 @@ function MTGInventoryTrackerContent() {
 
   // ALL useState hooks
   const [activeTab, setActiveTab] = useState("inventory");
-  const [imports, setImports] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [deckRefreshTrigger, setDeckRefreshTrigger] = useState(0);
   const [showTutorial, setShowTutorial] = useState(false);
@@ -77,15 +76,6 @@ function MTGInventoryTrackerContent() {
   const [allSets, setAllSets] = useState([]);
   const [successMessage, setSuccessMessage] = useState("");
   const [expandedCards, setExpandedCards] = useState({});
-
-  const loadImports = useCallback(async () => {
-    try {
-      const data = await get('/imports');
-      setImports(data || []);
-    } catch (error) {
-      setImports([]);
-    }
-  }, [get]);
 
   const loadAllSets = useCallback(async () => {
     try {
@@ -229,23 +219,10 @@ function MTGInventoryTrackerContent() {
           <ErrorBoundaryWithRetry>
             <Suspense fallback={<TabLoadingSpinner />}> 
               <ImportTab
-                imports={imports}
-                onLoadImports={loadImports}
-                successMessage={successMessage}
-                setSuccessMessage={setSuccessMessage}
-                newEntry={newEntry}
-                setNewEntry={setNewEntry}
-                selectedCardSets={selectedCardSets}
                 allSets={allSets}
-                defaultSearchSet={defaultSearchSet}
-                setDefaultSearchSet={setDefaultSearchSet}
-                searchQuery={searchQuery}
-                setSearchQuery={setSearchQuery}
                 searchResults={searchResults}
                 showDropdown={showDropdown}
                 setShowDropdown={setShowDropdown}
-                selectCard={selectCard}
-                addCard={addCard}
                 handleSearch={handleSearch}
                 searchIsLoading={searchIsLoading}
                 addInventoryItem={addInventoryItem}
