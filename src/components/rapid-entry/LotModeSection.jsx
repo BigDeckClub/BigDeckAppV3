@@ -1,6 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { Check, X, AlertTriangle, Package, ToggleLeft, ToggleRight } from 'lucide-react';
+import { getSetDisplayName } from '../../utils/cardHelpers';
 
 /**
  * LotModeSection - Lot/Pack mode toggle, card list, and summary
@@ -89,7 +90,7 @@ export function LotModeSection({
                     <div className="flex items-center gap-2">
                       <span className="text-amber-400">{card.quantity}x</span>
                       <span className="text-white">{card.name}</span>
-                      <span className="text-slate-500">({card.set})</span>
+                      <span className="text-slate-500">({getSetDisplayName(card.set, true)})</span>
                     </div>
                     <button
                       onClick={() => handleRemoveCardFromLot(index)}

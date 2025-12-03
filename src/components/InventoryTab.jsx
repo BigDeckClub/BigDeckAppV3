@@ -417,7 +417,7 @@ InventoryTab.propTypes = {
   inventory: PropTypes.arrayOf(PropTypes.shape({
     id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     name: PropTypes.string,
-    set: PropTypes.string,
+    set: PropTypes.oneOfType([PropTypes.string, PropTypes.object]),
     quantity: PropTypes.number,
     purchaseDate: PropTypes.string,
     purchasePrice: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),

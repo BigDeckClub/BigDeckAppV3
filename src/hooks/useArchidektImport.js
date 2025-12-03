@@ -46,11 +46,17 @@ export function useArchidektImport({ onSuccess, onInventoryUpdate }) {
         deckData.cards.forEach(cardEntry => {
           if (cardEntry.card) {
             const cardObj = cardEntry.card;
+            // Card name is in oracleCard.name, not card.name directly
+            const cardName = cardObj.oracleCard?.name || cardObj.name || 'Unknown Card';
+            // Edition can be an object or string
+            const setCode = typeof cardObj.edition === 'object' 
+              ? cardObj.edition?.editioncode?.toUpperCase() 
+              : cardObj.edition || 'Unknown';
             const card = {
               quantity: cardEntry.quantity || 1,
-              name: cardObj.name || 'Unknown Card',
-              set: cardObj.edition?.abbreviation || cardObj.edition || 'Unknown',
-              scryfall_id: cardObj.scryfall_id || null,
+              name: cardName,
+              set: setCode,
+              scryfall_id: cardObj.uid || null,
               image_url: cardObj.image_url || null
             };
             cards.push(card);
@@ -67,7 +73,18 @@ export function useArchidektImport({ onSuccess, onInventoryUpdate }) {
       // Get deck name and format
       const deckName = deckData.name || 'Imported Deck';
       const deckFormat = deckData.format || 'Casual';
-      const deckDescription = deckData.description || '';
+      // Description might be Quill delta format (object with ops array) - extract plain text
+      let deckDescription = '';
+      if (deckData.description) {
+        if (typeof deckData.description === 'string') {
+          deckDescription = deckData.description;
+        } else if (deckData.description.ops && Array.isArray(deckData.description.ops)) {
+          // Extract text from Quill delta format
+          deckDescription = deckData.description.ops
+            .map(op => typeof op.insert === 'string' ? op.insert : '')
+            .join('');
+        }
+      }
 
       // Create the deck with imported cards
       const createResponse = await fetch(`${API_BASE}/decks`, {

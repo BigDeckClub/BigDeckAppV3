@@ -1,6 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { X, Trash2 } from 'lucide-react';
+import { getSetDisplayName } from '../../utils/cardHelpers';
 
 /**
  * DeckDetailsView component - Displays detailed view of a single deck
@@ -58,7 +59,7 @@ export function DeckDetailsView({
               {deck.cards.map((card, idx) => (
                 <div key={idx} className="flex justify-between text-sm text-slate-300 bg-slate-800 p-2 rounded">
                   <span>{card.quantity}x {card.name}</span>
-                  <span className="text-slate-500">{card.set}</span>
+                  <span className="text-slate-500">{getSetDisplayName(card.set, true)}</span>
                 </div>
               ))}
             </div>
@@ -83,7 +84,16 @@ DeckDetailsView.propTypes = {
     cards: PropTypes.arrayOf(PropTypes.shape({
       quantity: PropTypes.number,
       name: PropTypes.string,
-      set: PropTypes.string
+      set: PropTypes.oneOfType([
+        PropTypes.string,
+        PropTypes.shape({
+          editioncode: PropTypes.string,
+          editionname: PropTypes.string,
+          editiondate: PropTypes.string,
+          editiontype: PropTypes.string,
+          mtgoCode: PropTypes.string
+        })
+      ])
     }))
   }).isRequired,
   onBack: PropTypes.func.isRequired,

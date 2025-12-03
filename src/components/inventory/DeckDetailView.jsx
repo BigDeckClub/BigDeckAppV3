@@ -1,6 +1,7 @@
 import React, { memo } from 'react';
 import PropTypes from 'prop-types';
 import { Trash2, X, ChevronDown, Wand2, DollarSign } from 'lucide-react';
+import { getSetDisplayName } from '../../utils/cardHelpers';
 
 /**
  * DeckDetailView - Renders the deck detail view with reserved and missing cards
@@ -377,7 +378,7 @@ export const DeckDetailView = memo(function DeckDetailView({
                       <div key={idx} className="flex justify-between items-center text-sm bg-slate-800 p-2 rounded mb-1">
                         <div className="flex-1">
                           <span className="text-white">{needed}x {card.name}</span>
-                          <span className="text-xs text-slate-500 ml-2">{card.set || 'Unknown'}</span>
+                          <span className="text-xs text-slate-500 ml-2">{getSetDisplayName(card.set, true)}</span>
                         </div>
                         <button
                           onClick={() => autoFillSingleCard(card, needed, deck.id)}

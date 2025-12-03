@@ -4,6 +4,7 @@ import { Upload, FileText, Download, X, Check, AlertTriangle, Loader2, Trash2, E
 import { useFileImport } from '../hooks/useFileImport';
 import { downloadTemplate, SUPPORTED_FORMATS } from '../utils/csvTemplates';
 import { useToast, TOAST_TYPES } from '../context/ToastContext';
+import { getSetDisplayName, getSetCode } from '../utils/cardHelpers';
 
 // Quality options for editing
 const QUALITY_OPTIONS = ['NM', 'LP', 'MP', 'HP', 'DMG'];
@@ -381,7 +382,7 @@ export const FileImportSection = ({
                           <td className="px-3 py-2">
                             <input
                               type="text"
-                              value={card.set}
+                              value={getSetCode(card.set)}
                               onChange={(e) => updateCard(card.id, { set: e.target.value.toUpperCase() })}
                               className="w-20 bg-slate-900 border border-slate-600 rounded px-2 py-1 text-white text-sm focus:outline-none focus:ring-1 focus:ring-teal-400"
                             />
@@ -442,7 +443,7 @@ export const FileImportSection = ({
                         // Display mode
                         <>
                           <td className="px-3 py-2 text-white font-medium">{card.name}</td>
-                          <td className="px-3 py-2 text-slate-400">{card.set || '-'}</td>
+                          <td className="px-3 py-2 text-slate-400">{getSetDisplayName(card.set, true) || '-'}</td>
                           <td className="px-3 py-2 text-center text-slate-300">{card.quantity}</td>
                           <td className="px-3 py-2 text-center text-slate-300">{card.condition}</td>
                           <td className="px-3 py-2 text-center">
