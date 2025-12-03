@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { RapidEntryTable } from '../components/RapidEntryTable';
+import { RapidEntryTable } from '../components/rapid-entry';
 
 describe('RapidEntryTable Component', () => {
   const mockProps = {
