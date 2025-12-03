@@ -164,6 +164,24 @@ router.put('/api/inventory/:id', validateId, async (req, res) => {
   }
 });
 
+// Empty Trash - permanently delete all items in Trash folder
+router.delete('/api/inventory/trash', async (req, res) => {
+  try {
+    const result = await pool.query(
+      "DELETE FROM inventory WHERE folder = 'Trash' RETURNING *"
+    );
+    
+    res.json({ 
+      message: 'Trash emptied', 
+      deletedCount: result.rows.length,
+      items: result.rows 
+    });
+  } catch (error) {
+    console.error('[INVENTORY] Error emptying trash:', error.message);
+    res.status(500).json({ error: 'Failed to empty trash' });
+  }
+});
+
 router.delete('/api/inventory/:id', validateId, async (req, res) => {
   const id = req.validatedId;
 

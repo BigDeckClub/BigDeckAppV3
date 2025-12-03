@@ -17,6 +17,9 @@ export const CardGrid = memo(function CardGrid({
   startEditingItem,
   updateInventoryItem,
   deleteInventoryItem,
+  permanentlyDeleteItem,
+  restoreFromTrash,
+  isTrashView,
   createdFolders,
   onToggleLowInventory,
   onSetThreshold
@@ -42,6 +45,9 @@ export const CardGrid = memo(function CardGrid({
             startEditingItem={startEditingItem}
             updateInventoryItem={updateInventoryItem}
             deleteInventoryItem={deleteInventoryItem}
+            permanentlyDeleteItem={permanentlyDeleteItem}
+            restoreFromTrash={restoreFromTrash}
+            isTrashView={isTrashView}
             createdFolders={createdFolders}
             onToggleLowInventory={onToggleLowInventory}
             onSetThreshold={onSetThreshold}
@@ -67,6 +73,9 @@ export const CardGrid = memo(function CardGrid({
           startEditingItem={startEditingItem}
           updateInventoryItem={updateInventoryItem}
           deleteInventoryItem={deleteInventoryItem}
+          permanentlyDeleteItem={permanentlyDeleteItem}
+          restoreFromTrash={restoreFromTrash}
+          isTrashView={isTrashView}
           createdFolders={createdFolders}
           onToggleLowInventory={onToggleLowInventory}
           onSetThreshold={onSetThreshold}
@@ -87,6 +96,9 @@ CardGrid.propTypes = {
   startEditingItem: PropTypes.func.isRequired,
   updateInventoryItem: PropTypes.func.isRequired,
   deleteInventoryItem: PropTypes.func.isRequired,
+  permanentlyDeleteItem: PropTypes.func,
+  restoreFromTrash: PropTypes.func,
+  isTrashView: PropTypes.bool,
   createdFolders: PropTypes.array.isRequired,
   onToggleLowInventory: PropTypes.func,
   onSetThreshold: PropTypes.func

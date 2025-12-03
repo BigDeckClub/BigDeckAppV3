@@ -49,6 +49,9 @@ function MTGInventoryTrackerContent() {
     addInventoryItem,
     updateInventoryItem,
     deleteInventoryItem,
+    permanentlyDeleteItem,
+    restoreFromTrash,
+    emptyTrash,
     editingId,
     editForm,
     setEditForm,
@@ -210,6 +213,9 @@ function MTGInventoryTrackerContent() {
                 startEditingItem={startEditingItem}
                 updateInventoryItem={updateInventoryItem}
                 deleteInventoryItem={deleteInventoryItem}
+                permanentlyDeleteItem={permanentlyDeleteItem}
+                restoreFromTrash={restoreFromTrash}
+                emptyTrash={emptyTrash}
                 handleSearch={handleSearch}
                 deckRefreshTrigger={deckRefreshTrigger}
                 onLoadInventory={loadInventory}
