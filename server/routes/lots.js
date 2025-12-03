@@ -29,6 +29,10 @@ router.post('/api/lots', async (req, res) => {
     return res.status(400).json({ error: 'Lot name is required and must be a non-empty string' });
   }
   
+  if (name.trim().length > 255) {
+    return res.status(400).json({ error: 'Lot name must not exceed 255 characters' });
+  }
+  
   if (total_cost !== undefined && total_cost !== null && (typeof total_cost !== 'number' || total_cost < 0)) {
     return res.status(400).json({ error: 'Total cost must be a non-negative number when provided' });
   }
@@ -77,7 +81,7 @@ router.post('/api/lots/:id/cards', validateId, async (req, res) => {
     );
     
     if (lotResult.rows.length === 0) {
-      await client.query('ROLLBACK');
+      await client.query('ROLLBACK').catch(err => console.error('[LOTS] Rollback failed:', err.message));
       return res.status(404).json({ error: 'Lot not found' });
     }
     
@@ -87,7 +91,7 @@ router.post('/api/lots/:id/cards', validateId, async (req, res) => {
 
     // Calculate total card count (sum of all quantities)
     const totalCardCount = cards.reduce((sum, card) => sum + (card.quantity || 1), 0);
-    const perCardCost = (totalCost && totalCardCount > 0) ? (totalCost / totalCardCount) : null;
+    const perCardCost = (totalCost > 0 && totalCardCount > 0) ? (totalCost / totalCardCount) : null;
     
     // Update the lot with final card count and per-card cost
     await client.query(
@@ -101,17 +105,29 @@ router.post('/api/lots/:id/cards', validateId, async (req, res) => {
     
     // Insert each card into inventory with lot reference
     for (const card of cards) {
-      // Validate individual card
+      // Validate individual card name
       if (!card.name || typeof card.name !== 'string' || card.name.trim().length === 0) {
-        await client.query('ROLLBACK');
+        await client.query('ROLLBACK').catch(err => console.error('[LOTS] Rollback failed:', err.message));
         return res.status(400).json({ error: 'Each card must have a valid name' });
+      }
+      
+      // Validate quantity if provided
+      if (card.quantity !== undefined && card.quantity !== null && (typeof card.quantity !== 'number' || card.quantity <= 0 || !Number.isInteger(card.quantity))) {
+        await client.query('ROLLBACK').catch(err => console.error('[LOTS] Rollback failed:', err.message));
+        return res.status(400).json({ error: 'Card quantity must be a positive integer when provided' });
       }
       
       // Validate quality if provided
       const validQualities = ['NM', 'LP', 'MP', 'HP', 'DMG'];
       if (card.quality !== undefined && card.quality !== null && !validQualities.includes(card.quality)) {
-        await client.query('ROLLBACK');
+        await client.query('ROLLBACK').catch(err => console.error('[LOTS] Rollback failed:', err.message));
         return res.status(400).json({ error: `Quality must be one of: ${validQualities.join(', ')}` });
+      }
+      
+      // Validate foil if provided
+      if (card.foil !== undefined && card.foil !== null && typeof card.foil !== 'boolean') {
+        await client.query('ROLLBACK').catch(err => console.error('[LOTS] Rollback failed:', err.message));
+        return res.status(400).json({ error: 'Foil must be a boolean' });
       }
       
       // Try to fetch Scryfall ID
@@ -182,7 +198,9 @@ router.post('/api/lots/:id/cards', validateId, async (req, res) => {
       cards: insertedCards
     });
   } catch (error) {
-    await client.query('ROLLBACK');
+    await client.query('ROLLBACK').catch(rollbackError => {
+      console.error('[LOTS] ROLLBACK failed:', rollbackError.message);
+    });
     console.error('[LOTS] Error adding cards to lot:', error.message);
     res.status(500).json({ error: 'Failed to add cards to lot' });
   } finally {

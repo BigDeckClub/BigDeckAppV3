@@ -60,12 +60,18 @@ export const RapidEntryTable = ({
     price: acc.price + ((card.quantity || 1) * (parseFloat(card.price) || 0)),
   }), { count: 0, price: 0 });
 
+  // Calculate per-card cost (shared logic for consistency)
+  const calculatePerCardCost = (totalCost, totalCards) => {
+    const cost = parseFloat(totalCost);
+    if (totalCards > 0 && !isNaN(cost) && cost > 0) {
+      return cost / totalCards;
+    }
+    return 0;
+  };
+
   // Calculate lot totals
   const lotTotalCards = lotCards.reduce((sum, card) => sum + (card.quantity || 1), 0);
-  const parsedLotCost = parseFloat(lotTotalCost);
-  const lotPerCardCost = lotTotalCards > 0 && !isNaN(parsedLotCost) && parsedLotCost > 0
-    ? parsedLotCost / lotTotalCards 
-    : 0;
+  const lotPerCardCost = calculatePerCardCost(lotTotalCost, lotTotalCards);
 
   // Parse quantity from card name input (e.g., "4 Lightning Bolt" -> { qty: 4, name: "Lightning Bolt" })
   const parseQuantityFromInput = (input) => {
@@ -240,7 +246,7 @@ export const RapidEntryTable = ({
         setAddedCards(prev => [...prev, {
           cardName: card.name,
           quantity: card.quantity,
-          price: lotPerCardCost.toFixed(2),
+          price: parseFloat(lotPerCardCost.toFixed(2)),
         }]);
       });
 
@@ -260,7 +266,7 @@ export const RapidEntryTable = ({
       }, 50);
     } catch (error) {
       console.error('Error submitting lot:', error);
-      setLotError('Failed to submit lot. Please try again.');
+      setLotError(error.message || error.data?.error || 'Failed to submit lot. Please try again.');
     } finally {
       setLotSubmitting(false);
     }
@@ -473,12 +479,14 @@ export const RapidEntryTable = ({
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Package className="w-5 h-5 text-amber-400" />
-            <span className="font-medium text-white">Lot/Pack Mode</span>
+            <span id="lot-mode-label" className="font-medium text-white">Lot/Pack Mode</span>
           </div>
           <button
             onClick={() => setLotModeEnabled(!lotModeEnabled)}
             className="flex items-center gap-2 text-sm"
             type="button"
+            aria-pressed={lotModeEnabled}
+            aria-labelledby="lot-mode-label"
           >
             {lotModeEnabled ? (
               <ToggleRight className="w-8 h-8 text-amber-400" />
@@ -496,8 +504,9 @@ export const RapidEntryTable = ({
             {/* Lot Details */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="text-xs text-slate-400 mb-1 block">Lot Name</label>
+                <label htmlFor="lot-name-input" className="text-xs text-slate-400 mb-1 block">Lot Name</label>
                 <input
+                  id="lot-name-input"
                   type="text"
                   placeholder="e.g., Mystery Booster Box, Commander Masters Pack"
                   value={lotName}
@@ -506,10 +515,11 @@ export const RapidEntryTable = ({
                 />
               </div>
               <div>
-                <label className="text-xs text-slate-400 mb-1 block">Total Lot Cost</label>
+                <label htmlFor="lot-total-cost-input" className="text-xs text-slate-400 mb-1 block">Total Lot Cost</label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
                   <input
+                    id="lot-total-cost-input"
                     type="number"
                     step="0.01"
                     min="0"
@@ -538,6 +548,7 @@ export const RapidEntryTable = ({
                         onClick={() => handleRemoveCardFromLot(index)}
                         className="text-slate-500 hover:text-red-400 transition-colors"
                         type="button"
+                        aria-label="Remove card from lot"
                       >
                         <X className="w-4 h-4" />
                       </button>
@@ -596,6 +607,7 @@ export const RapidEntryTable = ({
                   onClick={() => setLotError(null)} 
                   className="ml-auto text-red-400 hover:text-red-300"
                   type="button"
+                  aria-label="Dismiss error"
                 >
                   <X className="w-4 h-4" />
                 </button>
