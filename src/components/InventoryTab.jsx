@@ -16,6 +16,9 @@ import { useInventoryState } from '../hooks/useInventoryState';
 import { api } from '../utils/apiClient';
 import { API_ENDPOINTS } from '../config/api';
 
+// Reserved folder names that cannot be created by users (case-insensitive)
+const RESERVED_FOLDER_NAMES = ['unsorted', 'uncategorized', 'all cards'];
+
 /**
  * InventoryTab - Main inventory management component
  * Refactored to use smaller sub-components and custom hooks for maintainability
@@ -57,6 +60,7 @@ export const InventoryTab = ({
   const [newFolderName, setNewFolderName] = useState('');
   const [showCreateFolder, setShowCreateFolder] = useState(false);
   const [createdFolders, setCreatedFolders] = useState([]);
+  const [foldersData, setFoldersData] = useState([]); // Full folder data with IDs
   const [selectedFolder, setSelectedFolder] = useState(null);
   const [activeTab, setActiveTab] = useState('all'); // 'all', folder name, or 'deck-{id}'
   const [viewMode, setViewMode] = useState('card'); // 'card' or 'list'
@@ -136,13 +140,20 @@ export const InventoryTab = ({
   }, [loadFolders]);
 
   // Add a new folder and persist to server
+  // Returns true if folder was created successfully, false otherwise
   const addCreatedFolder = useCallback(async (folderName) => {
     const trimmedName = folderName.trim();
-    if (!trimmedName) return;
+    if (!trimmedName) return false;
+    
+    // Check for reserved folder names (case-insensitive)
+    if (RESERVED_FOLDER_NAMES.includes(trimmedName.toLowerCase())) {
+      showToast(`"${trimmedName}" is a reserved folder name and cannot be used`, TOAST_TYPES.ERROR);
+      return false;
+    }
     
     if (createdFolders.includes(trimmedName)) {
       showToast('A folder with this name already exists', TOAST_TYPES.ERROR);
-      return;
+      return false;
     }
     
     try {
@@ -150,6 +161,7 @@ export const InventoryTab = ({
       setCreatedFolders(prev => [...prev, data.name || trimmedName]);
     } catch (error) {
       showToast(`Error creating folder: ${error.message}`, TOAST_TYPES.ERROR);
+      return false;
     }
   }, [showToast, createdFolders]);
 
@@ -230,6 +242,48 @@ export const InventoryTab = ({
       setSelectedFolder(null);
     }
   };
+
+  // Delete a folder and move its cards to Uncategorized
+  const deleteFolder = useCallback(async (folderName) => {
+    // Find the folder ID
+    const folder = foldersData.find(f => f.name === folderName);
+    if (!folder) {
+      showToast('Folder not found', TOAST_TYPES.ERROR);
+      return;
+    }
+    
+    const confirmed = await confirm({
+      title: 'Delete Folder',
+      message: `Are you sure you want to delete "${folderName}"? Cards will be moved to Unsorted.`,
+      confirmText: 'Delete',
+      variant: 'danger'
+    });
+    
+    if (!confirmed) return;
+    
+    try {
+      const response = await fetch(`/api/folders/${folder.id}`, {
+        method: 'DELETE'
+      });
+      
+      if (response.ok) {
+        // Close the folder tab if it's open
+        closeFolderTab(folderName);
+        // Reload folders
+        await loadFolders();
+        // Reload inventory to reflect card moves
+        if (onLoadInventory) {
+          await onLoadInventory();
+        }
+        showToast(`Folder "${folderName}" deleted. Cards moved to Unsorted.`, TOAST_TYPES.SUCCESS);
+      } else {
+        const errorData = await response.json();
+        showToast(errorData.error || 'Failed to delete folder', TOAST_TYPES.ERROR);
+      }
+    } catch (error) {
+      showToast(`Error deleting folder: ${error.message}`, TOAST_TYPES.ERROR);
+    }
+  }, [foldersData, confirm, loadFolders, onLoadInventory, showToast, closeFolderTab]);
 
   // Release deck and return cards to inventory
   const releaseDeck = async (deckId) => {
@@ -677,13 +731,15 @@ export const InventoryTab = ({
                 onChange={(e) => setNewFolderName(e.target.value)}
                 className="w-full bg-slate-800 border border-teal-600 rounded px-3 py-2 text-white placeholder-gray-400 text-sm"
                 autoFocus
-                onKeyDown={(e) => {
+                onKeyDown={async (e) => {
                   if (e.key === 'Enter' && newFolderName.trim()) {
-                    addCreatedFolder(newFolderName);
-                    setNewFolderName('');
-                    setShowCreateFolder(false);
-                    setSelectedFolder(newFolderName.trim());
-                    showToast(`Folder "${newFolderName.trim()}" created!`, TOAST_TYPES.SUCCESS);
+                    const folderNameToCreate = newFolderName.trim();
+                    const success = await addCreatedFolder(folderNameToCreate);
+                    if (success) {
+                      setNewFolderName('');
+                      setShowCreateFolder(false);
+                      setSelectedFolder(folderNameToCreate);
+                    }
                   }
                   if (e.key === 'Escape') {
                     setNewFolderName('');
@@ -693,13 +749,15 @@ export const InventoryTab = ({
               />
               <div className="flex gap-2">
                 <button
-                  onClick={() => {
+                  onClick={async () => {
                     if (newFolderName.trim()) {
-                      addCreatedFolder(newFolderName);
-                      setNewFolderName('');
-                      setShowCreateFolder(false);
-                      setSelectedFolder(newFolderName.trim());
-                      showToast(`Folder "${newFolderName.trim()}" created!`, TOAST_TYPES.SUCCESS);
+                      const folderNameToCreate = newFolderName.trim();
+                      const success = await addCreatedFolder(folderNameToCreate);
+                      if (success) {
+                        setNewFolderName('');
+                        setShowCreateFolder(false);
+                        setSelectedFolder(folderNameToCreate);
+                      }
                     }
                   }}
                   className="flex-1 bg-teal-600 hover:bg-teal-700 text-white px-3 py-1 rounded text-xs font-semibold transition-colors"
@@ -1136,6 +1194,8 @@ export const InventoryTab = ({
                       setFolderMetadata={setFolderMetadata}
                       setSellModalData={setSellModalData}
                       setShowSellModal={setShowSellModal}
+                      onDeleteFolder={deleteFolder}
+                      isUnsorted={activeTab === 'Uncategorized'}
                     />
                     {folderCards.length > 0 ? (
                       <CardGrid cards={folderCards} {...cardGridProps} />
