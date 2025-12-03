@@ -4,7 +4,13 @@ import { Plus, Trash2, X, ChevronDown, ChevronRight, Grid3X3, List, Menu, Wand2,
 import { usePriceCache } from "../context/PriceCacheContext";
 import { useToast, TOAST_TYPES } from "../context/ToastContext";
 import { useConfirm } from "../context/ConfirmContext";
-import { CardGroup } from './inventory/CardGroup';
+import { 
+  CardGrid, 
+  InventorySearchBar, 
+  InventoryTabs, 
+  DeckDetailView,
+  FolderHeader 
+} from './inventory';
 import { SellModal } from './SellModal';
 import { useInventoryState } from '../hooks/useInventoryState';
 
@@ -153,6 +159,34 @@ export const InventoryTab = ({
   useEffect(() => {
     loadFolders();
   }, [loadFolders]);
+
+  // Add a new folder and persist to server
+  const addCreatedFolder = useCallback(async (folderName) => {
+    const trimmedName = folderName.trim();
+    if (!trimmedName) return;
+    
+    if (createdFolders.includes(trimmedName)) {
+      showToast('A folder with this name already exists', TOAST_TYPES.ERROR);
+      return;
+    }
+    
+    try {
+      const response = await fetch('/api/folders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: trimmedName })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setCreatedFolders(prev => [...prev, data.name || trimmedName]);
+      } else {
+        showToast('Failed to create folder', TOAST_TYPES.ERROR);
+      }
+    } catch (error) {
+      showToast(`Error creating folder: ${error.message}`, TOAST_TYPES.ERROR);
+    }
+  }, [showToast, createdFolders]);
 
   // Fetch deck instances on demand (memoized)
   const refreshDeckInstances = useCallback(async () => {
