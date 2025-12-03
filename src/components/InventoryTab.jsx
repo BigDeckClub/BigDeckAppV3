@@ -889,7 +889,7 @@ export const InventoryTab = ({
                   }`}
                 >
                   <div className="font-medium text-sm text-slate-100">{folderName}</div>
-                  <div className="text-xs text-teal-300">{totalAvailableCards} available • {uniqueCards} {uniqueCards === 1 ? 'unique' : 'unique'}</div>
+                  <div className="text-xs text-teal-300">{totalAvailableCards} available • {uniqueCards} unique {uniqueCards === 1 ? 'card' : 'cards'}</div>
                 </button>
               </div>
             );
@@ -955,7 +955,7 @@ export const InventoryTab = ({
                   }`}
                 >
                   <div className="font-medium text-sm text-slate-100">Unsorted</div>
-                  <div className="text-xs text-teal-300">{totalAvailableCards} available • {uniqueCards} {uniqueCards === 1 ? 'unique' : 'unique'}</div>
+                  <div className="text-xs text-teal-300">{totalAvailableCards} available • {uniqueCards} unique {uniqueCards === 1 ? 'card' : 'cards'}</div>
                 </button>
               </div>
             );
