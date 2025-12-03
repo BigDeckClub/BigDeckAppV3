@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import PropTypes from 'prop-types';
 import { X } from 'lucide-react';
 
@@ -13,6 +13,11 @@ export function CopyToDeckModal({
   onCopy,
   onCancel
 }) {
+  // Memoize cards count calculation to avoid recalculating on every render
+  const cardsCount = useMemo(() => {
+    return (deck.cards || []).reduce((sum, c) => sum + (c.quantity || 1), 0);
+  }, [deck.cards]);
+
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
       <div className="bg-slate-800 rounded-lg border border-teal-500 p-6 max-w-md w-full">
@@ -47,7 +52,7 @@ export function CopyToDeckModal({
             Source: <span className="text-teal-300">{deck.name}</span>
           </p>
           <p className="text-sm text-slate-400">
-            Cards: <span className="text-teal-300">{(deck.cards || []).reduce((sum, c) => sum + (c.quantity || 1), 0)}</span>
+            Cards: <span className="text-teal-300">{cardsCount}</span>
           </p>
           <p className="text-sm text-slate-400">
             Format: <span className="text-teal-300">{deck.format}</span>
