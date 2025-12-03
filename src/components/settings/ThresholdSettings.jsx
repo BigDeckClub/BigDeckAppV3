@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
-import { Settings, Package, Mountain, TrendingUp, RotateCcw, HelpCircle, ChevronDown, Save, Lightbulb } from 'lucide-react';
+import { Settings, Package, Mountain, TrendingUp, RotateCcw, HelpCircle, ChevronDown, Save, Lightbulb, Coins, Gem, BarChart3, Rocket } from 'lucide-react';
 import { useToast, TOAST_TYPES } from '../../context/ToastContext';
 import { calculateSmartThreshold } from '../../utils/thresholdCalculator';
 import { QUICK_PRESETS } from '../../constants/thresholds';
@@ -183,8 +183,9 @@ export const ThresholdSettings = ({
         </div>
         {/* Inventory count badge */}
         <div className="bg-slate-700/50 px-3 py-1.5 rounded-full border border-slate-600/50">
-          <span className="text-xs text-slate-300">
-            📦 <span className="font-semibold text-white">{inventory?.length || 0}</span> items in inventory
+          <span className="text-xs text-slate-300 flex items-center gap-1">
+            <Package className="w-3 h-3" />
+            <span className="font-semibold text-white">{inventory?.length || 0}</span> items in inventory
           </span>
         </div>
       </div>
@@ -292,28 +293,40 @@ export const ThresholdSettings = ({
         </h4>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <div className="bg-slate-700/50 rounded-lg p-3 border border-green-500/20">
-            <p className="text-xs text-slate-400 mb-1">🏔️ Basic Land</p>
+            <p className="text-xs text-slate-400 mb-1 flex items-center gap-1">
+              <Mountain className="w-3 h-3" />
+              Basic Land
+            </p>
             <p className="text-lg font-bold text-green-400">
               {thresholdSettings.baseStock * thresholdSettings.landMultiplier}
             </p>
             <p className="text-xs text-slate-500">{thresholdSettings.baseStock} × {thresholdSettings.landMultiplier}</p>
           </div>
           <div className="bg-slate-700/50 rounded-lg p-3 border border-blue-500/20">
-            <p className="text-xs text-slate-400 mb-1">🏃 Fast Seller</p>
+            <p className="text-xs text-slate-400 mb-1 flex items-center gap-1">
+              <TrendingUp className="w-3 h-3" />
+              Fast Seller
+            </p>
             <p className="text-lg font-bold text-blue-400">
               {5 * thresholdSettings.velocityWeeks}
             </p>
             <p className="text-xs text-slate-500">5/week × {thresholdSettings.velocityWeeks} weeks</p>
           </div>
           <div className="bg-slate-700/50 rounded-lg p-3 border border-purple-500/20">
-            <p className="text-xs text-slate-400 mb-1">💰 Budget Card</p>
+            <p className="text-xs text-slate-400 mb-1 flex items-center gap-1">
+              <Coins className="w-3 h-3" />
+              Budget Card
+            </p>
             <p className="text-lg font-bold text-purple-400">
               {Math.round(thresholdSettings.baseStock * 1.5)}
             </p>
             <p className="text-xs text-slate-500">Under $0.50: base × 1.5</p>
           </div>
           <div className="bg-slate-700/50 rounded-lg p-3 border border-amber-500/20">
-            <p className="text-xs text-slate-400 mb-1">💎 Premium Card</p>
+            <p className="text-xs text-slate-400 mb-1 flex items-center gap-1">
+              <Gem className="w-3 h-3" />
+              Premium Card
+            </p>
             <p className="text-lg font-bold text-amber-400">
               {Math.max(2, Math.round(thresholdSettings.baseStock * 0.3))}
             </p>
@@ -324,8 +337,9 @@ export const ThresholdSettings = ({
 
       {/* Summary Stats Before Apply */}
       <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-600/30">
-        <h4 className="text-sm font-semibold text-slate-300 mb-3">
-          📊 What Will Be Updated
+        <h4 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+          <BarChart3 className="w-4 h-4 text-slate-400" />
+          What Will Be Updated
         </h4>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
           <div className="bg-slate-700/50 rounded-lg p-2">
@@ -401,7 +415,10 @@ export const ThresholdSettings = ({
               Applying... {applyProgress.current}/{applyProgress.total}
             </span>
           ) : (
-            <span>🚀 Apply Smart Thresholds to All Inventory</span>
+            <span className="flex items-center justify-center gap-2">
+              <Rocket className="w-4 h-4" />
+              Apply Smart Thresholds to All Inventory
+            </span>
           )}
         </button>
         <button

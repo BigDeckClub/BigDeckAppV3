@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
+import { Target, Zap, Bell, Settings } from 'lucide-react';
 import { useThresholdSettings } from '../hooks/useThresholdSettings';
 import { ThresholdSettings, PresetManager, AlertSettings, AccountSettings } from './settings';
 import { api } from '../utils/apiClient';
@@ -55,25 +56,37 @@ export const SettingsTab = ({ inventory }) => {
           onClick={() => setActiveTab('thresholds')}
           className={getTabClassName('thresholds', 'border-purple-500 text-purple-400')}
         >
-          🎯 Smart Thresholds
+          <span className="flex items-center gap-1.5">
+            <Target className="w-4 h-4" />
+            Smart Thresholds
+          </span>
         </button>
         <button 
           onClick={() => setActiveTab('presets')}
           className={getTabClassName('presets', 'border-teal-500 text-teal-400')}
         >
-          ⚡ Presets
+          <span className="flex items-center gap-1.5">
+            <Zap className="w-4 h-4" />
+            Presets
+          </span>
         </button>
         <button 
           onClick={() => setActiveTab('alerts')}
           className={getTabClassName('alerts', 'border-yellow-500 text-yellow-400')}
         >
-          🔔 Alerts
+          <span className="flex items-center gap-1.5">
+            <Bell className="w-4 h-4" />
+            Alerts
+          </span>
         </button>
         <button 
           onClick={() => setActiveTab('account')}
           className={getTabClassName('account', 'border-blue-500 text-blue-400')}
         >
-          ⚙️ Account
+          <span className="flex items-center gap-1.5">
+            <Settings className="w-4 h-4" />
+            Account
+          </span>
         </button>
       </div>
 
