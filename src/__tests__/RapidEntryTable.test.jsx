@@ -285,4 +285,23 @@ describe('RapidEntryTable Component', () => {
     const rowContainers = document.querySelectorAll('[tabindex="0"]');
     expect(rowContainers.length).toBeGreaterThan(0);
   });
+
+  it('shows shake animation when Shift+Enter is pressed without valid card', async () => {
+    render(<RapidEntryTable {...mockProps} />);
+    
+    const input = screen.getByPlaceholderText('Search card...');
+    fireEvent.change(input, { target: { value: 'Test' } });
+    
+    // Press Shift+Enter without selecting a valid card
+    fireEvent.keyDown(input, { key: 'Enter', code: 'Enter', shiftKey: true });
+    
+    // The row container should have the animate-shake class
+    const rowContainer = input.closest('[tabindex="0"]');
+    expect(rowContainer).toHaveClass('animate-shake');
+    
+    // After 500ms, the class should be removed
+    await waitFor(() => {
+      expect(rowContainer).not.toHaveClass('animate-shake');
+    }, { timeout: 600 });
+  });
 });

@@ -306,8 +306,8 @@ export const RapidEntryTable = ({
       return;
     }
     
-    // Ctrl+D to duplicate previous row (also handles Ctrl+Shift+D since 'd' is lowercase regardless of Shift)
-    if (e.key === 'd' && (e.ctrlKey || e.metaKey)) {
+    // Ctrl+D or Ctrl+Shift+D to duplicate previous row
+    if ((e.key === 'd' || e.key === 'D') && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
       handleDuplicatePrevious(rowIndex);
       return;
@@ -351,7 +351,7 @@ export const RapidEntryTable = ({
             tabIndex={0}
             onKeyDown={(e) => handleKeyDown(e, rowIndex, 'row')}
             className={`
-              relative rounded-lg border transition-all duration-200 outline-none
+              relative rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-teal-400/50
               ${row.status === 'added' ? 'bg-emerald-900/20 border-emerald-500/50' : ''}
               ${row.status === 'valid' ? 'bg-slate-800/50 border-teal-500/50' : ''}
               ${row.status === 'editing' ? 'bg-slate-800/30 border-slate-600' : ''}
