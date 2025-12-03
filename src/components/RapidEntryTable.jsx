@@ -260,16 +260,19 @@ export const RapidEntryTable = ({
     if (showDropdown && fieldType === 'name' && searchResults.length > 0) {
       if (e.key === 'ArrowDown') {
         e.preventDefault();
+        e.stopPropagation();
         setHighlightedResult(prev => Math.min(prev + 1, searchResults.length - 1));
         return;
       }
       if (e.key === 'ArrowUp') {
         e.preventDefault();
+        e.stopPropagation();
         setHighlightedResult(prev => Math.max(prev - 1, 0));
         return;
       }
       if (e.key === 'Enter') {
         e.preventDefault();
+        e.stopPropagation();
         // Get unique cards
         const uniqueCards = [];
         const seen = new Set();
@@ -289,6 +292,7 @@ export const RapidEntryTable = ({
     // Escape to clear row
     if (e.key === 'Escape') {
       e.preventDefault();
+      e.stopPropagation();
       handleClearRow(rowIndex);
       return;
     }
@@ -296,6 +300,7 @@ export const RapidEntryTable = ({
     // Shift+Enter to add card and create new row
     if (e.key === 'Enter' && e.shiftKey) {
       e.preventDefault();
+      e.stopPropagation();
       if (row.status === 'valid') {
         handleAddCardToInventory(rowIndex);
       } else {
@@ -309,6 +314,7 @@ export const RapidEntryTable = ({
     // Ctrl+D or Ctrl+Shift+D to duplicate previous row
     if ((e.key === 'd' || e.key === 'D') && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
+      e.stopPropagation();
       handleDuplicatePrevious(rowIndex);
       return;
     }

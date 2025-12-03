@@ -304,4 +304,43 @@ describe('RapidEntryTable Component', () => {
       expect(rowContainer).not.toHaveClass('animate-shake');
     }, { timeout: 600 });
   });
+
+  it('Shift+Enter only calls onAddCard once (no event bubbling)', async () => {
+    const propsWithResults = {
+      ...mockProps,
+      showDropdown: true,
+      searchResults: [
+        { name: 'Lightning Bolt', set: '2X2', setName: 'Double Masters 2022', imageUrl: '/test.jpg' },
+      ],
+    };
+    
+    render(<RapidEntryTable {...propsWithResults} />);
+    
+    // Focus and select a card to make the row "valid"
+    const input = screen.getByPlaceholderText('Search card...');
+    fireEvent.focus(input);
+    
+    const result = screen.getByText('Lightning Bolt');
+    fireEvent.click(result);
+    
+    // Find the quantity input (a focused element after card selection)
+    const qtyInput = screen.getByDisplayValue('1');
+    
+    // Press Shift+Enter on the qty input - should only call onAddCard once
+    fireEvent.keyDown(qtyInput, { key: 'Enter', code: 'Enter', shiftKey: true });
+    
+    // Wait for the async onAddCard to complete
+    await waitFor(() => {
+      // onAddCard should have been called exactly once, not twice
+      expect(mockProps.onAddCard).toHaveBeenCalledTimes(1);
+    });
+    
+    // Verify the correct card data was passed
+    expect(mockProps.onAddCard).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'Lightning Bolt',
+        set: '2X2',
+      })
+    );
+  });
 });
