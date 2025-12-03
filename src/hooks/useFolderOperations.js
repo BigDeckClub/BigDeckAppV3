@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useToast, TOAST_TYPES } from '../context/ToastContext';
 
 // Reserved folder names that cannot be created by users (case-insensitive)
-const RESERVED_FOLDER_NAMES = ['unsorted', 'uncategorized', 'all cards', 'all'];
+const RESERVED_FOLDER_NAMES = ['unsorted', 'uncategorized', 'all cards', 'all', 'trash'];
 
 /**
  * useFolderOperations - Custom hook for folder-related operations

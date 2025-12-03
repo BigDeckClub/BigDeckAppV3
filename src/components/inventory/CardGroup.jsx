@@ -32,10 +32,14 @@ export const CardGroup = memo(function CardGroup({
   startEditingItem,
   updateInventoryItem,
   deleteInventoryItem,
+  permanentlyDeleteItem,
+  restoreFromTrash,
+  isTrashView,
   createdFolders,
   onToggleLowInventory,
   onSetThreshold
 }) {
+  const { confirm } = useConfirm();
   const [togglingId, setTogglingId] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   
@@ -119,6 +123,28 @@ export const CardGroup = memo(function CardGroup({
         className="relative bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 hover:border-teal-400 rounded-lg p-3 md:p-4 transition-all duration-300 flex flex-col h-32 sm:h-36 md:h-40 hover:shadow-2xl hover:shadow-teal-500/30 hover:-translate-y-1 cursor-pointer active:cursor-grabbing group active:scale-95" 
         onClick={handleOpenModal}
       >
+        {isTrashView ? (
+          <button
+            type="button"
+            onClick={handleRestoreAll}
+            className="absolute top-2 left-2 p-1.5 bg-slate-700/80 hover:bg-green-600/60 text-slate-300 hover:text-green-300 rounded-lg transition-all z-20 duration-200"
+            title="Restore all copies"
+          >
+            <RotateCcw className="w-5 h-5" />
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={(e) => {
+              handleToggleLowInventory(items[0], e);
+            }}
+            className="absolute top-2 left-2 p-1.5 bg-slate-700/80 hover:bg-yellow-600/60 text-slate-300 hover:text-yellow-300 rounded-lg transition-all z-20 duration-200"
+            title={items[0]?.low_inventory_alert ? "Alert enabled" : "Enable low inventory alert"}
+            disabled={togglingId === items[0]?.id}
+          >
+            {items[0]?.low_inventory_alert ? <Bell className="w-5 h-5" /> : <BellOff className="w-5 h-5" />}
+          </button>
+        )}
         <button
           type="button"
           onClick={(e) => {
@@ -141,15 +167,15 @@ export const CardGroup = memo(function CardGroup({
           <X className="w-5 h-5" />
         </button>
         <div className="text-center px-1 cursor-pointer flex items-center justify-center gap-1 mb-1">
-          <h3 className="text-xs md:text-sm font-semibold text-slate-50 line-clamp-2 break-words flex-1">
+          <h3 className={`text-xs md:text-sm font-semibold ${isTrashView ? 'text-red-200' : 'text-slate-50'} line-clamp-2 break-words flex-1`}>
             {cardName.split('//')[0].trim()}
           </h3>
         </div>
         
         <div className="flex-1 flex items-center justify-center min-h-0 py-2">
           <div className="text-center">
-            <div className="text-slate-400 text-[9px] md:text-xs font-semibold uppercase tracking-wider mb-1">Available</div>
-            <div className="text-2xl md:text-3xl font-bold text-green-400 leading-tight">{available}</div>
+            <div className={`${isTrashView ? 'text-red-400' : 'text-slate-400'} text-[9px] md:text-xs font-semibold uppercase tracking-wider mb-1`}>{isTrashView ? 'In Trash' : 'Available'}</div>
+            <div className={`text-2xl md:text-3xl font-bold ${isTrashView ? 'text-red-400' : 'text-green-400'} leading-tight`}>{available}</div>
           </div>
         </div>
         
@@ -271,6 +297,9 @@ CardGroup.propTypes = {
   startEditingItem: PropTypes.func.isRequired,
   updateInventoryItem: PropTypes.func.isRequired,
   deleteInventoryItem: PropTypes.func.isRequired,
+  permanentlyDeleteItem: PropTypes.func,
+  restoreFromTrash: PropTypes.func,
+  isTrashView: PropTypes.bool,
   createdFolders: PropTypes.array.isRequired,
   onToggleLowInventory: PropTypes.func,
   onSetThreshold: PropTypes.func

@@ -8,12 +8,14 @@ import React from 'react';
 const mockGet = vi.fn();
 const mockPost = vi.fn();
 const mockPut = vi.fn();
+const mockDel = vi.fn();
 
 vi.mock('../hooks/useApi', () => ({
   useApi: () => ({
     get: mockGet,
     post: mockPost,
     put: mockPut,
+    del: mockDel,
   }),
 }));
 
@@ -77,6 +79,24 @@ describe('useInventoryOperations', () => {
     const { result } = renderHook(() => useInventoryOperations(), { wrapper });
 
     expect(typeof result.current.deleteInventoryItem).toBe('function');
+  });
+
+  it('exposes permanentlyDeleteItem function', () => {
+    const { result } = renderHook(() => useInventoryOperations(), { wrapper });
+
+    expect(typeof result.current.permanentlyDeleteItem).toBe('function');
+  });
+
+  it('exposes restoreFromTrash function', () => {
+    const { result } = renderHook(() => useInventoryOperations(), { wrapper });
+
+    expect(typeof result.current.restoreFromTrash).toBe('function');
+  });
+
+  it('exposes emptyTrash function', () => {
+    const { result } = renderHook(() => useInventoryOperations(), { wrapper });
+
+    expect(typeof result.current.emptyTrash).toBe('function');
   });
 
   it('exposes startEditingItem function', () => {
@@ -143,7 +163,7 @@ describe('useInventoryOperations', () => {
       await result.current.loadInventory();
     });
 
-    expect(mockGet).toHaveBeenCalledWith('/api/inventory');
+    expect(mockGet).toHaveBeenCalledWith('/inventory');
     expect(result.current.inventory.length).toBe(2);
   });
 
@@ -157,5 +177,57 @@ describe('useInventoryOperations', () => {
     });
 
     expect(result.current.inventory).toEqual([]);
+  });
+
+  it('deleteInventoryItem moves item to Trash folder', async () => {
+    mockPut.mockResolvedValueOnce({});
+    mockGet.mockResolvedValueOnce([]);
+
+    const { result } = renderHook(() => useInventoryOperations(), { wrapper });
+
+    await act(async () => {
+      await result.current.deleteInventoryItem(1);
+    });
+
+    expect(mockPut).toHaveBeenCalledWith('/inventory/1', { folder: 'Trash' });
+  });
+
+  it('permanentlyDeleteItem calls delete API', async () => {
+    mockDel.mockResolvedValueOnce({});
+    mockGet.mockResolvedValueOnce([]);
+
+    const { result } = renderHook(() => useInventoryOperations(), { wrapper });
+
+    await act(async () => {
+      await result.current.permanentlyDeleteItem(1);
+    });
+
+    expect(mockDel).toHaveBeenCalledWith('/inventory/1');
+  });
+
+  it('restoreFromTrash moves item to Uncategorized folder', async () => {
+    mockPut.mockResolvedValueOnce({});
+    mockGet.mockResolvedValueOnce([]);
+
+    const { result } = renderHook(() => useInventoryOperations(), { wrapper });
+
+    await act(async () => {
+      await result.current.restoreFromTrash(1);
+    });
+
+    expect(mockPut).toHaveBeenCalledWith('/inventory/1', { folder: 'Uncategorized' });
+  });
+
+  it('emptyTrash calls delete trash API', async () => {
+    mockDel.mockResolvedValueOnce({});
+    mockGet.mockResolvedValueOnce([]);
+
+    const { result } = renderHook(() => useInventoryOperations(), { wrapper });
+
+    await act(async () => {
+      await result.current.emptyTrash();
+    });
+
+    expect(mockDel).toHaveBeenCalledWith('/inventory/trash');
   });
 });
