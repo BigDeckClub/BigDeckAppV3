@@ -699,3 +699,20 @@ select {
 .threshold-slider-blue:focus::-moz-range-thumb {
   box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.4);
 }
+
+/* Shake animation for visual feedback */
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  10%, 30%, 50%, 70%, 90% {
+    transform: translateX(-4px);
+  }
+  20%, 40%, 60%, 80% {
+    transform: translateX(4px);
+  }
+}
+
+.animate-shake {
+  animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+}

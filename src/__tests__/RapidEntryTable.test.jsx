@@ -168,4 +168,140 @@ describe('RapidEntryTable Component', () => {
     fireEvent.change(qtyInput, { target: { value: '4' } });
     expect(qtyInput).toHaveValue(4);
   });
+
+  it('clears row when Escape key is pressed on price input', async () => {
+    render(<RapidEntryTable {...mockProps} />);
+    
+    const priceInput = screen.getByPlaceholderText('0.00');
+    fireEvent.change(priceInput, { target: { value: '5.99' } });
+    expect(priceInput).toHaveValue(5.99);
+    
+    // Press Escape on price input
+    fireEvent.keyDown(priceInput, { key: 'Escape', code: 'Escape' });
+    
+    // After clearing, price should be reset to empty
+    await waitFor(() => {
+      const clearedPriceInput = screen.getByPlaceholderText('0.00');
+      expect(clearedPriceInput).toHaveValue(null);
+    });
+  });
+
+  it('clears row when Escape key is pressed on foil checkbox', () => {
+    render(<RapidEntryTable {...mockProps} />);
+    
+    const input = screen.getByPlaceholderText('Search card...');
+    fireEvent.change(input, { target: { value: 'Test Card' } });
+    expect(input).toHaveValue('Test Card');
+    
+    const checkbox = screen.getByRole('checkbox');
+    fireEvent.click(checkbox);
+    expect(checkbox).toBeChecked();
+    
+    // Press Escape on foil checkbox
+    fireEvent.keyDown(checkbox, { key: 'Escape', code: 'Escape' });
+    
+    // After clearing, row should be reset
+    const clearedInput = screen.getByPlaceholderText('Search card...');
+    expect(clearedInput).toHaveValue('');
+  });
+
+  it('clears row when Escape key is pressed on quality dropdown', () => {
+    render(<RapidEntryTable {...mockProps} />);
+    
+    const input = screen.getByPlaceholderText('Search card...');
+    fireEvent.change(input, { target: { value: 'Test Card' } });
+    
+    const qualitySelect = screen.getAllByRole('combobox')[1]; // Second select is quality
+    
+    // Press Escape on quality dropdown
+    fireEvent.keyDown(qualitySelect, { key: 'Escape', code: 'Escape' });
+    
+    // After clearing, row should be reset
+    const clearedInput = screen.getByPlaceholderText('Search card...');
+    expect(clearedInput).toHaveValue('');
+  });
+
+  it('clears row when Escape key is pressed on folder dropdown', () => {
+    render(<RapidEntryTable {...mockProps} />);
+    
+    const input = screen.getByPlaceholderText('Search card...');
+    fireEvent.change(input, { target: { value: 'Test Card' } });
+    
+    const folderSelect = screen.getAllByRole('combobox')[2]; // Third select is folder
+    
+    // Press Escape on folder dropdown
+    fireEvent.keyDown(folderSelect, { key: 'Escape', code: 'Escape' });
+    
+    // After clearing, row should be reset
+    const clearedInput = screen.getByPlaceholderText('Search card...');
+    expect(clearedInput).toHaveValue('');
+  });
+
+  it('clears row when Escape key is pressed on set dropdown', () => {
+    const propsWithResults = {
+      ...mockProps,
+      showDropdown: true,
+      searchResults: [
+        { name: 'Lightning Bolt', set: '2X2', setName: 'Double Masters 2022', imageUrl: '/test.jpg' },
+      ],
+    };
+    
+    render(<RapidEntryTable {...propsWithResults} />);
+    
+    const input = screen.getByPlaceholderText('Search card...');
+    fireEvent.focus(input);
+    
+    // Select a card first so the set dropdown is enabled
+    const result = screen.getByText('Lightning Bolt');
+    fireEvent.click(result);
+    
+    // Now find the set dropdown (first combobox after card selection)
+    const setSelect = screen.getAllByRole('combobox')[0];
+    
+    // Press Escape on set dropdown
+    fireEvent.keyDown(setSelect, { key: 'Escape', code: 'Escape' });
+    
+    // After clearing, row should be reset
+    const clearedInput = screen.getByPlaceholderText('Search card...');
+    expect(clearedInput).toHaveValue('');
+  });
+
+  it('handles Ctrl+D on price input for duplicating previous row', () => {
+    render(<RapidEntryTable {...mockProps} />);
+    
+    const priceInput = screen.getByPlaceholderText('0.00');
+    
+    // Press Ctrl+D on price input (should not throw, even if no previous row)
+    fireEvent.keyDown(priceInput, { key: 'd', code: 'KeyD', ctrlKey: true });
+    
+    // Should not crash - with no previous row, nothing happens
+    expect(priceInput).toBeInTheDocument();
+  });
+
+  it('row container has tabIndex and can receive keyboard events', () => {
+    render(<RapidEntryTable {...mockProps} />);
+    
+    // The row container should have tabIndex=0
+    const rowContainers = document.querySelectorAll('[tabindex="0"]');
+    expect(rowContainers.length).toBeGreaterThan(0);
+  });
+
+  it('shows shake animation when Shift+Enter is pressed without valid card', async () => {
+    render(<RapidEntryTable {...mockProps} />);
+    
+    const input = screen.getByPlaceholderText('Search card...');
+    fireEvent.change(input, { target: { value: 'Test' } });
+    
+    // Press Shift+Enter without selecting a valid card
+    fireEvent.keyDown(input, { key: 'Enter', code: 'Enter', shiftKey: true });
+    
+    // The row container should have the animate-shake class
+    const rowContainer = input.closest('[tabindex="0"]');
+    expect(rowContainer).toHaveClass('animate-shake');
+    
+    // After 500ms, the class should be removed
+    await waitFor(() => {
+      expect(rowContainer).not.toHaveClass('animate-shake');
+    }, { timeout: 600 });
+  });
 });

@@ -39,6 +39,7 @@ export const RapidEntryTable = ({
   const [addedCards, setAddedCards] = useState([]);
   const [duplicateWarning, setDuplicateWarning] = useState(null);
   const [highlightedResult, setHighlightedResult] = useState(0);
+  const [shakeRowIndex, setShakeRowIndex] = useState(null);
   
   const inputRefs = useRef({});
   const dropdownRef = useRef(null);
@@ -297,12 +298,16 @@ export const RapidEntryTable = ({
       e.preventDefault();
       if (row.status === 'valid') {
         handleAddCardToInventory(rowIndex);
+      } else {
+        // Visual feedback when Shift+Enter fails (card not selected)
+        setShakeRowIndex(rowIndex);
+        setTimeout(() => setShakeRowIndex(null), 500);
       }
       return;
     }
     
-    // Ctrl+D to duplicate previous row
-    if (e.key === 'd' && (e.ctrlKey || e.metaKey)) {
+    // Ctrl+D or Ctrl+Shift+D to duplicate previous row
+    if ((e.key === 'd' || e.key === 'D') && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
       handleDuplicatePrevious(rowIndex);
       return;
@@ -343,13 +348,16 @@ export const RapidEntryTable = ({
         {rows.map((row, rowIndex) => (
           <div
             key={row.id}
+            tabIndex={0}
+            onKeyDown={(e) => handleKeyDown(e, rowIndex, 'row')}
             className={`
-              relative rounded-lg border transition-all duration-200
+              relative rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-teal-400/50
               ${row.status === 'added' ? 'bg-emerald-900/20 border-emerald-500/50' : ''}
               ${row.status === 'valid' ? 'bg-slate-800/50 border-teal-500/50' : ''}
               ${row.status === 'editing' ? 'bg-slate-800/30 border-slate-600' : ''}
               ${row.status === 'error' ? 'bg-red-900/20 border-red-500/50' : ''}
               ${activeRowIndex === rowIndex ? 'ring-1 ring-teal-400/30' : ''}
+              ${shakeRowIndex === rowIndex ? 'animate-shake' : ''}
             `}
           >
             <div className="grid grid-cols-1 md:grid-cols-12 gap-2 p-3">
@@ -429,6 +437,7 @@ export const RapidEntryTable = ({
                 <select
                   value={row.set}
                   onChange={(e) => handleSetChange(rowIndex, e.target.value)}
+                  onKeyDown={(e) => handleKeyDown(e, rowIndex, 'set')}
                   disabled={!row.selectedCard || row.status === 'added'}
                   className="w-full bg-slate-900/50 border border-slate-600 rounded px-2 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-teal-400 disabled:opacity-50"
                 >
@@ -497,6 +506,7 @@ export const RapidEntryTable = ({
                         idx === rowIndex ? { ...r, foil: e.target.checked } : r
                       ));
                     }}
+                    onKeyDown={(e) => handleKeyDown(e, rowIndex, 'foil')}
                     disabled={row.status === 'added'}
                     className="w-5 h-5 rounded border-slate-600 bg-slate-900/50 text-teal-500 focus:ring-teal-400 focus:ring-offset-0 disabled:opacity-50"
                   />
@@ -513,6 +523,7 @@ export const RapidEntryTable = ({
                       idx === rowIndex ? { ...r, quality: e.target.value } : r
                     ));
                   }}
+                  onKeyDown={(e) => handleKeyDown(e, rowIndex, 'quality')}
                   disabled={row.status === 'added'}
                   className="w-full bg-slate-900/50 border border-slate-600 rounded px-2 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-teal-400 disabled:opacity-50"
                 >
@@ -532,6 +543,7 @@ export const RapidEntryTable = ({
                       idx === rowIndex ? { ...r, folder: e.target.value } : r
                     ));
                   }}
+                  onKeyDown={(e) => handleKeyDown(e, rowIndex, 'folder')}
                   disabled={row.status === 'added'}
                   className="w-full bg-slate-900/50 border border-slate-600 rounded px-2 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-teal-400 disabled:opacity-50"
                 >
