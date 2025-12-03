@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { api } from '../utils/apiClient';
 import { API_ENDPOINTS } from '../config/api';
 
@@ -22,6 +22,26 @@ export const createEmptyRow = (stickyFolder = 'Unsorted') => ({
   status: 'editing', // 'editing' | 'valid' | 'added' | 'error'
   imageUrl: '',
 });
+
+// Parse quantity from card name input (e.g., "4 Lightning Bolt" -> { qty: 4, name: "Lightning Bolt" })
+// Moved outside hook since it's a pure function with no dependencies
+const parseQuantityFromInput = (input) => {
+  const match = input.match(/^(\d+)\s+(.+)$/);
+  if (match) {
+    return { quantity: parseInt(match[1], 10), cardName: match[2] };
+  }
+  return { quantity: 1, cardName: input };
+};
+
+// Calculate per-card cost (shared logic for consistency)
+// Moved outside hook since it's a pure function with no dependencies
+const calculatePerCardCost = (totalCost, totalCards) => {
+  const cost = parseFloat(totalCost);
+  if (totalCards > 0 && !isNaN(cost) && cost > 0) {
+    return cost / totalCards;
+  }
+  return 0;
+};
 
 /**
  * Custom hook for managing rapid entry table state and handlers
@@ -53,33 +73,25 @@ export function useRapidEntry({
   const inputRefs = useRef({});
   const dropdownRef = useRef(null);
 
-  // Calculate running totals
-  const runningTotal = addedCards.reduce((acc, card) => ({
-    count: acc.count + (card.quantity || 1),
-    price: acc.price + ((card.quantity || 1) * (parseFloat(card.price) || 0)),
-  }), { count: 0, price: 0 });
+  // Calculate running totals (memoized)
+  const runningTotal = useMemo(() => 
+    addedCards.reduce((acc, card) => ({
+      count: acc.count + (card.quantity || 1),
+      price: acc.price + ((card.quantity || 1) * (parseFloat(card.price) || 0)),
+    }), { count: 0, price: 0 }),
+    [addedCards]
+  );
 
-  // Calculate per-card cost (shared logic for consistency)
-  const calculatePerCardCost = (totalCost, totalCards) => {
-    const cost = parseFloat(totalCost);
-    if (totalCards > 0 && !isNaN(cost) && cost > 0) {
-      return cost / totalCards;
-    }
-    return 0;
-  };
-
-  // Calculate lot totals
-  const lotTotalCards = lotCards.reduce((sum, card) => sum + (card.quantity || 1), 0);
-  const lotPerCardCost = calculatePerCardCost(lotTotalCost, lotTotalCards);
-
-  // Parse quantity from card name input (e.g., "4 Lightning Bolt" -> { qty: 4, name: "Lightning Bolt" })
-  const parseQuantityFromInput = (input) => {
-    const match = input.match(/^(\d+)\s+(.+)$/);
-    if (match) {
-      return { quantity: parseInt(match[1], 10), cardName: match[2] };
-    }
-    return { quantity: 1, cardName: input };
-  };
+  // Calculate lot totals (memoized)
+  const lotTotalCards = useMemo(() => 
+    lotCards.reduce((sum, card) => sum + (card.quantity || 1), 0),
+    [lotCards]
+  );
+  
+  const lotPerCardCost = useMemo(() => 
+    calculatePerCardCost(lotTotalCost, lotTotalCards),
+    [lotTotalCost, lotTotalCards]
+  );
 
   // Handle card name input change
   const handleCardNameChange = useCallback((rowIndex, value) => {
