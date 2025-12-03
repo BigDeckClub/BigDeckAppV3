@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Trash2, Filter, Folder, FolderOpen } from 'lucide-react';
+import { Filter, Folder, FolderOpen } from 'lucide-react';
 import PropTypes from 'prop-types';
 
 export const ChangeLogTab = ({ inventory = [] }) => {
@@ -92,8 +92,8 @@ export const ChangeLogTab = ({ inventory = [] }) => {
                         <span className="text-slate-500">Folder:</span>
                         <span className="text-slate-300 ml-2 inline-flex items-center gap-1">
                           {entry.folder === 'Uncategorized' 
-                            ? <><FolderOpen className="w-3 h-3 inline" /> Unsorted</>
-                            : <><Folder className="w-3 h-3 inline" /> {entry.folder}</>
+                            ? <><FolderOpen className="w-3 h-3" /> Unsorted</>
+                            : <><Folder className="w-3 h-3" /> {entry.folder}</>
                           }
                         </span>
                       </div>

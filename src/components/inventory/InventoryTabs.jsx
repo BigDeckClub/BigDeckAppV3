@@ -72,7 +72,7 @@ export const InventoryTabs = memo(function InventoryTabs({
                   : 'text-slate-300 hover:text-slate-100 hover:bg-slate-700/30'
               }`}
             >
-              <Folder className="w-4 h-4 inline mr-1" />
+              <Folder className="w-4 h-4 mr-1" />
               {folderName === 'Uncategorized' ? 'Unsorted' : folderName}
             </button>
             <button
