@@ -56,7 +56,7 @@ export const InventoryTab = ({
         onLoadInventory();
       }
     } catch (error) {
-      // Error handled silently
+      console.error('Error toggling alert:', error);
     }
   }, [onLoadInventory]);
 
@@ -69,7 +69,7 @@ export const InventoryTab = ({
       });
       onLoadInventory?.();
     } catch (error) {
-      // Error handled silently
+      console.error('Error setting threshold:', error);
     }
   }, [onLoadInventory]);
 

@@ -35,7 +35,7 @@ export function useDeckReservations({ inventory, onLoadInventory }) {
         setDeckInstances(data);
       }
     } catch (error) {
-      // Error handled silently
+      console.error('Error fetching deck instances:', error);
     }
   }, []);
 
@@ -59,7 +59,7 @@ export function useDeckReservations({ inventory, onLoadInventory }) {
         }
       }
     } catch (error) {
-      // Error handled silently
+      console.error('Error loading deck details:', error);
     } finally {
       setLoadingDeckDetails(false);
     }
@@ -135,7 +135,7 @@ export function useDeckReservations({ inventory, onLoadInventory }) {
         debouncedLoadInventory();
       }
     } catch (error) {
-      // Error handled silently
+      console.error('Error removing card from deck:', error);
     }
   }, [loadDeckDetails, refreshDeckInstances, debouncedLoadInventory]);
 

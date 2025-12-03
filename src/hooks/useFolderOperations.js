@@ -27,7 +27,7 @@ export function useFolderOperations({ inventory, onLoadInventory }) {
         setCreatedFolders(data.map(f => f.name));
       }
     } catch (error) {
-      // Error handled silently
+      console.error('Error loading folders:', error);
     }
   }, []);
 
