@@ -263,7 +263,10 @@ export const InventoryTab = ({
   // Remove card from deck reservation
   const removeCardFromDeck = async (deckId, reservationId, quantity = 1) => {
     try {
-      await api.delete(`${API_ENDPOINTS.DECK_INSTANCES}/${deckId}/remove-card`);
+      await api.delete(`${API_ENDPOINTS.DECK_INSTANCES}/${deckId}/remove-card`, { 
+        reservation_id: reservationId, 
+        quantity: quantity 
+      });
       await loadDeckDetails(deckId, true); // Force refresh to get latest data
       await refreshDeckInstances();
       debouncedLoadInventory(); // Refresh main inventory to show returned cards in Unsorted
@@ -345,7 +348,10 @@ export const InventoryTab = ({
       showToast(`Moved card to ${targetFolder}`, TOAST_TYPES.SUCCESS);
       
       // First remove the card from the deck (which moves it to Uncategorized)
-      await api.delete(`${API_ENDPOINTS.DECK_INSTANCES}/${deckId}/remove-card`);
+      await api.delete(`${API_ENDPOINTS.DECK_INSTANCES}/${deckId}/remove-card`, {
+        reservation_id: reservationId,
+        quantity: quantity
+      });
       
       // Then move it to the target folder
       await api.put(`${API_ENDPOINTS.INVENTORY}/${deckCardData.inventory_item_id}`, { folder: targetFolder });
@@ -534,7 +540,10 @@ export const InventoryTab = ({
       const inventoryItemId = deckCardData.inventory_item_id;
       
       // Remove from source deck
-      await api.delete(`${API_ENDPOINTS.DECK_INSTANCES}/${sourceDeckId}/remove-card`);
+      await api.delete(`${API_ENDPOINTS.DECK_INSTANCES}/${sourceDeckId}/remove-card`, {
+        reservation_id: reservationId,
+        quantity: quantity
+      });
       
       // Add to target deck
       await api.post(`${API_ENDPOINTS.DECK_INSTANCES}/${targetDeckId}/add-card`, { 

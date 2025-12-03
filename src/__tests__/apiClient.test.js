@@ -146,6 +146,24 @@ describe('apiClient', () => {
       });
     });
 
+    it('should call DELETE with body correctly', async () => {
+      const mockData = { success: true };
+      const body = { reservation_id: 123, quantity: 2 };
+      global.fetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockData),
+      });
+
+      const result = await api.delete('/test/1', body);
+      
+      expect(result).toEqual(mockData);
+      expect(global.fetch).toHaveBeenCalledWith('/api/test/1', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+    });
+
     it('should call PATCH correctly', async () => {
       const mockData = { id: 1 };
       const body = { status: 'completed' };
