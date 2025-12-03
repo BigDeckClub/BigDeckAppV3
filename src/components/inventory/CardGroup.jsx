@@ -2,6 +2,7 @@ import React, { memo, useState } from 'react';
 import PropTypes from 'prop-types';
 import { X, Bell, BellOff, ChevronRight, Eye } from 'lucide-react';
 import { CardDetailModal } from './CardDetailModal';
+import { useConfirm } from '../../context/ConfirmContext';
 
 /**
  * Get dynamic font size based on value length
