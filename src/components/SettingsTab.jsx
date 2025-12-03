@@ -27,11 +27,8 @@ export const SettingsTab = ({ inventory }) => {
   useEffect(() => {
     const loadSales = async () => {
       try {
-        const response = await fetch('/api/sales');
-        if (response.ok) {
-          const data = await response.json();
-          setSalesHistory(data || []);
-        }
+        const data = await api.get(API_ENDPOINTS.SALES);
+        setSalesHistory(data || []);
       } catch (error) {
         console.warn('[Settings] Error fetching sales history:', error);
       }

@@ -1,6 +1,7 @@
 // Barrel export for inventory components
 export { CardGroup } from './CardGroup';
 export { FolderSidebar } from './FolderSidebar';
+export { DeckSidebar } from './DeckSidebar';
 export { InventorySearchBar } from './InventorySearchBar';
 export { InventoryTabs } from './InventoryTabs';
 export { DeckDetailView } from './DeckDetailView';
