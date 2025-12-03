@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Suspense, lazy, useCallback, startTransition } from "react";
+import React, { useState, useEffect, lazy, useCallback, startTransition } from "react";
 import {
   Layers,
   Download,
