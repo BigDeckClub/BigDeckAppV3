@@ -116,7 +116,7 @@ export function useRapidEntry({
     if (cardName.length >= 2) {
       handleSearch(cardName);
     }
-  }, [handleSearch]);
+  }, [handleSearch, setRows, setActiveRowIndex, setHighlightedResult]);
 
   // Handle selecting a card from search results
   const handleSelectCard = useCallback((rowIndex, card) => {
@@ -162,7 +162,7 @@ export function useRapidEntry({
       const qtyInput = inputRefs.current[`qty-${rowIndex}`];
       if (qtyInput) qtyInput.focus();
     }, 50);
-  }, [addedCards, searchResults, setShowDropdown]);
+  }, [addedCards, searchResults, setShowDropdown, setRows, setDuplicateWarning, setHighlightedResult]);
 
   // Handle set change
   const handleSetChange = useCallback((rowIndex, setCode) => {
@@ -180,7 +180,7 @@ export function useRapidEntry({
         };
       });
     });
-  }, []);
+  }, [setRows]);
 
   // Handle adding a card to lot (when lot mode is enabled)
   const handleAddCardToLot = useCallback((rowIndex) => {
@@ -229,7 +229,7 @@ export function useRapidEntry({
       const newInput = inputRefs.current[`name-${newRowIndex}`];
       if (newInput) newInput.focus();
     }, 50);
-  }, [rows, stickyFolder]);
+  }, [rows, stickyFolder, setRows, setLotCards, setStickyFolder, setActiveRowIndex, setDuplicateWarning]);
 
   // Handle submitting all cards in the lot
   const handleSubmitLot = useCallback(async () => {
@@ -283,12 +283,12 @@ export function useRapidEntry({
     } finally {
       setLotSubmitting(false);
     }
-  }, [lotCards, lotTotalCost, lotName, lotTotalCards, lotPerCardCost, stickyFolder]);
+  }, [lotCards, lotTotalCost, lotName, lotTotalCards, lotPerCardCost, stickyFolder, setAddedCards, setLotCards, setLotName, setLotTotalCost, setRows, setActiveRowIndex, setLotSubmitting, setLotError]);
 
   // Remove a card from the lot
   const handleRemoveCardFromLot = useCallback((index) => {
     setLotCards(prev => prev.filter((_, i) => i !== index));
-  }, []);
+  }, [setLotCards]);
 
   // Handle adding a card to inventory
   const handleAddCardToInventory = useCallback(async (rowIndex) => {
@@ -357,7 +357,7 @@ export function useRapidEntry({
         return { ...r, status: 'error' };
       }));
     }
-  }, [rows, lotModeEnabled, handleAddCardToLot, onAddCard, stickyFolder]);
+  }, [rows, lotModeEnabled, handleAddCardToLot, onAddCard, stickyFolder, setRows, setAddedCards, setStickyFolder, setActiveRowIndex, setDuplicateWarning]);
 
   // Handle clearing a row
   const handleClearRow = useCallback((rowIndex) => {
@@ -372,7 +372,7 @@ export function useRapidEntry({
       const input = inputRefs.current[`name-${rowIndex}`];
       if (input) input.focus();
     }, 50);
-  }, [stickyFolder]);
+  }, [stickyFolder, setRows, setDuplicateWarning]);
 
   // Handle duplicating previous row
   const handleDuplicatePrevious = useCallback((rowIndex) => {
@@ -402,14 +402,14 @@ export function useRapidEntry({
         };
       });
     });
-  }, []);
+  }, [setRows]);
 
   // Update row field
   const updateRowField = useCallback((rowIndex, field, value) => {
     setRows(prev => prev.map((r, idx) => 
       idx === rowIndex ? { ...r, [field]: value } : r
     ));
-  }, []);
+  }, [setRows]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
