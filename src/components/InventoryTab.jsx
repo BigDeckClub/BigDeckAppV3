@@ -5,7 +5,6 @@ import { usePriceCache } from "../context/PriceCacheContext";
 import { useToast, TOAST_TYPES } from "../context/ToastContext";
 import { useConfirm } from "../context/ConfirmContext";
 import { 
-  CardGroup,
   CardGrid, 
   InventorySearchBar, 
   InventoryTabs, 
@@ -166,6 +165,11 @@ export const InventoryTab = ({
     const trimmedName = folderName.trim();
     if (!trimmedName) return;
     
+    if (createdFolders.includes(trimmedName)) {
+      showToast('A folder with this name already exists', TOAST_TYPES.ERROR);
+      return;
+    }
+    
     try {
       const response = await fetch('/api/folders', {
         method: 'POST',
@@ -174,14 +178,15 @@ export const InventoryTab = ({
       });
       
       if (response.ok) {
-        setCreatedFolders(prev => [...prev, trimmedName]);
+        const data = await response.json();
+        setCreatedFolders(prev => [...prev, data.name || trimmedName]);
       } else {
         showToast('Failed to create folder', TOAST_TYPES.ERROR);
       }
     } catch (error) {
       showToast(`Error creating folder: ${error.message}`, TOAST_TYPES.ERROR);
     }
-  }, [showToast]);
+  }, [showToast, createdFolders]);
 
   // Fetch deck instances on demand (memoized)
   const refreshDeckInstances = useCallback(async () => {
