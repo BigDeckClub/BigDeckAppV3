@@ -10,6 +10,7 @@ import salesRouter from './sales.js';
 import settingsRouter from './settings.js';
 import authRouter from './auth.js';
 import lotsRouter from './lots.js';
+import archidektRouter from './archidekt.js';
 
 export function registerRoutes(app) {
   // Health check (no /api prefix)
@@ -26,6 +27,7 @@ export function registerRoutes(app) {
   app.use(settingsRouter);
   app.use(authRouter);
   app.use(lotsRouter);
+  app.use(archidektRouter);
 }
 
 export {
@@ -39,5 +41,6 @@ export {
   salesRouter,
   settingsRouter,
   authRouter,
-  lotsRouter
+  lotsRouter,
+  archidektRouter
 };
