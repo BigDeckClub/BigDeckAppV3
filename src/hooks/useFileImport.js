@@ -6,15 +6,19 @@
 import { useState, useCallback } from 'react';
 
 /**
- * Generate a unique ID for rows
- * @param {number} index - Optional index to include in ID
- * @returns {string} Unique ID
+ * Factory to create a unique ID generator with its own counter
+ * @returns {function} generateId function
  */
-let idCounter = 0;
-const generateId = (index = 0) => {
-  idCounter += 1;
-  return `row-${Date.now()}-${idCounter}-${index}`;
+export const createIdGenerator = () => {
+  let idCounter = 0;
+  return (index = 0) => {
+    idCounter += 1;
+    return `row-${Date.now()}-${idCounter}-${index}`;
+  };
 };
+
+// Default generator for module-level parsing functions
+const defaultIdGenerator = createIdGenerator();
 
 /**
  * Column mappings for different CSV formats
@@ -167,7 +171,7 @@ export const parseSimpleText = (text) => {
     }
     
     cards.push({
-      id: generateId(index),
+      id: defaultIdGenerator(index),
       name,
       set,
       set_name: '',
@@ -289,7 +293,7 @@ export const parseCSV = (content, format = 'auto') => {
     const quantity = quantityStr ? parseInt(quantityStr, 10) || 1 : 1;
     
     const card = {
-      id: generateId(i),
+      id: defaultIdGenerator(i),
       name,
       set: getValue(indices.set).toUpperCase(),
       set_name: getValue(indices.set_name),
@@ -323,6 +327,9 @@ export function useFileImport({ addInventoryItem, showToast }) {
   const [importProgress, setImportProgress] = useState({ current: 0, total: 0 });
   const [error, setError] = useState(null);
 
+  // Maximum file size: 10 MB
+  const MAX_FILE_SIZE = 10 * 1024 * 1024;
+
   /**
    * Read and parse a file
    * @param {File} file - File to parse
@@ -332,6 +339,15 @@ export function useFileImport({ addInventoryItem, showToast }) {
     setIsLoading(true);
     setError(null);
     setParsedCards([]);
+    
+    // File size check
+    if (file.size > MAX_FILE_SIZE) {
+      const errorMsg = `File is too large (${(file.size / (1024 * 1024)).toFixed(2)} MB). Maximum allowed size is 10 MB.`;
+      setError(errorMsg);
+      showToast?.(errorMsg, 'error');
+      setIsLoading(false);
+      return;
+    }
     
     try {
       const text = await file.text();
@@ -359,7 +375,7 @@ export function useFileImport({ addInventoryItem, showToast }) {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [showToast]);
 
   /**
    * Update a single card in the parsed list

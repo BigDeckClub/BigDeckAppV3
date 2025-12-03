@@ -8,6 +8,17 @@ import { useToast, TOAST_TYPES } from '../context/ToastContext';
 // Quality options for editing
 const QUALITY_OPTIONS = ['NM', 'LP', 'MP', 'HP', 'DMG'];
 
+/**
+ * Helper to map string type to TOAST_TYPES enum safely
+ * @param {string} type - Toast type string
+ * @returns {string} TOAST_TYPES enum value
+ */
+const mapToastType = (type) => {
+  if (typeof type !== 'string') return TOAST_TYPES.INFO;
+  const normalized = type.trim().toUpperCase();
+  return TOAST_TYPES[normalized] || TOAST_TYPES.INFO;
+};
+
 export const FileImportSection = ({
   addInventoryItem,
   createdFolders = [],
@@ -34,10 +45,7 @@ export const FileImportSection = ({
     clearCards,
   } = useFileImport({ 
     addInventoryItem,
-    showToast: (message, type) => {
-      const toastType = type && TOAST_TYPES[type.toUpperCase()] ? TOAST_TYPES[type.toUpperCase()] : TOAST_TYPES.INFO;
-      showToast(message, toastType);
-    },
+    showToast: (message, type) => showToast(message, mapToastType(type)),
   });
 
   // All available folders
@@ -208,10 +216,15 @@ export const FileImportSection = ({
               <option value="simple">Simple Text</option>
             </select>
             <button
-              onClick={() => downloadTemplate(selectedFormat === 'auto' ? 'moxfield' : selectedFormat)}
-              className="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors"
-              title="Download selected template"
+              onClick={() => downloadTemplate(selectedFormat)}
+              className={`px-3 py-2 rounded-lg transition-colors ${
+                selectedFormat === 'auto' 
+                  ? 'bg-slate-800 text-slate-500 cursor-not-allowed' 
+                  : 'bg-slate-700 hover:bg-slate-600'
+              }`}
+              title={selectedFormat === 'auto' ? 'Select a format to download its template' : 'Download selected template'}
               type="button"
+              disabled={selectedFormat === 'auto'}
             >
               <Download className="w-4 h-4" />
             </button>

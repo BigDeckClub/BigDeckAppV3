@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Layers, Upload } from 'lucide-react';
-import { RapidEntryTable } from './RapidEntryTable';
+import { RapidEntryTable } from './rapid-entry/RapidEntryTable';
 import { FileImportSection } from './FileImportSection';
 
 export const ImportTab = ({ 
