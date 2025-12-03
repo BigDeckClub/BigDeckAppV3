@@ -7,7 +7,7 @@ const QUALITY_OPTIONS = ['NM', 'LP', 'MP', 'HP', 'DMG'];
 
 // Create a blank row template
 const createEmptyRow = (stickyFolder = 'Unsorted') => ({
-  id: `row-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+  id: `row-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
   cardName: '',
   searchQuery: '',
   selectedCard: null,
@@ -188,15 +188,16 @@ export const RapidEntryTable = ({
 
       // Add new empty row and focus it
       const newRow = createEmptyRow(stickyFolder);
+      const newRowIndex = rows.length; // Capture current length before state update
       setRows(prev => [...prev, newRow]);
-      setActiveRowIndex(rows.length);
+      setActiveRowIndex(newRowIndex);
       
       // Clear duplicate warning
       setDuplicateWarning(null);
       
       // Focus on new row's card name input
       setTimeout(() => {
-        const newInput = inputRefs.current[`name-${rows.length}`];
+        const newInput = inputRefs.current[`name-${newRowIndex}`];
         if (newInput) newInput.focus();
       }, 50);
     } catch (error) {
