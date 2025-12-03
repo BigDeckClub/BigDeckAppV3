@@ -38,16 +38,33 @@ export const apiRequest = async (endpoint, options = {}) => {
     );
   }
 
-  return response.json();
+  // Handle empty responses (204 No Content) and non-JSON responses
+  if (response.status === 204) {
+    return null;
+  }
+  const contentType = response.headers.get('content-type');
+  if (contentType && contentType.includes('application/json')) {
+    const text = await response.text();
+    if (!text) {
+      return null;
+    }
+    try {
+      return JSON.parse(text);
+    } catch (parseError) {
+      console.error('Failed to parse JSON response:', parseError);
+      return null;
+    }
+  }
+  return null;
 };
 
-// Convenience methods
+// Convenience methods with options support
 export const api = {
-  get: (endpoint) => apiRequest(endpoint, { method: 'GET' }),
-  post: (endpoint, body) => apiRequest(endpoint, { method: 'POST', body }),
-  put: (endpoint, body) => apiRequest(endpoint, { method: 'PUT', body }),
-  patch: (endpoint, body) => apiRequest(endpoint, { method: 'PATCH', body }),
-  delete: (endpoint, body) => apiRequest(endpoint, { method: 'DELETE', body }),
+  get: (endpoint, options = {}) => apiRequest(endpoint, { method: 'GET', ...options }),
+  post: (endpoint, body, options = {}) => apiRequest(endpoint, { method: 'POST', body, ...options }),
+  put: (endpoint, body, options = {}) => apiRequest(endpoint, { method: 'PUT', body, ...options }),
+  patch: (endpoint, body, options = {}) => apiRequest(endpoint, { method: 'PATCH', body, ...options }),
+  delete: (endpoint, body, options = {}) => apiRequest(endpoint, { method: 'DELETE', body, ...options }),
 };
 
 export { ApiError };

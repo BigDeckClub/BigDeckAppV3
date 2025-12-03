@@ -2,14 +2,23 @@ import React from 'react';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 
 class ErrorBoundaryWithRetry extends React.Component {
-  state = { hasError: false, error: null };
+  state = { hasError: false, error: null, retryKey: 0 };
 
   static getDerivedStateFromError(error) {
     return { hasError: true, error };
   }
 
+  componentDidCatch(error, errorInfo) {
+    // Log error to console for debugging
+    console.error('Error caught by boundary:', error, errorInfo);
+  }
+
   handleRetry = () => {
-    this.setState({ hasError: false, error: null });
+    this.setState(prevState => ({ 
+      hasError: false, 
+      error: null,
+      retryKey: prevState.retryKey + 1 
+    }));
   };
 
   render() {
@@ -29,7 +38,7 @@ class ErrorBoundaryWithRetry extends React.Component {
         </div>
       );
     }
-    return this.props.children;
+    return <React.Fragment key={this.state.retryKey}>{this.props.children}</React.Fragment>;
   }
 }
 

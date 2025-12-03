@@ -91,7 +91,7 @@ export const InventoryTab = ({
   // Centralized handlers for low inventory alerts
   const toggleAlertHandler = useCallback(async (itemId) => {
     try {
-      const data = await api.post(`${API_ENDPOINTS.INVENTORY}/${itemId}/toggle-alert`);
+      await api.post(`${API_ENDPOINTS.INVENTORY}/${itemId}/toggle-alert`);
       if (onLoadInventory) {
         onLoadInventory();
       }

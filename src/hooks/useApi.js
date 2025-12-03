@@ -67,20 +67,25 @@ export function useApi() {
     }
   }, []);
 
-  const get = useCallback((url, options) => {
+  const get = useCallback((url, options = {}) => {
     return handleRequest(() => api.get(url, options));
   }, [handleRequest]);
 
-  const post = useCallback((url, body, options) => {
+  const post = useCallback((url, body, options = {}) => {
     return handleRequest(() => api.post(url, body, options));
   }, [handleRequest]);
 
-  const put = useCallback((url, body, options) => {
+  const put = useCallback((url, body, options = {}) => {
     return handleRequest(() => api.put(url, body, options));
   }, [handleRequest]);
 
-  const del = useCallback((url, options) => {
-    return handleRequest(() => api.delete(url, options));
+  const del = useCallback((url, bodyOrOptions, options = {}) => {
+    // Support both del(url, options) and del(url, body, options) signatures
+    const isBody = bodyOrOptions && typeof bodyOrOptions === 'object' && !bodyOrOptions.signal && !bodyOrOptions.headers;
+    if (isBody) {
+      return handleRequest(() => api.delete(url, bodyOrOptions, options));
+    }
+    return handleRequest(() => api.delete(url, undefined, bodyOrOptions || {}));
   }, [handleRequest]);
 
   return {
@@ -126,7 +131,7 @@ export function useFetch(url, options = {}) {
     setError(null);
     
     try {
-      const result = await api.get(url);
+      const result = await api.get(url, { signal: abortControllerRef.current.signal });
       setData(result);
     } catch (err) {
       // Don't set error if request was aborted

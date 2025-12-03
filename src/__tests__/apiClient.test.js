@@ -10,13 +10,20 @@ describe('apiClient', () => {
     vi.restoreAllMocks();
   });
 
+  const createMockResponse = (data, options = {}) => ({
+    ok: options.ok !== false,
+    status: options.status || 200,
+    headers: {
+      get: (name) => name === 'content-type' ? 'application/json' : null,
+    },
+    text: () => Promise.resolve(JSON.stringify(data)),
+    json: () => Promise.resolve(data),
+  });
+
   describe('apiRequest', () => {
     it('should make a successful GET request', async () => {
       const mockData = { id: 1, name: 'Test' };
-      global.fetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockData),
-      });
+      global.fetch.mockResolvedValueOnce(createMockResponse(mockData));
 
       const result = await apiRequest('/test', { method: 'GET' });
 
@@ -30,10 +37,7 @@ describe('apiClient', () => {
     it('should make a successful POST request with body', async () => {
       const mockData = { id: 1 };
       const body = { name: 'Test' };
-      global.fetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockData),
-      });
+      global.fetch.mockResolvedValueOnce(createMockResponse(mockData));
 
       const result = await apiRequest('/test', { method: 'POST', body });
 
@@ -66,24 +70,47 @@ describe('apiClient', () => {
 
     it('should handle external URLs without prepending API_BASE', async () => {
       const mockData = { data: [] };
-      global.fetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockData),
-      });
+      global.fetch.mockResolvedValueOnce(createMockResponse(mockData));
 
       await apiRequest('https://api.external.com/data', { method: 'GET' });
 
       expect(global.fetch).toHaveBeenCalledWith('https://api.external.com/data', expect.any(Object));
+    });
+
+    it('should handle 204 No Content responses', async () => {
+      global.fetch.mockResolvedValueOnce({
+        ok: true,
+        status: 204,
+        headers: {
+          get: () => null,
+        },
+      });
+
+      const result = await apiRequest('/test', { method: 'DELETE' });
+
+      expect(result).toBeNull();
+    });
+
+    it('should handle empty JSON response body', async () => {
+      global.fetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: {
+          get: (name) => name === 'content-type' ? 'application/json' : null,
+        },
+        text: () => Promise.resolve(''),
+      });
+
+      const result = await apiRequest('/test', { method: 'GET' });
+
+      expect(result).toBeNull();
     });
   });
 
   describe('api convenience methods', () => {
     it('should call GET correctly', async () => {
       const mockData = { test: true };
-      global.fetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockData),
-      });
+      global.fetch.mockResolvedValueOnce(createMockResponse(mockData));
 
       const result = await api.get('/test');
       
@@ -94,13 +121,25 @@ describe('apiClient', () => {
       });
     });
 
+    it('should call GET with options correctly', async () => {
+      const mockData = { test: true };
+      const abortController = new AbortController();
+      global.fetch.mockResolvedValueOnce(createMockResponse(mockData));
+
+      const result = await api.get('/test', { signal: abortController.signal });
+      
+      expect(result).toEqual(mockData);
+      expect(global.fetch).toHaveBeenCalledWith('/api/test', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        signal: abortController.signal,
+      });
+    });
+
     it('should call POST correctly', async () => {
       const mockData = { id: 1 };
       const body = { name: 'Test' };
-      global.fetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockData),
-      });
+      global.fetch.mockResolvedValueOnce(createMockResponse(mockData));
 
       const result = await api.post('/test', body);
       
@@ -115,10 +154,7 @@ describe('apiClient', () => {
     it('should call PUT correctly', async () => {
       const mockData = { id: 1 };
       const body = { name: 'Updated' };
-      global.fetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockData),
-      });
+      global.fetch.mockResolvedValueOnce(createMockResponse(mockData));
 
       const result = await api.put('/test/1', body);
       
@@ -132,10 +168,7 @@ describe('apiClient', () => {
 
     it('should call DELETE correctly', async () => {
       const mockData = { success: true };
-      global.fetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockData),
-      });
+      global.fetch.mockResolvedValueOnce(createMockResponse(mockData));
 
       const result = await api.delete('/test/1');
       
@@ -149,10 +182,7 @@ describe('apiClient', () => {
     it('should call DELETE with body correctly', async () => {
       const mockData = { success: true };
       const body = { reservation_id: 123, quantity: 2 };
-      global.fetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockData),
-      });
+      global.fetch.mockResolvedValueOnce(createMockResponse(mockData));
 
       const result = await api.delete('/test/1', body);
       
@@ -167,10 +197,7 @@ describe('apiClient', () => {
     it('should call PATCH correctly', async () => {
       const mockData = { id: 1 };
       const body = { status: 'completed' };
-      global.fetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockData),
-      });
+      global.fetch.mockResolvedValueOnce(createMockResponse(mockData));
 
       const result = await api.patch('/test/1', body);
       
