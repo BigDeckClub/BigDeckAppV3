@@ -7,12 +7,15 @@ import {
   InventoryTabs, 
   DeckDetailView,
   FolderHeader,
-  FolderSidebar
+  FolderSidebar,
+  TrashView,
+  FolderView
 } from './inventory';
 import { SellModal } from './SellModal';
 import { useFolderOperations } from '../hooks/useFolderOperations';
 import { useDeckReservations } from '../hooks/useDeckReservations';
 import { useConfirm } from '../context/ConfirmContext';
+import { useApi } from '../hooks/useApi';
 
 /**
  * InventoryTab - Main inventory management component
@@ -38,6 +41,7 @@ export const InventoryTab = ({
   onSell
 }) => {
   const { confirm } = useConfirm();
+  const { post } = useApi();
   
   // UI State
   const [activeTab, setActiveTab] = useState('all');
@@ -56,24 +60,21 @@ export const InventoryTab = ({
   // Centralized handlers for low inventory alerts
   const toggleAlertHandler = useCallback(async (itemId) => {
     try {
-      const response = await fetch(`/api/inventory/${itemId}/toggle-alert`, { method: 'POST' });
-      await response.json();
-      if (onLoadInventory) {
-        onLoadInventory();
-      }
+      await post(`/inventory/${itemId}/toggle-alert`);
+      onLoadInventory?.();
     } catch (error) {
       console.error('Error toggling alert:', error);
     }
-  }, [onLoadInventory]);
+  }, [post, onLoadInventory]);
 
   const setThresholdHandler = useCallback(async (itemId, threshold) => {
     try {
-      await api.post(`${API_ENDPOINTS.INVENTORY}/${itemId}/set-threshold`, { threshold });
+      await post(`/inventory/${itemId}/set-threshold`, { threshold });
       onLoadInventory?.();
     } catch (error) {
       console.error('Error setting threshold:', error);
     }
-  }, [onLoadInventory]);
+  }, [post, onLoadInventory]);
 
   // Reorder tabs when drag ends
   const reorderTabs = useCallback((sourceType, sourceIndex, destIndex) => {
@@ -309,116 +310,24 @@ export const InventoryTab = ({
                 <p className="text-slate-400 text-center py-12">No cards in inventory yet. Add some from the Imports tab!</p>
               )
             ) : activeTab === 'Trash' ? (
-              (() => {
-                const folderData = groupedByFolder['Trash'] || {};
-                const trashCards = Object.entries(folderData).filter(([cardName, items]) => {
-                  const matchesSearch = inventorySearch === '' || cardName.toLowerCase().includes(inventorySearch.toLowerCase());
-                  const totalQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
-                  return matchesSearch && totalQty > 0;
-                });
-                const trashStats = Object.entries(folderData).reduce((acc, [_, items]) => {
-                  const totalQty = items.reduce((s, item) => s + (item.quantity || 0), 0);
-                  if (totalQty > 0) {
-                    acc.uniqueCount++;
-                    acc.totalCount += totalQty;
-                    acc.totalCost += items.reduce((s, item) => s + ((item.purchase_price || 0) * (item.quantity || 0)), 0);
-                  }
-                  return acc;
-                }, { uniqueCount: 0, totalCount: 0, totalCost: 0 });
-                
-                return (
-                  <>
-                    <div className="bg-gradient-to-br from-red-900/30 to-slate-800 rounded-lg p-4 mb-4 border border-red-600/50">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <span className="text-2xl">🗑️</span>
-                          <div>
-                            <h2 className="text-xl font-bold text-red-200">Trash</h2>
-                            <p className="text-sm text-red-300">
-                              {trashStats.totalCount} {trashStats.totalCount === 1 ? 'card' : 'cards'} • {trashStats.uniqueCount} unique • ${trashStats.totalCost.toFixed(2)} value
-                            </p>
-                          </div>
-                        </div>
-                        {trashStats.totalCount > 0 && (
-                          <button
-                            onClick={async () => {
-                              const confirmed = await confirm({
-                                title: 'Empty Trash?',
-                                message: `This will permanently delete ${trashStats.totalCount} card${trashStats.totalCount !== 1 ? 's' : ''} from ${trashStats.uniqueCount} unique card${trashStats.uniqueCount !== 1 ? 's' : ''}. This action cannot be undone.`,
-                                confirmText: 'Empty Trash',
-                                cancelText: 'Cancel',
-                                variant: 'danger'
-                              });
-                              if (confirmed && emptyTrash) {
-                                await emptyTrash();
-                              }
-                            }}
-                            className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg transition-colors font-medium"
-                          >
-                            Empty Trash
-                          </button>
-                        )}
-                      </div>
-                      <p className="text-xs text-red-400 mt-2">
-                        Items in Trash can be restored or permanently deleted. Hover over cards to see options.
-                      </p>
-                    </div>
-                    {trashCards.length > 0 ? (
-                      <CardGrid cards={trashCards} {...cardGridProps} isTrashView={true} />
-                    ) : (
-                      <p className="text-slate-400 text-center py-12">Trash is empty.</p>
-                    )}
-                  </>
-                );
-              })()
+              <TrashView
+                groupedByFolder={groupedByFolder}
+                inventorySearch={inventorySearch}
+                cardGridProps={cardGridProps}
+                confirm={confirm}
+                emptyTrash={emptyTrash}
+              />
             ) : folderOps.createdFolders.includes(activeTab) || Object.keys(groupedByFolder).includes(activeTab) ? (
-              (() => {
-                const folderData = groupedByFolder[activeTab] || {};
-                const folderCards = Object.entries(folderData).filter(([cardName, items]) => {
-                  const matchesSearch = inventorySearch === '' || cardName.toLowerCase().includes(inventorySearch.toLowerCase());
-                  const totalQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
-                  const reservedQty = items.reduce((sum, item) => sum + (parseInt(item.reserved_quantity) || 0), 0);
-                  return matchesSearch && (totalQty - reservedQty) > 0;
-                });
-                const availableCardsStats = Object.entries(folderData).reduce((acc, [_, items]) => {
-                  const totalQty = items.reduce((s, item) => s + (item.quantity || 0), 0);
-                  const reservedQty = items.reduce((s, item) => s + (parseInt(item.reserved_quantity) || 0), 0);
-                  const availableQty = totalQty - reservedQty;
-                  if (availableQty > 0) {
-                    acc.uniqueCount++;
-                    acc.totalCount += availableQty;
-                    acc.totalCost += items.reduce((s, item) => s + ((item.purchase_price || 0) * (item.quantity || 0)), 0);
-                  }
-                  return acc;
-                }, { uniqueCount: 0, totalCount: 0, totalCost: 0 });
-                const folderDesc = folderOps.folderMetadata[activeTab]?.description || '';
-                
-                return (
-                  <>
-                    <FolderHeader
-                      folderName={activeTab}
-                      folderDesc={folderDesc}
-                      totalCards={availableCardsStats.totalCount}
-                      uniqueCards={availableCardsStats.uniqueCount}
-                      totalCost={availableCardsStats.totalCost}
-                      editingFolderName={folderOps.editingFolderName}
-                      setEditingFolderName={folderOps.setEditingFolderName}
-                      editingFolderDesc={folderOps.editingFolderDesc}
-                      setEditingFolderDesc={folderOps.setEditingFolderDesc}
-                      setFolderMetadata={folderOps.setFolderMetadata}
-                      setSellModalData={setSellModalData}
-                      setShowSellModal={setShowSellModal}
-                      onDeleteFolder={handleDeleteFolder}
-                      isUnsorted={activeTab === 'Uncategorized'}
-                    />
-                    {folderCards.length > 0 ? (
-                      <CardGrid cards={folderCards} {...cardGridProps} />
-                    ) : (
-                      <p className="text-slate-400 text-center py-12">No cards in this folder.</p>
-                    )}
-                  </>
-                );
-              })()
+              <FolderView
+                folderName={activeTab}
+                groupedByFolder={groupedByFolder}
+                inventorySearch={inventorySearch}
+                cardGridProps={cardGridProps}
+                folderOps={folderOps}
+                setSellModalData={setSellModalData}
+                setShowSellModal={setShowSellModal}
+                onDeleteFolder={handleDeleteFolder}
+              />
             ) : (
               <p className="text-slate-400 text-center py-12">Select a view to display cards.</p>
             )}

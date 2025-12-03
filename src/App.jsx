@@ -16,6 +16,7 @@ import { Navigation } from "./components/Navigation";
 import { useCardSearch } from "./hooks/useCardSearch";
 import { useInventoryOperations } from "./hooks/useInventoryOperations";
 import { getAllSets } from "./utils/scryfallApi";
+import { FullPageSpinner } from "./components/ui";
 
 // Lazy load tab components for code splitting
 const InventoryTab = lazy(() => import("./components/InventoryTab"));
@@ -148,11 +149,7 @@ function MTGInventoryTrackerContent() {
   }, [post, loadInventory, showToast]);
 
   if (authLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
-        <div className="w-8 h-8 animate-spin text-teal-400 border-2 border-teal-400 border-t-transparent rounded-full"></div>
-      </div>
-    );
+    return <FullPageSpinner />;
   }
 
   if (!user) {
