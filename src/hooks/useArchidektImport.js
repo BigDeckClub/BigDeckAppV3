@@ -32,8 +32,8 @@ export function useArchidektImport({ onSuccess, onInventoryUpdate }) {
         return;
       }
 
-      // Fetch deck data from Archidekt API
-      const response = await fetch(`https://api.archidekt.com/v1/decks/${deckId}/`);
+      // Fetch deck data from Archidekt API (via backend proxy to avoid CORS)
+      const response = await fetch(`${API_BASE}/archidekt/deck/${deckId}`);
       if (!response.ok) {
         throw new Error('Failed to fetch deck from Archidekt');
       }
