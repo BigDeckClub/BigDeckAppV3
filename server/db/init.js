@@ -257,6 +257,49 @@ export async function initializeDatabase() {
       )
     `);
 
+    // Change history table - tracks card edits
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS change_history (
+        id SERIAL PRIMARY KEY,
+        card_id INTEGER REFERENCES inventory(id) ON DELETE SET NULL,
+        card_name VARCHAR(255) NOT NULL,
+        field_changed VARCHAR(50) NOT NULL,
+        old_value TEXT,
+        new_value TEXT,
+        changed_at TIMESTAMP DEFAULT NOW(),
+        user_id VARCHAR(255)
+      )
+    `);
+
+    // Audit log table - tracks major system actions
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS audit_log (
+        id SERIAL PRIMARY KEY,
+        action_type VARCHAR(50) NOT NULL,
+        description TEXT,
+        entity_type VARCHAR(50),
+        entity_id INTEGER,
+        metadata JSONB DEFAULT '{}',
+        created_at TIMESTAMP DEFAULT NOW(),
+        user_id VARCHAR(255)
+      )
+    `);
+
+    // Activity feed table - tracks recent user activity
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS activity_feed (
+        id SERIAL PRIMARY KEY,
+        activity_type VARCHAR(50) NOT NULL,
+        title VARCHAR(255) NOT NULL,
+        description TEXT,
+        entity_type VARCHAR(50),
+        entity_id INTEGER,
+        metadata JSONB DEFAULT '{}',
+        created_at TIMESTAMP DEFAULT NOW(),
+        user_id VARCHAR(255)
+      )
+    `);
+
     // ========== PERFORMANCE INDEXES ==========
     // Note: .catch() logs all errors for debugging - CREATE INDEX IF NOT EXISTS rarely fails
     // Index for case-insensitive card name lookups
@@ -287,6 +330,36 @@ export async function initializeDatabase() {
     await pool.query(`
       CREATE INDEX IF NOT EXISTS idx_decks_is_instance 
       ON decks(is_deck_instance);
+    `).catch(() => {});
+
+    // Indexes for change history
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_change_history_card_id 
+      ON change_history(card_id);
+    `).catch(() => {});
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_change_history_changed_at 
+      ON change_history(changed_at DESC);
+    `).catch(() => {});
+
+    // Indexes for audit log
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_audit_log_created_at 
+      ON audit_log(created_at DESC);
+    `).catch(() => {});
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_audit_log_action_type 
+      ON audit_log(action_type);
+    `).catch(() => {});
+
+    // Indexes for activity feed
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_activity_feed_created_at 
+      ON activity_feed(created_at DESC);
+    `).catch(() => {});
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_activity_feed_activity_type 
+      ON activity_feed(activity_type);
     `).catch(() => {});
 
     console.log('[DB] ✓ Database initialized successfully');

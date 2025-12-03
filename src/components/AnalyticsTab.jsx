@@ -1,6 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { BarChart3, TrendingUp, Package, DollarSign, History, Filter, Folder, FolderOpen } from 'lucide-react';
+import { BarChart3, TrendingUp, Package, DollarSign, History, Filter, Activity, Shield } from 'lucide-react';
+import { ChangeLogTab } from './ChangeLogTab';
+import { ActivityFeed } from './ActivityFeed';
+import { AuditLog } from './AuditLog';
 
 export const AnalyticsTab = ({ inventory }) => {
   const [marketValues, setMarketValues] = useState({ cardkingdom: 0, tcgplayer: 0 });
@@ -13,8 +16,8 @@ export const AnalyticsTab = ({ inventory }) => {
     lifetimeTotalCards: 0,
     lifetimeTotalValue: 0
   });
-  const [showChangeLog, setShowChangeLog] = useState(false);
-  const [filterSection, setFilterSection] = useState('all');
+  const [showHistory, setShowHistory] = useState(false);
+  const [historyTab, setHistoryTab] = useState('changes');
 
   useEffect(() => {
     const fetchAnalytics = async () => {
@@ -48,8 +51,6 @@ export const AnalyticsTab = ({ inventory }) => {
     return sum + Math.max(0, qty - reserved);
   }, 0);
   const totalValue = inventory.reduce((sum, item) => sum + ((item.quantity || 0) * (parseFloat(item.purchase_price) || 0)), 0);
-  const uniqueCards = inventory.length;
-  const avgPricePerCard = uniqueCards > 0 ? (inventory.reduce((sum, item) => sum + (parseFloat(item.purchase_price) || 0), 0) / uniqueCards).toFixed(2) : 0;
 
   // Group by folder
   const byFolder = inventory.reduce((acc, item) => {
@@ -74,40 +75,11 @@ export const AnalyticsTab = ({ inventory }) => {
     .sort((a, b) => ((b.quantity || 0) * (parseFloat(b.purchase_price) || 0)) - ((a.quantity || 0) * (parseFloat(a.purchase_price) || 0)))
     .slice(0, 5);
 
-  // Change Log data
-  const allFolders = useMemo(() => {
-    const folders = new Set(inventory.map(item => item.folder || 'Uncategorized'));
-    return Array.from(folders).sort();
-  }, [inventory]);
-
-  const changeLog = useMemo(() => {
-    return inventory
-      .filter(item => item.last_modified)
-      .map(item => ({
-        id: item.id,
-        cardName: item.name,
-        folder: item.folder || 'Uncategorized',
-        quantity: item.quantity,
-        price: item.purchase_price,
-        timestamp: new Date(item.last_modified),
-        date: new Date(item.last_modified).toLocaleDateString(),
-        time: new Date(item.last_modified).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      }))
-      .sort((a, b) => b.timestamp - a.timestamp);
-  }, [inventory]);
-
-  const filteredLog = useMemo(() => {
-    return changeLog.filter(entry => {
-      if (filterSection === 'all') return true;
-      if (filterSection === 'unsorted') return entry.folder === 'Uncategorized';
-      return entry.folder === filterSection;
-    });
-  }, [changeLog, filterSection]);
-
-  const sectionOptions = [
-    { value: 'all', label: 'All Sections' },
-    { value: 'unsorted', label: 'Unsorted' },
-    ...allFolders.map(folder => ({ value: folder, label: folder })),
+  // History sub-tabs configuration
+  const historyTabs = [
+    { id: 'changes', label: 'Change History', icon: Filter },
+    { id: 'activity', label: 'Activity Feed', icon: Activity },
+    { id: 'audit', label: 'Audit Log', icon: Shield }
   ];
 
   return (
@@ -118,9 +90,9 @@ export const AnalyticsTab = ({ inventory }) => {
           Analytics
         </h2>
         <button
-          onClick={() => setShowChangeLog(!showChangeLog)}
+          onClick={() => setShowHistory(!showHistory)}
           className={`px-4 py-2 rounded-lg font-semibold flex items-center gap-2 transition-all ${
-            showChangeLog
+            showHistory
               ? 'bg-amber-600 text-white shadow-lg'
               : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
           }`}
@@ -130,84 +102,42 @@ export const AnalyticsTab = ({ inventory }) => {
         </button>
       </div>
 
-      {/* Change Log View */}
-      {showChangeLog ? (
+      {/* History View with Sub-tabs */}
+      {showHistory ? (
         <div className="space-y-6">
-          <div className="bg-gradient-to-r from-teal-900/30 to-cyan-900/30 border border-teal-600/30 rounded-lg p-4">
-            <h3 className="text-xl font-bold text-teal-300 mb-4 flex items-center gap-2">
-              <Filter className="w-5 h-5" />
-              Filter Changes
-            </h3>
-            
-            <div className="flex-1">
-              <label className="block text-sm text-slate-400 mb-2">Filter by Section</label>
-              <select 
-                value={filterSection} 
-                onChange={(e) => setFilterSection(e.target.value)}
-                className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-white text-sm hover:border-teal-500 transition-colors"
-              >
-                {sectionOptions.map(option => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
+          {/* Sub-tab Navigation */}
+          <div className="bg-slate-800/50 rounded-lg p-1 flex gap-1">
+            {historyTabs.map((tab) => {
+              const IconComponent = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setHistoryTab(tab.id)}
+                  className={`flex-1 px-4 py-2.5 rounded-md font-medium text-sm flex items-center justify-center gap-2 transition-all ${
+                    historyTab === tab.id
+                      ? 'bg-teal-600 text-white shadow-md'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+                  }`}
+                >
+                  <IconComponent className="w-4 h-4" />
+                  <span className="hidden sm:inline">{tab.label}</span>
+                </button>
+              );
+            })}
           </div>
 
-          {filteredLog.length > 0 ? (
-            <div className="space-y-2">
-              <div className="text-sm text-slate-400 mb-3">
-                {filteredLog.length} recent edit{filteredLog.length !== 1 ? 's' : ''}
-              </div>
-              
-              <div className="space-y-2 max-h-96 overflow-y-auto">
-                {filteredLog.map((entry, idx) => (
-                  <div 
-                    key={`${entry.id}-${idx}`}
-                    className="bg-gradient-to-r from-slate-800 to-slate-900 border border-slate-600 rounded-lg p-4 hover:border-teal-500 transition-colors"
-                  >
-                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                      <div className="flex-1">
-                        <div className="font-bold text-teal-300 text-lg mb-2">{entry.cardName}</div>
-                        <div className="space-y-1 text-sm">
-                          <div>
-                            <span className="text-slate-500">Folder:</span>
-                            <span className="text-slate-300 ml-2 inline-flex items-center gap-1">
-                              {entry.folder === 'Uncategorized' 
-                                ? <><FolderOpen className="w-3 h-3" /> Unsorted</>
-                                : <><Folder className="w-3 h-3" /> {entry.folder}</>
-                              }
-                            </span>
-                          </div>
-                          <div className="flex gap-4 flex-wrap">
-                            <div>
-                              <span className="text-slate-500">Qty:</span>
-                              <span className="text-teal-300 font-semibold ml-2">{entry.quantity}</span>
-                            </div>
-                            <div>
-                              <span className="text-slate-500">Price:</span>
-                              <span className="text-blue-300 font-semibold ml-2">${parseFloat(entry.price || 0).toFixed(2)}</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="md:text-right">
-                        <div className="text-xs text-slate-500 mb-1">Modified</div>
-                        <div className="text-sm font-mono text-amber-400">{entry.date}</div>
-                        <div className="text-xs text-slate-400">{entry.time}</div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className="bg-slate-800 border border-slate-600 rounded-lg p-8 text-center">
-              <p className="text-slate-400">No edits recorded yet. Start editing cards to see their change history!</p>
-            </div>
-          )}
+          {/* Sub-tab Content */}
+          <div className="bg-gradient-to-r from-teal-900/30 to-cyan-900/30 border border-teal-600/30 rounded-lg p-4">
+            <h3 className="text-xl font-bold text-teal-300 mb-4 flex items-center gap-2">
+              {historyTabs.find(t => t.id === historyTab)?.icon && 
+                React.createElement(historyTabs.find(t => t.id === historyTab).icon, { className: "w-5 h-5" })}
+              {historyTabs.find(t => t.id === historyTab)?.label}
+            </h3>
+            
+            {historyTab === 'changes' && <ChangeLogTab />}
+            {historyTab === 'activity' && <ActivityFeed />}
+            {historyTab === 'audit' && <AuditLog />}
+          </div>
         </div>
       ) : (
         <>
