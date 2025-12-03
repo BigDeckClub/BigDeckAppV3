@@ -2,6 +2,7 @@ import express from 'express';
 import { pool } from '../db/pool.js';
 import { validateId } from '../middleware/index.js';
 import { fetchRetry } from '../utils/index.js';
+import { recordChange, recordAudit, recordActivity } from './history.js';
 
 const router = express.Router();
 
@@ -92,6 +93,17 @@ router.post('/api/inventory', async (req, res) => {
       );
     }
     
+    // Record activity for card addition
+    const addedItem = result.rows[0];
+    await recordActivity({
+      activityType: 'card_added',
+      title: `Added ${name}`,
+      description: `Added ${quantity || 1} cop${(quantity || 1) === 1 ? 'y' : 'ies'} to inventory`,
+      entityType: 'inventory',
+      entityId: addedItem.id,
+      metadata: { quantity: quantity || 1, set: set || null, folder: folder || 'Uncategorized' }
+    });
+    
     res.status(201).json(result.rows[0]);
   } catch (error) {
     console.error('[INVENTORY] Error creating:', error.message);
@@ -104,6 +116,19 @@ router.put('/api/inventory/:id', validateId, async (req, res) => {
   const { quantity, purchase_price, purchase_date, reorder_type, folder, low_inventory_alert, low_inventory_threshold, foil, quality } = req.body;
 
   try {
+    // Fetch current values to track changes
+    const currentResult = await pool.query(
+      'SELECT name, quantity, purchase_price, folder, quality, foil FROM inventory WHERE id = $1',
+      [id]
+    );
+    
+    if (currentResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Inventory item not found' });
+    }
+    
+    const currentItem = currentResult.rows[0];
+    const changes = [];
+    
     const updates = [];
     const values = [];
     let paramCount = 1;
@@ -111,10 +136,16 @@ router.put('/api/inventory/:id', validateId, async (req, res) => {
     if (quantity !== undefined) {
       updates.push(`quantity = $${paramCount++}`);
       values.push(quantity);
+      if (currentItem.quantity !== quantity) {
+        changes.push({ field: 'quantity', old: currentItem.quantity, new: quantity });
+      }
     }
     if (purchase_price !== undefined) {
       updates.push(`purchase_price = $${paramCount++}`);
       values.push(purchase_price);
+      if (parseFloat(currentItem.purchase_price) !== parseFloat(purchase_price)) {
+        changes.push({ field: 'purchase_price', old: currentItem.purchase_price, new: purchase_price });
+      }
     }
     if (purchase_date !== undefined) {
       updates.push(`purchase_date = $${paramCount++}`);
@@ -127,6 +158,9 @@ router.put('/api/inventory/:id', validateId, async (req, res) => {
     if (folder !== undefined) {
       updates.push(`folder = $${paramCount++}`);
       values.push(folder);
+      if (currentItem.folder !== folder) {
+        changes.push({ field: 'folder', old: currentItem.folder, new: folder });
+      }
     }
     if (low_inventory_alert !== undefined) {
       updates.push(`low_inventory_alert = $${paramCount++}`);
@@ -139,10 +173,16 @@ router.put('/api/inventory/:id', validateId, async (req, res) => {
     if (foil !== undefined) {
       updates.push(`foil = $${paramCount++}`);
       values.push(foil);
+      if (currentItem.foil !== foil) {
+        changes.push({ field: 'foil', old: currentItem.foil, new: foil });
+      }
     }
     if (quality !== undefined) {
       updates.push(`quality = $${paramCount++}`);
       values.push(quality);
+      if (currentItem.quality !== quality) {
+        changes.push({ field: 'quality', old: currentItem.quality, new: quality });
+      }
     }
 
     if (updates.length === 0) {
@@ -155,6 +195,17 @@ router.put('/api/inventory/:id', validateId, async (req, res) => {
     
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Inventory item not found' });
+    }
+    
+    // Record all changes to change history
+    for (const change of changes) {
+      await recordChange({
+        cardId: id,
+        cardName: currentItem.name,
+        fieldChanged: change.field,
+        oldValue: change.old,
+        newValue: change.new
+      });
     }
     
     res.json(result.rows[0]);
@@ -170,6 +221,19 @@ router.delete('/api/inventory/trash', async (req, res) => {
     const result = await pool.query(
       "DELETE FROM inventory WHERE folder = 'Trash' RETURNING *"
     );
+    
+    // Record audit log for empty trash operation
+    if (result.rows.length > 0) {
+      await recordAudit({
+        actionType: 'trash_empty',
+        description: `Permanently deleted ${result.rows.length} item${result.rows.length !== 1 ? 's' : ''} from trash`,
+        entityType: 'inventory',
+        metadata: { 
+          deletedCount: result.rows.length,
+          deletedItems: result.rows.map(item => ({ id: item.id, name: item.name }))
+        }
+      });
+    }
     
     res.json({ 
       message: 'Trash emptied', 
@@ -194,6 +258,16 @@ router.delete('/api/inventory/:id', validateId, async (req, res) => {
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Inventory item not found' });
     }
+    
+    // Record audit log for permanent deletion
+    const deletedItem = result.rows[0];
+    await recordAudit({
+      actionType: 'item_deleted',
+      description: `Permanently deleted "${deletedItem.name}"`,
+      entityType: 'inventory',
+      entityId: id,
+      metadata: { cardName: deletedItem.name, quantity: deletedItem.quantity }
+    });
     
     res.json({ message: 'Inventory item deleted', item: result.rows[0] });
   } catch (error) {
