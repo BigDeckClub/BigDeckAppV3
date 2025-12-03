@@ -3,8 +3,8 @@ import PropTypes from 'prop-types';
 import { BookOpen, Plus, Trash2, Edit2, X, Download } from 'lucide-react';
 import { useToast, TOAST_TYPES } from '../context/ToastContext';
 import { useConfirm } from '../context/ConfirmContext';
-
-const API_BASE = '/api';
+import { api } from '../utils/apiClient';
+import { API_ENDPOINTS, EXTERNAL_APIS } from '../config/api';
 
 export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
   const { showToast } = useToast();
@@ -40,15 +40,7 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
     
     setIsCopying(true);
     try {
-      const response = await fetch(`${API_BASE}/decks/${copyingDeck.id}/copy-to-inventory`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: copyDeckName })
-      });
-      
-      if (!response.ok) throw new Error('Failed to copy deck');
-      
-      const result = await response.json();
+      const result = await api.post(`${API_ENDPOINTS.DECKS}/${copyingDeck.id}/copy-to-inventory`, { name: copyDeckName });
       
       setShowCopyModal(false);
       setCopyingDeck(null);
@@ -90,8 +82,8 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
 
       const deckId = match[1];
       
-      // Fetch deck data from Archidekt API
-      const response = await fetch(`https://api.archidekt.com/v1/decks/${deckId}/`);
+      // Fetch deck data from Archidekt API (external API, keep raw fetch)
+      const response = await fetch(`${EXTERNAL_APIS.ARCHIDEKT}/decks/${deckId}/`);
       if (!response.ok) {
         throw new Error('Failed to fetch deck from Archidekt');
       }
@@ -128,32 +120,14 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
       const deckDescription = deckData.description || '';
 
       // Create the deck with imported cards
-      const createResponse = await fetch(`${API_BASE}/decks`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: deckName,
-          format: deckFormat,
-          description: deckDescription
-        })
+      const newDeck = await api.post(API_ENDPOINTS.DECKS, {
+        name: deckName,
+        format: deckFormat,
+        description: deckDescription
       });
-
-      if (!createResponse.ok) {
-        throw new Error('Failed to create deck');
-      }
-
-      const newDeck = await createResponse.json();
 
       // Update deck with cards
-      const updateResponse = await fetch(`${API_BASE}/decks/${newDeck.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cards })
-      });
-
-      if (!updateResponse.ok) {
-        throw new Error('Failed to add cards to deck');
-      }
+      await api.put(`${API_ENDPOINTS.DECKS}/${newDeck.id}`, { cards });
 
       await loadDecks();
       setArchidektUrl('');
@@ -175,16 +149,9 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
   const loadDecks = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch(`${API_BASE}/decks`);
-      if (response.ok) {
-        const data = await response.json();
-        setDecks(Array.isArray(data) ? data : []);
-      } else {
-
-        setDecks([]);
-      }
+      const data = await api.get(API_ENDPOINTS.DECKS);
+      setDecks(Array.isArray(data) ? data : []);
     } catch (error) {
-
       setDecks([]);
     } finally {
       setIsLoading(false);
@@ -259,28 +226,14 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
     }
 
     try {
-      const response = await fetch(`${API_BASE}/decks`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: newDeckName,
-          format: newDeckFormat,
-          description: ''
-        })
+      const newDeck = await api.post(API_ENDPOINTS.DECKS, {
+        name: newDeckName,
+        format: newDeckFormat,
+        description: ''
       });
-
-      if (!response.ok) throw new Error('Failed to create deck');
-
-      const newDeck = await response.json();
 
       // Add cards to the deck
-      const updateResponse = await fetch(`${API_BASE}/decks/${newDeck.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cards })
-      });
-
-      if (!updateResponse.ok) throw new Error('Failed to add cards');
+      await api.put(`${API_ENDPOINTS.DECKS}/${newDeck.id}`, { cards });
 
       await loadDecks();
       setNewDeckName('');
@@ -309,21 +262,19 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
     
     if (confirmed) {
       try {
-        const response = await fetch(`${API_BASE}/decks/${id}`, { method: 'DELETE' });
-        if (response.ok) {
-          await loadDecks();
-          if (selectedDeck?.id === id) {
-            setSelectedDeck(null);
-          }
-          showToast('Deck deleted!', TOAST_TYPES.SUCCESS);
-          
-          // Refresh deck instances and inventory after deletion
-          if (onDeckCreatedOrDeleted) {
-            onDeckCreatedOrDeleted();
-          }
-          if (onInventoryUpdate) {
-            onInventoryUpdate();
-          }
+        await api.delete(`${API_ENDPOINTS.DECKS}/${id}`);
+        await loadDecks();
+        if (selectedDeck?.id === id) {
+          setSelectedDeck(null);
+        }
+        showToast('Deck deleted!', TOAST_TYPES.SUCCESS);
+        
+        // Refresh deck instances and inventory after deletion
+        if (onDeckCreatedOrDeleted) {
+          onDeckCreatedOrDeleted();
+        }
+        if (onInventoryUpdate) {
+          onInventoryUpdate();
         }
       } catch (error) {
         showToast('Error deleting deck', TOAST_TYPES.ERROR);
@@ -338,20 +289,10 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
       return;
     }
     try {
-      const response = await fetch(`${API_BASE}/decks/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: trimmedName })
-      });
-
-      if (response.ok) {
-        setEditingDeck(null);
-        await loadDecks();
-        showToast('Deck updated!', TOAST_TYPES.SUCCESS);
-      } else {
-        setEditingDeck(null);
-        showToast('Failed to update deck', TOAST_TYPES.ERROR);
-      }
+      await api.put(`${API_ENDPOINTS.DECKS}/${id}`, { name: trimmedName });
+      setEditingDeck(null);
+      await loadDecks();
+      showToast('Deck updated!', TOAST_TYPES.SUCCESS);
     } catch (error) {
       setEditingDeck(null);
       showToast('Error updating deck', TOAST_TYPES.ERROR);
@@ -360,20 +301,11 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
 
   const updateDeckDescription = async (id, newDescription) => {
     try {
-      const response = await fetch(`${API_BASE}/decks/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ description: newDescription })
-      });
-
-      if (response.ok) {
-        // Update selected deck locally first for immediate feedback
-        setSelectedDeck(prev => prev?.id === id ? { ...prev, description: newDescription } : prev);
-        await loadDecks();
-        showToast('Deck updated!', TOAST_TYPES.SUCCESS);
-      } else {
-        showToast('Failed to update deck', TOAST_TYPES.ERROR);
-      }
+      await api.put(`${API_ENDPOINTS.DECKS}/${id}`, { description: newDescription });
+      // Update selected deck locally first for immediate feedback
+      setSelectedDeck(prev => prev?.id === id ? { ...prev, description: newDescription } : prev);
+      await loadDecks();
+      showToast('Deck updated!', TOAST_TYPES.SUCCESS);
     } catch (error) {
       showToast('Error updating deck', TOAST_TYPES.ERROR);
     }

@@ -1,48 +1,18 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { api, ApiError } from '../utils/apiClient';
 
 const isNetworkError = (err) => {
   return err instanceof TypeError || err.message.includes('Failed to fetch');
 };
 
 const formatApiError = (err) => {
+  if (err instanceof ApiError) {
+    return err.message;
+  }
   if (err.response?.statusText) {
     return err.response.statusText;
   }
   return err.message || 'An error occurred';
-};
-
-const apiGet = async (url, options = {}) => {
-  const response = await fetch(url, { method: 'GET', ...options });
-  if (!response.ok) throw new Error(response.statusText);
-  return response.json();
-};
-
-const apiPost = async (url, body, options = {}) => {
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-    ...options
-  });
-  if (!response.ok) throw new Error(response.statusText);
-  return response.json();
-};
-
-const apiPut = async (url, body, options = {}) => {
-  const response = await fetch(url, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-    ...options
-  });
-  if (!response.ok) throw new Error(response.statusText);
-  return response.json();
-};
-
-const apiDelete = async (url, options = {}) => {
-  const response = await fetch(url, { method: 'DELETE', ...options });
-  if (!response.ok) throw new Error(response.statusText);
-  return response.json();
 };
 
 /**
@@ -98,19 +68,19 @@ export function useApi() {
   }, []);
 
   const get = useCallback((url, options) => {
-    return handleRequest(() => apiGet(url, options));
+    return handleRequest(() => api.get(url, options));
   }, [handleRequest]);
 
   const post = useCallback((url, body, options) => {
-    return handleRequest(() => apiPost(url, body, options));
+    return handleRequest(() => api.post(url, body, options));
   }, [handleRequest]);
 
   const put = useCallback((url, body, options) => {
-    return handleRequest(() => apiPut(url, body, options));
+    return handleRequest(() => api.put(url, body, options));
   }, [handleRequest]);
 
   const del = useCallback((url, options) => {
-    return handleRequest(() => apiDelete(url, options));
+    return handleRequest(() => api.delete(url, options));
   }, [handleRequest]);
 
   return {
@@ -156,7 +126,7 @@ export function useFetch(url, options = {}) {
     setError(null);
     
     try {
-      const result = await apiGet(url, { signal: abortControllerRef.current.signal });
+      const result = await api.get(url);
       setData(result);
     } catch (err) {
       // Don't set error if request was aborted
