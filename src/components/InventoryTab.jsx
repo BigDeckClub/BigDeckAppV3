@@ -333,7 +333,7 @@ export const InventoryTab = ({
     } catch (error) {
       showToast(`Error deleting folder: ${error.message}`, TOAST_TYPES.ERROR);
     }
-  }, [foldersData, confirm, loadFolders, onLoadInventory, showToast]);
+  }, [foldersData, confirm, loadFolders, onLoadInventory, showToast, closeFolderTab]);
 
   // Release deck and return cards to inventory
   const releaseDeck = async (deckId) => {
