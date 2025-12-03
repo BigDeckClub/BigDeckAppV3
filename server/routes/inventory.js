@@ -11,7 +11,7 @@ router.get('/api/inventory', async (req, res) => {
     const result = await pool.query(
       `SELECT i.id, i.name, i.set, i.set_name, i.quantity, i.purchase_price, i.purchase_date, 
               i.reorder_type, i.image_url, i.scryfall_id, i.folder, i.created_at,
-              i.low_inventory_alert, i.low_inventory_threshold,
+              i.low_inventory_alert, i.low_inventory_threshold, i.foil, i.quality,
               COALESCE(
                 (SELECT SUM(dr.quantity_reserved) FROM deck_reservations dr WHERE dr.inventory_item_id = i.id), 0
               ) as reserved_quantity
@@ -25,7 +25,7 @@ router.get('/api/inventory', async (req, res) => {
 });
 
 router.post('/api/inventory', async (req, res) => {
-  const { name, set, set_name, quantity, purchase_price, purchase_date, reorder_type, image_url, folder } = req.body;
+  const { name, set, set_name, quantity, purchase_price, purchase_date, reorder_type, image_url, folder, foil, quality } = req.body;
   
   // Input validation
   if (!name || typeof name !== 'string' || name.trim().length === 0) {
@@ -40,6 +40,12 @@ router.post('/api/inventory', async (req, res) => {
   // Purchase price is optional but must be a non-negative number when provided
   if (purchase_price !== undefined && purchase_price !== null && (typeof purchase_price !== 'number' || purchase_price < 0)) {
     return res.status(400).json({ error: 'Purchase price must be a non-negative number when provided' });
+  }
+  
+  // Validate quality if provided
+  const validQualities = ['NM', 'LP', 'MP', 'HP', 'DMG'];
+  if (quality !== undefined && quality !== null && !validQualities.includes(quality)) {
+    return res.status(400).json({ error: `Quality must be one of: ${validQualities.join(', ')}` });
   }
 
   try {
@@ -71,10 +77,10 @@ router.post('/api/inventory', async (req, res) => {
     }
 
     const result = await pool.query(
-      `INSERT INTO inventory (name, set, set_name, quantity, purchase_price, purchase_date, reorder_type, image_url, scryfall_id, folder, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
+      `INSERT INTO inventory (name, set, set_name, quantity, purchase_price, purchase_date, reorder_type, image_url, scryfall_id, folder, foil, quality, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW())
        RETURNING *`,
-      [name, set || null, set_name || null, quantity || 1, purchase_price || null, purchase_date || null, reorder_type || 'normal', image_url || null, scryfallId, folder || 'Uncategorized']
+      [name, set || null, set_name || null, quantity || 1, purchase_price || null, purchase_date || null, reorder_type || 'normal', image_url || null, scryfallId, folder || 'Uncategorized', foil || false, quality || 'NM']
     );
     
     // Record PURCHASE transaction for analytics
@@ -95,7 +101,7 @@ router.post('/api/inventory', async (req, res) => {
 
 router.put('/api/inventory/:id', validateId, async (req, res) => {
   const id = req.validatedId;
-  const { quantity, purchase_price, purchase_date, reorder_type, folder, low_inventory_alert, low_inventory_threshold } = req.body;
+  const { quantity, purchase_price, purchase_date, reorder_type, folder, low_inventory_alert, low_inventory_threshold, foil, quality } = req.body;
 
   try {
     const updates = [];
@@ -129,6 +135,14 @@ router.put('/api/inventory/:id', validateId, async (req, res) => {
     if (low_inventory_threshold !== undefined) {
       updates.push(`low_inventory_threshold = $${paramCount++}`);
       values.push(low_inventory_threshold);
+    }
+    if (foil !== undefined) {
+      updates.push(`foil = $${paramCount++}`);
+      values.push(foil);
+    }
+    if (quality !== undefined) {
+      updates.push(`quality = $${paramCount++}`);
+      values.push(quality);
     }
 
     if (updates.length === 0) {

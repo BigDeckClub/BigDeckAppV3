@@ -474,90 +474,89 @@ function MTGInventoryTrackerContent() {
           </div>
         )}
 
-        {/* Suspense boundary for lazy-loaded tab components */}
-        <Suspense fallback={<TabLoadingSpinner />}>
-          {/* Inventory Tab */}
-          {activeTab === "inventory" && !isLoading && (
-            <InventoryTab
-              inventory={inventory}
-              successMessage={successMessage}
-              setSuccessMessage={setSuccessMessage}
-              newEntry={newEntry}
-              setNewEntry={setNewEntry}
-              selectedCardSets={selectedCardSets}
-              allSets={allSets}
-              defaultSearchSet={defaultSearchSet}
-              setDefaultSearchSet={setDefaultSearchSet}
-              searchQuery={searchQuery}
-              setSearchQuery={setSearchQuery}
-              searchResults={searchResults}
-              searchIsLoading={searchIsLoading}
-              showDropdown={showDropdown}
-              setShowDropdown={setShowDropdown}
-              selectCard={selectCard}
-              addCard={addCard}
-              expandedCards={expandedCards}
-              setExpandedCards={setExpandedCards}
-              editingId={editingId}
-              editForm={editForm}
-              setEditForm={setEditForm}
-              startEditingItem={startEditingItem}
-              updateInventoryItem={updateInventoryItem}
-              deleteInventoryItem={deleteInventoryItem}
-              handleSearch={handleSearch}
-              deckRefreshTrigger={deckRefreshTrigger}
-              onLoadInventory={loadInventory}
-              onSell={handleSell}
-            />
-          )}
+        {/* Inventory Tab */}
+        {activeTab === "inventory" && !isLoading && (
+          <InventoryTab
+            inventory={inventory}
+            successMessage={successMessage}
+            setSuccessMessage={setSuccessMessage}
+            newEntry={newEntry}
+            setNewEntry={setNewEntry}
+            selectedCardSets={selectedCardSets}
+            allSets={allSets}
+            defaultSearchSet={defaultSearchSet}
+            setDefaultSearchSet={setDefaultSearchSet}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            searchResults={searchResults}
+            searchIsLoading={searchIsLoading}
+            showDropdown={showDropdown}
+            setShowDropdown={setShowDropdown}
+            selectCard={selectCard}
+            addCard={addCard}
+            expandedCards={expandedCards}
+            setExpandedCards={setExpandedCards}
+            editingId={editingId}
+            editForm={editForm}
+            setEditForm={setEditForm}
+            startEditingItem={startEditingItem}
+            updateInventoryItem={updateInventoryItem}
+            deleteInventoryItem={deleteInventoryItem}
+            handleSearch={handleSearch}
+            deckRefreshTrigger={deckRefreshTrigger}
+            onLoadInventory={loadInventory}
+            onSell={handleSell}
+          />
+        )}
 
-          {/* Imports Tab */}
-          {activeTab === "imports" && !isLoading && (
-            <ImportTab
-              imports={imports}
-              onLoadImports={loadImports}
-              successMessage={successMessage}
-              setSuccessMessage={setSuccessMessage}
-              newEntry={newEntry}
-              setNewEntry={setNewEntry}
-              selectedCardSets={selectedCardSets}
-              allSets={allSets}
-              defaultSearchSet={defaultSearchSet}
-              setDefaultSearchSet={setDefaultSearchSet}
-              searchQuery={searchQuery}
-              setSearchQuery={setSearchQuery}
-              searchResults={searchResults}
-              showDropdown={showDropdown}
-              setShowDropdown={setShowDropdown}
-              selectCard={selectCard}
-              addCard={addCard}
-              handleSearch={handleSearch}
-            />
-          )}
+        {/* Imports Tab */}
+        {activeTab === "imports" && !isLoading && (
+          <ImportTab
+            imports={imports}
+            onLoadImports={loadImports}
+            successMessage={successMessage}
+            setSuccessMessage={setSuccessMessage}
+            newEntry={newEntry}
+            setNewEntry={setNewEntry}
+            selectedCardSets={selectedCardSets}
+            allSets={allSets}
+            defaultSearchSet={defaultSearchSet}
+            setDefaultSearchSet={setDefaultSearchSet}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            searchResults={searchResults}
+            showDropdown={showDropdown}
+            setShowDropdown={setShowDropdown}
+            selectCard={selectCard}
+            addCard={addCard}
+            handleSearch={handleSearch}
+            searchIsLoading={searchIsLoading}
+            addInventoryItem={addInventoryItem}
+          />
+        )}
 
-          {/* Analytics Tab */}
-          {activeTab === "analytics" && !isLoading && (
-            <AnalyticsTab inventory={inventory} />
-          )}
+        {/* Analytics Tab */}
+        {activeTab === "analytics" && !isLoading && (
+          <AnalyticsTab inventory={inventory} />
+        )}
 
-          {/* Decks Tab */}
-          {activeTab === "decks" && !isLoading && (
-            <DeckTab 
-              onDeckCreatedOrDeleted={() => setDeckRefreshTrigger(prev => prev + 1)} 
-              onInventoryUpdate={loadInventory}
-            />
-          )}
+        {/* Decks Tab */}
+        {activeTab === "decks" && !isLoading && (
+          <DeckTab 
+            onDeckCreatedOrDeleted={() => setDeckRefreshTrigger(prev => prev + 1)} 
+            onInventoryUpdate={loadInventory}
+          />
+        )}
 
-          {/* Sales History Tab */}
-          {activeTab === "sales" && !isLoading && (
-            <SalesHistoryTab />
-          )}
+        {/* Sales History Tab */}
+        {activeTab === "sales" && !isLoading && (
+          <SalesHistoryTab />
+        )}
 
-          {/* Settings Tab */}
-          {activeTab === "settings" && !isLoading && (
-            <SettingsTab inventory={inventory} />
-          )}
-        </Suspense>
+        {/* Settings Tab */}
+        {activeTab === "settings" && !isLoading && (
+          <SettingsTab inventory={inventory} />
+        )}
 
       </main>
 
