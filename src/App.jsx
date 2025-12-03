@@ -34,11 +34,11 @@ function MTGInventoryTrackerContent() {
     searchQuery,
     setSearchQuery,
     searchResults,
-    setSearchResults,
     showDropdown,
     setShowDropdown,
     searchIsLoading,
     handleSearch,
+    clearSearch,
   } = useCardSearch();
 
   const {
@@ -140,11 +140,9 @@ function MTGInventoryTrackerContent() {
         selectedSet: null,
         folder: "Uncategorized",
       });
-      setSearchQuery("");
-      setSearchResults([]);
-      setShowDropdown(false);
+      clearSearch();
     }
-  }, [newEntry, addInventoryItem, showToast, setSearchQuery, setSearchResults, setShowDropdown]);
+  }, [newEntry, addInventoryItem, showToast, clearSearch]);
 
   const handleSell = useCallback(async (saleData) => {
     try {

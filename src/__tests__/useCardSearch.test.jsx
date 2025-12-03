@@ -111,4 +111,24 @@ describe('useCardSearch', () => {
 
     expect(result.current.showDropdown).toBe(true);
   });
+
+  it('clearSearch clears query, results and dropdown', () => {
+    const { result } = renderHook(() => useCardSearch());
+
+    act(() => {
+      result.current.setSearchQuery('test');
+      result.current.setShowDropdown(true);
+    });
+
+    expect(result.current.searchQuery).toBe('test');
+    expect(result.current.showDropdown).toBe(true);
+
+    act(() => {
+      result.current.clearSearch();
+    });
+
+    expect(result.current.searchQuery).toBe('');
+    expect(result.current.searchResults).toEqual([]);
+    expect(result.current.showDropdown).toBe(false);
+  });
 });

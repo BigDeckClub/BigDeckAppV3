@@ -130,16 +130,25 @@ export function useCardSearch(options = {}) {
     }
   }, [debouncedSearchQuery, searchQuery, handleSearch]);
 
+  /**
+   * Clear search query, results, and close dropdown
+   */
+  const clearSearch = useCallback(() => {
+    setSearchQuery('');
+    setSearchResults([]);
+    setShowDropdown(false);
+  }, []);
+
   return {
     searchQuery,
     setSearchQuery,
     searchResults,
-    setSearchResults,
     isSearching,
     showDropdown,
     setShowDropdown,
     searchIsLoading,
     handleSearch,
+    clearSearch,
   };
 }
 
