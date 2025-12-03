@@ -10,6 +10,8 @@ import {
   ImportDecklistModal,
   CopyToDeckModal
 } from './decks';
+import { useEffect } from 'react';
+
 
 export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
   // Import modals visibility state
@@ -20,6 +22,7 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
   const [newDeckName, setNewDeckName] = useState('');
   const [newDeckFormat, setNewDeckFormat] = useState('Standard');
   const [deckListText, setDeckListText] = useState('');
+  const [inventoryByName, setInventoryByName] = useState({});
 
   // Deck operations hook
   const {
@@ -59,6 +62,29 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
     },
     onInventoryUpdate
   });
+
+  // Load inventory mapping (name -> available quantity) once on mount
+  useEffect(() => {
+    let mounted = true;
+    async function loadInventory() {
+      try {
+        const res = await fetch('/api/inventory');
+        if (!res.ok) return;
+        const items = await res.json();
+        const map = {};
+        (items || []).forEach(i => {
+          const key = (i.name || '').toLowerCase().trim();
+          const qty = (parseInt(i.quantity || 0) || 0) - (parseInt(i.reserved_quantity || 0) || 0);
+          map[key] = (map[key] || 0) + Math.max(0, qty);
+        });
+        if (mounted) setInventoryByName(map);
+      } catch (err) {
+        // ignore
+      }
+    }
+    loadInventory();
+    return () => { mounted = false; };
+  }, []);
 
   // Handle text deck import
   const handleImportFromText = async () => {
@@ -173,6 +199,7 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
                   key={deck.id}
                   deck={deck}
                   editingDeck={editingDeck}
+                  inventoryByName={inventoryByName}
                   onSelect={setSelectedDeck}
                   onCopy={previewCopyToDeck}
                   onEdit={setEditingDeck}

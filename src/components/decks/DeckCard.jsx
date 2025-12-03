@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import { Download, Edit2, Trash2 } from 'lucide-react';
 
@@ -8,6 +8,7 @@ import { Download, Edit2, Trash2 } from 'lucide-react';
 export function DeckCard({
   deck,
   editingDeck,
+  inventoryByName,
   onSelect,
   onCopy,
   onEdit,
@@ -15,6 +16,16 @@ export function DeckCard({
   onUpdateName,
   onCancelEdit
 }) {
+  const [showMissing, setShowMissing] = useState(false);
+
+  // Compute missing cards based on inventory mapping passed from parent
+  const missingEntries = (deck.cards || []).map((card) => {
+    const nameKey = (card.name || '').toLowerCase().trim();
+    const available = inventoryByName?.[nameKey] || 0;
+    const needed = Math.max(0, (card.quantity || 1) - available);
+    return { name: card.name, needed, set: card.set };
+  }).filter(m => m.needed > 0);
+  const totalMissing = missingEntries.reduce((sum, m) => sum + m.needed, 0);
   return (
     <div
       className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 hover:border-teal-500 rounded-lg p-4 cursor-pointer transition-all hover:shadow-lg hover:shadow-teal-500/20"
@@ -96,6 +107,31 @@ export function DeckCard({
         )}
       </div>
 
+      {totalMissing > 0 && (
+        <div className="mt-3">
+          <button
+            onClick={(e) => { e.stopPropagation(); setShowMissing(prev => !prev); }}
+            className="w-full flex items-center justify-between p-2 bg-gradient-to-r from-red-700/20 to-red-800/10 hover:from-red-700/30 hover:to-red-800/20 rounded text-sm font-semibold text-red-300 border border-red-700/30"
+          >
+            <span>Missing to complete: {totalMissing}</span>
+            <span className="text-xs text-red-200">{showMissing ? '▲' : '▼'}</span>
+          </button>
+          {showMissing && (
+            <div className="mt-2 bg-slate-900 rounded p-2 max-h-40 overflow-y-auto border border-red-700/20">
+              {missingEntries.map((m, i) => (
+                <div key={i} className="flex justify-between items-center text-sm bg-red-900/40 text-red-200 rounded px-2 py-1 mb-1">
+                  <div>
+                    <span className="font-semibold">{m.needed}x</span>
+                    <span className="ml-2">{m.name}</span>
+                    <span className="text-xs text-red-200 ml-2">{(m.set && (typeof m.set === 'string' ? m.set : (m.set.editioncode || m.set.editionname))) || ''}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       <button
         onClick={() => onSelect(deck)}
         className="w-full mt-4 bg-slate-700 hover:bg-teal-600 text-white px-3 py-1 rounded text-sm transition-colors"
@@ -116,6 +152,7 @@ DeckCard.propTypes = {
     cards: PropTypes.array
   }).isRequired,
   editingDeck: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  inventoryByName: PropTypes.object,
   onSelect: PropTypes.func.isRequired,
   onCopy: PropTypes.func.isRequired,
   onEdit: PropTypes.func.isRequired,
