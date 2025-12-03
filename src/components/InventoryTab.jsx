@@ -56,7 +56,7 @@ export const InventoryTab = ({
   const [showCreateFolder, setShowCreateFolder] = useState(false);
   const [createdFolders, setCreatedFolders] = useState([]);
   const [selectedFolder, setSelectedFolder] = useState(null);
-  const [activeTab, setActiveTab] = useState('all'); // 'all', 'unsorted', folder name, or 'deck-{id}'
+  const [activeTab, setActiveTab] = useState('all'); // 'all', folder name, or 'deck-{id}'
   const [viewMode, setViewMode] = useState('card'); // 'card' or 'list'
   const [sidebarOpen, setSidebarOpen] = useState(false); // Mobile sidebar toggle
   const [deckInstances, setDeckInstances] = useState([]);
@@ -889,11 +889,77 @@ export const InventoryTab = ({
                   }`}
                 >
                   <div className="font-medium text-sm text-slate-100">{folderName}</div>
-                  <div className="text-xs text-teal-300">{totalAvailableCards} available • {uniqueCards} {uniqueCards === 1 ? 'unique' : 'unique'}</div>
+                  <div className="text-xs text-teal-300">{totalAvailableCards} available • {uniqueCards} unique {uniqueCards === 1 ? 'card' : 'cards'}</div>
                 </button>
               </div>
             );
           })}
+
+          {/* Unsorted Folder - for cards without a folder */}
+          {(() => {
+            const cardsByName = groupedByFolder['Uncategorized'] || {};
+            const inStockCards = Object.entries(cardsByName).filter(([cardName, items]) => {
+              const matchesSearch = inventorySearch === '' || cardName.toLowerCase().includes(inventorySearch.toLowerCase());
+              const totalQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
+              const reservedQty = items.reduce((sum, item) => sum + (parseInt(item.reserved_quantity) || 0), 0);
+              return matchesSearch && (totalQty - reservedQty) > 0;
+            });
+            const uniqueCards = inStockCards.length;
+            const totalAvailableCards = inStockCards.reduce((sum, [_, items]) => {
+              return sum + items.reduce((itemSum, item) => {
+                const available = (item.quantity || 0) - (parseInt(item.reserved_quantity) || 0);
+                return itemSum + Math.max(0, available);
+              }, 0);
+            }, 0);
+            const isSelected = selectedFolder === 'Uncategorized';
+            
+            return (
+              <div key="Unsorted">
+                <button
+                  onClick={() => {
+                    if (isSelected) {
+                      closeFolderTab('Uncategorized');
+                    } else {
+                      setSelectedFolder('Uncategorized');
+                      openFolderTab('Uncategorized');
+                    }
+                    setSidebarOpen(false);
+                  }}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.currentTarget.classList.add('bg-teal-700/60', 'border-teal-300');
+                  }}
+                  onDragLeave={(e) => {
+                    e.currentTarget.classList.remove('bg-teal-700/60', 'border-teal-300');
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.currentTarget.classList.remove('bg-teal-700/60', 'border-teal-300');
+                    const inventoryItemId = e.dataTransfer.getData('inventoryItemId');
+                    const cardName = e.dataTransfer.getData('cardName');
+                    const deckCardDataStr = e.dataTransfer.getData('deckCardData');
+                    if (inventoryItemId) {
+                      moveInventoryItemToFolder(parseInt(inventoryItemId), 'Uncategorized');
+                    } else if (deckCardDataStr) {
+                      const deckCardData = JSON.parse(deckCardDataStr);
+                      moveCardFromDeckToFolder(deckCardData, 'Uncategorized');
+                    } else if (cardName) {
+                      moveCardToFolder(cardName, 'Uncategorized');
+                    }
+                  }}
+                  className={`w-full text-left p-3 rounded-t-lg transition-colors flex-1 ${
+                    isSelected
+                      ? 'bg-teal-600/40 border-l-4 border-teal-400'
+                      : 'bg-slate-800 border-l-4 border-transparent hover:bg-slate-700'
+                  }`}
+                >
+                  <div className="font-medium text-sm text-slate-100">Unsorted</div>
+                  <div className="text-xs text-teal-300">{totalAvailableCards} available • {uniqueCards} unique {uniqueCards === 1 ? 'card' : 'cards'}</div>
+                </button>
+              </div>
+            );
+          })()}
 
           {/* Other Folders */}
           {Object.entries(groupedByFolder)
@@ -1139,17 +1205,6 @@ export const InventoryTab = ({
                 </>
               ) : (
                 <p className="text-slate-400 text-center py-12">No cards in inventory yet. Add some from the Imports tab!</p>
-              )
-            ) : activeTab === 'unsorted' ? (
-              groupedByFolder['Uncategorized'] && Object.keys(groupedByFolder['Uncategorized']).length > 0 ? (
-                <CardGrid 
-                  cards={Object.entries(groupedByFolder['Uncategorized']).filter(([cardName]) => 
-                    inventorySearch === '' || cardName.toLowerCase().includes(inventorySearch.toLowerCase())
-                  )} 
-                  {...cardGridProps} 
-                />
-              ) : (
-                <p className="text-slate-400 text-center py-12">No unsorted cards.</p>
               )
             ) : createdFolders.includes(activeTab) || Object.keys(groupedByFolder).includes(activeTab) ? (
               (() => {

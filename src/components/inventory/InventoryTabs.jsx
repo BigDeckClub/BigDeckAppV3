@@ -4,7 +4,7 @@ import { X, Grid3X3, List } from 'lucide-react';
 
 /**
  * InventoryTabs - Tab navigation for inventory views
- * Includes All Cards, Unsorted, folder tabs, deck tabs, and view mode toggle
+ * Includes All Cards, folder tabs, deck tabs, and view mode toggle
  */
 export const InventoryTabs = memo(function InventoryTabs({
   activeTab,
@@ -33,16 +33,6 @@ export const InventoryTabs = memo(function InventoryTabs({
           }`}
         >
           All Cards
-        </button>
-        <button
-          onClick={() => { setActiveTab('unsorted'); setSidebarOpen(false); }}
-          className={`px-4 py-2 text-sm md:text-base font-medium transition-all duration-300 whitespace-nowrap rounded-lg ${
-            activeTab === 'unsorted'
-              ? 'bg-gradient-to-r from-teal-600 to-teal-700 text-white shadow-lg shadow-teal-500/30'
-              : 'text-slate-300 hover:text-slate-100 hover:bg-slate-700/30'
-          }`}
-        >
-          Unsorted
         </button>
         
         {/* Folder Tabs */}
@@ -82,7 +72,7 @@ export const InventoryTabs = memo(function InventoryTabs({
                   : 'text-slate-300 hover:text-slate-100 hover:bg-slate-700/30'
               }`}
             >
-              📁 {folderName}
+              📁 {folderName === 'Uncategorized' ? 'Unsorted' : folderName}
             </button>
             <button
               type="button"
