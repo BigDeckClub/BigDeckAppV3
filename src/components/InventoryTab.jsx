@@ -1,18 +1,17 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
-import { Plus, Trash2, X, ChevronDown, ChevronRight, Grid3X3, List, Menu, Wand2, DollarSign } from 'lucide-react';
-import { usePriceCache } from "../context/PriceCacheContext";
-import { useToast, TOAST_TYPES } from "../context/ToastContext";
-import { useConfirm } from "../context/ConfirmContext";
+import { X, Menu } from 'lucide-react';
 import { 
   CardGrid, 
   InventorySearchBar, 
   InventoryTabs, 
   DeckDetailView,
-  FolderHeader 
+  FolderHeader,
+  FolderSidebar
 } from './inventory';
 import { SellModal } from './SellModal';
-import { useInventoryState } from '../hooks/useInventoryState';
+import { useFolderOperations } from '../hooks/useFolderOperations';
+import { useDeckReservations } from '../hooks/useDeckReservations';
 
 /**
  * InventoryTab - Main inventory management component
@@ -22,19 +21,6 @@ export const InventoryTab = ({
   inventory,
   successMessage,
   setSuccessMessage,
-  newEntry,
-  setNewEntry,
-  selectedCardSets,
-  allSets,
-  defaultSearchSet,
-  setDefaultSearchSet,
-  searchQuery,
-  setSearchQuery,
-  searchResults,
-  showDropdown,
-  setShowDropdown,
-  selectCard,
-  addCard,
   expandedCards,
   setExpandedCards,
   editingId,
@@ -43,75 +29,35 @@ export const InventoryTab = ({
   startEditingItem,
   updateInventoryItem,
   deleteInventoryItem,
-  handleSearch,
   deckRefreshTrigger,
   onLoadInventory,
   onSell
 }) => {
-  const { showToast } = useToast();
-  const { confirm } = useConfirm();
-  
-  const [expandedFolders, setExpandedFolders] = useState({});
-  const [newFolderName, setNewFolderName] = useState('');
-  const [showCreateFolder, setShowCreateFolder] = useState(false);
-  const [createdFolders, setCreatedFolders] = useState([]);
-  const [selectedFolder, setSelectedFolder] = useState(null);
-  const [activeTab, setActiveTab] = useState('all'); // 'all', folder name, or 'deck-{id}'
-  const [viewMode, setViewMode] = useState('card'); // 'card' or 'list'
-  const [sidebarOpen, setSidebarOpen] = useState(false); // Mobile sidebar toggle
-  const [deckInstances, setDeckInstances] = useState([]);
-  const [openDecks, setOpenDecks] = useState([]); // Array of deck IDs that are open
-  const [openFolders, setOpenFolders] = useState([]); // Array of folder names that are open as tabs
-  const [deckDetailsCache, setDeckDetailsCache] = useState({}); // Cache deck details by ID
-  const [loadingDeckDetails, setLoadingDeckDetails] = useState(false);
-  const [draggedTabData, setDraggedTabData] = useState(null); // {type: 'folder'|'deck', name|id, index}
-  const [expandedMissingCards, setExpandedMissingCards] = useState({}); // Track which decks have missing cards expanded
-  const [inventorySearch, setInventorySearch] = useState(''); // Search filter for inventory
+  // UI State
+  const [activeTab, setActiveTab] = useState('all');
+  const [viewMode, setViewMode] = useState('card');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [draggedTabData, setDraggedTabData] = useState(null);
+  const [inventorySearch, setInventorySearch] = useState('');
   const [showSellModal, setShowSellModal] = useState(false);
   const [sellModalData, setSellModalData] = useState(null);
-  const [folderMetadata, setFolderMetadata] = useState({}); // Store folder descriptions and metadata
-  const [editingFolderName, setEditingFolderName] = useState(null);
-  const [editingFolderDesc, setEditingFolderDesc] = useState('');
 
-  // Debounced inventory refresh to prevent excessive API calls
-  const debouncedTimeoutRef = React.useRef(null);
-  const debouncedLoadInventory = useCallback(() => {
-    if (debouncedTimeoutRef.current) clearTimeout(debouncedTimeoutRef.current);
-    debouncedTimeoutRef.current = setTimeout(() => {
-      if (onLoadInventory) onLoadInventory();
-    }, 300);
-  }, [onLoadInventory]);
+  // Folder operations hook
+  const folderOps = useFolderOperations({ inventory, onLoadInventory });
+  // Deck operations hook
+  const deckOps = useDeckReservations({ inventory, onLoadInventory });
 
   // Centralized handlers for low inventory alerts
   const toggleAlertHandler = useCallback(async (itemId) => {
-    console.log('=== TOGGLE ALERT HANDLER DEBUG ===');
-    console.log('A. toggleAlertHandler called with itemId:', itemId);
-    console.log('B. onLoadInventory exists:', typeof onLoadInventory, !!onLoadInventory);
-    
     try {
-      const url = `/api/inventory/${itemId}/toggle-alert`;
-      console.log('C. Making POST request to:', url);
-      
-      const response = await fetch(url, { method: 'POST' });
-      
-      console.log('D. Response status:', response.status);
-      console.log('E. Response ok:', response.ok);
-      
-      const data = await response.json();
-      console.log('F. Response data:', data);
-      console.log('F2. low_inventory_alert value:', data.low_inventory_alert);
-      console.log('F3. low_inventory_threshold value:', data.low_inventory_threshold);
-      
+      const response = await fetch(`/api/inventory/${itemId}/toggle-alert`, { method: 'POST' });
+      await response.json();
       if (onLoadInventory) {
-        console.log('G. Calling onLoadInventory to refresh');
         onLoadInventory();
-      } else {
-        console.log('G. SKIPPED - onLoadInventory is undefined!');
       }
     } catch (error) {
-      console.error('ERROR in toggleAlertHandler:', error);
+      // Error handled silently
     }
-    console.log('=== TOGGLE ALERT HANDLER END ===');
   }, [onLoadInventory]);
 
   const setThresholdHandler = useCallback(async (itemId, threshold) => {
@@ -123,558 +69,52 @@ export const InventoryTab = ({
       });
       onLoadInventory?.();
     } catch (error) {
-      console.error('Error setting threshold:', error);
+      // Error handled silently
     }
   }, [onLoadInventory]);
 
   // Reorder tabs when drag ends
-  const reorderTabs = (sourceType, sourceIndex, destIndex) => {
+  const reorderTabs = useCallback((sourceType, sourceIndex, destIndex) => {
     if (sourceIndex === destIndex) return;
     if (sourceType === 'folder') {
-      const newFolders = [...openFolders];
+      const newFolders = [...folderOps.openFolders];
       const [moved] = newFolders.splice(sourceIndex, 1);
       newFolders.splice(destIndex, 0, moved);
-      setOpenFolders(newFolders);
+      folderOps.setOpenFolders(newFolders);
     } else if (sourceType === 'deck') {
-      const newDecks = [...openDecks];
+      const newDecks = [...deckOps.openDecks];
       const [moved] = newDecks.splice(sourceIndex, 1);
       newDecks.splice(destIndex, 0, moved);
-      setOpenDecks(newDecks);
+      deckOps.setOpenDecks(newDecks);
     }
-  };
+  }, [folderOps.openFolders, folderOps.setOpenFolders, deckOps.openDecks, deckOps.setOpenDecks]);
 
-  // Load created folders from server
-  const loadFolders = useCallback(async () => {
-    try {
-      const response = await fetch('/api/folders');
-      if (response.ok) {
-        const data = await response.json();
-        setCreatedFolders(data.map(f => f.name));
-      }
-    } catch (error) {
-      console.error('Error loading folders:', error);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadFolders();
-  }, [loadFolders]);
-
-  // Add a new folder and persist to server
-  const addCreatedFolder = useCallback(async (folderName) => {
-    const trimmedName = folderName.trim();
-    if (!trimmedName) return;
-    
-    if (createdFolders.includes(trimmedName)) {
-      showToast('A folder with this name already exists', TOAST_TYPES.ERROR);
-      return;
-    }
-    
-    try {
-      const response = await fetch('/api/folders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: trimmedName })
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setCreatedFolders(prev => [...prev, data.name || trimmedName]);
-      } else {
-        showToast('Failed to create folder', TOAST_TYPES.ERROR);
-      }
-    } catch (error) {
-      showToast(`Error creating folder: ${error.message}`, TOAST_TYPES.ERROR);
-    }
-  }, [showToast, createdFolders]);
-
-  // Fetch deck instances on demand (memoized)
-  const refreshDeckInstances = useCallback(async () => {
-    try {
-      const response = await fetch('/api/deck-instances');
-      if (response.ok) {
-        const data = await response.json();
-        setDeckInstances(data);
-      }
-    } catch (error) {
-
-    }
-  }, []);
-
-  // Load full details of a deck instance (memoized)
-  const loadDeckDetails = useCallback(async (deckId, forceRefresh = false) => {
-    if (deckDetailsCache[deckId] && !forceRefresh) return; // Already cached
-    setLoadingDeckDetails(true);
-    try {
-      const response = await fetch(`/api/deck-instances/${deckId}/details`);
-      if (response.ok) {
-        const data = await response.json();
-        setDeckDetailsCache(prev => ({ ...prev, [deckId]: data }));
-        // Expand missing cards section if there are missing cards
-        const deck = deckInstances.find(d => d.id === deckId);
-        if (deck) {
-          const decklistTotal = (deck.cards || []).reduce((sum, c) => sum + (c.quantity || 1), 0);
-          const actualMissingCount = Math.max(0, decklistTotal - (data.reservedCount || 0));
-          if (actualMissingCount > 0) {
-            setExpandedMissingCards(prev => ({ ...prev, [deckId]: true }));
-          }
-        }
-      } else {
-        const error = await response.json();
-
-      }
-    } catch (error) {
-
-    } finally {
-      setLoadingDeckDetails(false);
-    }
-  }, [deckDetailsCache, deckInstances]);
-
-  // Open a deck in a new tab (or close if already active - toggle behavior)
-  const openDeckTab = (deck) => {
-    if (activeTab === `deck-${deck.id}`) {
-      // If this deck is already active, close it (toggle behavior like folders)
-      closeDeckTab(deck.id);
-    } else {
-      // Otherwise, open it
-      if (!openDecks.includes(deck.id)) {
-        setOpenDecks([...openDecks, deck.id]);
-      }
-      setActiveTab(`deck-${deck.id}`);
-      loadDeckDetails(deck.id);
-    }
-  };
-
-  // Close a deck tab
-  const closeDeckTab = (deckId) => {
-    const remaining = openDecks.filter(id => id !== deckId);
-    setOpenDecks(remaining);
-    // Switch to 'all' if this was the active tab
-    if (activeTab === `deck-${deckId}`) {
-      setActiveTab('all');
-    }
-  };
-
-  // Open a folder in a new tab
-  const openFolderTab = (folderName) => {
-    if (!openFolders.includes(folderName)) {
-      setOpenFolders([...openFolders, folderName]);
-    }
+  // Tab management wrappers
+  const handleOpenFolderTab = useCallback((folderName) => {
+    folderOps.openFolderTab(folderName);
     setActiveTab(folderName);
-  };
+  }, [folderOps]);
 
-  // Close a folder tab
-  const closeFolderTab = (folderName) => {
-    const remaining = openFolders.filter(f => f !== folderName);
-    setOpenFolders(remaining);
-    if (activeTab === folderName) {
-      setActiveTab('all');
-    }
-    if (selectedFolder === folderName) {
-      setSelectedFolder(null);
-    }
-  };
+  const handleCloseFolderTab = useCallback((folderName) => {
+    folderOps.closeFolderTab(folderName, activeTab, setActiveTab);
+  }, [folderOps, activeTab]);
 
-  // Release deck and return cards to inventory
-  const releaseDeck = async (deckId) => {
-    const deck = deckInstances.find(d => d.id === deckId);
-    const confirmed = await confirm({
-      title: 'Delete Deck',
-      message: `Are you sure you want to delete "${deck?.name || 'this deck'}"? Cards will be returned to Unsorted.`,
-      confirmText: 'Delete',
-      variant: 'danger'
-    });
-    
-    if (!confirmed) return;
-    
-    try {
-      const response = await fetch(`/api/deck-instances/${deckId}/release`, {
-        method: 'POST'
-      });
-      if (response.ok) {
-        // Close the deck tab if it's open
-        closeDeckTab(deckId);
-        // Clear cached details for this deck
-        setDeckDetailsCache(prev => {
-          const updated = { ...prev };
-          delete updated[deckId];
-          return updated;
-        });
-        await refreshDeckInstances();
-        showToast('Deck deleted! Cards returned to unsorted.', TOAST_TYPES.SUCCESS);
-      } else {
-        showToast('Failed to delete deck', TOAST_TYPES.ERROR);
-      }
-    } catch (error) {
-      showToast('Error deleting deck', TOAST_TYPES.ERROR);
-    }
-  };
+  const handleOpenDeckTab = useCallback((deck) => {
+    deckOps.openDeckTab(deck, activeTab, setActiveTab);
+  }, [deckOps, activeTab]);
 
-  // Remove card from deck reservation
-  const removeCardFromDeck = async (deckId, reservationId, quantity = 1) => {
-    try {
-      const response = await fetch(`/api/deck-instances/${deckId}/remove-card`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reservation_id: reservationId, quantity: quantity })
-      });
-      if (response.ok) {
-        await loadDeckDetails(deckId, true); // Force refresh to get latest data
-        await refreshDeckInstances();
-        debouncedLoadInventory(); // Refresh main inventory to show returned cards in Unsorted
-      }
-    } catch (error) {
+  const handleCloseDeckTab = useCallback((deckId) => {
+    deckOps.closeDeckTab(deckId, activeTab, setActiveTab);
+  }, [deckOps, activeTab]);
 
-    }
-  };
-
-  // Reoptimize deck to find cheapest cards
-  const reoptimizeDeck = async (deckId) => {
-    try {
-      const response = await fetch(`/api/deck-instances/${deckId}/reoptimize`, {
-        method: 'POST'
-      });
-      if (response.ok) {
-        const result = await response.json();
-        await loadDeckDetails(deckId);
-        await refreshDeckInstances();
-        showToast(`Deck reoptimized! ${result.reservedCount} cards reserved.`, TOAST_TYPES.SUCCESS);
-      } else {
-        showToast('Failed to reoptimize deck', TOAST_TYPES.ERROR);
-      }
-    } catch (error) {
-      showToast('Error reoptimizing deck', TOAST_TYPES.ERROR);
-    }
-  };
-
-  // Move a single inventory item to folder (memoized)
-  const moveInventoryItemToFolder = useCallback(async (itemId, targetFolder) => {
-    try {
-      const item = inventory.find(i => i.id === itemId);
-      if (!item) {
-        showToast('Item not found', TOAST_TYPES.ERROR);
-        return;
-      }
-      
-      // Show the change immediately
-      showToast(`Moved ${item.quantity}x ${item.name} to ${targetFolder}`, TOAST_TYPES.SUCCESS);
-      
-      // Update API
-      const response = await fetch(`/api/inventory/${itemId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ folder: targetFolder })
-      });
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to update folder');
-      }
-      
-      // Refresh inventory to show changes
-      if (onLoadInventory) {
-        await onLoadInventory();
-      }
-    } catch (error) {
-      showToast(`Error moving item: ${error.message}`, TOAST_TYPES.ERROR);
-    }
-  }, [inventory, onLoadInventory, showToast]);
-
-  // Move cards to folder via drag-drop (with optimistic updates) (memoized)
-  const moveCardToFolder = useCallback(async (cardName, targetFolder) => {
-    try {
-      const cardItems = inventory.filter(item => item.name === cardName);
-      if (cardItems.length === 0) {
-        showToast('Card not found', TOAST_TYPES.ERROR);
-        return;
-      }
-      
-      // Show the change immediately
-      showToast(`Moved "${cardName}" to ${targetFolder}`, TOAST_TYPES.SUCCESS);
-      
-      // Update API in the background
-      let hasError = false;
-      for (const item of cardItems) {
-        const response = await fetch(`/api/inventory/${item.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ folder: targetFolder })
-        });
-        if (!response.ok) {
-          hasError = true;
-          const error = await response.json();
-
-          throw new Error(error.error || 'Failed to update folder');
-        }
-      }
-      
-      // Refresh inventory to show changes
-      if (onLoadInventory) {
-        await onLoadInventory();
-      }
-    } catch (error) {
-      showToast(`Error moving card: ${error.message}`, TOAST_TYPES.ERROR);
-    }
-  }, [inventory, onLoadInventory, showToast]);
-
-  // Move card from deck to folder
-  const moveCardFromDeckToFolder = async (deckCardData, targetFolder) => {
-    try {
-      const deckId = deckCardData.deck_id;
-      const reservationId = deckCardData.id;
-      const quantity = deckCardData.quantity_reserved;
-      
-      // Show the change immediately
-      showToast(`Moved card to ${targetFolder}`, TOAST_TYPES.SUCCESS);
-      
-      // First remove the card from the deck (which moves it to Uncategorized)
-      const removeResponse = await fetch(`/api/deck-instances/${deckId}/remove-card`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reservation_id: reservationId, quantity: quantity })
-      });
-      
-      if (!removeResponse.ok) {
-        throw new Error('Failed to remove card from deck');
-      }
-      
-      // Then move it to the target folder
-      const moveResponse = await fetch(`/api/inventory/${deckCardData.inventory_item_id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ folder: targetFolder })
-      });
-      
-      if (!moveResponse.ok) {
-        throw new Error('Failed to move card to folder');
-      }
-      
-      // Refresh both deck and inventory - ensure inventory is fully loaded
-      if (onLoadInventory) {
-        await onLoadInventory();
-      }
-      await new Promise(resolve => setTimeout(resolve, 100)); // Small delay to ensure state updates
-      await loadDeckDetails(deckId, true);
-      await refreshDeckInstances();
-    } catch (error) {
-      showToast(`Error: ${error.message}`, TOAST_TYPES.ERROR);
-    }
-  };
-
-  // Move individual card SKU to deck (with retry for quantity conflicts)
-  const moveCardSkuToDeck = async (inventoryItem, deckId, skipRefresh = false, attemptQty = null) => {
-    try {
-      const deck = deckInstances.find(d => d.id === deckId);
-      if (!deck) {
-        throw new Error('Deck not found');
-      }
-      
-      // Use attempted quantity if provided (for retries), otherwise use item's full quantity
-      const qtyToUse = attemptQty !== null ? attemptQty : (inventoryItem.quantity || 1);
-      
-      // Make API call first (no optimistic update until success)
-      const response = await fetch(`/api/deck-instances/${deckId}/add-card`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          inventory_item_id: inventoryItem.id,
-          quantity: qtyToUse
-        })
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        // If not enough available, retry with 1 less quantity (accounts for cards reserved in other decks)
-        if (errorData.error?.includes('Not enough available') && qtyToUse > 1) {
-          return moveCardSkuToDeck(inventoryItem, deckId, skipRefresh, qtyToUse - 1);
-        }
-        throw new Error(errorData.error || 'Failed to add card to deck');
-      }
-      
-      // Only update UI after API succeeds
-      const optimisticReservation = {
-        name: inventoryItem.name,
-        set: inventoryItem.set,
-        quantity_reserved: qtyToUse,
-        purchase_price: inventoryItem.purchase_price,
-        original_folder: inventoryItem.folder
-      };
-      
-      if (deckDetailsCache[deckId]) {
-        setDeckDetailsCache(prev => ({
-          ...prev,
-          [deckId]: {
-            ...prev[deckId],
-            reservations: [...(prev[deckId].reservations || []), optimisticReservation],
-            reservedCount: (prev[deckId].reservedCount || 0) + 1,
-            totalCost: (prev[deckId].totalCost || 0) + (inventoryItem.purchase_price * qtyToUse || 0)
-          }
-        }));
-      }
-      
-      showToast(`Added ${qtyToUse}x ${inventoryItem.name} to deck`, TOAST_TYPES.SUCCESS);
-      
-      // Only refresh immediately if not called from auto-fill (which does its own refresh)
-      if (!skipRefresh) {
-        await refreshDeckInstances();
-        debouncedLoadInventory();
-      }
-    } catch (error) {
-      showToast(`Error: ${error.message}`, TOAST_TYPES.ERROR);
-    }
-  };
-
-  // Auto-fill a single card type from inventory (oldest and cheapest first)
-  const autoFillSingleCard = async (decklistCard, needed, deckId) => {
-    try {
-      showToast(`Auto-filling ${needed}x ${decklistCard.name}...`, TOAST_TYPES.INFO);
-      
-      // Find matching inventory items, sorted by date (oldest first) then price (cheapest first)
-      const matchingItems = (inventory || [])
-        .filter(i => {
-          const nameMatch = i.name.toLowerCase() === decklistCard.name.toLowerCase();
-          const available = (i.quantity || 0) - (i.reserved_quantity || 0);
-          return nameMatch && available > 0;
-        })
-        .sort((a, b) => {
-          const dateA = new Date(a.created_at || 0).getTime();
-          const dateB = new Date(b.created_at || 0).getTime();
-          if (dateA !== dateB) return dateA - dateB; // Oldest first
-          return (parseFloat(a.purchase_price) || 999) - (parseFloat(b.purchase_price) || 999); // Cheapest first
-        });
-      
-      let added = 0;
-      let stillNeeded = needed;
-      for (const item of matchingItems) {
-        if (stillNeeded <= 0) break;
-        const available = (item.quantity || 0) - (item.reserved_quantity || 0);
-        const qtyToAdd = Math.min(stillNeeded, available);
-        if (qtyToAdd > 0) {
-          await moveCardSkuToDeck({ ...item, quantity: qtyToAdd }, deckId, true);
-          added++;
-          stillNeeded -= qtyToAdd;
-        }
-      }
-      
-      // Single refresh after all cards are added
-      await refreshDeckInstances();
-      debouncedLoadInventory();
-      await loadDeckDetails(deckId, true);
-      showToast(`✅ Added ${added} item(s) to deck`, TOAST_TYPES.SUCCESS);
-    } catch (error) {
-      showToast(`Error: ${error.message}`, TOAST_TYPES.ERROR);
-    }
-  };
-
-  // Auto-fill missing cards from inventory (oldest and cheapest first)
-  const autoFillMissingCards = async (deck, deckId) => {
-    try {
-      showToast('Auto-filling missing cards...', TOAST_TYPES.INFO);
-      
-      // For each card in the decklist
-      const cardsToAdd = [];
-      for (const decklistCard of (deck.cards || [])) {
-        // Find how many are already reserved
-        const reservedQty = (inventory || [])
-          .filter(i => i.name.toLowerCase() === decklistCard.name.toLowerCase())
-          .reduce((sum, i) => {
-            const reserved = (deckDetailsCache[deckId]?.reservations || [])
-              .filter(r => r.name.toLowerCase() === i.name.toLowerCase())
-              .reduce((s, r) => s + parseInt(r.quantity_reserved || 0), 0);
-            return sum + reserved;
-          }, 0);
-        
-        const needed = (decklistCard.quantity || 1) - reservedQty;
-        if (needed <= 0) continue;
-        
-        // Find matching inventory items, sorted by date (oldest first) then price (cheapest first)
-        const matchingItems = (inventory || [])
-          .filter(i => {
-            const nameMatch = i.name.toLowerCase() === decklistCard.name.toLowerCase();
-            const available = (i.quantity || 0) - (i.reserved_quantity || 0);
-            return nameMatch && available > 0;
-          })
-          .sort((a, b) => {
-            const dateA = new Date(a.created_at || 0).getTime();
-            const dateB = new Date(b.created_at || 0).getTime();
-            if (dateA !== dateB) return dateA - dateB; // Oldest first
-            return (parseFloat(a.purchase_price) || 999) - (parseFloat(b.purchase_price) || 999); // Cheapest first
-          });
-        
-        let stillNeeded = needed;
-        for (const item of matchingItems) {
-          if (stillNeeded <= 0) break;
-          const available = (item.quantity || 0) - (item.reserved_quantity || 0);
-          const qtyToAdd = Math.min(stillNeeded, available);
-          if (qtyToAdd > 0) {
-            cardsToAdd.push({ ...item, quantity: qtyToAdd });
-            stillNeeded -= qtyToAdd;
-          }
-        }
-      }
-      
-      // Add all cards to deck
-      for (const card of cardsToAdd) {
-        await moveCardSkuToDeck(card, deckId);
-      }
-      
-      showToast(`✅ Auto-filled ${cardsToAdd.length} card(s) into deck`, TOAST_TYPES.SUCCESS);
-      await loadDeckDetails(deckId, true);
-    } catch (error) {
-      showToast(`Error: ${error.message}`, TOAST_TYPES.ERROR);
-    }
-  };
-
-  // Move card from one deck to another
-  const moveCardBetweenDecks = async (deckCardData, targetDeckId) => {
-    try {
-      const sourceDeckId = deckCardData.deck_id;
-      if (sourceDeckId === targetDeckId) {
-        return; // Same deck, do nothing
-      }
-
-      const reservationId = deckCardData.id;
-      const quantity = deckCardData.quantity_reserved;
-      const inventoryItemId = deckCardData.inventory_item_id;
-      
-      // Remove from source deck
-      const removeResponse = await fetch(`/api/deck-instances/${sourceDeckId}/remove-card`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reservation_id: reservationId, quantity: quantity })
-      });
-      
-      if (!removeResponse.ok) {
-        throw new Error('Failed to remove card from source deck');
-      }
-      
-      // Add to target deck
-      const addResponse = await fetch(`/api/deck-instances/${targetDeckId}/add-card`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ inventory_item_id: inventoryItemId, quantity: quantity })
-      });
-      
-      if (!addResponse.ok) {
-        throw new Error('Failed to add card to target deck');
-      }
-      
-      // Refresh both decks
-      await loadDeckDetails(sourceDeckId, true);
-      await loadDeckDetails(targetDeckId, true);
-      await refreshDeckInstances();
-      // Use debounced refresh for inventory
-      debouncedLoadInventory();
-      
-      showToast('Card moved to deck', TOAST_TYPES.SUCCESS);
-    } catch (error) {
-      showToast(`Error: ${error.message}`, TOAST_TYPES.ERROR);
-    }
-  };
+  const handleReleaseDeck = useCallback(async (deckId) => {
+    await deckOps.releaseDeck(deckId, activeTab, setActiveTab);
+  }, [deckOps, activeTab]);
 
   // Initial load and refresh of deck instances
   useEffect(() => {
-    refreshDeckInstances();
-  }, [deckRefreshTrigger, refreshDeckInstances]);
+    deckOps.refreshDeckInstances();
+  }, [deckRefreshTrigger, deckOps.refreshDeckInstances]);
 
   // Memoized data
   const filteredInventory = useMemo(() => {
@@ -725,15 +165,15 @@ export const InventoryTab = ({
     startEditingItem,
     updateInventoryItem,
     deleteInventoryItem,
-    createdFolders,
+    createdFolders: folderOps.createdFolders,
     onToggleLowInventory: toggleAlertHandler,
     onSetThreshold: setThresholdHandler
   };
 
   // Get current deck for deck detail view
-  const currentDeckId = openDecks.find(id => `deck-${id}` === activeTab);
-  const currentDeck = deckInstances.find(d => d.id === currentDeckId);
-  const currentDeckDetails = deckDetailsCache[currentDeckId];
+  const currentDeckId = deckOps.openDecks.find(id => `deck-${id}` === activeTab);
+  const currentDeck = deckOps.deckInstances.find(d => d.id === currentDeckId);
+  const currentDeckDetails = deckOps.deckDetailsCache[currentDeckId];
 
   return (
     <div className="flex gap-6 min-h-screen bg-slate-900 max-w-7xl mx-auto w-full">
@@ -746,7 +186,6 @@ export const InventoryTab = ({
           </button>
         </div>
       )}
-
       {/* Mobile Menu Button */}
       <button
         onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -755,382 +194,33 @@ export const InventoryTab = ({
       >
         <Menu className="w-6 h-6" />
       </button>
-
       {/* LEFT SIDEBAR - Folders */}
-      <div className={`fixed md:static left-0 w-64 flex-shrink-0 space-y-4 h-full overflow-y-auto bg-slate-900 md:bg-transparent z-30 transition-transform duration-300 md:px-0 px-4 md:pl-8 md:pt-16 pt-20 ${
-        sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
-      }`}>
-        {/* Folder List */}
-        <div className="rounded-lg p-4 border-2 border-teal-500/40 bg-gradient-to-br from-slate-800/60 to-slate-900/40 space-y-3 max-h-[calc(100vh-220px)] overflow-y-auto scrollbar-thumb-rounded shadow-xl shadow-slate-900/50">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-teal-300">📁 Folders</h3>
-            {!showCreateFolder && (
-              <button
-                onClick={() => setShowCreateFolder(true)}
-                className="text-teal-300 hover:text-teal-200 transition-colors"
-                title="New Folder"
-              >
-                <Plus className="w-4 h-4" />
-              </button>
-            )}
-          </div>
-
-          {showCreateFolder && (
-            <div className="flex flex-col gap-2 pb-3 border-b border-slate-700">
-              <input
-                type="text"
-                placeholder="Folder name"
-                value={newFolderName}
-                onChange={(e) => setNewFolderName(e.target.value)}
-                className="w-full bg-slate-800 border border-teal-600 rounded px-3 py-2 text-white placeholder-gray-400 text-sm"
-                autoFocus
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && newFolderName.trim()) {
-                    addCreatedFolder(newFolderName);
-                    setNewFolderName('');
-                    setShowCreateFolder(false);
-                    setSelectedFolder(newFolderName.trim());
-                    showToast(`Folder "${newFolderName.trim()}" created!`, TOAST_TYPES.SUCCESS);
-                  }
-                  if (e.key === 'Escape') {
-                    setNewFolderName('');
-                    setShowCreateFolder(false);
-                  }
-                }}
-              />
-              <div className="flex gap-2">
-                <button
-                  onClick={() => {
-                    if (newFolderName.trim()) {
-                      addCreatedFolder(newFolderName);
-                      setNewFolderName('');
-                      setShowCreateFolder(false);
-                      setSelectedFolder(newFolderName.trim());
-                      showToast(`Folder "${newFolderName.trim()}" created!`, TOAST_TYPES.SUCCESS);
-                    }
-                  }}
-                  className="flex-1 bg-teal-600 hover:bg-teal-700 text-white px-3 py-1 rounded text-xs font-semibold transition-colors"
-                >
-                  Create
-                </button>
-                <button
-                  onClick={() => {
-                    setNewFolderName('');
-                    setShowCreateFolder(false);
-                  }}
-                  className="bg-slate-700 hover:bg-slate-600 text-white px-2 py-1 rounded text-xs transition-colors"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </div>
-            </div>
-          )}
-          
-          {/* Unsorted Folder - for cards without a folder (DEFAULT TO TOP) */}
-          {(() => {
-            const cardsByName = groupedByFolder['Uncategorized'] || {};
-            const inStockCards = Object.entries(cardsByName).filter(([cardName, items]) => {
-              const matchesSearch = inventorySearch === '' || cardName.toLowerCase().includes(inventorySearch.toLowerCase());
-              const totalQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
-              const reservedQty = items.reduce((sum, item) => sum + (parseInt(item.reserved_quantity) || 0), 0);
-              return matchesSearch && (totalQty - reservedQty) > 0;
-            });
-            const uniqueCards = inStockCards.length;
-            const totalAvailableCards = inStockCards.reduce((sum, [_, items]) => {
-              return sum + items.reduce((itemSum, item) => {
-                const available = (item.quantity || 0) - (parseInt(item.reserved_quantity) || 0);
-                return itemSum + Math.max(0, available);
-              }, 0);
-            }, 0);
-            const isSelected = selectedFolder === 'Uncategorized';
-            
-            return (
-              <div key="Unsorted">
-                <button
-                  onClick={() => {
-                    if (isSelected) {
-                      closeFolderTab('Uncategorized');
-                    } else {
-                      setSelectedFolder('Uncategorized');
-                      openFolderTab('Uncategorized');
-                    }
-                    setSidebarOpen(false);
-                  }}
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    e.currentTarget.classList.add('bg-teal-700/60', 'border-teal-300');
-                  }}
-                  onDragLeave={(e) => {
-                    e.currentTarget.classList.remove('bg-teal-700/60', 'border-teal-300');
-                  }}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    e.currentTarget.classList.remove('bg-teal-700/60', 'border-teal-300');
-                    const inventoryItemId = e.dataTransfer.getData('inventoryItemId');
-                    const cardName = e.dataTransfer.getData('cardName');
-                    const deckCardDataStr = e.dataTransfer.getData('deckCardData');
-                    if (inventoryItemId) {
-                      moveInventoryItemToFolder(parseInt(inventoryItemId), 'Uncategorized');
-                    } else if (deckCardDataStr) {
-                      const deckCardData = JSON.parse(deckCardDataStr);
-                      moveCardFromDeckToFolder(deckCardData, 'Uncategorized');
-                    } else if (cardName) {
-                      moveCardToFolder(cardName, 'Uncategorized');
-                    }
-                  }}
-                  className={`w-full text-left p-3 rounded-t-lg transition-colors flex-1 ${
-                    isSelected
-                      ? 'bg-teal-600/40 border-l-4 border-teal-400'
-                      : 'bg-slate-800 border-l-4 border-transparent hover:bg-slate-700'
-                  }`}
-                >
-                  <div className="font-medium text-sm text-slate-100">Unsorted</div>
-                  <div className="text-xs text-teal-300">{totalAvailableCards} available • {uniqueCards} unique {uniqueCards === 1 ? 'card' : 'cards'}</div>
-                </button>
-              </div>
-            );
-          })()}
-
-          {/* Created Folders */}
-          {createdFolders.map((folderName) => {
-            const cardsByName = groupedByFolder[folderName] || {};
-            const inStockCards = Object.entries(cardsByName).filter(([cardName, items]) => {
-              const matchesSearch = inventorySearch === '' || cardName.toLowerCase().includes(inventorySearch.toLowerCase());
-              const totalQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
-              const reservedQty = items.reduce((sum, item) => sum + (parseInt(item.reserved_quantity) || 0), 0);
-              return matchesSearch && (totalQty - reservedQty) > 0;
-            });
-            const uniqueCards = inStockCards.length;
-            const totalAvailableCards = inStockCards.reduce((sum, [_, items]) => {
-              return sum + items.reduce((itemSum, item) => {
-                const available = (item.quantity || 0) - (parseInt(item.reserved_quantity) || 0);
-                return itemSum + Math.max(0, available);
-              }, 0);
-            }, 0);
-            const folderCost = Object.values(cardsByName).reduce((sum, items) => {
-              return sum + items.reduce((s, item) => s + ((item.purchase_price || 0) * (item.quantity || 0)), 0);
-            }, 0);
-            const isSelected = selectedFolder === folderName;
-            
-            return (
-              <div key={folderName}>
-                <button
-                  onClick={() => {
-                    if (isSelected) {
-                      closeFolderTab(folderName);
-                    } else {
-                      setSelectedFolder(folderName);
-                      openFolderTab(folderName);
-                    }
-                    setSidebarOpen(false);
-                  }}
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    e.currentTarget.classList.add('bg-teal-700/60', 'border-teal-300');
-                  }}
-                  onDragLeave={(e) => {
-                    e.currentTarget.classList.remove('bg-teal-700/60', 'border-teal-300');
-                  }}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    e.currentTarget.classList.remove('bg-teal-700/60', 'border-teal-300');
-                    const inventoryItemId = e.dataTransfer.getData('inventoryItemId');
-                    const cardName = e.dataTransfer.getData('cardName');
-                    const deckCardDataStr = e.dataTransfer.getData('deckCardData');
-                    if (inventoryItemId) {
-                      moveInventoryItemToFolder(parseInt(inventoryItemId), folderName);
-                    } else if (deckCardDataStr) {
-                      const deckCardData = JSON.parse(deckCardDataStr);
-                      moveCardFromDeckToFolder(deckCardData, folderName);
-                    } else if (cardName) {
-                      moveCardToFolder(cardName, folderName);
-                    }
-                  }}
-                  className={`w-full text-left p-3 rounded-t-lg transition-colors flex-1 ${
-                    isSelected
-                      ? 'bg-teal-600/40 border-l-4 border-teal-400'
-                      : 'bg-slate-800 border-l-4 border-transparent hover:bg-slate-700'
-                  }`}
-                >
-                  <div className="font-medium text-sm text-slate-100">{folderName}</div>
-                  <div className="text-xs text-teal-300">{totalAvailableCards} available • {uniqueCards} unique {uniqueCards === 1 ? 'card' : 'cards'}</div>
-                </button>
-              </div>
-            );
-          })}
-
-          {/* Other Folders */}
-          {Object.entries(groupedByFolder)
-            .filter(([folder]) => folder !== 'Uncategorized' && !createdFolders.includes(folder))
-            .map(([folder, cardsByName]) => {
-              const folderInStockCards = Object.entries(cardsByName).filter(([_, items]) => {
-                const totalQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
-                return totalQty > 0;
-              });
-              const uniqueCards = folderInStockCards.length;
-              const totalAvailableCards = folderInStockCards.reduce((sum, [_, items]) => {
-                return sum + items.reduce((itemSum, item) => {
-                  const available = (item.quantity || 0) - (parseInt(item.reserved_quantity) || 0);
-                  return itemSum + Math.max(0, available);
-                }, 0);
-              }, 0);
-              const folderCost = Object.values(cardsByName).reduce((sum, items) => {
-                return sum + items.reduce((s, item) => s + ((item.purchase_price || 0) * (item.quantity || 0)), 0);
-              }, 0);
-              const isSelected = selectedFolder === folder;
-              
-              return (
-                <div key={folder}>
-                  <button
-                    onClick={() => {
-                      if (isSelected) {
-                        closeFolderTab(folder);
-                      } else {
-                        setSelectedFolder(folder);
-                        openFolderTab(folder);
-                      }
-                      setSidebarOpen(false);
-                    }}
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      e.currentTarget.classList.add('bg-teal-700/60', 'border-teal-300');
-                    }}
-                    onDragLeave={(e) => {
-                      e.currentTarget.classList.remove('bg-teal-700/60', 'border-teal-300');
-                    }}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      e.currentTarget.classList.remove('bg-teal-700/60', 'border-teal-300');
-                      const inventoryItemId = e.dataTransfer.getData('inventoryItemId');
-                      const cardName = e.dataTransfer.getData('cardName');
-                      const deckCardDataStr = e.dataTransfer.getData('deckCardData');
-                      if (inventoryItemId) {
-                        moveInventoryItemToFolder(parseInt(inventoryItemId), folder);
-                      } else if (deckCardDataStr) {
-                        const deckCardData = JSON.parse(deckCardDataStr);
-                        moveCardFromDeckToFolder(deckCardData, folder);
-                      } else if (cardName) {
-                        moveCardToFolder(cardName, folder);
-                      }
-                    }}
-                    className={`w-full text-left p-3 rounded-lg transition-all duration-300 border-l-4 ${
-                      isSelected
-                        ? 'bg-gradient-to-r from-teal-600/50 to-cyan-600/30 border-l-teal-400 shadow-md shadow-teal-500/10'
-                        : 'bg-gradient-to-r from-slate-700/50 to-slate-800/50 border-l-transparent hover:from-slate-600/50 hover:to-slate-700/50 hover:shadow-md hover:shadow-slate-600/20'
-                    }`}
-                  >
-                    <div className="font-medium text-sm text-slate-100">{folder}</div>
-                    <div className="text-xs text-teal-300">{folderInStockCards.length} {folderInStockCards.length === 1 ? 'card' : 'cards'}</div>
-                  </button>
-                </div>
-              );
-            })}
-
-          {/* Decks Section */}
-          {deckInstances.length > 0 && (
-            <div className="pt-3 border-t border-slate-700 mt-3">
-              <h3 className="text-sm font-semibold text-teal-300 mb-2">🎴 Decks</h3>
-              {deckInstances.map((deck) => {
-                const isDeckOpen = openDecks.includes(deck.id);
-                const decklistTotal = (deck.cards || []).reduce((sum, c) => sum + (c.quantity || 1), 0);
-                // Use the higher of decklist total or reserved count (in case cards were added via drag-drop)
-                const totalCards = Math.max(decklistTotal, deck.reserved_count);
-                const deckCost = parseFloat(deck.total_cost) || 0;
-                return (
-                  <div
-                    key={`deck-${deck.id}`}
-                    className={`group text-left p-2.5 rounded-lg transition-all duration-200 mb-1.5 border-l-4 cursor-pointer ${
-                      isDeckOpen
-                        ? 'bg-gradient-to-r from-green-600/40 to-green-700/30 border-l-4 border-green-400 shadow-md shadow-green-500/10'
-                        : 'bg-gradient-to-r from-slate-700 to-slate-800 border-l-4 border-transparent hover:from-slate-600 hover:to-slate-700 hover:shadow-md hover:shadow-slate-600/20'
-                    }`}
-                    onClick={() => openDeckTab(deck)}
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      e.currentTarget.classList.add('bg-green-700/60', 'border-green-300');
-                    }}
-                    onDragLeave={(e) => {
-                      e.currentTarget?.classList?.remove('bg-green-700/60', 'border-green-300');
-                    }}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      e.currentTarget?.classList?.remove('bg-green-700/60', 'border-green-300');
-                      try {
-                        const deckCardDataStr = e.dataTransfer.getData('deckCardData');
-                        const skuDataStr = e.dataTransfer.getData('skuData');
-                        
-                        if (deckCardDataStr) {
-                          const deckCardData = JSON.parse(deckCardDataStr);
-                          moveCardBetweenDecks(deckCardData, deck.id);
-                        } else if (skuDataStr) {
-                          const skuData = JSON.parse(skuDataStr);
-                          moveCardSkuToDeck(skuData, deck.id);
-                        }
-                      } catch (err) {
-
-                      }
-                    }}
-                  >
-                    <div className="flex justify-between items-start mb-1">
-                      <div className="flex-1 text-left">
-                        <div className="font-medium text-sm text-slate-100">{deck.name}</div>
-                      </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSellModalData({
-                            itemType: 'deck',
-                            itemId: deck.id,
-                            itemName: deck.name,
-                            purchasePrice: deckCost
-                          });
-                          setShowSellModal(true);
-                        }}
-                        className="ml-2 text-green-400 opacity-0 group-hover:opacity-100 transition-all duration-200 hover:text-green-200 hover:scale-125 hover:drop-shadow-lg"
-                        title="Sell this deck"
-                      >
-                        <DollarSign className="w-4 h-4" />
-                      </button>
-                    </div>
-                    <div className="text-xs flex flex-wrap gap-1">
-                      {(() => {
-                        const decklistTotal = (deck.cards || []).reduce((sum, c) => sum + (c.quantity || 1), 0);
-                        const reserved = deck.reserved_count;
-                        const missing = Math.max(0, decklistTotal - reserved);
-                        const extras = Math.max(0, reserved - decklistTotal);
-                        
-                        if (missing > 0) {
-                          return (
-                            <>
-                              <span className="text-green-300">{reserved} reserved</span>
-                              <span className="text-red-400">{missing} missing</span>
-                            </>
-                          );
-                        } else {
-                          const displayReserved = decklistTotal > 0 ? decklistTotal : reserved;
-                          return (
-                            <>
-                              <span className="text-green-300">{displayReserved} reserved</span>
-                              {extras > 0 && <span className="text-purple-400">+{extras} extra</span>}
-                            </>
-                          );
-                        }
-                      })()}
-                    </div>
-                    <div className="text-xs text-amber-300 mt-1">
-                      Cost: ${deckCost.toFixed(2)}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </div>
+      <FolderSidebar
+        sidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
+        showCreateFolder={folderOps.showCreateFolder}
+        setShowCreateFolder={folderOps.setShowCreateFolder}
+        newFolderName={folderOps.newFolderName}
+        setNewFolderName={folderOps.setNewFolderName}
+        addCreatedFolder={folderOps.addCreatedFolder}
+        setSelectedFolder={folderOps.setSelectedFolder}
+        createdFolders={folderOps.createdFolders}
+        groupedByFolder={groupedByFolder}
+        inventorySearch={inventorySearch}
+        selectedFolder={folderOps.selectedFolder}
+        closeFolderTab={handleCloseFolderTab}
+        openFolderTab={handleOpenFolderTab}
+        moveInventoryItemToFolder={folderOps.moveInventoryItemToFolder}
+        moveCardFromDeckToFolder={deckOps.moveCardFromDeckToFolder}
+        moveCardToFolder={folderOps.moveCardToFolder}
+        deckInstances={deckOps.deckInstances}
+        openDecks={deckOps.openDecks}
+        openDeckTab={handleOpenDeckTab}
+        moveCardBetweenDecks={deckOps.moveCardBetweenDecks}
+        moveCardSkuToDeck={deckOps.moveCardSkuToDeck}
+        setShowSellModal={setShowSellModal}
+        setSellModalData={setSellModalData}
+      />
 
       {/* Overlay for mobile */}
       {sidebarOpen && (
@@ -1150,11 +240,11 @@ export const InventoryTab = ({
         <InventoryTabs
           activeTab={activeTab}
           setActiveTab={setActiveTab}
-          openFolders={openFolders}
-          setOpenFolders={setOpenFolders}
-          openDecks={openDecks}
-          deckInstances={deckInstances}
-          closeDeckTab={closeDeckTab}
+          openFolders={folderOps.openFolders}
+          setOpenFolders={folderOps.setOpenFolders}
+          openDecks={deckOps.openDecks}
+          deckInstances={deckOps.deckInstances}
+          closeDeckTab={handleCloseDeckTab}
           viewMode={viewMode}
           setViewMode={setViewMode}
           setSidebarOpen={setSidebarOpen}
@@ -1172,15 +262,15 @@ export const InventoryTab = ({
             inventorySearch={inventorySearch}
             expandedCards={expandedCards}
             setExpandedCards={setExpandedCards}
-            expandedMissingCards={expandedMissingCards}
-            setExpandedMissingCards={setExpandedMissingCards}
-            openDecks={openDecks}
+            expandedMissingCards={deckOps.expandedMissingCards}
+            setExpandedMissingCards={deckOps.setExpandedMissingCards}
+            openDecks={deckOps.openDecks}
             activeTab={activeTab}
-            removeCardFromDeck={removeCardFromDeck}
-            autoFillMissingCards={autoFillMissingCards}
-            autoFillSingleCard={autoFillSingleCard}
-            releaseDeck={releaseDeck}
-            moveCardSkuToDeck={moveCardSkuToDeck}
+            removeCardFromDeck={deckOps.removeCardFromDeck}
+            autoFillMissingCards={deckOps.autoFillMissingCards}
+            autoFillSingleCard={deckOps.autoFillSingleCard}
+            releaseDeck={handleReleaseDeck}
+            moveCardSkuToDeck={deckOps.moveCardSkuToDeck}
             setSellModalData={setSellModalData}
             setShowSellModal={setShowSellModal}
           />
@@ -1206,7 +296,7 @@ export const InventoryTab = ({
               ) : (
                 <p className="text-slate-400 text-center py-12">No cards in inventory yet. Add some from the Imports tab!</p>
               )
-            ) : createdFolders.includes(activeTab) || Object.keys(groupedByFolder).includes(activeTab) ? (
+            ) : folderOps.createdFolders.includes(activeTab) || Object.keys(groupedByFolder).includes(activeTab) ? (
               (() => {
                 const folderData = groupedByFolder[activeTab] || {};
                 const folderCards = Object.entries(folderData).filter(([cardName, items]) => {
@@ -1226,7 +316,7 @@ export const InventoryTab = ({
                   }
                   return acc;
                 }, { uniqueCount: 0, totalCount: 0, totalCost: 0 });
-                const folderDesc = folderMetadata[activeTab]?.description || '';
+                const folderDesc = folderOps.folderMetadata[activeTab]?.description || '';
                 
                 return (
                   <>
@@ -1236,11 +326,11 @@ export const InventoryTab = ({
                       totalCards={availableCardsStats.totalCount}
                       uniqueCards={availableCardsStats.uniqueCount}
                       totalCost={availableCardsStats.totalCost}
-                      editingFolderName={editingFolderName}
-                      setEditingFolderName={setEditingFolderName}
-                      editingFolderDesc={editingFolderDesc}
-                      setEditingFolderDesc={setEditingFolderDesc}
-                      setFolderMetadata={setFolderMetadata}
+                      editingFolderName={folderOps.editingFolderName}
+                      setEditingFolderName={folderOps.setEditingFolderName}
+                      editingFolderDesc={folderOps.editingFolderDesc}
+                      setEditingFolderDesc={folderOps.setEditingFolderDesc}
+                      setFolderMetadata={folderOps.setFolderMetadata}
                       setSellModalData={setSellModalData}
                       setShowSellModal={setShowSellModal}
                     />
@@ -1294,19 +384,6 @@ InventoryTab.propTypes = {
   })).isRequired,
   successMessage: PropTypes.string,
   setSuccessMessage: PropTypes.func.isRequired,
-  newEntry: PropTypes.object.isRequired,
-  setNewEntry: PropTypes.func.isRequired,
-  selectedCardSets: PropTypes.array.isRequired,
-  allSets: PropTypes.array.isRequired,
-  defaultSearchSet: PropTypes.string,
-  setDefaultSearchSet: PropTypes.func.isRequired,
-  searchQuery: PropTypes.string.isRequired,
-  setSearchQuery: PropTypes.func.isRequired,
-  searchResults: PropTypes.array.isRequired,
-  showDropdown: PropTypes.bool.isRequired,
-  setShowDropdown: PropTypes.func.isRequired,
-  selectCard: PropTypes.func.isRequired,
-  addCard: PropTypes.func.isRequired,
   expandedCards: PropTypes.object.isRequired,
   setExpandedCards: PropTypes.func.isRequired,
   editingId: PropTypes.string,
@@ -1315,7 +392,9 @@ InventoryTab.propTypes = {
   startEditingItem: PropTypes.func.isRequired,
   updateInventoryItem: PropTypes.func.isRequired,
   deleteInventoryItem: PropTypes.func.isRequired,
-  handleSearch: PropTypes.func.isRequired,
+  deckRefreshTrigger: PropTypes.number,
+  onLoadInventory: PropTypes.func,
+  onSell: PropTypes.func
 };
 
 export default InventoryTab;
