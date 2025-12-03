@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { AlertCircle } from 'lucide-react';
 import { useThresholdSettings } from '../hooks/useThresholdSettings';
 import { ThresholdSettings, PresetManager, AlertSettings, AccountSettings } from './settings';
 
@@ -23,9 +22,6 @@ export const SettingsTab = ({ inventory }) => {
   
   // Sales history for threshold calculations
   const [salesHistory, setSalesHistory] = useState([]);
-  
-  // Success message state (shared across some tabs)
-  const [successMessage, setSuccessMessage] = useState('');
 
   // Fetch sales history ONCE on mount
   useEffect(() => {
@@ -54,14 +50,6 @@ export const SettingsTab = ({ inventory }) => {
 
   return (
     <div className="space-y-6">
-      {/* Success Message */}
-      {successMessage && (
-        <div className="bg-green-600/20 border border-green-600 rounded-lg p-4 text-green-300 flex items-center gap-2">
-          <AlertCircle className="w-5 h-5" />
-          {successMessage}
-        </div>
-      )}
-
       {/* Tab Navigation Bar */}
       <div className="flex gap-2 border-b border-slate-600 pb-0 overflow-x-auto">
         <button 
@@ -107,10 +95,6 @@ export const SettingsTab = ({ inventory }) => {
       {activeTab === 'presets' && (
         <PresetManager
           inventory={inventory}
-          onSuccess={() => {
-            setSuccessMessage('Preset applied successfully');
-            setTimeout(() => setSuccessMessage(''), 3000);
-          }}
         />
       )}
 

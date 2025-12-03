@@ -25,7 +25,7 @@ export const AlertSettings = ({ inventory }) => {
       }, {});
   }, [inventory]);
 
-  const handleThresholdChange = useCallback(async (cardName, itemId, newThreshold) => {
+  const handleThresholdChange = useCallback(async (itemId, newThreshold) => {
     setSaving(prev => ({ ...prev, [itemId]: true }));
     try {
       await put(`/api/inventory/${itemId}`, {
@@ -97,8 +97,7 @@ export const AlertSettings = ({ inventory }) => {
                         type="number"
                         min="0"
                         value={item.low_inventory_threshold || 0}
-                        onChange={(e) => handleThresholdChange(cardName, item.id, e.target.value)}
-                        onBlur={(e) => handleThresholdChange(cardName, item.id, e.target.value)}
+                        onBlur={(e) => handleThresholdChange(item.id, e.target.value)}
                         disabled={saving[item.id]}
                         className="w-16 bg-slate-600 border border-slate-500 rounded px-2 py-1 text-white text-sm text-center focus:outline-none focus:border-teal-500"
                       />

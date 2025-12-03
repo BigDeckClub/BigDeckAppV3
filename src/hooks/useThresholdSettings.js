@@ -7,7 +7,7 @@ import { DEFAULT_SETTINGS } from '../constants/thresholds';
  * @returns {Object} Threshold settings state and handlers
  */
 export function useThresholdSettings() {
-  const { post } = useApi();
+  const { post, get } = useApi();
   const [thresholdSettings, setThresholdSettings] = useState(DEFAULT_SETTINGS);
   
   // Auto-save status indicator
@@ -79,9 +79,8 @@ export function useThresholdSettings() {
 
   // Load threshold settings from localStorage/backend on mount
   useEffect(() => {
-    // Try to load from backend first
-    fetch('/api/settings/thresholdSettings')
-      .then(res => res.json())
+    // Try to load from backend first using useApi's get method
+    get('/api/settings/thresholdSettings')
       .then(data => {
         if (data) {
           setThresholdSettings(data);
@@ -99,7 +98,7 @@ export function useThresholdSettings() {
         // Mark as initialized after initial load completes
         isInitializedRef.current = true;
       });
-  }, [loadFromLocalStorage]);
+  }, [get, loadFromLocalStorage]);
 
   // Handler to update slider values
   const handleSliderChange = useCallback((key, value) => {

@@ -60,26 +60,25 @@ export const PresetManager = ({
     }
 
     setSaving(true);
-    try {
-      const results = await Promise.allSettled(
-        cardsToUpdate.map(item =>
-          put(`/api/inventory/${item.id}`, {
-            low_inventory_threshold: preset.threshold
-          })
-        )
-      );
-      const successful = results.filter(r => r.status === 'fulfilled').length;
+    const results = await Promise.allSettled(
+      cardsToUpdate.map(item =>
+        put(`/api/inventory/${item.id}`, {
+          low_inventory_threshold: preset.threshold
+        })
+      )
+    );
+    const successful = results.filter(r => r.status === 'fulfilled').length;
+    const failed = results.filter(r => r.status === 'rejected').length;
+    
+    if (failed > 0) {
+      setSuccessMessage(`Applied to ${successful} card(s), ${failed} failed`);
+    } else {
       setSuccessMessage(`Applied ${selectedCategory} preset to ${successful} card(s)`);
-      setSelectedCards([]);
-      if (onSuccess) onSuccess();
-      setTimeout(() => setSuccessMessage(''), 3000);
-    } catch (error) {
-      console.error('Error applying preset:', error);
-      setSuccessMessage('Error applying preset');
-      setTimeout(() => setSuccessMessage(''), 3000);
-    } finally {
-      setSaving(false);
     }
+    setSelectedCards([]);
+    if (onSuccess) onSuccess();
+    setTimeout(() => setSuccessMessage(''), 3000);
+    setSaving(false);
   }, [selectedCategory, presetMode, selectedCards, flattenedCards, cardLookup, put, onSuccess]);
 
   return (

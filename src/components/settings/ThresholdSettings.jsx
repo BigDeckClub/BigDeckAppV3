@@ -25,17 +25,17 @@ export const ThresholdSettings = ({
   const [applying, setApplying] = useState(false);
 
   // Calculate smart suggestions with useMemo to prevent infinite re-render loops
-  // Only calculate for first 20 items for preview, unless needed for full apply
+  // Only calculate for first 20 items for preview, unless applying to all
   const computedSmartSuggestions = useMemo(() => {
     if (!inventory || inventory.length === 0) return {};
-    const itemsToCalculate = applyProgress?.total > 0 ? inventory : inventory.slice(0, 20);
+    const itemsToCalculate = applying ? inventory : inventory.slice(0, 20);
     const suggestions = {};
     itemsToCalculate.forEach(card => {
       const calc = calculateSmartThreshold(card, salesHistory, thresholdSettings);
       suggestions[card.id] = calc;
     });
     return suggestions;
-  }, [inventory, salesHistory, thresholdSettings, applyProgress?.total]);
+  }, [inventory, salesHistory, thresholdSettings, applying]);
 
   // Calculate summary stats for what will change
   const summaryStats = useMemo(() => {
