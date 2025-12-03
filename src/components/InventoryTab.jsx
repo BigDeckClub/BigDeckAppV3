@@ -176,12 +176,12 @@ export const InventoryTab = ({
       if (response.ok) {
         setCreatedFolders(prev => [...prev, trimmedName]);
       } else {
-        console.error('Failed to create folder:', await response.text());
+        showToast('Failed to create folder', TOAST_TYPES.ERROR);
       }
     } catch (error) {
-      console.error('Error creating folder:', error);
+      showToast(`Error creating folder: ${error.message}`, TOAST_TYPES.ERROR);
     }
-  }, []);
+  }, [showToast]);
 
   // Fetch deck instances on demand (memoized)
   const refreshDeckInstances = useCallback(async () => {
