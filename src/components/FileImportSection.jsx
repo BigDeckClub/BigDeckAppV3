@@ -34,11 +34,21 @@ export const FileImportSection = ({
     clearCards,
   } = useFileImport({ 
     addInventoryItem,
-    showToast: (message, type) => showToast(message, TOAST_TYPES[type?.toUpperCase()] || TOAST_TYPES.INFO),
+    showToast: (message, type) => {
+      const toastType = type && TOAST_TYPES[type.toUpperCase()] ? TOAST_TYPES[type.toUpperCase()] : TOAST_TYPES.INFO;
+      showToast(message, toastType);
+    },
   });
 
   // All available folders
   const allFolders = ['Unsorted', ...createdFolders];
+
+  // Helper to format price safely
+  const formatPrice = (price) => {
+    if (!price) return '-';
+    const parsed = parseFloat(price);
+    return isNaN(parsed) ? '-' : `$${parsed.toFixed(2)}`;
+  };
 
   // Handle file selection
   const handleFileSelect = useCallback((file) => {
@@ -430,7 +440,7 @@ export const FileImportSection = ({
                             )}
                           </td>
                           <td className="px-3 py-2 text-right text-slate-300">
-                            {card.price ? `$${parseFloat(card.price).toFixed(2)}` : '-'}
+                            {formatPrice(card.price)}
                           </td>
                           <td className="px-3 py-2 text-center">
                             {getStatusBadge(card.status)}

@@ -83,10 +83,13 @@ export const downloadTemplate = (format) => {
   const link = document.createElement('a');
   link.href = url;
   link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  
+  try {
+    // Click link without appending to DOM (works in modern browsers)
+    link.click();
+  } finally {
+    URL.revokeObjectURL(url);
+  }
 };
 
 /**

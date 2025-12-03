@@ -6,6 +6,17 @@
 import { useState, useCallback } from 'react';
 
 /**
+ * Generate a unique ID for rows
+ * @param {number} index - Optional index to include in ID
+ * @returns {string} Unique ID
+ */
+let idCounter = 0;
+const generateId = (index = 0) => {
+  idCounter += 1;
+  return `row-${Date.now()}-${idCounter}-${index}`;
+};
+
+/**
  * Column mappings for different CSV formats
  */
 const COLUMN_MAPPINGS = {
@@ -156,7 +167,7 @@ export const parseSimpleText = (text) => {
     }
     
     cards.push({
-      id: `row-${Date.now()}-${index}`,
+      id: generateId(index),
       name,
       set,
       set_name: '',
@@ -278,7 +289,7 @@ export const parseCSV = (content, format = 'auto') => {
     const quantity = quantityStr ? parseInt(quantityStr, 10) || 1 : 1;
     
     const card = {
-      id: `row-${Date.now()}-${i}`,
+      id: generateId(i),
       name,
       set: getValue(indices.set).toUpperCase(),
       set_name: getValue(indices.set_name),
