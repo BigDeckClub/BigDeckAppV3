@@ -3,6 +3,8 @@ import { Bell, AlertCircle, Zap, Lightbulb, Settings, Package, Mountain, Trendin
 import { useApi } from '../hooks/useApi';
 import { useToast, TOAST_TYPES } from '../context/ToastContext';
 import { calculateSmartThreshold } from '../utils/thresholdCalculator';
+import { api } from '../utils/apiClient';
+import { API_ENDPOINTS } from '../config/api';
 
 const THRESHOLD_PRESETS = {
   'Basic Land': { threshold: 100, description: 'Stock heavily for casual decks' },
@@ -122,12 +124,10 @@ export const SettingsTab = ({ inventory }) => {
   // Load threshold settings from localStorage/backend on mount
   useEffect(() => {
     // Try to load from backend first (Step 7)
-    fetch('/api/settings/thresholdSettings')
-      .then(res => res.json())
+    api.get(`${API_ENDPOINTS.SETTINGS}/thresholdSettings`)
       .then(data => {
         if (data) {
           setThresholdSettings(data);
-          console.log('[Settings] Threshold settings loaded from backend:', data);
         } else {
           // Fallback to localStorage if backend has no data
           const saved = localStorage.getItem('thresholdSettings');
@@ -135,7 +135,6 @@ export const SettingsTab = ({ inventory }) => {
             try {
               const parsed = JSON.parse(saved);
               setThresholdSettings(parsed);
-              console.log('[Settings] Threshold settings loaded from localStorage:', parsed);
             } catch (err) {
               console.error('[Settings] Failed to parse saved threshold settings:', err);
             }
@@ -173,11 +172,8 @@ export const SettingsTab = ({ inventory }) => {
   useEffect(() => {
     const loadSales = async () => {
       try {
-        const response = await fetch('/api/sales');
-        if (response.ok) {
-          const data = await response.json();
-          setSalesHistory(data || []);
-        }
+        const data = await api.get(API_ENDPOINTS.SALES);
+        setSalesHistory(data || []);
       } catch (error) {
         console.warn('[Settings] Error fetching sales history:', error);
       }
@@ -188,7 +184,7 @@ export const SettingsTab = ({ inventory }) => {
   const handleThresholdChange = async (cardName, itemId, newThreshold) => {
     setSaving(prev => ({ ...prev, [itemId]: true }));
     try {
-      await put(`/api/inventory/${itemId}`, {
+      await put(`${API_ENDPOINTS.INVENTORY}/${itemId}`, {
         low_inventory_threshold: parseInt(newThreshold) || 0
       });
       setSuccessMessage('Threshold updated');
@@ -205,7 +201,7 @@ export const SettingsTab = ({ inventory }) => {
   const handleToggleAlert = async (itemId, currentAlert) => {
     setSaving(prev => ({ ...prev, [itemId]: true }));
     try {
-      await put(`/api/inventory/${itemId}`, {
+      await put(`${API_ENDPOINTS.INVENTORY}/${itemId}`, {
         low_inventory_alert: !currentAlert
       });
       setSuccessMessage('Alert setting updated');
@@ -235,7 +231,7 @@ export const SettingsTab = ({ inventory }) => {
     try {
       const results = await Promise.allSettled(
         cardsToUpdate.map(item =>
-          put(`/api/inventory/${item.id}`, {
+          put(`${API_ENDPOINTS.INVENTORY}/${item.id}`, {
             low_inventory_threshold: preset.threshold
           })
         )
@@ -344,12 +340,9 @@ export const SettingsTab = ({ inventory }) => {
     
     try {
       // Fetch sales history for velocity calculations
-      let salesHistory = [];
+      let salesHistoryData = [];
       try {
-        const salesResponse = await fetch('/api/sales');
-        if (salesResponse.ok) {
-          salesHistory = await salesResponse.json();
-        }
+        salesHistoryData = await api.get(API_ENDPOINTS.SALES);
       } catch (err) {
         console.warn('[Settings] Could not fetch sales history, using base calculations');
       }
@@ -361,7 +354,7 @@ export const SettingsTab = ({ inventory }) => {
         const item = inventory[i];
         
         try {
-          const result = calculateSmartThreshold(item, salesHistory, thresholdSettings);
+          const result = calculateSmartThreshold(item, salesHistoryData, thresholdSettings);
           
           updates.push({
             id: item.id,
@@ -381,17 +374,7 @@ export const SettingsTab = ({ inventory }) => {
       setApplyProgress({ current: inventory.length, total: inventory.length });
       
       // Send bulk update to backend
-      const response = await fetch('/api/inventory/bulk-threshold', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ updates })
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Bulk update failed: ${response.status}`);
-      }
-      
-      const result = await response.json();
+      const result = await api.post(`${API_ENDPOINTS.INVENTORY}/bulk-threshold`, { updates });
       
       if (result.errors > 0) {
         showToast(`Updated ${result.updated} items! ${result.errors} errors occurred.`, TOAST_TYPES.WARNING);

@@ -13,6 +13,8 @@ import {
 } from './inventory';
 import { SellModal } from './SellModal';
 import { useInventoryState } from '../hooks/useInventoryState';
+import { api } from '../utils/apiClient';
+import { API_ENDPOINTS } from '../config/api';
 
 // Reserved folder names that cannot be created by users (case-insensitive)
 const RESERVED_FOLDER_NAMES = ['unsorted', 'uncategorized', 'all cards'];
@@ -88,43 +90,19 @@ export const InventoryTab = ({
 
   // Centralized handlers for low inventory alerts
   const toggleAlertHandler = useCallback(async (itemId) => {
-    console.log('=== TOGGLE ALERT HANDLER DEBUG ===');
-    console.log('A. toggleAlertHandler called with itemId:', itemId);
-    console.log('B. onLoadInventory exists:', typeof onLoadInventory, !!onLoadInventory);
-    
     try {
-      const url = `/api/inventory/${itemId}/toggle-alert`;
-      console.log('C. Making POST request to:', url);
-      
-      const response = await fetch(url, { method: 'POST' });
-      
-      console.log('D. Response status:', response.status);
-      console.log('E. Response ok:', response.ok);
-      
-      const data = await response.json();
-      console.log('F. Response data:', data);
-      console.log('F2. low_inventory_alert value:', data.low_inventory_alert);
-      console.log('F3. low_inventory_threshold value:', data.low_inventory_threshold);
-      
+      await api.post(`${API_ENDPOINTS.INVENTORY}/${itemId}/toggle-alert`);
       if (onLoadInventory) {
-        console.log('G. Calling onLoadInventory to refresh');
         onLoadInventory();
-      } else {
-        console.log('G. SKIPPED - onLoadInventory is undefined!');
       }
     } catch (error) {
-      console.error('ERROR in toggleAlertHandler:', error);
+      console.error('Error toggling alert:', error);
     }
-    console.log('=== TOGGLE ALERT HANDLER END ===');
   }, [onLoadInventory]);
 
   const setThresholdHandler = useCallback(async (itemId, threshold) => {
     try {
-      await fetch(`/api/inventory/${itemId}/set-threshold`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ threshold })
-      });
+      await api.post(`${API_ENDPOINTS.INVENTORY}/${itemId}/set-threshold`, { threshold });
       onLoadInventory?.();
     } catch (error) {
       console.error('Error setting threshold:', error);
@@ -150,12 +128,8 @@ export const InventoryTab = ({
   // Load created folders from server
   const loadFolders = useCallback(async () => {
     try {
-      const response = await fetch('/api/folders');
-      if (response.ok) {
-        const data = await response.json();
-        setCreatedFolders(data.map(f => f.name));
-        setFoldersData(data);
-      }
+      const data = await api.get(API_ENDPOINTS.FOLDERS);
+      setCreatedFolders(data.map(f => f.name));
     } catch (error) {
       console.error('Error loading folders:', error);
     }
@@ -183,23 +157,8 @@ export const InventoryTab = ({
     }
     
     try {
-      const response = await fetch('/api/folders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: trimmedName })
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setCreatedFolders(prev => [...prev, data.name || trimmedName]);
-        setFoldersData(prev => [...prev, data]);
-        showToast(`Folder "${trimmedName}" created!`, TOAST_TYPES.SUCCESS);
-        return true;
-      } else {
-        const errorData = await response.json();
-        showToast(errorData.error || 'Failed to create folder', TOAST_TYPES.ERROR);
-        return false;
-      }
+      const data = await api.post(API_ENDPOINTS.FOLDERS, { name: trimmedName });
+      setCreatedFolders(prev => [...prev, data.name || trimmedName]);
     } catch (error) {
       showToast(`Error creating folder: ${error.message}`, TOAST_TYPES.ERROR);
       return false;
@@ -209,13 +168,10 @@ export const InventoryTab = ({
   // Fetch deck instances on demand (memoized)
   const refreshDeckInstances = useCallback(async () => {
     try {
-      const response = await fetch('/api/deck-instances');
-      if (response.ok) {
-        const data = await response.json();
-        setDeckInstances(data);
-      }
+      const data = await api.get(API_ENDPOINTS.DECK_INSTANCES);
+      setDeckInstances(data);
     } catch (error) {
-
+      // Silent failure
     }
   }, []);
 
@@ -224,25 +180,19 @@ export const InventoryTab = ({
     if (deckDetailsCache[deckId] && !forceRefresh) return; // Already cached
     setLoadingDeckDetails(true);
     try {
-      const response = await fetch(`/api/deck-instances/${deckId}/details`);
-      if (response.ok) {
-        const data = await response.json();
-        setDeckDetailsCache(prev => ({ ...prev, [deckId]: data }));
-        // Expand missing cards section if there are missing cards
-        const deck = deckInstances.find(d => d.id === deckId);
-        if (deck) {
-          const decklistTotal = (deck.cards || []).reduce((sum, c) => sum + (c.quantity || 1), 0);
-          const actualMissingCount = Math.max(0, decklistTotal - (data.reservedCount || 0));
-          if (actualMissingCount > 0) {
-            setExpandedMissingCards(prev => ({ ...prev, [deckId]: true }));
-          }
+      const data = await api.get(`${API_ENDPOINTS.DECK_INSTANCES}/${deckId}/details`);
+      setDeckDetailsCache(prev => ({ ...prev, [deckId]: data }));
+      // Expand missing cards section if there are missing cards
+      const deck = deckInstances.find(d => d.id === deckId);
+      if (deck) {
+        const decklistTotal = (deck.cards || []).reduce((sum, c) => sum + (c.quantity || 1), 0);
+        const actualMissingCount = Math.max(0, decklistTotal - (data.reservedCount || 0));
+        if (actualMissingCount > 0) {
+          setExpandedMissingCards(prev => ({ ...prev, [deckId]: true }));
         }
-      } else {
-        const error = await response.json();
-
       }
     } catch (error) {
-
+      // Silent failure
     } finally {
       setLoadingDeckDetails(false);
     }
@@ -348,23 +298,17 @@ export const InventoryTab = ({
     if (!confirmed) return;
     
     try {
-      const response = await fetch(`/api/deck-instances/${deckId}/release`, {
-        method: 'POST'
+      await api.post(`${API_ENDPOINTS.DECK_INSTANCES}/${deckId}/release`);
+      // Close the deck tab if it's open
+      closeDeckTab(deckId);
+      // Clear cached details for this deck
+      setDeckDetailsCache(prev => {
+        const updated = { ...prev };
+        delete updated[deckId];
+        return updated;
       });
-      if (response.ok) {
-        // Close the deck tab if it's open
-        closeDeckTab(deckId);
-        // Clear cached details for this deck
-        setDeckDetailsCache(prev => {
-          const updated = { ...prev };
-          delete updated[deckId];
-          return updated;
-        });
-        await refreshDeckInstances();
-        showToast('Deck deleted! Cards returned to unsorted.', TOAST_TYPES.SUCCESS);
-      } else {
-        showToast('Failed to delete deck', TOAST_TYPES.ERROR);
-      }
+      await refreshDeckInstances();
+      showToast('Deck deleted! Cards returned to unsorted.', TOAST_TYPES.SUCCESS);
     } catch (error) {
       showToast('Error deleting deck', TOAST_TYPES.ERROR);
     }
@@ -373,35 +317,25 @@ export const InventoryTab = ({
   // Remove card from deck reservation
   const removeCardFromDeck = async (deckId, reservationId, quantity = 1) => {
     try {
-      const response = await fetch(`/api/deck-instances/${deckId}/remove-card`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reservation_id: reservationId, quantity: quantity })
+      await api.delete(`${API_ENDPOINTS.DECK_INSTANCES}/${deckId}/remove-card`, { 
+        reservation_id: reservationId, 
+        quantity: quantity 
       });
-      if (response.ok) {
-        await loadDeckDetails(deckId, true); // Force refresh to get latest data
-        await refreshDeckInstances();
-        debouncedLoadInventory(); // Refresh main inventory to show returned cards in Unsorted
-      }
+      await loadDeckDetails(deckId, true); // Force refresh to get latest data
+      await refreshDeckInstances();
+      debouncedLoadInventory(); // Refresh main inventory to show returned cards in Unsorted
     } catch (error) {
-
+      // Silent failure
     }
   };
 
   // Reoptimize deck to find cheapest cards
   const reoptimizeDeck = async (deckId) => {
     try {
-      const response = await fetch(`/api/deck-instances/${deckId}/reoptimize`, {
-        method: 'POST'
-      });
-      if (response.ok) {
-        const result = await response.json();
-        await loadDeckDetails(deckId);
-        await refreshDeckInstances();
-        showToast(`Deck reoptimized! ${result.reservedCount} cards reserved.`, TOAST_TYPES.SUCCESS);
-      } else {
-        showToast('Failed to reoptimize deck', TOAST_TYPES.ERROR);
-      }
+      const result = await api.post(`${API_ENDPOINTS.DECK_INSTANCES}/${deckId}/reoptimize`);
+      await loadDeckDetails(deckId);
+      await refreshDeckInstances();
+      showToast(`Deck reoptimized! ${result.reservedCount} cards reserved.`, TOAST_TYPES.SUCCESS);
     } catch (error) {
       showToast('Error reoptimizing deck', TOAST_TYPES.ERROR);
     }
@@ -420,15 +354,7 @@ export const InventoryTab = ({
       showToast(`Moved ${item.quantity}x ${item.name} to ${targetFolder}`, TOAST_TYPES.SUCCESS);
       
       // Update API
-      const response = await fetch(`/api/inventory/${itemId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ folder: targetFolder })
-      });
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to update folder');
-      }
+      await api.put(`${API_ENDPOINTS.INVENTORY}/${itemId}`, { folder: targetFolder });
       
       // Refresh inventory to show changes
       if (onLoadInventory) {
@@ -452,19 +378,8 @@ export const InventoryTab = ({
       showToast(`Moved "${cardName}" to ${targetFolder}`, TOAST_TYPES.SUCCESS);
       
       // Update API in the background
-      let hasError = false;
       for (const item of cardItems) {
-        const response = await fetch(`/api/inventory/${item.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ folder: targetFolder })
-        });
-        if (!response.ok) {
-          hasError = true;
-          const error = await response.json();
-
-          throw new Error(error.error || 'Failed to update folder');
-        }
+        await api.put(`${API_ENDPOINTS.INVENTORY}/${item.id}`, { folder: targetFolder });
       }
       
       // Refresh inventory to show changes
@@ -487,26 +402,13 @@ export const InventoryTab = ({
       showToast(`Moved card to ${targetFolder}`, TOAST_TYPES.SUCCESS);
       
       // First remove the card from the deck (which moves it to Uncategorized)
-      const removeResponse = await fetch(`/api/deck-instances/${deckId}/remove-card`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reservation_id: reservationId, quantity: quantity })
+      await api.delete(`${API_ENDPOINTS.DECK_INSTANCES}/${deckId}/remove-card`, {
+        reservation_id: reservationId,
+        quantity: quantity
       });
-      
-      if (!removeResponse.ok) {
-        throw new Error('Failed to remove card from deck');
-      }
       
       // Then move it to the target folder
-      const moveResponse = await fetch(`/api/inventory/${deckCardData.inventory_item_id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ folder: targetFolder })
-      });
-      
-      if (!moveResponse.ok) {
-        throw new Error('Failed to move card to folder');
-      }
+      await api.put(`${API_ENDPOINTS.INVENTORY}/${deckCardData.inventory_item_id}`, { folder: targetFolder });
       
       // Refresh both deck and inventory - ensure inventory is fully loaded
       if (onLoadInventory) {
@@ -532,22 +434,17 @@ export const InventoryTab = ({
       const qtyToUse = attemptQty !== null ? attemptQty : (inventoryItem.quantity || 1);
       
       // Make API call first (no optimistic update until success)
-      const response = await fetch(`/api/deck-instances/${deckId}/add-card`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      try {
+        await api.post(`${API_ENDPOINTS.DECK_INSTANCES}/${deckId}/add-card`, {
           inventory_item_id: inventoryItem.id,
           quantity: qtyToUse
-        })
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
+        });
+      } catch (addError) {
         // If not enough available, retry with 1 less quantity (accounts for cards reserved in other decks)
-        if (errorData.error?.includes('Not enough available') && qtyToUse > 1) {
+        if (addError.message?.includes('Not enough available') && qtyToUse > 1) {
           return moveCardSkuToDeck(inventoryItem, deckId, skipRefresh, qtyToUse - 1);
         }
-        throw new Error(errorData.error || 'Failed to add card to deck');
+        throw addError;
       }
       
       // Only update UI after API succeeds
@@ -697,26 +594,16 @@ export const InventoryTab = ({
       const inventoryItemId = deckCardData.inventory_item_id;
       
       // Remove from source deck
-      const removeResponse = await fetch(`/api/deck-instances/${sourceDeckId}/remove-card`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reservation_id: reservationId, quantity: quantity })
+      await api.delete(`${API_ENDPOINTS.DECK_INSTANCES}/${sourceDeckId}/remove-card`, {
+        reservation_id: reservationId,
+        quantity: quantity
       });
-      
-      if (!removeResponse.ok) {
-        throw new Error('Failed to remove card from source deck');
-      }
       
       // Add to target deck
-      const addResponse = await fetch(`/api/deck-instances/${targetDeckId}/add-card`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ inventory_item_id: inventoryItemId, quantity: quantity })
+      await api.post(`${API_ENDPOINTS.DECK_INSTANCES}/${targetDeckId}/add-card`, { 
+        inventory_item_id: inventoryItemId, 
+        quantity: quantity 
       });
-      
-      if (!addResponse.ok) {
-        throw new Error('Failed to add card to target deck');
-      }
       
       // Refresh both decks
       await loadDeckDetails(sourceDeckId, true);
