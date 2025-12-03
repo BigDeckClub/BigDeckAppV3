@@ -237,6 +237,35 @@ describe('RapidEntryTable Component', () => {
     expect(clearedInput).toHaveValue('');
   });
 
+  it('clears row when Escape key is pressed on set dropdown', () => {
+    const propsWithResults = {
+      ...mockProps,
+      showDropdown: true,
+      searchResults: [
+        { name: 'Lightning Bolt', set: '2X2', setName: 'Double Masters 2022', imageUrl: '/test.jpg' },
+      ],
+    };
+    
+    render(<RapidEntryTable {...propsWithResults} />);
+    
+    const input = screen.getByPlaceholderText('Search card...');
+    fireEvent.focus(input);
+    
+    // Select a card first so the set dropdown is enabled
+    const result = screen.getByText('Lightning Bolt');
+    fireEvent.click(result);
+    
+    // Now find the set dropdown (first combobox after card selection)
+    const setSelect = screen.getAllByRole('combobox')[0];
+    
+    // Press Escape on set dropdown
+    fireEvent.keyDown(setSelect, { key: 'Escape', code: 'Escape' });
+    
+    // After clearing, row should be reset
+    const clearedInput = screen.getByPlaceholderText('Search card...');
+    expect(clearedInput).toHaveValue('');
+  });
+
   it('handles Ctrl+D on price input for duplicating previous row', () => {
     render(<RapidEntryTable {...mockProps} />);
     

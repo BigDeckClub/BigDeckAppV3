@@ -306,13 +306,8 @@ export const RapidEntryTable = ({
       return;
     }
     
-    // Ctrl+D or Ctrl+Shift+D to duplicate previous row
+    // Ctrl+D to duplicate previous row (also handles Ctrl+Shift+D since 'd' is lowercase regardless of Shift)
     if (e.key === 'd' && (e.ctrlKey || e.metaKey)) {
-      e.preventDefault();
-      handleDuplicatePrevious(rowIndex);
-      return;
-    }
-    if (e.key === 'D' && e.ctrlKey && e.shiftKey) {
       e.preventDefault();
       handleDuplicatePrevious(rowIndex);
       return;
@@ -364,9 +359,6 @@ export const RapidEntryTable = ({
               ${activeRowIndex === rowIndex ? 'ring-1 ring-teal-400/30' : ''}
               ${shakeRowIndex === rowIndex ? 'animate-shake' : ''}
             `}
-            style={shakeRowIndex === rowIndex ? {
-              animation: 'shake 0.5s cubic-bezier(.36,.07,.19,.97) both'
-            } : {}}
           >
             <div className="grid grid-cols-1 md:grid-cols-12 gap-2 p-3">
               {/* Card Name with Autocomplete */}
@@ -445,6 +437,7 @@ export const RapidEntryTable = ({
                 <select
                   value={row.set}
                   onChange={(e) => handleSetChange(rowIndex, e.target.value)}
+                  onKeyDown={(e) => handleKeyDown(e, rowIndex, 'set')}
                   disabled={!row.selectedCard || row.status === 'added'}
                   className="w-full bg-slate-900/50 border border-slate-600 rounded px-2 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-teal-400 disabled:opacity-50"
                 >
