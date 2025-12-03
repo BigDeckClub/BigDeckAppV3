@@ -255,7 +255,7 @@ function MTGInventoryTrackerContent() {
       setIsLoading(false);
     };
     loadAllData();
-  }, [user]);
+  }, [user, loadInventory, loadAllSets]);
 
   const addInventoryItem = useCallback(async (item) => {
     try {

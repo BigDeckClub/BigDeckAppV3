@@ -16,11 +16,21 @@ function getColumnsForWidth(width) {
  * VirtualizedCardList - Renders large card lists with virtualization
  * Only renders items visible in the viewport for improved performance
  * 
- * @param {Array} items - Array of [cardName, items] entries to render
- * @param {Function} renderCard - Function to render each card entry
+ * @param {Array} items - Array of [cardName, items] entries to render. 
+ *   IMPORTANT: For optimal performance, callers should memoize this array 
+ *   using useMemo() to prevent unnecessary re-renders.
+ * @param {Function} renderCard - Function to render each card entry.
+ *   IMPORTANT: For optimal performance, callers should memoize this function
+ *   using useCallback() to prevent unnecessary re-renders.
  * @param {number} itemHeight - Height of each item in pixels
  * @param {number} containerHeight - Height of the container in pixels
  * @param {string} viewMode - 'card' or 'list' view mode
+ * 
+ * @example
+ * // Caller should memoize items and renderCard:
+ * const memoizedItems = useMemo(() => items, [items]);
+ * const memoizedRenderCard = useCallback((item) => <Card item={item} />, []);
+ * <VirtualizedCardList items={memoizedItems} renderCard={memoizedRenderCard} />
  */
 export const VirtualizedCardList = memo(function VirtualizedCardList({
   items,
