@@ -184,7 +184,7 @@ export function useFolderOperations({ inventory, onLoadInventory }) {
       showToast(`Error deleting folder: ${error.message}`, TOAST_TYPES.ERROR);
       return false;
     }
-  }, [closeFolderTab, showToast]);
+  }, [closeFolderTab, showToast, setCreatedFolders]);
 
   return {
     // State

@@ -77,8 +77,7 @@ export function useDeckReservations({ inventory, onLoadInventory }) {
   const openDeckTab = useCallback((deck, activeTab, setActiveTab) => {
     if (activeTab === `deck-${deck.id}`) {
       // If this deck is already active, close it (toggle behavior like folders)
-      setOpenDecks(prev => prev.filter(id => id !== deck.id));
-      setActiveTab('all');
+      closeDeckTab(deck.id, activeTab, setActiveTab);
     } else {
       // Otherwise, open it
       if (!openDecks.includes(deck.id)) {
@@ -87,7 +86,7 @@ export function useDeckReservations({ inventory, onLoadInventory }) {
       setActiveTab(`deck-${deck.id}`);
       loadDeckDetails(deck.id);
     }
-  }, [openDecks, loadDeckDetails]);
+  }, [openDecks, loadDeckDetails, closeDeckTab]);
 
   // Release deck and return cards to inventory
   const releaseDeck = useCallback(async (deckId, activeTab, setActiveTab) => {
