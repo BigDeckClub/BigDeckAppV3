@@ -10,9 +10,14 @@ import {
 import { useDebounce } from "./utils/useDebounce";
 import { PriceCacheProvider, usePriceCache } from "./context/PriceCacheContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { ToastProvider, useToast, TOAST_TYPES } from "./context/ToastContext";
+import { ConfirmProvider, useConfirm } from "./context/ConfirmContext";
 import { LoginForm } from "./components/LoginForm";
 import { UserDropdown } from "./components/UserDropdown";
 import ErrorBoundary from "./components/ErrorBoundary";
+import { ToastContainer } from "./components/ToastContainer";
+import { ConfirmDialog } from "./components/ConfirmDialog";
+import { OfflineBanner } from "./components/OfflineBanner";
 import { useApi } from "./hooks/useApi";
 import { TutorialModal } from "./components/TutorialModal";
 import { TabLoadingSpinner } from "./components/TabLoadingSpinner";
@@ -33,6 +38,8 @@ function MTGInventoryTrackerContent() {
   const { user, loading: authLoading } = useAuth();
   const { getPrice } = usePriceCache();
   const { get, post, put, del } = useApi();
+  const { showToast } = useToast();
+  const { confirm } = useConfirm();
 
   // ALL useState hooks
   const [activeTab, setActiveTab] = useState("inventory");
@@ -260,12 +267,15 @@ function MTGInventoryTrackerContent() {
   const addInventoryItem = useCallback(async (item) => {
     try {
       await post(`${API_BASE}/inventory`, item);
-      await loadInventory();
-      setSuccessMessage("Card added successfully!");
-      setTimeout(() => setSuccessMessage(""), 3000);
+      await loadInventory(); // Refresh to get real data
+      showToast("Card added successfully!", TOAST_TYPES.SUCCESS);
       return true;
     } catch (error) {
-      alert("Error adding card: " + error.message);
+      // Rollback on error
+      setInventory(prev => prev.filter(i => i.id !== tempId));
+      showToast("Error adding card: " + error.message, TOAST_TYPES.ERROR, {
+        action: { label: 'Retry', onClick: () => addInventoryItem(item) }
+      });
       return false;
     }
   }, [post, loadInventory]);
@@ -280,10 +290,13 @@ function MTGInventoryTrackerContent() {
       await put(`${API_BASE}/inventory/${id}`, updateWithTimestamp);
       await loadInventory();
       setEditingId(null);
-      setSuccessMessage("Card updated!");
-      setTimeout(() => setSuccessMessage(""), 3000);
+      showToast("Card updated!", TOAST_TYPES.SUCCESS);
     } catch (error) {
-      alert("Error updating card");
+      // Rollback on error
+      setInventory(previousInventory);
+      showToast("Error updating card", TOAST_TYPES.ERROR, {
+        action: { label: 'Retry', onClick: () => updateInventoryItem(id, updates) }
+      });
     }
   }, [put, loadInventory]);
 
@@ -312,7 +325,7 @@ function MTGInventoryTrackerContent() {
 
   const addCard = useCallback(async () => {
     if (!newEntry.selectedSet) {
-      alert("Please select a card");
+      showToast("Please select a card", TOAST_TYPES.WARNING);
       return;
     }
 
@@ -350,7 +363,9 @@ function MTGInventoryTrackerContent() {
         setDeckRefreshTrigger(prev => prev + 1);
         await loadInventory();
       }
+      showToast(`${saleData.itemName} sold successfully!`, TOAST_TYPES.SUCCESS);
     } catch (error) {
+      showToast("Failed to record sale", TOAST_TYPES.ERROR);
       throw error;
     }
   }, [post, loadInventory]);
@@ -548,6 +563,15 @@ function MTGInventoryTrackerContent() {
 
       {/* Tutorial Modal */}
       <TutorialModal isOpen={showTutorial} onClose={() => setShowTutorial(false)} />
+      
+      {/* Toast Notifications */}
+      <ToastContainer />
+      
+      {/* Confirmation Dialog */}
+      <ConfirmDialog />
+      
+      {/* Offline Banner */}
+      <OfflineBanner />
     </div>
   );
 }
@@ -557,7 +581,11 @@ function MTGInventoryTracker() {
     <ErrorBoundary>
       <AuthProvider>
         <PriceCacheProvider>
-          <MTGInventoryTrackerContent />
+          <ToastProvider>
+            <ConfirmProvider>
+              <MTGInventoryTrackerContent />
+            </ConfirmProvider>
+          </ToastProvider>
         </PriceCacheProvider>
       </AuthProvider>
     </ErrorBoundary>

@@ -1,13 +1,19 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
+import { useToast, TOAST_TYPES } from '../context/ToastContext';
 
 export const SellModal = ({ isOpen, itemName, purchasePrice, onClose, onSell, itemType, deckId }) => {
   const [sellPrice, setSellPrice] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [validationError, setValidationError] = useState('');
+  const { showToast } = useToast();
 
   const handleSell = async () => {
+    // Clear previous validation error
+    setValidationError('');
+    
     if (!sellPrice || isNaN(sellPrice) || parseFloat(sellPrice) < 0) {
-      alert('Please enter a valid sell price');
+      setValidationError('Please enter a valid sell price');
       return;
     }
 
@@ -24,9 +30,17 @@ export const SellModal = ({ isOpen, itemName, purchasePrice, onClose, onSell, it
       setSellPrice('');
       onClose();
     } catch (error) {
-      alert('Failed to record sale');
+      showToast('Failed to record sale', TOAST_TYPES.ERROR);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleSellPriceChange = (e) => {
+    setSellPrice(e.target.value);
+    // Clear validation error when user starts typing
+    if (validationError) {
+      setValidationError('');
     }
   };
 
@@ -63,10 +77,15 @@ export const SellModal = ({ isOpen, itemName, purchasePrice, onClose, onSell, it
               step="0.01"
               min="0"
               value={sellPrice}
-              onChange={(e) => setSellPrice(e.target.value)}
+              onChange={handleSellPriceChange}
               placeholder="Enter sell price"
-              className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-slate-500 focus:outline-none focus:border-teal-400"
+              className={`w-full px-3 py-2 bg-slate-700 border rounded text-white placeholder-slate-500 focus:outline-none focus:border-teal-400 ${
+                validationError ? 'border-red-500' : 'border-slate-600'
+              }`}
             />
+            {validationError && (
+              <p className="mt-1 text-sm text-red-400">{validationError}</p>
+            )}
           </div>
 
           <div>

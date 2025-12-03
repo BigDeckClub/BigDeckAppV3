@@ -1,14 +1,23 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { Plus, Trash2, X, ChevronDown, ChevronRight, Grid3X3, List, Menu, Wand2, DollarSign } from 'lucide-react';
 import { usePriceCache } from "../context/PriceCacheContext";
-import { CardGroup } from './inventory/CardGroup';
+import { useToast, TOAST_TYPES } from "../context/ToastContext";
+import { useConfirm } from "../context/ConfirmContext";
+import { 
+  CardGrid, 
+  InventorySearchBar, 
+  InventoryTabs, 
+  DeckDetailView,
+  FolderHeader 
+} from './inventory';
 import { SellModal } from './SellModal';
+import { useInventoryState } from '../hooks/useInventoryState';
 
-// Simple normalize functions
-const normalizeCardName = (name) => (name || "").trim();
-const normalizeSetCode = (code) => (code || "").trim().toUpperCase();
-
+/**
+ * InventoryTab - Main inventory management component
+ * Refactored to use smaller sub-components and custom hooks for maintainability
+ */
 export const InventoryTab = ({
   inventory,
   successMessage,
@@ -39,6 +48,9 @@ export const InventoryTab = ({
   onLoadInventory,
   onSell
 }) => {
+  const { showToast } = useToast();
+  const { confirm } = useConfirm();
+  
   const [expandedFolders, setExpandedFolders] = useState({});
   const [newFolderName, setNewFolderName] = useState('');
   const [showCreateFolder, setShowCreateFolder] = useState(false);
@@ -148,6 +160,34 @@ export const InventoryTab = ({
     loadFolders();
   }, [loadFolders]);
 
+  // Add a new folder and persist to server
+  const addCreatedFolder = useCallback(async (folderName) => {
+    const trimmedName = folderName.trim();
+    if (!trimmedName) return;
+    
+    if (createdFolders.includes(trimmedName)) {
+      showToast('A folder with this name already exists', TOAST_TYPES.ERROR);
+      return;
+    }
+    
+    try {
+      const response = await fetch('/api/folders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: trimmedName })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setCreatedFolders(prev => [...prev, data.name || trimmedName]);
+      } else {
+        showToast('Failed to create folder', TOAST_TYPES.ERROR);
+      }
+    } catch (error) {
+      showToast(`Error creating folder: ${error.message}`, TOAST_TYPES.ERROR);
+    }
+  }, [showToast, createdFolders]);
+
   // Fetch deck instances on demand (memoized)
   const refreshDeckInstances = useCallback(async () => {
     try {
@@ -237,6 +277,16 @@ export const InventoryTab = ({
 
   // Release deck and return cards to inventory
   const releaseDeck = async (deckId) => {
+    const deck = deckInstances.find(d => d.id === deckId);
+    const confirmed = await confirm({
+      title: 'Delete Deck',
+      message: `Are you sure you want to delete "${deck?.name || 'this deck'}"? Cards will be returned to Unsorted.`,
+      confirmText: 'Delete',
+      variant: 'danger'
+    });
+    
+    if (!confirmed) return;
+    
     try {
       const response = await fetch(`/api/deck-instances/${deckId}/release`, {
         method: 'POST'
@@ -251,14 +301,12 @@ export const InventoryTab = ({
           return updated;
         });
         await refreshDeckInstances();
-        setSuccessMessage('Deck deleted! Cards returned to unsorted.');
-        setTimeout(() => setSuccessMessage(''), 3000);
+        showToast('Deck deleted! Cards returned to unsorted.', TOAST_TYPES.SUCCESS);
       } else {
-        alert('Failed to delete deck');
+        showToast('Failed to delete deck', TOAST_TYPES.ERROR);
       }
     } catch (error) {
-
-      alert('Error deleting deck');
+      showToast('Error deleting deck', TOAST_TYPES.ERROR);
     }
   };
 
@@ -290,14 +338,12 @@ export const InventoryTab = ({
         const result = await response.json();
         await loadDeckDetails(deckId);
         await refreshDeckInstances();
-        setSuccessMessage(`Deck reoptimized! ${result.reservedCount} cards reserved.`);
-        setTimeout(() => setSuccessMessage(''), 3000);
+        showToast(`Deck reoptimized! ${result.reservedCount} cards reserved.`, TOAST_TYPES.SUCCESS);
       } else {
-        alert('Failed to reoptimize deck');
+        showToast('Failed to reoptimize deck', TOAST_TYPES.ERROR);
       }
     } catch (error) {
-
-      alert('Error reoptimizing deck');
+      showToast('Error reoptimizing deck', TOAST_TYPES.ERROR);
     }
   };
 
@@ -306,12 +352,12 @@ export const InventoryTab = ({
     try {
       const item = inventory.find(i => i.id === itemId);
       if (!item) {
-        alert('Item not found');
+        showToast('Item not found', TOAST_TYPES.ERROR);
         return;
       }
       
       // Show the change immediately
-      setSuccessMessage(`Moved ${item.quantity}x ${item.name} to ${targetFolder}`);
+      showToast(`Moved ${item.quantity}x ${item.name} to ${targetFolder}`, TOAST_TYPES.SUCCESS);
       
       // Update API
       const response = await fetch(`/api/inventory/${itemId}`, {
@@ -328,24 +374,22 @@ export const InventoryTab = ({
       if (onLoadInventory) {
         await onLoadInventory();
       }
-      setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error) {
-      setSuccessMessage(`Error moving item: ${error.message}`);
-      setTimeout(() => setSuccessMessage(''), 5000);
+      showToast(`Error moving item: ${error.message}`, TOAST_TYPES.ERROR);
     }
-  }, [inventory, onLoadInventory, setSuccessMessage]);
+  }, [inventory, onLoadInventory, showToast]);
 
   // Move cards to folder via drag-drop (with optimistic updates) (memoized)
   const moveCardToFolder = useCallback(async (cardName, targetFolder) => {
     try {
       const cardItems = inventory.filter(item => item.name === cardName);
       if (cardItems.length === 0) {
-        alert('Card not found');
+        showToast('Card not found', TOAST_TYPES.ERROR);
         return;
       }
       
       // Show the change immediately
-      setSuccessMessage(`Moved "${cardName}" to ${targetFolder}`);
+      showToast(`Moved "${cardName}" to ${targetFolder}`, TOAST_TYPES.SUCCESS);
       
       // Update API in the background
       let hasError = false;
@@ -367,13 +411,10 @@ export const InventoryTab = ({
       if (onLoadInventory) {
         await onLoadInventory();
       }
-      setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error) {
-
-      setSuccessMessage(`Error moving card: ${error.message}`);
-      setTimeout(() => setSuccessMessage(''), 5000);
+      showToast(`Error moving card: ${error.message}`, TOAST_TYPES.ERROR);
     }
-  }, [inventory, onLoadInventory, setSuccessMessage]);
+  }, [inventory, onLoadInventory, showToast]);
 
   // Move card from deck to folder
   const moveCardFromDeckToFolder = async (deckCardData, targetFolder) => {
@@ -383,7 +424,7 @@ export const InventoryTab = ({
       const quantity = deckCardData.quantity_reserved;
       
       // Show the change immediately
-      setSuccessMessage(`Moved card to ${targetFolder}`);
+      showToast(`Moved card to ${targetFolder}`, TOAST_TYPES.SUCCESS);
       
       // First remove the card from the deck (which moves it to Uncategorized)
       const removeResponse = await fetch(`/api/deck-instances/${deckId}/remove-card`, {
@@ -414,12 +455,8 @@ export const InventoryTab = ({
       await new Promise(resolve => setTimeout(resolve, 100)); // Small delay to ensure state updates
       await loadDeckDetails(deckId, true);
       await refreshDeckInstances();
-      
-      setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error) {
-
-      setSuccessMessage(`Error: ${error.message}`);
-      setTimeout(() => setSuccessMessage(''), 5000);
+      showToast(`Error: ${error.message}`, TOAST_TYPES.ERROR);
     }
   };
 
@@ -433,9 +470,6 @@ export const InventoryTab = ({
       
       // Use attempted quantity if provided (for retries), otherwise use item's full quantity
       const qtyToUse = attemptQty !== null ? attemptQty : (inventoryItem.quantity || 1);
-      
-      // Show immediate feedback
-      setSuccessMessage(`Adding ${qtyToUse}x ${inventoryItem.name} to deck...`);
       
       // Make API call first (no optimistic update until success)
       const response = await fetch(`/api/deck-instances/${deckId}/add-card`, {
@@ -477,25 +511,22 @@ export const InventoryTab = ({
         }));
       }
       
-      setSuccessMessage(`Added ${qtyToUse}x ${inventoryItem.name} to deck`);
+      showToast(`Added ${qtyToUse}x ${inventoryItem.name} to deck`, TOAST_TYPES.SUCCESS);
       
       // Only refresh immediately if not called from auto-fill (which does its own refresh)
       if (!skipRefresh) {
         await refreshDeckInstances();
         debouncedLoadInventory();
-        setTimeout(() => setSuccessMessage(''), 3000);
       }
     } catch (error) {
-
-      setSuccessMessage(`Error: ${error.message}`);
-      setTimeout(() => setSuccessMessage(''), 5000);
+      showToast(`Error: ${error.message}`, TOAST_TYPES.ERROR);
     }
   };
 
   // Auto-fill a single card type from inventory (oldest and cheapest first)
   const autoFillSingleCard = async (decklistCard, needed, deckId) => {
     try {
-      setSuccessMessage(`Auto-filling ${needed}x ${decklistCard.name}...`);
+      showToast(`Auto-filling ${needed}x ${decklistCard.name}...`, TOAST_TYPES.INFO);
       
       // Find matching inventory items, sorted by date (oldest first) then price (cheapest first)
       const matchingItems = (inventory || [])
@@ -528,19 +559,16 @@ export const InventoryTab = ({
       await refreshDeckInstances();
       debouncedLoadInventory();
       await loadDeckDetails(deckId, true);
-      setSuccessMessage(`✅ Added ${added} item(s) to deck`);
-      setTimeout(() => setSuccessMessage(''), 3000);
+      showToast(`✅ Added ${added} item(s) to deck`, TOAST_TYPES.SUCCESS);
     } catch (error) {
-
-      setSuccessMessage(`Error: ${error.message}`);
-      setTimeout(() => setSuccessMessage(''), 5000);
+      showToast(`Error: ${error.message}`, TOAST_TYPES.ERROR);
     }
   };
 
   // Auto-fill missing cards from inventory (oldest and cheapest first)
   const autoFillMissingCards = async (deck, deckId) => {
     try {
-      setSuccessMessage('Auto-filling missing cards...');
+      showToast('Auto-filling missing cards...', TOAST_TYPES.INFO);
       
       // For each card in the decklist
       const cardsToAdd = [];
@@ -589,13 +617,10 @@ export const InventoryTab = ({
         await moveCardSkuToDeck(card, deckId);
       }
       
-      setSuccessMessage(`✅ Auto-filled ${cardsToAdd.length} card(s) into deck`);
+      showToast(`✅ Auto-filled ${cardsToAdd.length} card(s) into deck`, TOAST_TYPES.SUCCESS);
       await loadDeckDetails(deckId, true);
-      setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error) {
-
-      setSuccessMessage(`Error: ${error.message}`);
-      setTimeout(() => setSuccessMessage(''), 5000);
+      showToast(`Error: ${error.message}`, TOAST_TYPES.ERROR);
     }
   };
 
@@ -610,9 +635,6 @@ export const InventoryTab = ({
       const reservationId = deckCardData.id;
       const quantity = deckCardData.quantity_reserved;
       const inventoryItemId = deckCardData.inventory_item_id;
-      
-      // Show immediate feedback
-      setSuccessMessage(`Moving card to deck...`);
       
       // Remove from source deck
       const removeResponse = await fetch(`/api/deck-instances/${sourceDeckId}/remove-card`, {
@@ -643,91 +665,46 @@ export const InventoryTab = ({
       // Use debounced refresh for inventory
       debouncedLoadInventory();
       
-      setSuccessMessage(`Card moved to deck`);
-      setTimeout(() => setSuccessMessage(''), 3000);
+      showToast('Card moved to deck', TOAST_TYPES.SUCCESS);
     } catch (error) {
-
-      setSuccessMessage(`Error: ${error.message}`);
-      setTimeout(() => setSuccessMessage(''), 5000);
+      showToast(`Error: ${error.message}`, TOAST_TYPES.ERROR);
     }
   };
 
   // Initial load and refresh of deck instances
   useEffect(() => {
     refreshDeckInstances();
-  }, [deckRefreshTrigger]);
+  }, [deckRefreshTrigger, refreshDeckInstances]);
 
-  // Collapse all cards when switching tabs or folders
-  useEffect(() => {
-    setExpandedCards({});
-  }, [activeTab, selectedFolder]);
-
-  // Create folder on server
-  const addCreatedFolder = async (folderName) => {
-    const trimmedName = folderName.trim();
-    if (!createdFolders.includes(trimmedName)) {
-      try {
-        const response = await fetch('/api/folders', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: trimmedName, description: '' })
-        });
-        
-        if (response.ok) {
-          const updated = [...createdFolders, trimmedName];
-          setCreatedFolders(updated);
-          setOpenFolders([...openFolders, trimmedName]);
-        } else if (response.status === 409) {
-          // Folder already exists, just add to UI
-          setCreatedFolders([...createdFolders, trimmedName]);
-          setOpenFolders([...openFolders, trimmedName]);
-        }
-      } catch (error) {
-        console.error('Error creating folder:', error);
-      }
-    }
-  };
-  
-  // Filter inventory to exclude 0 qty items (memoized)
+  // Memoized data
   const filteredInventory = useMemo(() => {
     return inventory.filter(item => (item.quantity || 0) > 0);
   }, [inventory]);
 
-  // Group inventory by folder, then by card name (memoized)
   const groupedByFolder = useMemo(() => {
     return filteredInventory.reduce((acc, item) => {
       const folder = item.folder || 'Uncategorized';
-      if (!acc[folder]) {
-        acc[folder] = {};
-      }
-      if (!acc[folder][item.name]) {
-        acc[folder][item.name] = [];
-      }
+      if (!acc[folder]) acc[folder] = {};
+      if (!acc[folder][item.name]) acc[folder][item.name] = [];
       acc[folder][item.name].push(item);
       return acc;
     }, {});
   }, [filteredInventory]);
 
-  
-  // Legacy: group by card name for backwards compatibility (memoized)
   const groupedInventory = useMemo(() => {
     return filteredInventory.reduce((acc, item) => {
-      if (!acc[item.name]) {
-        acc[item.name] = [];
-      }
+      if (!acc[item.name]) acc[item.name] = [];
       acc[item.name].push(item);
       return acc;
     }, {});
   }, [filteredInventory]);
-  
-  // Memoize in-stock and out-of-stock card lists with search filtering (exclude 0 qty items)
+
   const { inStockCards, outOfStockCards } = useMemo(() => {
     const entries = Object.entries(groupedInventory);
     const inStock = entries.filter(([cardName, items]) => {
       const matchesSearch = inventorySearch === '' || cardName.toLowerCase().includes(inventorySearch.toLowerCase());
       const totalQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
-      const hasItems = items.some(item => (item.quantity || 0) > 0);
-      return matchesSearch && totalQty > 0 && hasItems;
+      return matchesSearch && totalQty > 0;
     });
     const outOfStock = entries.filter(([cardName, items]) => {
       const matchesSearch = inventorySearch === '' || cardName.toLowerCase().includes(inventorySearch.toLowerCase());
@@ -737,292 +714,34 @@ export const InventoryTab = ({
     return { inStockCards: inStock, outOfStockCards: outOfStock };
   }, [groupedInventory, inventorySearch]);
 
-  
-  // Render function for deck cards using same grid structure as inventory
-  const renderDeckCardGroup = ([cardName, items]) => {
-    const totalQty = items.reduce((sum, item) => sum + (item.quantity_reserved || 0), 0);
-    
-    const itemsForAvg = items;
-    let avgPrice = 0;
-    if (itemsForAvg.length > 0) {
-      const totalPrice = itemsForAvg.reduce((sum, item) => sum + (parseFloat(item.purchase_price) || 0), 0);
-      avgPrice = totalPrice / itemsForAvg.length;
-    }
-    
-    const totalValue = totalQty * avgPrice;
-    const formatTotal = (value) => {
-      return value >= 100 ? value.toFixed(0) : value.toFixed(2);
-    };
-    
-    const getStatFontSize = (value) => {
-      const strValue = String(value).length;
-      if (strValue <= 2) return 'text-[11px] md:text-[13px]';
-      if (strValue <= 3) return 'text-[10px] md:text-[11px]';
-      if (strValue <= 4) return 'text-[9px] md:text-[10px]';
-      return 'text-[8px] md:text-[9px]';
-    };
-    
-    const isExpanded = expandedCards[cardName];
-    
-    return (
-      <div key={cardName}>
-        {/* Card View */}
-        {viewMode === 'card' ? (
-        <div 
-          draggable
-          onDragStart={(e) => {
-            e.dataTransfer.effectAllowed = 'move';
-            const deckId = openDecks.find(id => `deck-${id}` === activeTab);
-            const deckCardData = {
-              ...items[0],
-              deck_id: deckId
-            };
-            e.dataTransfer.setData('deckCardData', JSON.stringify(deckCardData));
-          }}
-          className="relative bg-gradient-to-br from-slate-800 to-slate-900 border border-green-600 hover:border-green-400 rounded-lg p-4 transition-all flex flex-col h-36 md:h-40 hover:shadow-lg hover:shadow-green-500/20 cursor-grab active:cursor-grabbing group" 
-          onClick={() => setExpandedCards(isExpanded ? {} : {[cardName]: true})}
-        >
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              const deckId = openDecks.find(id => `deck-${id}` === activeTab);
-              items.forEach(item => removeCardFromDeck(deckId, item.id, item.quantity_reserved));
-            }}
-            className="absolute top-2 right-2 p-1.5 bg-slate-700/60 hover:bg-slate-600 text-slate-300 hover:text-red-400 rounded-lg transition-all opacity-0 group-hover:opacity-100 z-20"
-            title="Remove all from deck"
-          >
-            <X className="w-5 h-5" />
-          </button>
-          <div className="text-center px-1 cursor-pointer flex items-center justify-center gap-1 mb-1">
-            <h3 className="text-xs md:text-sm font-semibold text-slate-50 line-clamp-2 break-words flex-1">
-              {cardName.split('//')[0].trim()}
-            </h3>
-          </div>
-          
-          <div className="flex-1 flex items-center justify-center min-h-0 py-2">
-            <div className="text-center">
-              <div className="text-slate-400 text-[9px] md:text-xs font-semibold uppercase tracking-wider mb-1">Reserved</div>
-              <div className="text-2xl md:text-3xl font-bold text-green-400 leading-tight">{totalQty}</div>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-3 gap-2 text-center pt-2 border-t border-slate-700/50">
-            <div className="space-y-1">
-              <div className="text-slate-500 text-[7px] md:text-[9px] font-semibold uppercase">Reserved</div>
-              <div className="h-4 flex items-center justify-center">
-                <div className={`font-bold leading-none text-green-400 ${getStatFontSize(totalQty)}`}>{totalQty}</div>
-              </div>
-            </div>
-            <div className="space-y-1">
-              <div className="text-slate-500 text-[7px] md:text-[9px] font-semibold uppercase">Cost</div>
-              <div className="h-4 flex items-center justify-center">
-                <div className={`font-bold leading-none text-blue-300 ${getStatFontSize(avgPrice.toFixed(2))}`}>${avgPrice.toFixed(2)}</div>
-              </div>
-            </div>
-            <div className="space-y-1">
-              <div className="text-slate-500 text-[7px] md:text-[9px] font-semibold uppercase">Total</div>
-              <div className="h-4 flex items-center justify-center">
-                <div className={`font-bold leading-none text-amber-400 ${getStatFontSize(formatTotal(totalValue))}`}>${formatTotal(totalValue)}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-        ) : (
-        <div>
-          {/* List View */}
-          <div 
-            draggable
-            onDragStart={(e) => {
-              e.dataTransfer.effectAllowed = 'move';
-              const deckId = openDecks.find(id => `deck-${id}` === activeTab);
-              const deckCardData = {
-                ...items[0],
-                deck_id: deckId
-              };
-              e.dataTransfer.setData('deckCardData', JSON.stringify(deckCardData));
-            }}
-            className="relative bg-gradient-to-br from-slate-800 to-slate-900 border border-green-600 hover:border-green-400 rounded-lg p-4 transition-all cursor-grab active:cursor-grabbing hover:shadow-lg hover:shadow-green-500/20 group"
-            onClick={() => setExpandedCards(isExpanded ? {} : {[cardName]: true})}
-          >
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                const deckId = openDecks.find(id => `deck-${id}` === activeTab);
-                items.forEach(item => removeCardFromDeck(deckId, item.id, item.quantity_reserved));
-              }}
-              className="absolute top-3 right-3 p-1.5 bg-slate-700/60 hover:bg-slate-600 text-slate-300 hover:text-red-400 rounded-lg transition-all opacity-0 group-hover:opacity-100 z-20"
-              title="Remove all from deck"
-            >
-              <X className="w-5 h-5" />
-            </button>
-            <div className="flex items-center justify-between gap-6">
-              <div className="flex-1 min-w-0 cursor-pointer">
-                <div className="flex items-center gap-3">
-                  <h3 className="text-sm font-semibold text-slate-50 break-words">{cardName}</h3>
-                </div>
-                <div className="flex gap-6 text-xs mt-2">
-                  <div><span className="text-slate-400">Reserved:</span> <span className="ml-1 font-semibold text-green-400">{totalQty}</span></div>
-                  <div><span className="text-slate-400">Cost/ea:</span> <span className="ml-1 text-blue-300 font-semibold">${avgPrice.toFixed(2)}</span></div>
-                  <div><span className="text-slate-400">Total:</span> <span className="ml-1 text-amber-400 font-semibold">${formatTotal(totalValue)}</span></div>
-                </div>
-              </div>
-              <div className="text-green-400 text-sm flex-shrink-0 cursor-pointer">
-                {isExpanded ? '▼' : '▶'}
-              </div>
-            </div>
-          </div>
-
-          {isExpanded && (
-            <div className="bg-slate-800 rounded-lg border border-slate-600 p-3 shadow-lg mt-2">
-              <div className="flex flex-wrap gap-3">
-                {Object.values(
-                  items.reduce((acc, item) => {
-                    const setKey = `${item.set || 'unknown'}`;
-                    if (!acc[setKey]) {
-                      acc[setKey] = [];
-                    }
-                    acc[setKey].push(item);
-                    return acc;
-                  }, {})
-                ).map((setItems) => {
-                  const firstItem = setItems[0];
-                  const totalQtyInSet = setItems.reduce((sum, item) => sum + (item.quantity_reserved || 0), 0);
-                  const avgSetPrice = setItems.reduce((sum, item) => sum + (parseFloat(item.purchase_price) || 0), 0) / setItems.length;
-                  
-                  return (
-                    <div key={`${firstItem.set}-${firstItem.id}`} className="flex-1 min-w-[160px] bg-slate-700 rounded-lg p-2 border border-slate-500">
-                      <div className="space-y-1">
-                        <div className="flex justify-between items-center pb-1 border-b border-slate-500">
-                          <span className="text-xs font-bold text-green-300">{firstItem.set?.toUpperCase() || 'N/A'}</span>
-                          <span className="text-[9px] text-slate-400 bg-slate-600 px-1 py-0.5 rounded">{setItems.length}</span>
-                        </div>
-                        <div className="flex justify-between text-xs">
-                          <div><span className="text-slate-400">Qty: </span><span className="text-green-300 font-bold">{totalQtyInSet}</span></div>
-                          <div><span className="text-slate-400">Avg: </span><span className="text-blue-300 font-bold">${avgSetPrice.toFixed(2)}</span></div>
-                        </div>
-                        <div className="space-y-0.5 max-h-16 overflow-y-auto">
-                          {setItems.map((item) => (
-                            <div 
-                              key={item.id} 
-                              draggable
-                              onDragStart={(e) => {
-                                e.stopPropagation();
-                                e.dataTransfer.effectAllowed = 'move';
-                                const deckId = openDecks.find(id => `deck-${id}` === activeTab);
-                                const deckCardData = {
-                                  ...item,
-                                  deck_id: deckId
-                                };
-                                e.dataTransfer.setData('deckCardData', JSON.stringify(deckCardData));
-                              }}
-                              className="text-[9px] text-slate-300 bg-slate-600/50 rounded px-1.5 py-0.5 flex justify-between items-center group hover:bg-slate-600 transition-colors cursor-grab active:cursor-grabbing">
-                              <span>{item.quantity_reserved}x @ ${parseFloat(item.purchase_price || 0).toFixed(2)}</span>
-                              <div className="flex items-center gap-1">
-                                <span className="text-slate-400">{item.original_folder}</span>
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    const deckId = openDecks.find(id => `deck-${id}` === activeTab);
-                                    removeCardFromDeck(deckId, item.id);
-                                  }}
-                                  className="close-btn"
-                                >
-                                  <X className="w-3 h-3" />
-                                </button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-        </div>
-        )}
-        {isExpanded && viewMode === 'card' && (
-          <div className="bg-slate-800 rounded-lg border border-slate-600 p-3 shadow-lg mt-2">
-            <div className="flex flex-wrap gap-3">
-              {Object.values(
-                items.reduce((acc, item) => {
-                  const setKey = `${item.set || 'unknown'}`;
-                  if (!acc[setKey]) {
-                    acc[setKey] = [];
-                  }
-                  acc[setKey].push(item);
-                  return acc;
-                }, {})
-              ).map((setItems) => {
-                const firstItem = setItems[0];
-                const totalQtyInSet = setItems.reduce((sum, item) => sum + (item.quantity_reserved || 0), 0);
-                const avgSetPrice = setItems.reduce((sum, item) => sum + (parseFloat(item.purchase_price) || 0), 0) / setItems.length;
-                
-                return (
-                  <div key={`${firstItem.set}-${firstItem.id}`} className="flex-1 min-w-[160px] bg-slate-700 rounded-lg p-2 border border-slate-500">
-                    <div className="space-y-1">
-                      <div className="flex justify-between items-center pb-1 border-b border-slate-500">
-                        <span className="text-xs font-bold text-green-300">{firstItem.set?.toUpperCase() || 'N/A'}</span>
-                        <span className="text-[9px] text-slate-400 bg-slate-600 px-1 py-0.5 rounded">{setItems.length}</span>
-                      </div>
-                      <div className="flex justify-between text-xs">
-                        <div><span className="text-slate-400">Qty: </span><span className="text-green-300 font-bold">{totalQtyInSet}</span></div>
-                        <div><span className="text-slate-400">Avg: </span><span className="text-blue-300 font-bold">${avgSetPrice.toFixed(2)}</span></div>
-                      </div>
-                      <div className="space-y-0.5 max-h-16 overflow-y-auto">
-                        {setItems.map((item) => (
-                          <div 
-                            key={item.id} 
-                            draggable
-                            onDragStart={(e) => {
-                              e.stopPropagation();
-                              e.dataTransfer.effectAllowed = 'move';
-                              const deckId = openDecks.find(id => `deck-${id}` === activeTab);
-                              const deckCardData = {
-                                ...item,
-                                deck_id: deckId
-                              };
-                              e.dataTransfer.setData('deckCardData', JSON.stringify(deckCardData));
-                            }}
-                            className="text-[9px] text-slate-300 bg-slate-600/50 rounded px-1.5 py-0.5 flex justify-between items-center group hover:bg-slate-600 transition-colors cursor-grab active:cursor-grabbing">
-                            <span>{item.quantity_reserved}x @ ${parseFloat(item.purchase_price || 0).toFixed(2)}</span>
-                            <div className="flex items-center gap-1">
-                              <span className="text-slate-400">{item.original_folder}</span>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  const deckId = openDecks.find(id => `deck-${id}` === activeTab);
-                                  removeCardFromDeck(deckId, item.id, item.quantity_reserved);
-                                }}
-                                className="close-btn"
-                              >
-                                <X className="w-3 h-3" />
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-      </div>
-    );
+  // Common CardGrid props
+  const cardGridProps = {
+    viewMode,
+    expandedCards,
+    setExpandedCards,
+    editingId,
+    editForm,
+    setEditForm,
+    startEditingItem,
+    updateInventoryItem,
+    deleteInventoryItem,
+    createdFolders,
+    onToggleLowInventory: toggleAlertHandler,
+    onSetThreshold: setThresholdHandler
   };
+
+  // Get current deck for deck detail view
+  const currentDeckId = openDecks.find(id => `deck-${id}` === activeTab);
+  const currentDeck = deckInstances.find(d => d.id === currentDeckId);
+  const currentDeckDetails = deckDetailsCache[currentDeckId];
 
   return (
     <div className="flex gap-6 min-h-screen bg-slate-900 max-w-7xl mx-auto w-full">
+      {/* Error Message Toast */}
       {successMessage && successMessage.includes('Error') && (
         <div className="fixed top-4 right-4 z-50 rounded-lg p-4 border flex items-center justify-between bg-red-900 bg-opacity-30 border-red-500 text-red-200">
           <span>{successMessage}</span>
-          <button
-            onClick={() => setSuccessMessage('')}
-            className="ml-4 text-current hover:opacity-70"
-          >
+          <button onClick={() => setSuccessMessage('')} className="ml-4 text-current hover:opacity-70">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -1071,8 +790,7 @@ export const InventoryTab = ({
                     setNewFolderName('');
                     setShowCreateFolder(false);
                     setSelectedFolder(newFolderName.trim());
-                    setSuccessMessage(`Folder "${newFolderName.trim()}" created!`);
-                    setTimeout(() => setSuccessMessage(''), 3000);
+                    showToast(`Folder "${newFolderName.trim()}" created!`, TOAST_TYPES.SUCCESS);
                   }
                   if (e.key === 'Escape') {
                     setNewFolderName('');
@@ -1088,8 +806,7 @@ export const InventoryTab = ({
                       setNewFolderName('');
                       setShowCreateFolder(false);
                       setSelectedFolder(newFolderName.trim());
-                      setSuccessMessage(`Folder "${newFolderName.trim()}" created!`);
-                      setTimeout(() => setSuccessMessage(''), 3000);
+                      showToast(`Folder "${newFolderName.trim()}" created!`, TOAST_TYPES.SUCCESS);
                     }
                   }}
                   className="flex-1 bg-teal-600 hover:bg-teal-700 text-white px-3 py-1 rounded text-xs font-semibold transition-colors"
@@ -1267,7 +984,7 @@ export const InventoryTab = ({
                     onClick={() => openDeckTab(deck)}
                     onDragOver={(e) => {
                       e.preventDefault();
-                      this?.classList?.add('bg-green-700/60', 'border-green-300');
+                      e.currentTarget.classList.add('bg-green-700/60', 'border-green-300');
                     }}
                     onDragLeave={(e) => {
                       e.currentTarget?.classList?.remove('bg-green-700/60', 'border-green-300');
@@ -1357,723 +1074,132 @@ export const InventoryTab = ({
         />
       )}
 
-      {/* RIGHT CONTENT - Cards or Deck Details */}
+      {/* Main Content */}
       <div className="flex-1 pb-24 md:pb-6 px-4 md:px-8 md:ml-0 pt-16">
-        {/* Search Bar */}
-        <div className="mb-8 px-1 md:px-0">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search cards..."
-              value={inventorySearch}
-              onChange={(e) => setInventorySearch(e.target.value)}
-              className="w-full px-5 py-3.5 md:py-3 bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 hover:border-teal-500 focus:border-teal-400 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-opacity-30 transition-all duration-300 font-medium shadow-lg shadow-slate-900/50 text-base md:text-sm"
-            />
-            <svg className="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-          </div>
-        </div>
+        <InventorySearchBar
+          inventorySearch={inventorySearch}
+          setInventorySearch={setInventorySearch}
+        />
 
-        {/* Tabs and View Mode */}
-        <div className="flex flex-col md:flex-row gap-3 md:gap-4 mb-6 md:mb-8 border-b border-slate-700 pb-4 items-start md:items-center justify-between">
-          <div className="flex gap-1 w-full md:w-auto overflow-x-auto flex-wrap bg-slate-800/50 rounded-lg p-1 md:p-1.5 border border-slate-700">
-            <button
-              onClick={() => { setActiveTab('all'); setSidebarOpen(false); }}
-              className={`px-4 py-2 text-sm md:text-base font-medium transition-all duration-300 whitespace-nowrap rounded-lg ${
-                activeTab === 'all'
-                  ? 'bg-gradient-to-r from-teal-600 to-teal-700 text-white shadow-lg shadow-teal-500/30'
-                  : 'text-slate-300 hover:text-slate-100 hover:bg-slate-700/30'
-              }`}
-            >
-              All Cards
-            </button>
-            <button
-              onClick={() => { setActiveTab('unsorted'); setSidebarOpen(false); }}
-              className={`px-4 py-2 text-sm md:text-base font-medium transition-all duration-300 whitespace-nowrap rounded-lg ${
-                activeTab === 'unsorted'
-                  ? 'bg-gradient-to-r from-teal-600 to-teal-700 text-white shadow-lg shadow-teal-500/30'
-                  : 'text-slate-300 hover:text-slate-100 hover:bg-slate-700/30'
-              }`}
-            >
-              Unsorted
-            </button>
-            
-            {/* Folder Tabs */}
-            {openFolders.map((folderName, index) => (
-              <div 
-                key={`folder-tab-${folderName}`}
-                className="flex items-center group"
-                draggable
-                onDragStart={(e) => {
-                  setDraggedTabData({type: 'folder', index});
-                  e.dataTransfer.effectAllowed = 'move';
-                }}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  if (draggedTabData?.type === 'folder') {
-                    e.currentTarget.classList.add('opacity-50');
-                  }
-                }}
-                onDragLeave={(e) => {
-                  e.currentTarget.classList.remove('opacity-50');
-                }}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  e.currentTarget.classList.remove('opacity-50');
-                  if (draggedTabData?.type === 'folder') {
-                    reorderTabs('folder', draggedTabData.index, index);
-                    setDraggedTabData(null);
-                  }
-                }}
-              >
-                <button
-                  type="button"
-                  onClick={() => setActiveTab(folderName)}
-                  className={`px-4 py-2 text-sm md:text-base font-medium transition-all duration-300 whitespace-nowrap cursor-grab active:cursor-grabbing rounded-lg ${
-                    activeTab === folderName
-                      ? 'bg-gradient-to-r from-cyan-600 to-teal-600 text-white shadow-lg shadow-cyan-500/30'
-                      : 'text-slate-300 hover:text-slate-100 hover:bg-slate-700/30'
-                  }`}
-                >
-                  📁 {folderName}
-                </button>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    const remaining = openFolders.filter(f => f !== folderName);
-                    setOpenFolders(remaining);
-                    if (activeTab === folderName) {
-                      setActiveTab('all');
-                    }
-                  }}
-                  className="ml-1 close-btn fade-in-btn"
-                  title="Close folder"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            ))}
-
-            {/* Deck Tabs */}
-            {openDecks.map((deckId, index) => {
-              const deck = deckInstances.find(d => d.id === deckId);
-              if (!deck) return null;
-              return (
-                <div 
-                  key={`deck-tab-${deckId}`} 
-                  className="flex items-center"
-                  draggable
-                  onDragStart={(e) => {
-                    setDraggedTabData({type: 'deck', index});
-                    e.dataTransfer.effectAllowed = 'move';
-                  }}
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    if (draggedTabData?.type === 'deck') {
-                      e.currentTarget.classList.add('opacity-50');
-                    }
-                  }}
-                  onDragLeave={(e) => {
-                    e.currentTarget.classList.remove('opacity-50');
-                  }}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    e.currentTarget.classList.remove('opacity-50');
-                    if (draggedTabData?.type === 'deck') {
-                      reorderTabs('deck', draggedTabData.index, index);
-                      setDraggedTabData(null);
-                    }
-                  }}
-                >
-                  <button
-                    onClick={() => setActiveTab(`deck-${deckId}`)}
-                    className={`px-4 py-2 text-sm md:text-base font-medium transition-all duration-300 whitespace-nowrap cursor-grab active:cursor-grabbing rounded-lg ${
-                      activeTab === `deck-${deckId}`
-                        ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg shadow-green-500/30'
-                        : 'text-slate-300 hover:text-slate-100 hover:bg-slate-700/30'
-                    }`}
-                  >
-                    {deck.name}
-                  </button>
-                  <button
-                    onClick={() => closeDeckTab(deckId)}
-                    className="ml-1 close-btn"
-                    title="Close deck"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-          
-          {/* View Mode Toggle */}
-          <div className="flex gap-1 bg-slate-800/50 rounded-lg p-1.5 border border-slate-700">
-            <button
-              onClick={() => setViewMode('card')}
-              className={`p-2 rounded-lg transition-all duration-300 ${
-                viewMode === 'card'
-                  ? 'bg-gradient-to-br from-teal-600 to-teal-700 text-white shadow-lg shadow-teal-500/30'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/30'
-              }`}
-              title="Card View"
-            >
-              <Grid3X3 className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setViewMode('list')}
-              className={`p-2 rounded-lg transition-all duration-300 ${
-                viewMode === 'list'
-                  ? 'bg-gradient-to-br from-teal-600 to-teal-700 text-white shadow-lg shadow-teal-500/30'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/30'
-              }`}
-              title="List View"
-            >
-              <List className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
+        <InventoryTabs
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          openFolders={openFolders}
+          setOpenFolders={setOpenFolders}
+          openDecks={openDecks}
+          deckInstances={deckInstances}
+          closeDeckTab={closeDeckTab}
+          viewMode={viewMode}
+          setViewMode={setViewMode}
+          setSidebarOpen={setSidebarOpen}
+          draggedTabData={draggedTabData}
+          setDraggedTabData={setDraggedTabData}
+          reorderTabs={reorderTabs}
+        />
 
         {/* Deck Details View */}
-        {activeTab.startsWith('deck-') && deckDetailsCache[openDecks.find(id => `deck-${id}` === activeTab)] && (
-          <div className="space-y-4">
-            {(() => {
-              const deckId = openDecks.find(id => `deck-${id}` === activeTab);
-              const deck = deckInstances.find(d => d.id === deckId);
-              const deckDetails = deckDetailsCache[deckId];
-              if (!deck || !deckDetails) return null;
-
-              // Calculate actual missing cards based on decklist
-              const decklistTotal = (deck.cards || []).reduce((sum, c) => sum + (c.quantity || 1), 0);
-              const actualMissingCount = Math.max(0, decklistTotal - (deckDetails.reservedCount || 0));
-
-              // Group reservations by card name for grid view
-              const groupedReservations = (deckDetails.reservations || []).reduce((acc, res) => {
-                const cardName = res.name;
-                if (!acc[cardName]) {
-                  acc[cardName] = [];
-                }
-                acc[cardName].push(res);
-                return acc;
-              }, {});
-              const reservationEntries = Object.entries(groupedReservations).filter(([cardName]) => 
-                inventorySearch === '' || cardName.toLowerCase().includes(inventorySearch.toLowerCase())
-              );
-
-              return (
-                <div 
-                  className="space-y-4"
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    e.currentTarget.classList.add('opacity-50');
-                  }}
-                  onDragLeave={(e) => {
-                    e.currentTarget.classList.remove('opacity-50');
-                  }}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    e.currentTarget.classList.remove('opacity-50');
-                    try {
-                      const skuData = JSON.parse(e.dataTransfer.getData('skuData'));
-                      moveCardSkuToDeck(skuData, deckId);
-                    } catch (err) {
-
-                    }
-                  }}
-                >
-                  {/* Deck Header */}
-                  <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/50 rounded-lg border border-slate-600 hover:border-green-500/50 p-3 transition-all duration-300 shadow-lg shadow-slate-900/50">
-                    <div className="flex justify-between items-start gap-3">
-                      <div className="flex-1">
-                        <div className="flex items-baseline gap-3 mb-1.5 flex-wrap">
-                          <h2 className="text-xl font-bold text-green-300">{deck.name}</h2>
-                          <span className="text-xs font-medium px-2 py-1 bg-green-900/40 text-green-300 rounded">{deck.format}</span>
-                        </div>
-                        {deckDetails.originalDecklist && (
-                          <p className="text-xs text-cyan-400 mb-1">
-                            From: <span className="font-semibold">{deckDetails.originalDecklist.name}</span> ({deckDetails.originalDecklist.cardCount} cards)
-                          </p>
-                        )}
-                        <div className="flex flex-wrap gap-4 text-xs">
-                          {deckDetails.totalCost > 0 && (
-                            <span className="text-green-400 font-semibold">💰 ${deckDetails.totalCost?.toFixed(2) || '0.00'}</span>
-                          )}
-                          <span className="text-slate-400">
-                            ✅ {deckDetails.reservedCount} reserved
-                            {deckDetails.extraCount > 0 && <span className="text-blue-400"> • +{deckDetails.extraCount} extra</span>}
-                            {deckDetails.missingCount > 0 && <span className="text-yellow-400"> • {deckDetails.missingCount} missing</span>}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex gap-1.5">
-                        <button
-                          onClick={() => autoFillMissingCards(deck, deck.id)}
-                          className="bg-gradient-to-br from-teal-600 to-teal-700 hover:from-teal-500 hover:to-teal-600 text-white p-2 rounded-lg transition-all duration-200 hover:shadow-lg hover:shadow-teal-500/30 flex items-center"
-                          title="Auto-fill missing cards from inventory (oldest & cheapest first)"
-                        >
-                          <Wand2 className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => {
-                            setSellModalData({
-                              itemType: 'deck',
-                              itemId: deck.id,
-                              itemName: deck.name,
-                              purchasePrice: parseFloat(deckDetails.totalCost) || 0
-                            });
-                            setShowSellModal(true);
-                          }}
-                          className="bg-gradient-to-br from-green-600 to-green-700 hover:from-green-500 hover:to-green-600 text-white p-2 rounded-lg transition-all duration-200 hover:shadow-lg hover:shadow-green-500/30 flex items-center"
-                          title="Sell deck and track profit"
-                        >
-                          <DollarSign className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => releaseDeck(deck.id)}
-                          className="bg-gradient-to-br from-slate-700 to-slate-800 hover:from-red-600 hover:to-red-700 text-slate-300 hover:text-white p-2 rounded-lg transition-all duration-200 hover:shadow-lg hover:shadow-red-500/30 flex items-center"
-                          title="Delete deck and return cards to unsorted"
-                        >
-                          <Trash2 className="w-5 h-5" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Reserved Cards Grid */}
-                  {reservationEntries.length > 0 && (
-                    <div>
-                      <h3 className="text-sm font-semibold px-3 py-2 rounded-lg bg-gradient-to-r from-green-600/30 to-green-700/20 border border-green-600/40 text-green-300 mb-3">✅ Reserved Cards ({deckDetails.reservedCount})</h3>
-                      {viewMode === 'card' ? (
-                        <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-3">
-                          {reservationEntries.map(renderDeckCardGroup)}
-                        </div>
-                      ) : (
-                        <div className="space-y-1.5">
-                          {reservationEntries.map(renderDeckCardGroup)}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Missing Cards */}
-                  {actualMissingCount > 0 && (
-                    <div>
-                      <button
-                        onClick={() => setExpandedMissingCards(prev => ({
-                          ...prev,
-                          [deckId]: !prev[deckId]
-                        }))}
-                        className="w-full flex items-center justify-between p-2.5 bg-gradient-to-r from-yellow-600/20 to-yellow-700/10 hover:from-yellow-600/30 hover:to-yellow-700/20 rounded-lg transition-all duration-300 border border-yellow-600/40"
-                      >
-                        <h3 className="text-sm font-semibold text-yellow-300">❌ Missing Cards ({actualMissingCount})</h3>
-                        <ChevronDown className={`w-5 h-5 text-yellow-400 transition-transform ${expandedMissingCards[deckId] ? 'rotate-180' : ''}`} />
-                      </button>
-                      {expandedMissingCards[deckId] && (
-                        <div className="bg-slate-900 rounded-b-lg p-3 space-y-2 max-h-48 overflow-y-auto mt-2">
-                          <div className="text-sm text-slate-300 p-2">
-                            <div className="mb-2 font-semibold text-teal-300">Cards needed to complete this deck:</div>
-                            {(deck.cards || []).map((card, idx) => {
-                              // Find how many of this card are reserved
-                              const reservedQty = (deckDetails.reservations || [])
-                                .filter(r => r.name.toLowerCase() === card.name.toLowerCase())
-                                .reduce((sum, r) => sum + parseInt(r.quantity_reserved || 0), 0);
-                              const needed = Math.max(0, (card.quantity || 1) - reservedQty);
-                              if (needed === 0) return null;
-                              const matchesSearch = inventorySearch === '' || card.name.toLowerCase().includes(inventorySearch.toLowerCase());
-                              if (!matchesSearch) return null;
-                              return (
-                                <div key={idx} className="flex justify-between items-center text-sm bg-slate-800 p-2 rounded mb-1">
-                                  <div className="flex-1">
-                                    <span className="text-white">{needed}x {card.name}</span>
-                                    <span className="text-xs text-slate-500 ml-2">{card.set || 'Unknown'}</span>
-                                  </div>
-                                  <button
-                                    onClick={() => autoFillSingleCard(card, needed, deck.id)}
-                                    className="bg-teal-600 hover:bg-teal-500 text-white p-1 rounded transition-colors flex items-center ml-2"
-                                    title="Auto-fill this card from inventory"
-                                  >
-                                    <Wand2 className="w-3 h-3" />
-                                  </button>
-                                </div>
-                              );
-                            }).filter(Boolean)}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
-          </div>
+        {activeTab.startsWith('deck-') && currentDeckDetails && (
+          <DeckDetailView
+            deck={currentDeck}
+            deckDetails={currentDeckDetails}
+            viewMode={viewMode}
+            inventorySearch={inventorySearch}
+            expandedCards={expandedCards}
+            setExpandedCards={setExpandedCards}
+            expandedMissingCards={expandedMissingCards}
+            setExpandedMissingCards={setExpandedMissingCards}
+            openDecks={openDecks}
+            activeTab={activeTab}
+            removeCardFromDeck={removeCardFromDeck}
+            autoFillMissingCards={autoFillMissingCards}
+            autoFillSingleCard={autoFillSingleCard}
+            releaseDeck={releaseDeck}
+            moveCardSkuToDeck={moveCardSkuToDeck}
+            setSellModalData={setSellModalData}
+            setShowSellModal={setShowSellModal}
+          />
         )}
 
         {/* Regular Inventory View */}
         {!activeTab.startsWith('deck-') && (
           <div className={viewMode === 'card' ? 'space-y-4' : 'space-y-2'}>
-          {activeTab === 'all' ? (
-            /* Show all cards - masterlist */
-            Object.keys(groupedInventory).length > 0 ? (
-              <>
-                {viewMode === 'card' ? (
-                  <>
-                    <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-3">
-                      {inStockCards.map(([cardName, items]) => (
-                        <CardGroup
-                          key={cardName}
-                          cardName={cardName}
-                          items={items}
-                          viewMode={viewMode}
-                          expandedCards={expandedCards}
-                          setExpandedCards={setExpandedCards}
-                          editingId={editingId}
-                          editForm={editForm}
-                          setEditForm={setEditForm}
-                          startEditingItem={startEditingItem}
-                          updateInventoryItem={updateInventoryItem}
-                          deleteInventoryItem={deleteInventoryItem}
-                          createdFolders={createdFolders}
-                          onToggleLowInventory={toggleAlertHandler}
-                          onSetThreshold={setThresholdHandler}
-                        />
-                      ))}
-                    </div>
-                    {inStockCards.length > 0 && outOfStockCards.length > 0 && (
-                      <div className="border-t border-slate-700 pt-4">
-                        <h3 className="text-sm font-semibold text-slate-400 mb-3">Out of Stock</h3>
-                        <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-3">
-                          {outOfStockCards.map(([cardName, items]) => (
-                            <CardGroup
-                              key={cardName}
-                              cardName={cardName}
-                              items={items}
-                              viewMode={viewMode}
-                              expandedCards={expandedCards}
-                              setExpandedCards={setExpandedCards}
-                              editingId={editingId}
-                              editForm={editForm}
-                              setEditForm={setEditForm}
-                              startEditingItem={startEditingItem}
-                              updateInventoryItem={updateInventoryItem}
-                              deleteInventoryItem={deleteInventoryItem}
-                              createdFolders={createdFolders}
-                              onToggleLowInventory={toggleAlertHandler}
-                              onSetThreshold={setThresholdHandler}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {outOfStockCards.length > 0 && inStockCards.length === 0 && (
-                      <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-3">
-                        {outOfStockCards.map(([cardName, items]) => (
-                          <CardGroup
-                            key={cardName}
-                            cardName={cardName}
-                            items={items}
-                            viewMode={viewMode}
-                            expandedCards={expandedCards}
-                            setExpandedCards={setExpandedCards}
-                            editingId={editingId}
-                            editForm={editForm}
-                            setEditForm={setEditForm}
-                            startEditingItem={startEditingItem}
-                            updateInventoryItem={updateInventoryItem}
-                            deleteInventoryItem={deleteInventoryItem}
-                            createdFolders={createdFolders}
-                            onToggleLowInventory={toggleAlertHandler}
-                            onSetThreshold={setThresholdHandler}
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    <div className="space-y-2">
-                      {inStockCards.map(([cardName, items]) => (
-                        <CardGroup
-                          key={cardName}
-                          cardName={cardName}
-                          items={items}
-                          viewMode={viewMode}
-                          expandedCards={expandedCards}
-                          setExpandedCards={setExpandedCards}
-                          editingId={editingId}
-                          editForm={editForm}
-                          setEditForm={setEditForm}
-                          startEditingItem={startEditingItem}
-                          updateInventoryItem={updateInventoryItem}
-                          deleteInventoryItem={deleteInventoryItem}
-                          createdFolders={createdFolders}
-                          onToggleLowInventory={toggleAlertHandler}
-                          onSetThreshold={setThresholdHandler}
-                        />
-                      ))}
-                    </div>
-                    {inStockCards.length > 0 && outOfStockCards.length > 0 && (
-                      <div className="border-t border-slate-700 pt-4">
-                        <h3 className="text-sm font-semibold text-slate-400 mb-2">Out of Stock</h3>
-                        <div className="space-y-2">
-                          {outOfStockCards.map(([cardName, items]) => (
-                            <CardGroup
-                              key={cardName}
-                              cardName={cardName}
-                              items={items}
-                              viewMode={viewMode}
-                              expandedCards={expandedCards}
-                              setExpandedCards={setExpandedCards}
-                              editingId={editingId}
-                              editForm={editForm}
-                              setEditForm={setEditForm}
-                              startEditingItem={startEditingItem}
-                              updateInventoryItem={updateInventoryItem}
-                              deleteInventoryItem={deleteInventoryItem}
-                              createdFolders={createdFolders}
-                              onToggleLowInventory={toggleAlertHandler}
-                              onSetThreshold={setThresholdHandler}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {outOfStockCards.length > 0 && inStockCards.length === 0 && (
-                      <div className="space-y-2">
-                        {outOfStockCards.map(([cardName, items]) => (
-                          <CardGroup
-                            key={cardName}
-                            cardName={cardName}
-                            items={items}
-                            viewMode={viewMode}
-                            expandedCards={expandedCards}
-                            setExpandedCards={setExpandedCards}
-                            editingId={editingId}
-                            editForm={editForm}
-                            setEditForm={setEditForm}
-                            startEditingItem={startEditingItem}
-                            updateInventoryItem={updateInventoryItem}
-                            deleteInventoryItem={deleteInventoryItem}
-                            createdFolders={createdFolders}
-                            onToggleLowInventory={toggleAlertHandler}
-                            onSetThreshold={setThresholdHandler}
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </>
-                )}
-              </>
-            ) : (
-              <p className="text-slate-400 text-center py-12">No cards in inventory yet. Add some from the Imports tab!</p>
-            )
-          ) : activeTab === 'unsorted' ? (
-            /* Show unsorted cards */
-            groupedByFolder['Uncategorized'] && Object.keys(groupedByFolder['Uncategorized']).length > 0 ? (
-              viewMode === 'card' ? (
-                <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-3">
-                  {Object.entries(groupedByFolder['Uncategorized']).filter(([cardName]) => inventorySearch === '' || cardName.toLowerCase().includes(inventorySearch.toLowerCase())).map(([cardName, items]) => (
-                    <CardGroup
-                      key={cardName}
-                      cardName={cardName}
-                      items={items}
-                      viewMode={viewMode}
-                      expandedCards={expandedCards}
-                      setExpandedCards={setExpandedCards}
-                      editingId={editingId}
-                      editForm={editForm}
-                      setEditForm={setEditForm}
-                      startEditingItem={startEditingItem}
-                      updateInventoryItem={updateInventoryItem}
-                      deleteInventoryItem={deleteInventoryItem}
-                      createdFolders={createdFolders}
-                      onToggleLowInventory={toggleAlertHandler}
-                      onSetThreshold={setThresholdHandler}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {Object.entries(groupedByFolder['Uncategorized']).filter(([cardName]) => inventorySearch === '' || cardName.toLowerCase().includes(inventorySearch.toLowerCase())).map(([cardName, items]) => (
-                    <CardGroup
-                      key={cardName}
-                      cardName={cardName}
-                      items={items}
-                      viewMode={viewMode}
-                      expandedCards={expandedCards}
-                      setExpandedCards={setExpandedCards}
-                      editingId={editingId}
-                      editForm={editForm}
-                      setEditForm={setEditForm}
-                      startEditingItem={startEditingItem}
-                      updateInventoryItem={updateInventoryItem}
-                      deleteInventoryItem={deleteInventoryItem}
-                      createdFolders={createdFolders}
-                      onToggleLowInventory={toggleAlertHandler}
-                      onSetThreshold={setThresholdHandler}
-                    />
-                  ))}
-                </div>
-              )
-            ) : (
-              <p className="text-slate-400 text-center py-12">No unsorted cards.</p>
-            )
-          ) : createdFolders.includes(activeTab) || Object.keys(groupedByFolder).includes(activeTab) ? (
-            /* Show folder's cards - only include in-stock cards */
-            (() => {
-              const folderData = groupedByFolder[activeTab] || {};
-              const folderCards = Object.entries(folderData).filter(([cardName, items]) => {
-                const matchesSearch = inventorySearch === '' || cardName.toLowerCase().includes(inventorySearch.toLowerCase());
-                const totalQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
-                const reservedQty = items.reduce((sum, item) => sum + (parseInt(item.reserved_quantity) || 0), 0);
-                return matchesSearch && (totalQty - reservedQty) > 0;
-              });
-              // Count all cards in folder that have available quantity
-              const availableCardsStats = Object.entries(folderData).reduce((acc, [_, items]) => {
-                const totalQty = items.reduce((s, item) => s + (item.quantity || 0), 0);
-                const reservedQty = items.reduce((s, item) => s + (parseInt(item.reserved_quantity) || 0), 0);
-                const availableQty = totalQty - reservedQty;
-                if (availableQty > 0) {
-                  acc.uniqueCount++;
-                  acc.totalCount += availableQty;
-                  acc.totalCost += items.reduce((s, item) => s + ((item.purchase_price || 0) * (item.quantity || 0)), 0);
-                }
-                return acc;
-              }, { uniqueCount: 0, totalCount: 0, totalCost: 0 });
-              const uniqueCards = availableCardsStats.uniqueCount;
-              const totalCards = availableCardsStats.totalCount;
-              const totalCost = availableCardsStats.totalCost;
-              const folderDesc = folderMetadata[activeTab]?.description || '';
-              
-              return (
+            {activeTab === 'all' ? (
+              Object.keys(groupedInventory).length > 0 ? (
                 <>
-                  {/* Folder Header Box */}
-                  <div className="bg-slate-800 rounded-lg border border-slate-600 p-4 mb-4">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <h2 className="text-2xl font-bold text-teal-300">{activeTab}</h2>
-                        {editingFolderName === activeTab ? (
-                          <input
-                            type="text"
-                            value={editingFolderDesc}
-                            onChange={(e) => setEditingFolderDesc(e.target.value)}
-                            onBlur={() => {
-                              setFolderMetadata(prev => ({...prev, [activeTab]: {description: editingFolderDesc}}));
-                              setEditingFolderName(null);
-                            }}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                setFolderMetadata(prev => ({...prev, [activeTab]: {description: editingFolderDesc}}));
-                                setEditingFolderName(null);
-                              }
-                            }}
-                            placeholder="Add folder description..."
-                            className="w-full mt-1 px-2 py-1 bg-slate-700 border border-slate-600 rounded text-slate-300 placeholder-slate-500 focus:outline-none focus:border-teal-400"
-                            autoFocus
-                          />
-                        ) : (
-                          <p 
-                            onClick={() => {
-                              setEditingFolderName(activeTab);
-                              setEditingFolderDesc(folderDesc);
-                            }}
-                            className="text-sm text-slate-400 mt-1 cursor-pointer hover:text-slate-300 transition-colors"
-                          >
-                            {folderDesc || 'Click to add description...'}
-                          </p>
-                        )}
-                        <div className="flex gap-4 mt-3 text-sm">
-                          <div>
-                            <span className="text-slate-400">Cards: </span>
-                            <span className="font-semibold text-slate-200">{totalCards}</span>
-                          </div>
-                          <div>
-                            <span className="text-slate-400">Unique: </span>
-                            <span className="font-semibold text-slate-200">{uniqueCards}</span>
-                          </div>
-                          <div>
-                            <span className="text-slate-400">Total Cost: </span>
-                            <span className="font-semibold text-green-400">${totalCost.toFixed(2)}</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => {
-                            setSellModalData({
-                              itemType: 'folder',
-                              itemId: null,
-                              itemName: activeTab,
-                              purchasePrice: totalCost
-                            });
-                            setShowSellModal(true);
-                          }}
-                          className="bg-green-600 hover:bg-green-500 text-white p-2 rounded transition-colors flex items-center"
-                          title="Sell this folder"
-                        >
-                          <DollarSign className="w-4 h-4" />
-                        </button>
-                      </div>
+                  <CardGrid cards={inStockCards} {...cardGridProps} />
+                  {inStockCards.length > 0 && outOfStockCards.length > 0 && (
+                    <div className="border-t border-slate-700 pt-4">
+                      <h3 className="text-sm font-semibold text-slate-400 mb-3">Out of Stock</h3>
+                      <CardGrid cards={outOfStockCards} {...cardGridProps} />
                     </div>
-                  </div>
-                  {folderCards.length > 0 ? (
-                    viewMode === 'card' ? (
-                      <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-3">
-                        {folderCards.map(([cardName, items]) => (
-                          <CardGroup
-                            key={cardName}
-                            cardName={cardName}
-                            items={items}
-                            viewMode={viewMode}
-                            expandedCards={expandedCards}
-                            setExpandedCards={setExpandedCards}
-                            editingId={editingId}
-                            editForm={editForm}
-                            setEditForm={setEditForm}
-                            startEditingItem={startEditingItem}
-                            updateInventoryItem={updateInventoryItem}
-                            deleteInventoryItem={deleteInventoryItem}
-                            createdFolders={createdFolders}
-                            onToggleLowInventory={toggleAlertHandler}
-                            onSetThreshold={setThresholdHandler}
-                          />
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        {folderCards.map(([cardName, items]) => (
-                          <CardGroup
-                            key={cardName}
-                            cardName={cardName}
-                            items={items}
-                            viewMode={viewMode}
-                            expandedCards={expandedCards}
-                            setExpandedCards={setExpandedCards}
-                            editingId={editingId}
-                            editForm={editForm}
-                            setEditForm={setEditForm}
-                            startEditingItem={startEditingItem}
-                            updateInventoryItem={updateInventoryItem}
-                            deleteInventoryItem={deleteInventoryItem}
-                            createdFolders={createdFolders}
-                            onToggleLowInventory={toggleAlertHandler}
-                            onSetThreshold={setThresholdHandler}
-                          />
-                        ))}
-                      </div>
-                    )
-                  ) : (
-                    <p className="text-slate-400 text-center py-12">No cards in this folder.</p>
+                  )}
+                  {outOfStockCards.length > 0 && inStockCards.length === 0 && (
+                    <CardGrid cards={outOfStockCards} {...cardGridProps} />
                   )}
                 </>
-              );
-            })()
-          ) : (
-            <p className="text-slate-400 text-center py-12">Select a view to display cards.</p>
-          )}
+              ) : (
+                <p className="text-slate-400 text-center py-12">No cards in inventory yet. Add some from the Imports tab!</p>
+              )
+            ) : activeTab === 'unsorted' ? (
+              groupedByFolder['Uncategorized'] && Object.keys(groupedByFolder['Uncategorized']).length > 0 ? (
+                <CardGrid 
+                  cards={Object.entries(groupedByFolder['Uncategorized']).filter(([cardName]) => 
+                    inventorySearch === '' || cardName.toLowerCase().includes(inventorySearch.toLowerCase())
+                  )} 
+                  {...cardGridProps} 
+                />
+              ) : (
+                <p className="text-slate-400 text-center py-12">No unsorted cards.</p>
+              )
+            ) : createdFolders.includes(activeTab) || Object.keys(groupedByFolder).includes(activeTab) ? (
+              (() => {
+                const folderData = groupedByFolder[activeTab] || {};
+                const folderCards = Object.entries(folderData).filter(([cardName, items]) => {
+                  const matchesSearch = inventorySearch === '' || cardName.toLowerCase().includes(inventorySearch.toLowerCase());
+                  const totalQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
+                  const reservedQty = items.reduce((sum, item) => sum + (parseInt(item.reserved_quantity) || 0), 0);
+                  return matchesSearch && (totalQty - reservedQty) > 0;
+                });
+                const availableCardsStats = Object.entries(folderData).reduce((acc, [_, items]) => {
+                  const totalQty = items.reduce((s, item) => s + (item.quantity || 0), 0);
+                  const reservedQty = items.reduce((s, item) => s + (parseInt(item.reserved_quantity) || 0), 0);
+                  const availableQty = totalQty - reservedQty;
+                  if (availableQty > 0) {
+                    acc.uniqueCount++;
+                    acc.totalCount += availableQty;
+                    acc.totalCost += items.reduce((s, item) => s + ((item.purchase_price || 0) * (item.quantity || 0)), 0);
+                  }
+                  return acc;
+                }, { uniqueCount: 0, totalCount: 0, totalCost: 0 });
+                const folderDesc = folderMetadata[activeTab]?.description || '';
+                
+                return (
+                  <>
+                    <FolderHeader
+                      folderName={activeTab}
+                      folderDesc={folderDesc}
+                      totalCards={availableCardsStats.totalCount}
+                      uniqueCards={availableCardsStats.uniqueCount}
+                      totalCost={availableCardsStats.totalCost}
+                      editingFolderName={editingFolderName}
+                      setEditingFolderName={setEditingFolderName}
+                      editingFolderDesc={editingFolderDesc}
+                      setEditingFolderDesc={setEditingFolderDesc}
+                      setFolderMetadata={setFolderMetadata}
+                      setSellModalData={setSellModalData}
+                      setShowSellModal={setShowSellModal}
+                    />
+                    {folderCards.length > 0 ? (
+                      <CardGrid cards={folderCards} {...cardGridProps} />
+                    ) : (
+                      <p className="text-slate-400 text-center py-12">No cards in this folder.</p>
+                    )}
+                  </>
+                );
+              })()
+            ) : (
+              <p className="text-slate-400 text-center py-12">Select a view to display cards.</p>
+            )}
           </div>
         )}
       </div>
