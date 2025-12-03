@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
-import { Plus, Check, X, Copy, AlertTriangle } from 'lucide-react';
+import { Plus, Check, X, Copy, AlertTriangle, Package, ToggleLeft, ToggleRight } from 'lucide-react';
+import { api } from '../utils/apiClient';
+import { API_ENDPOINTS } from '../config/api';
 
 // Quality options
 const QUALITY_OPTIONS = ['NM', 'LP', 'MP', 'HP', 'DMG'];
@@ -41,6 +43,13 @@ export const RapidEntryTable = ({
   const [highlightedResult, setHighlightedResult] = useState(0);
   const [shakeRowIndex, setShakeRowIndex] = useState(null);
   
+  // Lot Mode state
+  const [lotModeEnabled, setLotModeEnabled] = useState(false);
+  const [lotName, setLotName] = useState('');
+  const [lotTotalCost, setLotTotalCost] = useState('');
+  const [lotCards, setLotCards] = useState([]);
+  const [lotSubmitting, setLotSubmitting] = useState(false);
+  
   const inputRefs = useRef({});
   const dropdownRef = useRef(null);
 
@@ -49,6 +58,12 @@ export const RapidEntryTable = ({
     count: acc.count + (card.quantity || 1),
     price: acc.price + ((card.quantity || 1) * (parseFloat(card.price) || 0)),
   }), { count: 0, price: 0 });
+
+  // Calculate lot totals
+  const lotTotalCards = lotCards.reduce((sum, card) => sum + (card.quantity || 1), 0);
+  const lotPerCardCost = lotTotalCards > 0 && lotTotalCost 
+    ? parseFloat(lotTotalCost) / lotTotalCards 
+    : 0;
 
   // Parse quantity from card name input (e.g., "4 Lightning Bolt" -> { qty: 4, name: "Lightning Bolt" })
   const parseQuantityFromInput = (input) => {
@@ -146,11 +161,124 @@ export const RapidEntryTable = ({
     }));
   };
 
+  // Handle adding a card to lot (when lot mode is enabled)
+  const handleAddCardToLot = (rowIndex) => {
+    const row = rows[rowIndex];
+    
+    if (!row.selectedCard) {
+      return;
+    }
+
+    const cardData = {
+      name: row.cardName,
+      set: row.set,
+      set_name: row.setName,
+      quantity: row.quantity,
+      foil: row.foil,
+      quality: row.quality,
+      folder: row.folder || 'Unsorted',
+      image_url: row.imageUrl,
+    };
+
+    // Add to lot cards
+    setLotCards(prev => [...prev, cardData]);
+    
+    // Mark row as added (to lot)
+    setRows(prev => prev.map((r, idx) => {
+      if (idx !== rowIndex) return r;
+      return { ...r, status: 'added' };
+    }));
+
+    // Update sticky folder
+    if (row.folder && row.folder !== 'Unsorted') {
+      setStickyFolder(row.folder);
+    }
+
+    // Add new empty row and focus it
+    const newRow = createEmptyRow(stickyFolder);
+    const newRowIndex = rows.length;
+    setRows(prev => [...prev, newRow]);
+    setActiveRowIndex(newRowIndex);
+    
+    // Clear duplicate warning
+    setDuplicateWarning(null);
+    
+    // Focus on new row's card name input
+    setTimeout(() => {
+      const newInput = inputRefs.current[`name-${newRowIndex}`];
+      if (newInput) newInput.focus();
+    }, 50);
+  };
+
+  // Handle submitting all cards in the lot
+  const handleSubmitLot = async () => {
+    if (lotCards.length === 0) {
+      return;
+    }
+
+    setLotSubmitting(true);
+
+    try {
+      // First, create the lot
+      const lotData = await api.post(API_ENDPOINTS.LOTS, {
+        name: lotName || 'Unnamed Lot',
+        total_cost: lotTotalCost ? parseFloat(lotTotalCost) : null,
+        card_count: lotTotalCards,
+      });
+
+      // Then, add all cards to the lot
+      await api.post(`${API_ENDPOINTS.LOTS}/${lotData.id}/cards`, {
+        cards: lotCards,
+        total_cost: lotTotalCost ? parseFloat(lotTotalCost) : null,
+        lot_name: lotName || 'Unnamed Lot',
+      });
+
+      // Track added cards for running totals
+      lotCards.forEach(card => {
+        setAddedCards(prev => [...prev, {
+          cardName: card.name,
+          quantity: card.quantity,
+          price: lotPerCardCost.toFixed(2),
+        }]);
+      });
+
+      // Reset lot state
+      setLotCards([]);
+      setLotName('');
+      setLotTotalCost('');
+      
+      // Reset rows
+      setRows([createEmptyRow(stickyFolder)]);
+      setActiveRowIndex(0);
+      
+      // Focus on first row
+      setTimeout(() => {
+        const firstInput = inputRefs.current['name-0'];
+        if (firstInput) firstInput.focus();
+      }, 50);
+    } catch (error) {
+      console.error('Error submitting lot:', error);
+    } finally {
+      setLotSubmitting(false);
+    }
+  };
+
+  // Remove a card from the lot
+  const handleRemoveCardFromLot = (index) => {
+    setLotCards(prev => prev.filter((_, i) => i !== index));
+  };
+
   // Handle adding a card to inventory
   const handleAddCardToInventory = async (rowIndex) => {
     const row = rows[rowIndex];
     
     if (!row.selectedCard) {
+      return;
+    }
+
+    // If lot mode is enabled, add to lot instead
+    if (lotModeEnabled) {
+      handleAddCardToLot(rowIndex);
       return;
     }
 
@@ -337,12 +465,134 @@ export const RapidEntryTable = ({
 
   return (
     <div className="space-y-4">
+      {/* Lot Mode Toggle Section */}
+      <div className="rounded-lg border border-slate-700 bg-slate-800/30 p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Package className="w-5 h-5 text-amber-400" />
+            <span className="font-medium text-white">Lot/Pack Mode</span>
+          </div>
+          <button
+            onClick={() => setLotModeEnabled(!lotModeEnabled)}
+            className="flex items-center gap-2 text-sm"
+            type="button"
+          >
+            {lotModeEnabled ? (
+              <ToggleRight className="w-8 h-8 text-amber-400" />
+            ) : (
+              <ToggleLeft className="w-8 h-8 text-slate-500" />
+            )}
+            <span className={lotModeEnabled ? 'text-amber-400' : 'text-slate-500'}>
+              {lotModeEnabled ? 'ON' : 'OFF'}
+            </span>
+          </button>
+        </div>
+        
+        {lotModeEnabled && (
+          <div className="space-y-4">
+            {/* Lot Details */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs text-slate-400 mb-1 block">Lot Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g., Mystery Booster Box, Commander Masters Pack"
+                  value={lotName}
+                  onChange={(e) => setLotName(e.target.value)}
+                  className="w-full bg-slate-900/50 border border-slate-600 rounded px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-amber-400"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-slate-400 mb-1 block">Total Lot Cost</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="0.00"
+                    value={lotTotalCost}
+                    onChange={(e) => setLotTotalCost(e.target.value)}
+                    className="w-full bg-slate-900/50 border border-slate-600 rounded pl-7 pr-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-amber-400"
+                  />
+                </div>
+              </div>
+            </div>
+            
+            {/* Cards in Lot */}
+            {lotCards.length > 0 && (
+              <div className="border-t border-slate-700 pt-4">
+                <h4 className="text-sm font-medium text-slate-300 mb-2">Cards in this lot:</h4>
+                <div className="space-y-1 max-h-40 overflow-y-auto">
+                  {lotCards.map((card, index) => (
+                    <div key={index} className="flex items-center justify-between text-sm bg-slate-900/30 rounded px-3 py-1.5">
+                      <div className="flex items-center gap-2">
+                        <span className="text-amber-400">{card.quantity}x</span>
+                        <span className="text-white">{card.name}</span>
+                        <span className="text-slate-500">({card.set})</span>
+                      </div>
+                      <button
+                        onClick={() => handleRemoveCardFromLot(index)}
+                        className="text-slate-500 hover:text-red-400 transition-colors"
+                        type="button"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Lot Summary */}
+            <div className="flex flex-wrap items-center justify-between gap-4 border-t border-slate-700 pt-4">
+              <div className="flex gap-6">
+                <div className="text-sm">
+                  <span className="text-slate-400">Total Cards: </span>
+                  <span className="font-semibold text-white">{lotTotalCards}</span>
+                </div>
+                <div className="text-sm">
+                  <span className="text-slate-400">Cost Per Card: </span>
+                  <span className="font-semibold text-amber-400">
+                    ${lotPerCardCost.toFixed(2)}
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={handleSubmitLot}
+                disabled={lotCards.length === 0 || lotSubmitting}
+                className={`
+                  flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all
+                  ${lotCards.length > 0 && !lotSubmitting
+                    ? 'bg-amber-600 hover:bg-amber-500 text-white'
+                    : 'bg-slate-700 text-slate-500 cursor-not-allowed'
+                  }
+                `}
+                type="button"
+              >
+                {lotSubmitting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Submitting...
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-4 h-4" />
+                    Submit All Cards
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Table Header */}
       <div className="hidden md:grid md:grid-cols-12 gap-2 px-3 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wide border-b border-slate-700">
         <div className="col-span-3">Card Name</div>
         <div className="col-span-2">Set</div>
         <div className="col-span-1">Qty</div>
-        <div className="col-span-1">Price</div>
+        <div className={`col-span-1 ${lotModeEnabled ? 'opacity-50' : ''}`}>Price</div>
         <div className="col-span-1">Foil</div>
         <div className="col-span-1">Quality</div>
         <div className="col-span-2">Folder</div>
@@ -486,16 +736,17 @@ export const RapidEntryTable = ({
                     type="number"
                     step="0.01"
                     min="0"
-                    placeholder="0.00"
-                    value={row.price}
+                    placeholder={lotModeEnabled ? "Auto" : "0.00"}
+                    value={lotModeEnabled ? '' : row.price}
                     onChange={(e) => {
                       setRows(prev => prev.map((r, idx) => 
                         idx === rowIndex ? { ...r, price: e.target.value } : r
                       ));
                     }}
                     onKeyDown={(e) => handleKeyDown(e, rowIndex, 'price')}
-                    disabled={row.status === 'added'}
-                    className="w-full bg-slate-900/50 border border-slate-600 rounded pl-5 pr-2 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-teal-400 disabled:opacity-50"
+                    disabled={row.status === 'added' || lotModeEnabled}
+                    className={`w-full bg-slate-900/50 border border-slate-600 rounded pl-5 pr-2 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-teal-400 disabled:opacity-50 ${lotModeEnabled ? 'cursor-not-allowed' : ''}`}
+                    title={lotModeEnabled ? 'Price is calculated from lot total' : ''}
                   />
                 </div>
               </div>
@@ -562,15 +813,19 @@ export const RapidEntryTable = ({
               {/* Status / Actions */}
               <div className="md:col-span-1 flex items-center justify-end gap-1">
                 {row.status === 'added' && (
-                  <span className="text-emerald-400">
+                  <span className={lotModeEnabled ? 'text-amber-400' : 'text-emerald-400'}>
                     <Check className="w-5 h-5" />
                   </span>
                 )}
                 {row.status === 'valid' && (
                   <button
                     onClick={() => handleAddCardToInventory(rowIndex)}
-                    className="p-1.5 rounded bg-teal-600 hover:bg-teal-500 text-white transition-colors"
-                    title="Add to inventory (Shift+Enter)"
+                    className={`p-1.5 rounded text-white transition-colors ${
+                      lotModeEnabled 
+                        ? 'bg-amber-600 hover:bg-amber-500' 
+                        : 'bg-teal-600 hover:bg-teal-500'
+                    }`}
+                    title={lotModeEnabled ? "Add to lot (Shift+Enter)" : "Add to inventory (Shift+Enter)"}
                   >
                     <Plus className="w-4 h-4" />
                   </button>

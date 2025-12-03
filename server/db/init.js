@@ -158,6 +158,23 @@ export async function initializeDatabase() {
       )
     `);
 
+    // Purchase lots table - for tracking bulk purchases/packs
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS purchase_lots (
+        id SERIAL PRIMARY KEY,
+        name TEXT NOT NULL,
+        total_cost REAL,
+        card_count INTEGER,
+        per_card_cost REAL,
+        purchase_date DATE DEFAULT CURRENT_DATE,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    // Add lot tracking columns to inventory table
+    await pool.query(`ALTER TABLE inventory ADD COLUMN IF NOT EXISTS lot_id INTEGER REFERENCES purchase_lots(id) ON DELETE SET NULL`).catch(() => {});
+    await pool.query(`ALTER TABLE inventory ADD COLUMN IF NOT EXISTS lot_name TEXT`).catch(() => {});
+
     // Decks table
     await pool.query(`
       CREATE TABLE IF NOT EXISTS decks (

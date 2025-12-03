@@ -33,4 +33,5 @@ export const API_ENDPOINTS = {
   ANALYTICS: '/analytics',
   PRICES: '/prices',
   HEALTH: '/health',
+  LOTS: '/lots',
 };

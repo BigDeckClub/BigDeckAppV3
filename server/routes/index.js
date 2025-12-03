@@ -9,6 +9,7 @@ import foldersRouter from './folders.js';
 import salesRouter from './sales.js';
 import settingsRouter from './settings.js';
 import authRouter from './auth.js';
+import lotsRouter from './lots.js';
 
 export function registerRoutes(app) {
   // Health check (no /api prefix)
@@ -24,6 +25,7 @@ export function registerRoutes(app) {
   app.use(salesRouter);
   app.use(settingsRouter);
   app.use(authRouter);
+  app.use(lotsRouter);
 }
 
 export {
@@ -36,5 +38,6 @@ export {
   foldersRouter,
   salesRouter,
   settingsRouter,
-  authRouter
+  authRouter,
+  lotsRouter
 };
