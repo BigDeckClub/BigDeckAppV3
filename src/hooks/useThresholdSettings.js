@@ -80,7 +80,7 @@ export function useThresholdSettings() {
   // Load threshold settings from localStorage/backend on mount
   useEffect(() => {
     // Try to load from backend first using useApi's get method
-    get('/api/settings/thresholdSettings')
+    get('/settings/thresholdSettings')
       .then(data => {
         if (data) {
           setThresholdSettings(data);

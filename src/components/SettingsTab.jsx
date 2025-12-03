@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { useThresholdSettings } from '../hooks/useThresholdSettings';
 import { ThresholdSettings, PresetManager, AlertSettings, AccountSettings } from './settings';
+import { api } from '../utils/apiClient';
+import { API_ENDPOINTS } from '../config/api';
 
 /**
  * SettingsTab component - Main settings page with tab navigation
