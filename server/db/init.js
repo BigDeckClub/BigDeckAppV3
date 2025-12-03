@@ -50,6 +50,8 @@ export async function initializeDatabase() {
     await pool.query(`ALTER TABLE inventory ADD COLUMN IF NOT EXISTS folder VARCHAR(255) DEFAULT 'Uncategorized'`).catch(() => {});
     await pool.query(`ALTER TABLE inventory ADD COLUMN IF NOT EXISTS low_inventory_alert BOOLEAN DEFAULT false`).catch(() => {});
     await pool.query(`ALTER TABLE inventory ADD COLUMN IF NOT EXISTS low_inventory_threshold INTEGER DEFAULT 0`).catch(() => {});
+    await pool.query(`ALTER TABLE inventory ADD COLUMN IF NOT EXISTS foil BOOLEAN DEFAULT false`).catch(() => {});
+    await pool.query(`ALTER TABLE inventory ADD COLUMN IF NOT EXISTS quality VARCHAR(10) DEFAULT 'NM'`).catch(() => {});
     await pool.query(`ALTER TABLE inventory DROP COLUMN IF EXISTS location`).catch(() => {});
     await pool.query(`ALTER TABLE inventory DROP COLUMN IF EXISTS is_shared_location`).catch(() => {});
 

@@ -553,6 +553,8 @@ function MTGInventoryTrackerContent() {
             selectCard={selectCard}
             addCard={addCard}
             handleSearch={handleSearch}
+            searchIsLoading={searchIsLoading}
+            addInventoryItem={addInventoryItem}
           />
         )}
 

@@ -1,0 +1,171 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { RapidEntryTable } from '../components/RapidEntryTable';
+
+describe('RapidEntryTable Component', () => {
+  const mockProps = {
+    onAddCard: vi.fn().mockResolvedValue(true),
+    allSets: [
+      { code: '2X2', name: 'Double Masters 2022' },
+      { code: 'CMM', name: 'Commander Masters' }
+    ],
+    createdFolders: ['Trade', 'Keep', 'Sell'],
+    handleSearch: vi.fn(),
+    searchResults: [],
+    showDropdown: false,
+    setShowDropdown: vi.fn(),
+    searchIsLoading: false,
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('renders the table with initial empty row', () => {
+    render(<RapidEntryTable {...mockProps} />);
+    
+    // Check for input placeholder
+    expect(screen.getByPlaceholderText('Search card...')).toBeInTheDocument();
+    
+    // Check for running totals
+    expect(screen.getByText(/Running total:/)).toBeInTheDocument();
+    expect(screen.getByText('0 cards')).toBeInTheDocument();
+    expect(screen.getByText('$0.00')).toBeInTheDocument();
+  });
+
+  it('renders keyboard shortcuts help', () => {
+    render(<RapidEntryTable {...mockProps} />);
+    
+    expect(screen.getByText('Select card')).toBeInTheDocument();
+    expect(screen.getByText('Add & new row')).toBeInTheDocument();
+    expect(screen.getByText('Next field')).toBeInTheDocument();
+    expect(screen.getByText('Clear row')).toBeInTheDocument();
+    expect(screen.getByText('Duplicate previous')).toBeInTheDocument();
+  });
+
+  it('triggers search when typing in card name', async () => {
+    render(<RapidEntryTable {...mockProps} />);
+    
+    const input = screen.getByPlaceholderText('Search card...');
+    fireEvent.change(input, { target: { value: 'Lightning Bolt' } });
+    
+    expect(mockProps.handleSearch).toHaveBeenCalledWith('Lightning Bolt');
+  });
+
+  it('parses quantity from card name input', async () => {
+    render(<RapidEntryTable {...mockProps} />);
+    
+    const input = screen.getByPlaceholderText('Search card...');
+    fireEvent.change(input, { target: { value: '4 Lightning Bolt' } });
+    
+    // The quantity should be parsed
+    const qtyInput = screen.getByDisplayValue('4');
+    expect(qtyInput).toBeInTheDocument();
+    expect(mockProps.handleSearch).toHaveBeenCalledWith('Lightning Bolt');
+  });
+
+  it('displays search results dropdown when available', () => {
+    const propsWithResults = {
+      ...mockProps,
+      showDropdown: true,
+      searchResults: [
+        { name: 'Lightning Bolt', set: '2X2', setName: 'Double Masters 2022', imageUrl: '/test.jpg' },
+        { name: 'Lightning Helix', set: 'CMM', setName: 'Commander Masters', imageUrl: '/test2.jpg' },
+      ],
+    };
+    
+    render(<RapidEntryTable {...propsWithResults} />);
+    
+    // Focus the input to show dropdown
+    const input = screen.getByPlaceholderText('Search card...');
+    fireEvent.focus(input);
+    
+    expect(screen.getByText('Lightning Bolt')).toBeInTheDocument();
+    expect(screen.getByText('Lightning Helix')).toBeInTheDocument();
+  });
+
+  it('selects a card from search results', () => {
+    const propsWithResults = {
+      ...mockProps,
+      showDropdown: true,
+      searchResults: [
+        { name: 'Lightning Bolt', set: '2X2', setName: 'Double Masters 2022', imageUrl: '/test.jpg' },
+      ],
+    };
+    
+    render(<RapidEntryTable {...propsWithResults} />);
+    
+    const input = screen.getByPlaceholderText('Search card...');
+    fireEvent.focus(input);
+    
+    const result = screen.getByText('Lightning Bolt');
+    fireEvent.click(result);
+    
+    expect(mockProps.setShowDropdown).toHaveBeenCalledWith(false);
+  });
+
+  it('shows quality dropdown with all options', () => {
+    render(<RapidEntryTable {...mockProps} />);
+    
+    const qualitySelect = screen.getAllByRole('combobox')[1]; // Second select is quality
+    
+    // Check for all quality options
+    expect(screen.getByText('NM')).toBeInTheDocument();
+    expect(screen.getByText('LP')).toBeInTheDocument();
+    expect(screen.getByText('MP')).toBeInTheDocument();
+    expect(screen.getByText('HP')).toBeInTheDocument();
+    expect(screen.getByText('DMG')).toBeInTheDocument();
+  });
+
+  it('shows folder dropdown with created folders', () => {
+    render(<RapidEntryTable {...mockProps} />);
+    
+    // Check for folder options
+    expect(screen.getByText('Unsorted')).toBeInTheDocument();
+    expect(screen.getByText('Trade')).toBeInTheDocument();
+    expect(screen.getByText('Keep')).toBeInTheDocument();
+    expect(screen.getByText('Sell')).toBeInTheDocument();
+  });
+
+  it('has foil checkbox that can be toggled', () => {
+    render(<RapidEntryTable {...mockProps} />);
+    
+    const checkbox = screen.getByRole('checkbox');
+    expect(checkbox).not.toBeChecked();
+    
+    fireEvent.click(checkbox);
+    expect(checkbox).toBeChecked();
+  });
+
+  it('clears row when clear button is clicked', async () => {
+    render(<RapidEntryTable {...mockProps} />);
+    
+    const input = screen.getByPlaceholderText('Search card...');
+    fireEvent.change(input, { target: { value: 'Test Card' } });
+    expect(input).toHaveValue('Test Card');
+    
+    // Click the clear button (X button)
+    const clearButton = screen.getByTitle('Clear row (Escape)');
+    fireEvent.click(clearButton);
+    
+    // Get the input again (it might be a new element)
+    const clearedInput = screen.getByPlaceholderText('Search card...');
+    expect(clearedInput).toHaveValue('');
+  });
+
+  it('updates price input', () => {
+    render(<RapidEntryTable {...mockProps} />);
+    
+    const priceInput = screen.getByPlaceholderText('0.00');
+    fireEvent.change(priceInput, { target: { value: '5.99' } });
+    expect(priceInput).toHaveValue(5.99);
+  });
+
+  it('updates quantity input', () => {
+    render(<RapidEntryTable {...mockProps} />);
+    
+    const qtyInput = screen.getByDisplayValue('1');
+    fireEvent.change(qtyInput, { target: { value: '4' } });
+    expect(qtyInput).toHaveValue(4);
+  });
+});

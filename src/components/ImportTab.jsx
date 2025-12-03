@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Download, Plus, Trash2, CheckCircle, Clock, Layers, X } from 'lucide-react';
+import { RapidEntryTable } from './RapidEntryTable';
 
 export const ImportTab = ({ 
   imports, 
@@ -19,25 +20,12 @@ export const ImportTab = ({
   setShowDropdown,
   selectCard,
   addCard,
-  handleSearch
+  handleSearch,
+  searchIsLoading,
+  addInventoryItem,
 }) => {
   const [showImportForm, setShowImportForm] = useState(false);
   const [createdFolders, setCreatedFolders] = useState([]);
-  const searchContainerRef = useRef(null);
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target)) {
-        setShowDropdown(false);
-      }
-    };
-
-    if (showDropdown) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [showDropdown, setShowDropdown]);
 
   // Load folders from localStorage
   React.useEffect(() => {
@@ -51,6 +39,23 @@ export const ImportTab = ({
     source: 'wholesale',
     status: 'pending'
   });
+
+  // Handler for adding card from rapid entry
+  const handleRapidAddCard = async (cardData) => {
+    const item = {
+      name: cardData.name,
+      set: cardData.set,
+      set_name: cardData.set_name,
+      quantity: cardData.quantity,
+      purchase_price: cardData.purchase_price,
+      folder: cardData.folder || 'Unsorted',
+      image_url: cardData.image_url,
+      foil: cardData.foil || false,
+      quality: cardData.quality || 'NM',
+    };
+
+    return await addInventoryItem(item);
+  };
 
   const handleAddImport = async () => {
     if (!importForm.title || !importForm.cardList) {
@@ -111,163 +116,22 @@ export const ImportTab = ({
 
   return (
     <div className="space-y-6">
-      {/* Add Card Section */}
+      {/* Rapid Entry Section */}
       <div className="card rounded-lg p-4 sm:p-6 border border-slate-700">
         <div className="flex items-center gap-3 mb-4">
           <Layers className="w-6 h-6 text-teal-400" />
-          <h2 className="text-lg sm:text-xl font-bold">Add Card to Inventory</h2>
+          <h2 className="text-lg sm:text-xl font-bold">Rapid Card Entry</h2>
         </div>
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-semibold mb-2">Preferred Set (optional):</label>
-              <select
-                value={defaultSearchSet}
-                onChange={(e) => {
-                  setDefaultSearchSet(e.target.value);
-                  localStorage.setItem('defaultSearchSet', e.target.value);
-                }}
-                className="w-full bg-slate-800 border border-slate-600 rounded px-4 py-2 text-white text-sm"
-              >
-                <option value="">Show most recent</option>
-                {allSets.map(set => (
-                  <option key={set.code} value={set.code}>{set.code} - {set.name}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-semibold mb-2">Folder:</label>
-              <select
-                value={newEntry.folder || 'Uncategorized'}
-                onChange={(e) => setNewEntry({...newEntry, folder: e.target.value || 'Uncategorized'})}
-                className="w-full bg-slate-800 border border-slate-600 rounded px-4 py-2 text-white text-sm"
-              >
-                <option value="Uncategorized">Uncategorized</option>
-                {createdFolders.map(folder => (
-                  <option key={folder} value={folder}>{folder}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-          <div className="relative" ref={searchContainerRef}>
-            <input
-              type="text"
-              placeholder="Search for a card..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onFocus={() => setShowDropdown(true)}
-              className="w-full bg-slate-800 border border-slate-600 rounded px-4 py-2 text-white placeholder-gray-400"
-            />
-            
-            {showDropdown && searchResults.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-slate-900 border border-slate-600 rounded-lg shadow-xl max-h-60 overflow-y-auto z-20">
-                {(() => {
-                  const seen = new Set();
-                  return searchResults
-                    .filter(card => {
-                      if (seen.has(card.name)) return false;
-                      seen.add(card.name);
-                      return true;
-                    })
-                    .map((card, idx) => (
-                      <div
-                        key={`${card.name}-${idx}`}
-                        onClick={() => selectCard(card)}
-                        className="px-4 py-3 hover:bg-teal-600/30 cursor-pointer border-b border-slate-700 last:border-b-0 active:bg-teal-600/50"
-                      >
-                        <div className="font-semibold text-sm sm:text-base">{card.name}</div>
-                      </div>
-                    ));
-                })()}
-              </div>
-            )}
-          </div>
-
-          {newEntry.selectedSet && (
-            <div className="space-y-2">
-              <div className="bg-slate-800 border border-slate-600 rounded p-3">
-                <div className="font-semibold">{newEntry.selectedSet.name}</div>
-                <div className="text-sm text-slate-300">{newEntry.selectedSet.setName} ({newEntry.selectedSet.set})</div>
-              </div>
-              {selectedCardSets.length > 1 && (
-                <div>
-                  <label className="block text-sm font-semibold mb-2">Change Set (if available):</label>
-                  <select
-                    value={`${newEntry.selectedSet.set}|${newEntry.selectedSet.name}`}
-                    onChange={(e) => {
-                      const selectedCard = selectedCardSets.find(c => `${c.set}|${c.name}` === e.target.value);
-                      if (selectedCard) selectCard(selectedCard);
-                    }}
-                    className="w-full bg-slate-800 border border-slate-600 rounded px-4 py-2 text-white"
-                  >
-                    {(() => {
-                      const seen = new Set();
-                      return selectedCardSets
-                        .filter(card => {
-                          if (seen.has(card.set)) return false;
-                          seen.add(card.set);
-                          return true;
-                        })
-                        .sort((a, b) => a.set.localeCompare(b.set))
-                        .map((card) => (
-                          <option key={`${card.id}`} value={`${card.set}|${card.name}`}>
-                            {card.set} - {card.setName}
-                          </option>
-                        ));
-                    })()}
-                  </select>
-                </div>
-              )}
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-            <input
-              type="number"
-              min="1"
-              value={newEntry.quantity}
-              onChange={(e) => setNewEntry({...newEntry, quantity: parseInt(e.target.value)})}
-              placeholder="Quantity"
-              className="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-3 text-white text-base"
-            />
-            <input
-              type="date"
-              value={newEntry.purchaseDate}
-              max={new Date().toISOString().split("T")[0]}
-              onChange={(e) => setNewEntry({...newEntry, purchaseDate: e.target.value})}
-              className="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-3 text-white text-base"
-            />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-            <input
-              type="number"
-              step="0.01"
-              value={newEntry.purchasePrice}
-              onChange={(e) => setNewEntry({...newEntry, purchasePrice: e.target.value})}
-              placeholder="Purchase Price ($)"
-              className="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-3 text-white text-base"
-            />
-            <select
-              value={newEntry.reorderType}
-              onChange={(e) => setNewEntry({...newEntry, reorderType: e.target.value})}
-              className="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-3 text-white text-base"
-            >
-              <option value="normal">Normal</option>
-              <option value="land">Land</option>
-              <option value="bulk">Bulk</option>
-            </select>
-          </div>
-
-          <button
-            onClick={addCard}
-            disabled={!newEntry.selectedSet}
-            className="w-full btn-primary disabled:bg-gray-600 disabled:from-gray-600 disabled:to-gray-600 rounded-lg px-4 py-3 font-semibold transition"
-          >
-            <Plus className="w-5 h-5 inline mr-2" />
-            Add Card
-          </button>
-        </div>
+        <RapidEntryTable
+          onAddCard={handleRapidAddCard}
+          allSets={allSets}
+          createdFolders={createdFolders}
+          handleSearch={handleSearch}
+          searchResults={searchResults}
+          showDropdown={showDropdown}
+          setShowDropdown={setShowDropdown}
+          searchIsLoading={searchIsLoading}
+        />
       </div>
 
       {/* Header */}
