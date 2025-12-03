@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
-import { X, Menu } from 'lucide-react';
+import { X, Menu, Trash2 } from 'lucide-react';
 import { 
   CardGrid, 
   InventorySearchBar, 
@@ -331,7 +331,7 @@ export const InventoryTab = ({
                     <div className="bg-gradient-to-br from-red-900/30 to-slate-800 rounded-lg p-4 mb-4 border border-red-600/50">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <span className="text-2xl">🗑️</span>
+                          <Trash2 className="w-6 h-6 text-red-400" />
                           <div>
                             <h2 className="text-xl font-bold text-red-200">Trash</h2>
                             <p className="text-sm text-red-300">

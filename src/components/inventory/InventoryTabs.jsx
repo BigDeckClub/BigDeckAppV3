@@ -1,6 +1,6 @@
 import React, { memo } from 'react';
 import PropTypes from 'prop-types';
-import { X, Grid3X3, List } from 'lucide-react';
+import { X, Grid3X3, List, Folder } from 'lucide-react';
 
 /**
  * InventoryTabs - Tab navigation for inventory views
@@ -72,7 +72,8 @@ export const InventoryTabs = memo(function InventoryTabs({
                   : 'text-slate-300 hover:text-slate-100 hover:bg-slate-700/30'
               }`}
             >
-              📁 {folderName === 'Uncategorized' ? 'Unsorted' : folderName}
+              <Folder className="w-4 h-4 inline mr-1" />
+              {folderName === 'Uncategorized' ? 'Unsorted' : folderName}
             </button>
             <button
               type="button"

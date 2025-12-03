@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import PropTypes from 'prop-types';
-import { BarChart3, TrendingUp, Package, DollarSign, History, Filter } from 'lucide-react';
+import { BarChart3, TrendingUp, Package, DollarSign, History, Filter, Folder, FolderOpen } from 'lucide-react';
 
 export const AnalyticsTab = ({ inventory }) => {
   const [marketValues, setMarketValues] = useState({ cardkingdom: 0, tcgplayer: 0 });
@@ -107,7 +107,7 @@ export const AnalyticsTab = ({ inventory }) => {
   const sectionOptions = [
     { value: 'all', label: 'All Sections' },
     { value: 'unsorted', label: 'Unsorted' },
-    ...allFolders.map(folder => ({ value: folder, label: `📁 ${folder}` })),
+    ...allFolders.map(folder => ({ value: folder, label: folder })),
   ];
 
   return (
@@ -173,8 +173,11 @@ export const AnalyticsTab = ({ inventory }) => {
                         <div className="space-y-1 text-sm">
                           <div>
                             <span className="text-slate-500">Folder:</span>
-                            <span className="text-slate-300 ml-2">
-                              {entry.folder === 'Uncategorized' ? '📂 Unsorted' : `📁 ${entry.folder}`}
+                            <span className="text-slate-300 ml-2 inline-flex items-center gap-1">
+                              {entry.folder === 'Uncategorized' 
+                                ? <><FolderOpen className="w-3 h-3 inline" /> Unsorted</>
+                                : <><Folder className="w-3 h-3 inline" /> {entry.folder}</>
+                              }
                             </span>
                           </div>
                           <div className="flex gap-4 flex-wrap">
