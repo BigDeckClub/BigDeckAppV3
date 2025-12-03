@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Download, Plus, Trash2, CheckCircle, Clock, Layers, X } from 'lucide-react';
-import { RapidEntryTable } from './RapidEntryTable';
+import { RapidEntryTable } from './rapid-entry';
 import { api } from '../utils/apiClient';
 import { API_ENDPOINTS } from '../config/api';
 
