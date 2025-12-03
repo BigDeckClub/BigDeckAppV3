@@ -1,7 +1,8 @@
 import React, { memo } from 'react';
 import PropTypes from 'prop-types';
-import { Plus, X } from 'lucide-react';
+import { Plus, X, Trash2 } from 'lucide-react';
 import { DeckSidebar } from './DeckSidebar';
+import { useConfirm } from '../../context/ConfirmContext';
 
 /**
  * FolderSidebar - Left sidebar with folder and deck navigation
@@ -31,8 +32,10 @@ export const FolderSidebar = memo(function FolderSidebar({
   moveCardBetweenDecks,
   moveCardSkuToDeck,
   setShowSellModal,
-  setSellModalData
+  setSellModalData,
+  emptyTrash
 }) {
+  const { confirm } = useConfirm();
   return (
     <div className={`fixed md:static left-0 w-64 flex-shrink-0 space-y-4 h-full overflow-y-auto bg-slate-900 md:bg-transparent z-30 transition-transform duration-300 md:px-0 px-4 md:pl-8 md:pt-16 pt-20 ${
       sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
@@ -297,6 +300,99 @@ export const FolderSidebar = memo(function FolderSidebar({
             );
           })}
 
+        {/* Trash Folder Section */}
+        {(() => {
+          const cardsByName = groupedByFolder['Trash'] || {};
+          const trashCards = Object.entries(cardsByName).filter(([cardName, items]) => {
+            const matchesSearch = inventorySearch === '' || cardName.toLowerCase().includes(inventorySearch.toLowerCase());
+            const totalQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
+            return matchesSearch && totalQty > 0;
+          });
+          const uniqueCards = trashCards.length;
+          const totalTrashCards = trashCards.reduce((sum, [_, items]) => {
+            return sum + items.reduce((itemSum, item) => itemSum + (item.quantity || 0), 0);
+          }, 0);
+          const isSelected = selectedFolder === 'Trash';
+
+          // Only show trash section if there are items in trash
+          if (totalTrashCards === 0 && !isSelected) return null;
+
+          const handleEmptyTrash = async (e) => {
+            e.stopPropagation();
+            const confirmed = await confirm({
+              title: 'Empty Trash?',
+              message: `This will permanently delete ${totalTrashCards} card${totalTrashCards !== 1 ? 's' : ''} from ${uniqueCards} unique card${uniqueCards !== 1 ? 's' : ''}. This action cannot be undone.`,
+              confirmText: 'Empty Trash',
+              cancelText: 'Cancel',
+              variant: 'danger'
+            });
+            if (confirmed && emptyTrash) {
+              await emptyTrash();
+            }
+          };
+
+          return (
+            <div key="Trash" className="mt-4 pt-4 border-t border-slate-700">
+              <button
+                onClick={() => {
+                  if (isSelected) {
+                    closeFolderTab('Trash');
+                  } else {
+                    setSelectedFolder('Trash');
+                    openFolderTab('Trash');
+                  }
+                  setSidebarOpen(false);
+                }}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.currentTarget.classList.add('bg-red-700/60', 'border-red-300');
+                }}
+                onDragLeave={(e) => {
+                  e.currentTarget.classList.remove('bg-red-700/60', 'border-red-300');
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  e.currentTarget.classList.remove('bg-red-700/60', 'border-red-300');
+                  const inventoryItemId = e.dataTransfer.getData('inventoryItemId');
+                  const cardName = e.dataTransfer.getData('cardName');
+                  const deckCardDataStr = e.dataTransfer.getData('deckCardData');
+                  if (inventoryItemId) {
+                    moveInventoryItemToFolder(parseInt(inventoryItemId), 'Trash');
+                  } else if (deckCardDataStr) {
+                    const deckCardData = JSON.parse(deckCardDataStr);
+                    moveCardFromDeckToFolder(deckCardData, 'Trash');
+                  } else if (cardName) {
+                    moveCardToFolder(cardName, 'Trash');
+                  }
+                }}
+                className={`w-full text-left p-3 rounded-lg transition-colors flex-1 ${
+                  isSelected
+                    ? 'bg-red-600/40 border-l-4 border-red-400'
+                    : 'bg-gradient-to-r from-red-900/30 to-slate-800/50 border-l-4 border-transparent hover:from-red-800/40 hover:to-slate-700/50'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Trash2 className="w-4 h-4 text-red-400" />
+                    <span className="font-medium text-sm text-red-200">Trash</span>
+                  </div>
+                  {totalTrashCards > 0 && (
+                    <button
+                      onClick={handleEmptyTrash}
+                      className="text-xs px-2 py-1 bg-red-600/50 hover:bg-red-600 text-red-100 rounded transition-colors"
+                      title="Empty Trash"
+                    >
+                      Empty
+                    </button>
+                  )}
+                </div>
+                <div className="text-xs text-red-300 mt-1">{totalTrashCards} {totalTrashCards === 1 ? 'card' : 'cards'} • {uniqueCards} unique</div>
+              </button>
+            </div>
+          );
+        })()}
+
         {/* Decks Section */}
         <DeckSidebar
           deckInstances={deckInstances}
@@ -336,7 +432,8 @@ FolderSidebar.propTypes = {
   moveCardBetweenDecks: PropTypes.func.isRequired,
   moveCardSkuToDeck: PropTypes.func.isRequired,
   setShowSellModal: PropTypes.func.isRequired,
-  setSellModalData: PropTypes.func.isRequired
+  setSellModalData: PropTypes.func.isRequired,
+  emptyTrash: PropTypes.func
 };
 
 export default FolderSidebar;

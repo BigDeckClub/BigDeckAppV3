@@ -1,7 +1,8 @@
 import React, { memo, useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { X, Trash2, Bell, BellOff, Lightbulb } from 'lucide-react';
+import { X, Trash2, Bell, BellOff, Lightbulb, RotateCcw } from 'lucide-react';
 import { calculateSmartThreshold } from '../../utils/thresholdCalculator';
+import { useConfirm } from '../../context/ConfirmContext';
 
 /**
  * Calculate average price for a set of items
@@ -42,11 +43,15 @@ export const CardGroup = memo(function CardGroup({
   startEditingItem,
   updateInventoryItem,
   deleteInventoryItem,
+  permanentlyDeleteItem,
+  restoreFromTrash,
+  isTrashView,
   createdFolders,
   onCancelEdit,
   onToggleLowInventory,
   onSetThreshold
 }) {
+  const { confirm } = useConfirm();
   const [togglingId, setTogglingId] = useState(null);
   const [settingThresholdId, setSettingThresholdId] = useState(null);
   const [thresholdInput, setThresholdInput] = useState({});
@@ -146,6 +151,88 @@ export const CardGroup = memo(function CardGroup({
     }
   };
 
+  // Handle delete with confirmation
+  const handleDelete = async (itemId, e) => {
+    if (e) e.stopPropagation();
+    
+    if (isTrashView) {
+      // In trash view, permanently delete
+      const confirmed = await confirm({
+        title: 'Permanently Delete?',
+        message: 'This card will be permanently deleted. This action cannot be undone.',
+        confirmText: 'Delete Permanently',
+        cancelText: 'Cancel',
+        variant: 'danger'
+      });
+      if (confirmed && permanentlyDeleteItem) {
+        await permanentlyDeleteItem(itemId);
+      }
+    } else {
+      // Regular view, move to trash with confirmation
+      const confirmed = await confirm({
+        title: 'Move to Trash?',
+        message: 'This card will be moved to Trash. You can restore it later or permanently delete it.',
+        confirmText: 'Move to Trash',
+        cancelText: 'Cancel',
+        variant: 'warning'
+      });
+      if (confirmed) {
+        await deleteInventoryItem(itemId);
+      }
+    }
+  };
+
+  // Handle delete all copies with confirmation
+  const handleDeleteAll = async (e) => {
+    if (e) e.stopPropagation();
+    
+    if (isTrashView) {
+      const confirmed = await confirm({
+        title: 'Permanently Delete All?',
+        message: `This will permanently delete all ${items.length} copies of ${cardName}. This action cannot be undone.`,
+        confirmText: 'Delete All Permanently',
+        cancelText: 'Cancel',
+        variant: 'danger'
+      });
+      if (confirmed && permanentlyDeleteItem) {
+        for (const item of items) {
+          await permanentlyDeleteItem(item.id);
+        }
+      }
+    } else {
+      const confirmed = await confirm({
+        title: 'Move All to Trash?',
+        message: `This will move all ${items.length} copies of ${cardName} to Trash.`,
+        confirmText: 'Move All to Trash',
+        cancelText: 'Cancel',
+        variant: 'warning'
+      });
+      if (confirmed) {
+        for (const item of items) {
+          await deleteInventoryItem(item.id);
+        }
+      }
+    }
+  };
+
+  // Handle restore from trash
+  const handleRestore = async (itemId, e) => {
+    if (e) e.stopPropagation();
+    if (restoreFromTrash) {
+      await restoreFromTrash(itemId);
+    }
+  };
+
+  // Handle restore all from trash
+  const handleRestoreAll = async (e) => {
+    if (e) e.stopPropagation();
+    if (restoreFromTrash) {
+      for (const item of items) {
+        await restoreFromTrash(item.id);
+      }
+    }
+  };
+
   // Render set items section - shared between list and card view to reduce duplication
   const renderSetItems = (setItems, firstItem, totalQtyInSet, setAvgPrice, isEditing) => (
     <div key={`${firstItem.set}-${firstItem.id}`} className="flex-1 min-w-[160px] bg-slate-700 rounded-lg p-2 border border-slate-500">
@@ -230,16 +317,32 @@ export const CardGroup = memo(function CardGroup({
                       )}
                     </div>
                     <span className="text-slate-400">{new Date(item.purchase_date).toLocaleDateString()}</span>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        deleteInventoryItem(item.id);
-                      }}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity text-red-400 hover:text-red-300 p-0.5"
-                      title="Delete card - moves to unsorted"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </button>
+                    {isTrashView ? (
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={(e) => handleRestore(item.id, e)}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity text-green-400 hover:text-green-300 p-0.5"
+                          title="Restore card"
+                        >
+                          <RotateCcw className="w-3 h-3" />
+                        </button>
+                        <button
+                          onClick={(e) => handleDelete(item.id, e)}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity text-red-400 hover:text-red-300 p-0.5"
+                          title="Delete permanently"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={(e) => handleDelete(item.id, e)}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity text-red-400 hover:text-red-300 p-0.5"
+                        title="Move to trash"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}
@@ -284,40 +387,48 @@ export const CardGroup = memo(function CardGroup({
             e.dataTransfer.setData('skuData', JSON.stringify(items[0]));
           }
         }}
-        className="relative bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 hover:border-teal-400 rounded-lg p-3 md:p-4 transition-all duration-300 flex flex-col h-32 sm:h-36 md:h-40 hover:shadow-2xl hover:shadow-teal-500/30 hover:-translate-y-1 cursor-grab active:cursor-grabbing group active:scale-95" 
+        className={`relative bg-gradient-to-br ${isTrashView ? 'from-red-900/30 to-slate-900' : 'from-slate-800 to-slate-900'} border ${isTrashView ? 'border-red-600/50 hover:border-red-400' : 'border-slate-600 hover:border-teal-400'} rounded-lg p-3 md:p-4 transition-all duration-300 flex flex-col h-32 sm:h-36 md:h-40 hover:shadow-2xl ${isTrashView ? 'hover:shadow-red-500/30' : 'hover:shadow-teal-500/30'} hover:-translate-y-1 cursor-grab active:cursor-grabbing group active:scale-95`}
         onClick={() => setExpandedCards(isExpanded ? {} : {[cardName]: true})}
       >
+        {isTrashView ? (
+          <button
+            type="button"
+            onClick={handleRestoreAll}
+            className="absolute top-2 left-2 p-1.5 bg-slate-700/80 hover:bg-green-600/60 text-slate-300 hover:text-green-300 rounded-lg transition-all z-20 duration-200"
+            title="Restore all copies"
+          >
+            <RotateCcw className="w-5 h-5" />
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={(e) => {
+              handleToggleLowInventory(items[0], e);
+            }}
+            className="absolute top-2 left-2 p-1.5 bg-slate-700/80 hover:bg-yellow-600/60 text-slate-300 hover:text-yellow-300 rounded-lg transition-all z-20 duration-200"
+            title={items[0]?.low_inventory_alert ? "Alert enabled" : "Enable low inventory alert"}
+            disabled={togglingId === items[0]?.id}
+          >
+            {items[0]?.low_inventory_alert ? <Bell className="w-5 h-5" /> : <BellOff className="w-5 h-5" />}
+          </button>
+        )}
         <button
-          type="button"
-          onClick={(e) => {
-            handleToggleLowInventory(items[0], e);
-          }}
-          className="absolute top-2 left-2 p-1.5 bg-slate-700/80 hover:bg-yellow-600/60 text-slate-300 hover:text-yellow-300 rounded-lg transition-all z-20 duration-200"
-          title={items[0]?.low_inventory_alert ? "Alert enabled" : "Enable low inventory alert"}
-          disabled={togglingId === items[0]?.id}
-        >
-          {items[0]?.low_inventory_alert ? <Bell className="w-5 h-5" /> : <BellOff className="w-5 h-5" />}
-        </button>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            items.forEach(item => deleteInventoryItem(item.id));
-          }}
+          onClick={handleDeleteAll}
           className="absolute top-2 right-2 p-1.5 bg-slate-700/80 hover:bg-red-600/60 text-slate-300 hover:text-white rounded-lg transition-all opacity-0 group-hover:opacity-100 z-20 duration-200"
-          title="Delete all copies"
+          title={isTrashView ? "Delete all permanently" : "Move all to trash"}
         >
           <X className="w-5 h-5" />
         </button>
         <div className="text-center px-1 cursor-pointer flex items-center justify-center gap-1 mb-1">
-          <h3 className="text-xs md:text-sm font-semibold text-slate-50 line-clamp-2 break-words flex-1">
+          <h3 className={`text-xs md:text-sm font-semibold ${isTrashView ? 'text-red-200' : 'text-slate-50'} line-clamp-2 break-words flex-1`}>
             {cardName.split('//')[0].trim()}
           </h3>
         </div>
         
         <div className="flex-1 flex items-center justify-center min-h-0 py-2">
           <div className="text-center">
-            <div className="text-slate-400 text-[9px] md:text-xs font-semibold uppercase tracking-wider mb-1">Available</div>
-            <div className="text-2xl md:text-3xl font-bold text-green-400 leading-tight">{available}</div>
+            <div className={`${isTrashView ? 'text-red-400' : 'text-slate-400'} text-[9px] md:text-xs font-semibold uppercase tracking-wider mb-1`}>{isTrashView ? 'In Trash' : 'Available'}</div>
+            <div className={`text-2xl md:text-3xl font-bold ${isTrashView ? 'text-red-400' : 'text-green-400'} leading-tight`}>{available}</div>
           </div>
         </div>
         
@@ -354,25 +465,31 @@ export const CardGroup = memo(function CardGroup({
               e.dataTransfer.setData('skuData', JSON.stringify(items[0]));
             }
           }}
-          className="relative bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 hover:border-teal-400 rounded-lg p-4 transition-all duration-300 cursor-grab active:cursor-grabbing hover:shadow-2xl hover:shadow-teal-500/30 group">
+          className={`relative bg-gradient-to-br ${isTrashView ? 'from-red-900/30 to-slate-900' : 'from-slate-800 to-slate-900'} border ${isTrashView ? 'border-red-600/50 hover:border-red-400' : 'border-slate-600 hover:border-teal-400'} rounded-lg p-4 transition-all duration-300 cursor-grab active:cursor-grabbing hover:shadow-2xl ${isTrashView ? 'hover:shadow-red-500/30' : 'hover:shadow-teal-500/30'} group`}>
+          {isTrashView && (
+            <button
+              onClick={handleRestoreAll}
+              className="absolute top-3 left-3 p-1.5 bg-slate-700/60 hover:bg-green-600/60 text-slate-300 hover:text-green-300 rounded-lg transition-all opacity-0 group-hover:opacity-100 z-20"
+              title="Restore all copies"
+            >
+              <RotateCcw className="w-5 h-5" />
+            </button>
+          )}
           <button
-            onClick={(e) => {
-              e.stopPropagation();
-              items.forEach(item => deleteInventoryItem(item.id));
-            }}
+            onClick={handleDeleteAll}
             className="absolute top-3 right-3 p-1.5 bg-slate-700/60 hover:bg-slate-600 text-slate-300 hover:text-red-400 rounded-lg transition-all opacity-0 group-hover:opacity-100 z-20"
-            title="Delete all copies"
+            title={isTrashView ? "Delete all permanently" : "Move all to trash"}
           >
             <X className="w-5 h-5" />
           </button>
           <div className="flex items-center justify-between gap-6">
             <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setExpandedCards(isExpanded ? {} : {[cardName]: true})}>
               <div className="flex items-center gap-3">
-                <h3 className="text-sm font-semibold text-slate-50 break-words">{cardName}</h3>
+                <h3 className={`text-sm font-semibold ${isTrashView ? 'text-red-200' : 'text-slate-50'} break-words`}>{cardName}</h3>
               </div>
                 <div className="flex gap-6 text-xs mt-2">
-                  <div><span className="text-slate-400">Qty:</span> <span className={`ml-1 font-semibold ${totalQty === 0 ? 'text-slate-500' : 'text-teal-300'}`}>{totalQty}</span></div>
-                  <div><span className="text-slate-400">Available:</span> <span className="ml-1 text-green-400 font-semibold">{available}</span></div>
+                  <div><span className="text-slate-400">Qty:</span> <span className={`ml-1 font-semibold ${totalQty === 0 ? 'text-slate-500' : isTrashView ? 'text-red-300' : 'text-teal-300'}`}>{totalQty}</span></div>
+                  <div><span className="text-slate-400">{isTrashView ? 'In Trash:' : 'Available:'}</span> <span className={`ml-1 ${isTrashView ? 'text-red-400' : 'text-green-400'} font-semibold`}>{available}</span></div>
                   <div><span className="text-slate-400">Cost/ea:</span> <span className="ml-1 text-blue-300 font-semibold">${avgPrice.toFixed(2)}</span></div>
                   <div><span className="text-slate-400">Total:</span> <span className="ml-1 text-amber-400 font-semibold">${formatTotal(totalValue)}</span></div>
                 </div>
@@ -445,6 +562,9 @@ CardGroup.propTypes = {
   startEditingItem: PropTypes.func.isRequired,
   updateInventoryItem: PropTypes.func.isRequired,
   deleteInventoryItem: PropTypes.func.isRequired,
+  permanentlyDeleteItem: PropTypes.func,
+  restoreFromTrash: PropTypes.func,
+  isTrashView: PropTypes.bool,
   createdFolders: PropTypes.array.isRequired,
   onCancelEdit: PropTypes.func
 };

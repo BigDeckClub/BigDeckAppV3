@@ -14,7 +14,7 @@ import { useFolderOperations } from '../hooks/useFolderOperations';
 import { useDeckReservations } from '../hooks/useDeckReservations';
 
 // Reserved folder names that cannot be created by users (case-insensitive)
-const RESERVED_FOLDER_NAMES = ['unsorted', 'uncategorized', 'all cards'];
+const RESERVED_FOLDER_NAMES = ['unsorted', 'uncategorized', 'all cards', 'trash'];
 
 /**
  * InventoryTab - Main inventory management component
@@ -32,6 +32,9 @@ export const InventoryTab = ({
   startEditingItem,
   updateInventoryItem,
   deleteInventoryItem,
+  permanentlyDeleteItem,
+  restoreFromTrash,
+  emptyTrash,
   deckRefreshTrigger,
   onLoadInventory,
   onSell
@@ -168,10 +171,15 @@ export const InventoryTab = ({
     startEditingItem,
     updateInventoryItem,
     deleteInventoryItem,
+    permanentlyDeleteItem,
+    restoreFromTrash,
     createdFolders: folderOps.createdFolders,
     onToggleLowInventory: toggleAlertHandler,
     onSetThreshold: setThresholdHandler
   };
+
+  // Check if we're viewing the Trash folder
+  const isTrashView = activeTab === 'Trash';
 
   // Get current deck for deck detail view
   const currentDeckId = deckOps.openDecks.find(id => `deck-${id}` === activeTab);
@@ -223,6 +231,7 @@ export const InventoryTab = ({
         moveCardSkuToDeck={deckOps.moveCardSkuToDeck}
         setShowSellModal={setShowSellModal}
         setSellModalData={setSellModalData}
+        emptyTrash={emptyTrash}
       />
 
       {/* Overlay for mobile */}
@@ -299,6 +308,62 @@ export const InventoryTab = ({
               ) : (
                 <p className="text-slate-400 text-center py-12">No cards in inventory yet. Add some from the Imports tab!</p>
               )
+            ) : activeTab === 'Trash' ? (
+              (() => {
+                const folderData = groupedByFolder['Trash'] || {};
+                const trashCards = Object.entries(folderData).filter(([cardName, items]) => {
+                  const matchesSearch = inventorySearch === '' || cardName.toLowerCase().includes(inventorySearch.toLowerCase());
+                  const totalQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
+                  return matchesSearch && totalQty > 0;
+                });
+                const trashStats = Object.entries(folderData).reduce((acc, [_, items]) => {
+                  const totalQty = items.reduce((s, item) => s + (item.quantity || 0), 0);
+                  if (totalQty > 0) {
+                    acc.uniqueCount++;
+                    acc.totalCount += totalQty;
+                    acc.totalCost += items.reduce((s, item) => s + ((item.purchase_price || 0) * (item.quantity || 0)), 0);
+                  }
+                  return acc;
+                }, { uniqueCount: 0, totalCount: 0, totalCost: 0 });
+                
+                return (
+                  <>
+                    <div className="bg-gradient-to-br from-red-900/30 to-slate-800 rounded-lg p-4 mb-4 border border-red-600/50">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <span className="text-2xl">🗑️</span>
+                          <div>
+                            <h2 className="text-xl font-bold text-red-200">Trash</h2>
+                            <p className="text-sm text-red-300">
+                              {trashStats.totalCount} {trashStats.totalCount === 1 ? 'card' : 'cards'} • {trashStats.uniqueCount} unique • ${trashStats.totalCost.toFixed(2)} value
+                            </p>
+                          </div>
+                        </div>
+                        {trashStats.totalCount > 0 && (
+                          <button
+                            onClick={async () => {
+                              if (emptyTrash) {
+                                await emptyTrash();
+                              }
+                            }}
+                            className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg transition-colors font-medium"
+                          >
+                            Empty Trash
+                          </button>
+                        )}
+                      </div>
+                      <p className="text-xs text-red-400 mt-2">
+                        Items in Trash can be restored or permanently deleted. Hover over cards to see options.
+                      </p>
+                    </div>
+                    {trashCards.length > 0 ? (
+                      <CardGrid cards={trashCards} {...cardGridProps} isTrashView={true} />
+                    ) : (
+                      <p className="text-slate-400 text-center py-12">Trash is empty.</p>
+                    )}
+                  </>
+                );
+              })()
             ) : folderOps.createdFolders.includes(activeTab) || Object.keys(groupedByFolder).includes(activeTab) ? (
               (() => {
                 const folderData = groupedByFolder[activeTab] || {};
@@ -397,6 +462,9 @@ InventoryTab.propTypes = {
   startEditingItem: PropTypes.func.isRequired,
   updateInventoryItem: PropTypes.func.isRequired,
   deleteInventoryItem: PropTypes.func.isRequired,
+  permanentlyDeleteItem: PropTypes.func,
+  restoreFromTrash: PropTypes.func,
+  emptyTrash: PropTypes.func,
   deckRefreshTrigger: PropTypes.number,
   onLoadInventory: PropTypes.func,
   onSell: PropTypes.func
