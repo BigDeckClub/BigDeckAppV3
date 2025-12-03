@@ -1,4 +1,18 @@
 {
+  "inputs": [
+    {
+      "type": "promptString",
+      "id": "apiKey",
+      "description": "21st.dev Magic API Key",
+      "password": true
+    },
+    {
+      "type": "promptString",
+      "id": "figmaAccessToken",
+      "description": "Figma Access Token",
+      "password": true
+    }
+  ],
   "servers": {
     "github": {
       "command": "npx",
@@ -23,6 +37,20 @@
     "memory": {
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-memory"]
+    },
+    "@21st-dev/magic": {
+      "command": "npx",
+      "args": ["-y", "@21st-dev/magic@latest"],
+      "env": {
+        "API_KEY": "${input:apiKey}"
+      }
+    },
+    "@anthropics/figma-mcp": {
+      "command": "npx",
+      "args": ["-y", "@anthropics/figma-mcp@latest"],
+      "env": {
+        "FIGMA_ACCESS_TOKEN": "${input:figmaAccessToken}"
+      }
     }
   }
 }
