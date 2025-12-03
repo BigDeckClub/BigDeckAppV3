@@ -58,32 +58,43 @@ router.post('/api/lots', async (req, res) => {
 // POST /api/lots/:id/cards - Bulk add cards to a lot
 router.post('/api/lots/:id/cards', validateId, async (req, res) => {
   const lotId = req.validatedId;
-  const { cards, total_cost, lot_name } = req.body;
+  const { cards } = req.body;
   
   // Input validation
   if (!cards || !Array.isArray(cards) || cards.length === 0) {
     return res.status(400).json({ error: 'Cards array is required and must not be empty' });
   }
-  
-  if (total_cost !== undefined && total_cost !== null && (typeof total_cost !== 'number' || total_cost < 0)) {
-    return res.status(400).json({ error: 'Total cost must be a non-negative number when provided' });
-  }
-
-  // Calculate total card count (sum of all quantities)
-  const totalCardCount = cards.reduce((sum, card) => sum + (card.quantity || 1), 0);
-  const perCardCost = (total_cost && totalCardCount > 0) ? (total_cost / totalCardCount) : null;
 
   const client = await pool.connect();
   
   try {
     await client.query('BEGIN');
     
-    // Update the lot with final cost and card count
+    // Get the lot details to retrieve total_cost
+    const lotResult = await client.query(
+      `SELECT name, total_cost FROM purchase_lots WHERE id = $1`,
+      [lotId]
+    );
+    
+    if (lotResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Lot not found' });
+    }
+    
+    const lot = lotResult.rows[0];
+    const totalCost = lot.total_cost;
+    const lotName = lot.name;
+
+    // Calculate total card count (sum of all quantities)
+    const totalCardCount = cards.reduce((sum, card) => sum + (card.quantity || 1), 0);
+    const perCardCost = (totalCost && totalCardCount > 0) ? (totalCost / totalCardCount) : null;
+    
+    // Update the lot with final card count and per-card cost
     await client.query(
       `UPDATE purchase_lots 
-       SET total_cost = $1, card_count = $2, per_card_cost = $3
-       WHERE id = $4`,
-      [total_cost || null, totalCardCount, perCardCost, lotId]
+       SET card_count = $1, per_card_cost = $2
+       WHERE id = $3`,
+      [totalCardCount, perCardCost, lotId]
     );
     
     const insertedCards = [];
@@ -144,7 +155,7 @@ router.post('/api/lots/:id/cards', validateId, async (req, res) => {
           card.foil || false,
           card.quality || 'NM',
           lotId,
-          lot_name || null
+          lotName || null
         ]
       );
       
@@ -164,8 +175,8 @@ router.post('/api/lots/:id/cards', validateId, async (req, res) => {
     
     res.status(201).json({
       lot_id: lotId,
-      lot_name: lot_name,
-      total_cost: total_cost,
+      lot_name: lotName,
+      total_cost: totalCost,
       card_count: totalCardCount,
       per_card_cost: perCardCost,
       cards: insertedCards

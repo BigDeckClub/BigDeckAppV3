@@ -49,6 +49,7 @@ export const RapidEntryTable = ({
   const [lotTotalCost, setLotTotalCost] = useState('');
   const [lotCards, setLotCards] = useState([]);
   const [lotSubmitting, setLotSubmitting] = useState(false);
+  const [lotError, setLotError] = useState(null);
   
   const inputRefs = useRef({});
   const dropdownRef = useRef(null);
@@ -61,8 +62,9 @@ export const RapidEntryTable = ({
 
   // Calculate lot totals
   const lotTotalCards = lotCards.reduce((sum, card) => sum + (card.quantity || 1), 0);
-  const lotPerCardCost = lotTotalCards > 0 && lotTotalCost 
-    ? parseFloat(lotTotalCost) / lotTotalCards 
+  const parsedLotCost = parseFloat(lotTotalCost);
+  const lotPerCardCost = lotTotalCards > 0 && !isNaN(parsedLotCost) && parsedLotCost > 0
+    ? parsedLotCost / lotTotalCards 
     : 0;
 
   // Parse quantity from card name input (e.g., "4 Lightning Bolt" -> { qty: 4, name: "Lightning Bolt" })
@@ -217,20 +219,20 @@ export const RapidEntryTable = ({
     }
 
     setLotSubmitting(true);
+    setLotError(null);
 
     try {
       // First, create the lot
+      const parsedCost = lotTotalCost ? parseFloat(lotTotalCost) : null;
       const lotData = await api.post(API_ENDPOINTS.LOTS, {
         name: lotName || 'Unnamed Lot',
-        total_cost: lotTotalCost ? parseFloat(lotTotalCost) : null,
+        total_cost: parsedCost,
         card_count: lotTotalCards,
       });
 
-      // Then, add all cards to the lot
+      // Then, add all cards to the lot (the lot already has the cost info)
       await api.post(`${API_ENDPOINTS.LOTS}/${lotData.id}/cards`, {
         cards: lotCards,
-        total_cost: lotTotalCost ? parseFloat(lotTotalCost) : null,
-        lot_name: lotName || 'Unnamed Lot',
       });
 
       // Track added cards for running totals
@@ -258,6 +260,7 @@ export const RapidEntryTable = ({
       }, 50);
     } catch (error) {
       console.error('Error submitting lot:', error);
+      setLotError('Failed to submit lot. Please try again.');
     } finally {
       setLotSubmitting(false);
     }
@@ -583,6 +586,21 @@ export const RapidEntryTable = ({
                 )}
               </button>
             </div>
+            
+            {/* Error Message */}
+            {lotError && (
+              <div className="flex items-center gap-2 text-sm text-red-400 bg-red-900/20 rounded px-3 py-2 mt-2">
+                <AlertTriangle className="w-4 h-4" />
+                <span>{lotError}</span>
+                <button 
+                  onClick={() => setLotError(null)} 
+                  className="ml-auto text-red-400 hover:text-red-300"
+                  type="button"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
