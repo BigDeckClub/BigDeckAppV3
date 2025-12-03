@@ -1,6 +1,6 @@
 import React, { memo } from 'react';
 import PropTypes from 'prop-types';
-import { Plus, X, Trash2 } from 'lucide-react';
+import { Plus, X, Trash2, Folder } from 'lucide-react';
 import { DeckSidebar } from './DeckSidebar';
 import { useConfirm } from '../../context/ConfirmContext';
 
@@ -43,7 +43,10 @@ export const FolderSidebar = memo(function FolderSidebar({
       {/* Folder List */}
       <div className="rounded-lg p-4 border-2 border-teal-500/40 bg-gradient-to-br from-slate-800/60 to-slate-900/40 space-y-3 max-h-[calc(100vh-220px)] overflow-y-auto scrollbar-thumb-rounded shadow-xl shadow-slate-900/50">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-teal-300">📁 Folders</h3>
+          <h3 className="text-sm font-semibold text-teal-300 flex items-center gap-1.5">
+            <Folder className="w-4 h-4" />
+            Folders
+          </h3>
           {!showCreateFolder && (
             <button
               onClick={() => setShowCreateFolder(true)}
