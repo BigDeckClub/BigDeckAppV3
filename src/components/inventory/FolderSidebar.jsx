@@ -115,18 +115,8 @@ export const FolderSidebar = memo(function FolderSidebar({
         
         {/* Unsorted Folder - for cards without a folder (DEFAULT TO TOP) */}
         {(() => {
-          // Merge cards from both 'Uncategorized' and 'Unsorted' folders
-          const uncategorizedCards = groupedByFolder['Uncategorized'] || {};
-          const unsortedCards = groupedByFolder['Unsorted'] || {};
-          // Combine the two objects, merging arrays for same card names
-          const cardsByName = { ...uncategorizedCards };
-          Object.entries(unsortedCards).forEach(([cardName, items]) => {
-            if (cardsByName[cardName]) {
-              cardsByName[cardName] = [...cardsByName[cardName], ...items];
-            } else {
-              cardsByName[cardName] = items;
-            }
-          });
+          // Only use 'Uncategorized' folder now that backend is consistent
+          const cardsByName = groupedByFolder['Uncategorized'] || {};
           const inStockCards = Object.entries(cardsByName).filter(([cardName, items]) => {
             const matchesSearch = inventorySearch === '' || cardName.toLowerCase().includes(inventorySearch.toLowerCase());
             const totalQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
