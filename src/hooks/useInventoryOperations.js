@@ -6,7 +6,6 @@
 import { useState, useCallback } from 'react';
 import { useApi } from './useApi';
 import { useToast, TOAST_TYPES } from '../context/ToastContext';
-import { API_BASE } from '../config/api';
 
 /**
  * @typedef {Object} InventoryItem
@@ -57,7 +56,7 @@ export function useInventoryOperations() {
    */
   const loadInventory = useCallback(async () => {
     try {
-      const data = await get(`${API_BASE}/inventory`);
+      const data = await get('/inventory');
       const sortedData = (data || []).sort((a, b) => a.name.localeCompare(b.name));
       setInventory(sortedData);
     } catch (error) {
@@ -72,7 +71,7 @@ export function useInventoryOperations() {
    */
   const addInventoryItem = useCallback(async (item) => {
     try {
-      await post(`${API_BASE}/inventory`, item);
+      await post('/inventory', item);
       await loadInventory(); // Refresh to get real data
       showToast('Card added successfully!', TOAST_TYPES.SUCCESS);
       return true;
@@ -97,7 +96,7 @@ export function useInventoryOperations() {
         ...updates,
         last_modified: new Date().toISOString(),
       };
-      await put(`${API_BASE}/inventory/${id}`, updateWithTimestamp);
+      await put(`/inventory/${id}`, updateWithTimestamp);
       await loadInventory();
       setEditingId(null);
       showToast('Card updated!', TOAST_TYPES.SUCCESS);
@@ -116,7 +115,7 @@ export function useInventoryOperations() {
    */
   const deleteInventoryItem = useCallback(async (id) => {
     try {
-      await put(`${API_BASE}/inventory/${id}`, { folder: 'Uncategorized' });
+      await put(`/inventory/${id}`, { folder: 'Uncategorized' });
       await loadInventory();
     } catch (error) {
       // Silently fail as per original implementation
