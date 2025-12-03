@@ -1,4 +1,4 @@
-import React, { useState, useEffect, lazy, useCallback } from "react";
+import React, { useState, useEffect, lazy, useCallback, Suspense } from "react";
 import { PriceCacheProvider } from "./context/PriceCacheContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ToastProvider, useToast, TOAST_TYPES } from "./context/ToastContext";
@@ -11,10 +11,12 @@ import { ConfirmDialog } from "./components/ConfirmDialog";
 import { OfflineBanner } from "./components/OfflineBanner";
 import { useApi } from "./hooks/useApi";
 import { TutorialModal } from "./components/TutorialModal";
+import { TabLoadingSpinner } from "./components/TabLoadingSpinner";
 import { Navigation } from "./components/Navigation";
 import { useCardSearch } from "./hooks/useCardSearch";
 import { useInventoryOperations } from "./hooks/useInventoryOperations";
 import { API_BASE } from "./config/api";
+import { getAllSets } from "./utils/scryfallApi";
 
 // Lazy load tab components for code splitting
 const InventoryTab = lazy(() => import("./components/InventoryTab"));
@@ -184,7 +186,7 @@ function MTGInventoryTrackerContent() {
 
         {activeTab === "inventory" && !isLoading && (
           <ErrorBoundaryWithRetry>
-            <Suspense fallback={<TabLoadingSpinner />}>
+            <Suspense fallback={<TabLoadingSpinner />}> 
               <InventoryTab
                 inventory={inventory}
                 successMessage={successMessage}
@@ -222,7 +224,7 @@ function MTGInventoryTrackerContent() {
 
         {activeTab === "imports" && !isLoading && (
           <ErrorBoundaryWithRetry>
-            <Suspense fallback={<TabLoadingSpinner />}>
+            <Suspense fallback={<TabLoadingSpinner />}> 
               <ImportTab
                 imports={imports}
                 onLoadImports={loadImports}
@@ -249,18 +251,32 @@ function MTGInventoryTrackerContent() {
           </ErrorBoundaryWithRetry>
         )}
 
-        {activeTab === "analytics" && !isLoading && <AnalyticsTab inventory={inventory} />}
-
-        {activeTab === "decks" && !isLoading && (
-          <DeckTab
-            onDeckCreatedOrDeleted={() => setDeckRefreshTrigger(prev => prev + 1)}
-            onInventoryUpdate={loadInventory}
-          />
+        {activeTab === "analytics" && !isLoading && (
+          <Suspense fallback={<TabLoadingSpinner />}> 
+            <AnalyticsTab inventory={inventory} />
+          </Suspense>
         )}
 
-        {activeTab === "sales" && !isLoading && <SalesHistoryTab />}
+        {activeTab === "decks" && !isLoading && (
+          <Suspense fallback={<TabLoadingSpinner />}> 
+            <DeckTab
+              onDeckCreatedOrDeleted={() => setDeckRefreshTrigger(prev => prev + 1)}
+              onInventoryUpdate={loadInventory}
+            />
+          </Suspense>
+        )}
 
-        {activeTab === "settings" && !isLoading && <SettingsTab inventory={inventory} />}
+        {activeTab === "sales" && !isLoading && (
+          <Suspense fallback={<TabLoadingSpinner />}> 
+            <SalesHistoryTab />
+          </Suspense>
+        )}
+
+        {activeTab === "settings" && !isLoading && (
+          <Suspense fallback={<TabLoadingSpinner />}>  
+            <SettingsTab inventory={inventory} />
+          </Suspense>
+        )}
       </main>
 
       <TutorialModal isOpen={showTutorial} onClose={() => setShowTutorial(false)} />
