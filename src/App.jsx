@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Suspense, lazy, useCallback } from "react";
+import React, { useState, useEffect, lazy, useCallback, startTransition } from "react";
 import {
   Layers,
   Download,
@@ -408,35 +408,35 @@ function MTGInventoryTrackerContent() {
           </div>
           <div className="desktop-nav flex gap-2 items-center">
             <button
-              onClick={() => setActiveTab("inventory")}
+              onClick={() => startTransition(() => setActiveTab("inventory"))}
               className={`px-4 py-2 nav-tab inactive ${activeTab === "inventory" ? "btn-primary" : "hover:shadow-lg"}`}
             >
               <Layers className="w-5 h-5 inline mr-2" />
               Inventory
             </button>
             <button
-              onClick={() => setActiveTab("imports")}
+              onClick={() => startTransition(() => setActiveTab("imports"))}
               className={`px-4 py-2 nav-tab inactive ${activeTab === "imports" ? "btn-primary" : "hover:shadow-lg"}`}
             >
               <Download className="w-5 h-5 inline mr-2" />
               Imports
             </button>
             <button
-              onClick={() => setActiveTab("analytics")}
+              onClick={() => startTransition(() => setActiveTab("analytics"))}
               className={`px-4 py-2 nav-tab inactive ${activeTab === "analytics" ? "btn-primary" : "hover:shadow-lg"}`}
             >
               <BarChart3 className="w-5 h-5 inline mr-2" />
               Analytics
             </button>
             <button
-              onClick={() => setActiveTab("decks")}
+              onClick={() => startTransition(() => setActiveTab("decks"))}
               className={`px-4 py-2 nav-tab inactive ${activeTab === "decks" ? "btn-primary" : "hover:shadow-lg"}`}
             >
               <BookOpen className="w-5 h-5 inline mr-2" />
               Decks
             </button>
             <button
-              onClick={() => setActiveTab("sales")}
+              onClick={() => startTransition(() => setActiveTab("sales"))}
               className={`px-4 py-2 nav-tab inactive ${activeTab === "sales" ? "btn-primary" : "hover:shadow-lg"}`}
             >
               <TrendingUp className="w-5 h-5 inline mr-2" />
@@ -455,7 +455,7 @@ function MTGInventoryTrackerContent() {
             return (
               <button
                 key={item.id}
-                onClick={() => setActiveTab(item.id)}
+                onClick={() => startTransition(() => setActiveTab(item.id))}
                 className={`mobile-nav-item ${activeTab === item.id ? "active" : "inactive"}`}
               >
                 <Icon className="w-5 h-5 mobile-nav-icon" />
