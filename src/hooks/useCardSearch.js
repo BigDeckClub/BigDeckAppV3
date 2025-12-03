@@ -22,11 +22,11 @@ import { getCachedSearch, setCachedSearch, getPopularCardMatches } from '../util
  * @property {string} searchQuery - Current search query
  * @property {function(string): void} setSearchQuery - Update search query
  * @property {CardSearchResult[]} searchResults - Array of search results
- * @property {boolean} isSearching - Whether a search is in progress
  * @property {boolean} showDropdown - Whether to show the dropdown
  * @property {function(boolean): void} setShowDropdown - Control dropdown visibility
  * @property {boolean} searchIsLoading - Whether search is loading
  * @property {function(string): Promise<void>} handleSearch - Manually trigger search
+ * @property {function(): void} clearSearch - Clear search state
  */
 
 /**
@@ -43,7 +43,6 @@ export function useCardSearch(options = {}) {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
-  const [isSearching, setIsSearching] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [searchIsLoading, setSearchIsLoading] = useState(false);
 
@@ -143,7 +142,6 @@ export function useCardSearch(options = {}) {
     searchQuery,
     setSearchQuery,
     searchResults,
-    isSearching,
     showDropdown,
     setShowDropdown,
     searchIsLoading,
