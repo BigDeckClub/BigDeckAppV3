@@ -65,11 +65,20 @@ export function useDeckReservations({ inventory, onLoadInventory }) {
     }
   }, [deckDetailsCache, deckInstances]);
 
+  // Close a deck tab
+  const closeDeckTab = useCallback((deckId, activeTab, setActiveTab) => {
+    setOpenDecks(prev => prev.filter(id => id !== deckId));
+    if (activeTab === `deck-${deckId}`) {
+      setActiveTab('all');
+    }
+  }, []);
+
   // Open a deck in a new tab (or close if already active - toggle behavior)
   const openDeckTab = useCallback((deck, activeTab, setActiveTab) => {
     if (activeTab === `deck-${deck.id}`) {
       // If this deck is already active, close it (toggle behavior like folders)
-      closeDeckTab(deck.id, activeTab, setActiveTab);
+      setOpenDecks(prev => prev.filter(id => id !== deck.id));
+      setActiveTab('all');
     } else {
       // Otherwise, open it
       if (!openDecks.includes(deck.id)) {
@@ -79,14 +88,6 @@ export function useDeckReservations({ inventory, onLoadInventory }) {
       loadDeckDetails(deck.id);
     }
   }, [openDecks, loadDeckDetails]);
-
-  // Close a deck tab
-  const closeDeckTab = useCallback((deckId, activeTab, setActiveTab) => {
-    setOpenDecks(prev => prev.filter(id => id !== deckId));
-    if (activeTab === `deck-${deckId}`) {
-      setActiveTab('all');
-    }
-  }, []);
 
   // Release deck and return cards to inventory
   const releaseDeck = useCallback(async (deckId, activeTab, setActiveTab) => {
@@ -362,8 +363,6 @@ export function useDeckReservations({ inventory, onLoadInventory }) {
       const reservationId = deckCardData.id;
       const quantity = deckCardData.quantity_reserved;
       
-      showToast(`Moved card to ${targetFolder}`, TOAST_TYPES.SUCCESS);
-      
       const removeResponse = await fetch(`/api/deck-instances/${deckId}/remove-card`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
@@ -383,6 +382,9 @@ export function useDeckReservations({ inventory, onLoadInventory }) {
       if (!moveResponse.ok) {
         throw new Error('Failed to move card to folder');
       }
+      
+      // Show success toast after both API calls succeed
+      showToast(`Moved card to ${targetFolder}`, TOAST_TYPES.SUCCESS);
       
       if (onLoadInventory) {
         await onLoadInventory();

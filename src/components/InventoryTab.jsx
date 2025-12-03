@@ -114,6 +114,10 @@ export const InventoryTab = ({
     await deckOps.releaseDeck(deckId, activeTab, setActiveTab);
   }, [deckOps, activeTab]);
 
+  const handleDeleteFolder = useCallback(async (folderName) => {
+    await folderOps.deleteFolder(folderName, activeTab, setActiveTab);
+  }, [folderOps, activeTab]);
+
   // Initial load and refresh of deck instances
   useEffect(() => {
     deckOps.refreshDeckInstances();
@@ -336,7 +340,7 @@ export const InventoryTab = ({
                       setFolderMetadata={folderOps.setFolderMetadata}
                       setSellModalData={setSellModalData}
                       setShowSellModal={setShowSellModal}
-                      onDeleteFolder={deleteFolder}
+                      onDeleteFolder={handleDeleteFolder}
                       isUnsorted={activeTab === 'Uncategorized'}
                     />
                     {folderCards.length > 0 ? (

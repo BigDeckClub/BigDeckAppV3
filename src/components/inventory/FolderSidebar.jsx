@@ -1,7 +1,6 @@
 import React, { memo } from 'react';
 import PropTypes from 'prop-types';
 import { Plus, X } from 'lucide-react';
-import { useToast, TOAST_TYPES } from '../../context/ToastContext';
 import { DeckSidebar } from './DeckSidebar';
 
 /**
@@ -34,7 +33,6 @@ export const FolderSidebar = memo(function FolderSidebar({
   setShowSellModal,
   setSellModalData
 }) {
-  const { showToast } = useToast();
   return (
     <div className={`fixed md:static left-0 w-64 flex-shrink-0 space-y-4 h-full overflow-y-auto bg-slate-900 md:bg-transparent z-30 transition-transform duration-300 md:px-0 px-4 md:pl-8 md:pt-16 pt-20 ${
       sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
@@ -65,11 +63,13 @@ export const FolderSidebar = memo(function FolderSidebar({
               autoFocus
               onKeyDown={async (e) => {
                 if (e.key === 'Enter' && newFolderName.trim()) {
-                  addCreatedFolder(newFolderName);
+                  const folderNameToCreate = newFolderName.trim();
                   setNewFolderName('');
                   setShowCreateFolder(false);
-                  setSelectedFolder(newFolderName.trim());
-                  showToast(`Folder "${newFolderName.trim()}" created!`, TOAST_TYPES.SUCCESS);
+                  const success = await addCreatedFolder(folderNameToCreate);
+                  if (success) {
+                    setSelectedFolder(folderNameToCreate);
+                  }
                 }
                 if (e.key === 'Escape') {
                   setNewFolderName('');
@@ -81,11 +81,13 @@ export const FolderSidebar = memo(function FolderSidebar({
               <button
                 onClick={async () => {
                   if (newFolderName.trim()) {
-                    addCreatedFolder(newFolderName);
+                    const folderNameToCreate = newFolderName.trim();
                     setNewFolderName('');
                     setShowCreateFolder(false);
-                    setSelectedFolder(newFolderName.trim());
-                    showToast(`Folder "${newFolderName.trim()}" created!`, TOAST_TYPES.SUCCESS);
+                    const success = await addCreatedFolder(folderNameToCreate);
+                    if (success) {
+                      setSelectedFolder(folderNameToCreate);
+                    }
                   }
                 }}
                 className="flex-1 bg-teal-600 hover:bg-teal-700 text-white px-3 py-1 rounded text-xs font-semibold transition-colors"
