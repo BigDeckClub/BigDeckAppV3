@@ -65,11 +65,7 @@ export const InventoryTab = ({
 
   const setThresholdHandler = useCallback(async (itemId, threshold) => {
     try {
-      await fetch(`/api/inventory/${itemId}/set-threshold`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ threshold })
-      });
+      await api.post(`${API_ENDPOINTS.INVENTORY}/${itemId}/set-threshold`, { threshold });
       onLoadInventory?.();
     } catch (error) {
       console.error('Error setting threshold:', error);

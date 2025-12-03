@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Download, Plus, Trash2, CheckCircle, Clock, Layers, X } from 'lucide-react';
 import { RapidEntryTable } from './RapidEntryTable';
+import { api } from '../utils/apiClient';
+import { API_ENDPOINTS } from '../config/api';
 
 export const ImportTab = ({ 
   imports, 
@@ -65,13 +67,7 @@ export const ImportTab = ({
     }
 
     try {
-      const response = await fetch('/api/imports', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(importForm)
-      });
-
-      if (!response.ok) throw new Error('Failed to create import');
+      await api.post(API_ENDPOINTS.IMPORTS, importForm);
       
       setImportForm({ title: '', description: '', cardList: '', source: 'wholesale', status: 'pending' });
       setShowImportForm(false);
@@ -88,8 +84,7 @@ export const ImportTab = ({
     if (!confirm('Delete this import order?')) return;
 
     try {
-      const response = await fetch(`/api/imports/${id}`, { method: 'DELETE' });
-      if (!response.ok) throw new Error('Failed to delete import');
+      await api.delete(`${API_ENDPOINTS.IMPORTS}/${id}`);
       
       setSuccessMessage('Import order deleted');
       setTimeout(() => setSuccessMessage(''), 3000);
@@ -102,8 +97,7 @@ export const ImportTab = ({
 
   const handleMarkComplete = async (id) => {
     try {
-      const response = await fetch(`/api/imports/${id}/complete`, { method: 'PATCH' });
-      if (!response.ok) throw new Error('Failed to update import');
+      await api.patch(`${API_ENDPOINTS.IMPORTS}/${id}/complete`);
       
       setSuccessMessage('Import order marked as completed!');
       setTimeout(() => setSuccessMessage(''), 3000);
