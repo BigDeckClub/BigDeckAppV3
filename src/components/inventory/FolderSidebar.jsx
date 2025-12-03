@@ -115,6 +115,7 @@ export const FolderSidebar = memo(function FolderSidebar({
         
         {/* Unsorted Folder - for cards without a folder (DEFAULT TO TOP) */}
         {(() => {
+          // Only use 'Uncategorized' folder now that backend is consistent
           const cardsByName = groupedByFolder['Uncategorized'] || {};
           const inStockCards = Object.entries(cardsByName).filter(([cardName, items]) => {
             const matchesSearch = inventorySearch === '' || cardName.toLowerCase().includes(inventorySearch.toLowerCase());
@@ -247,7 +248,7 @@ export const FolderSidebar = memo(function FolderSidebar({
 
         {/* Other Folders */}
         {Object.entries(groupedByFolder)
-          .filter(([folder]) => folder !== 'Uncategorized' && folder !== 'Trash' && !createdFolders.includes(folder))
+          .filter(([folder]) => folder !== 'Uncategorized' && folder !== 'Unsorted' && folder !== 'Trash' && !createdFolders.includes(folder))
           .map(([folder, cardsByName]) => {
             const folderInStockCards = Object.entries(cardsByName).filter(([_, items]) => {
               const totalQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);

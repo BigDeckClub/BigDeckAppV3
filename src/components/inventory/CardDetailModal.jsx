@@ -522,7 +522,7 @@ export const CardDetailModal = memo(function CardDetailModal({
 
   return (
     <div 
-      className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 md:p-6"
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-start justify-end p-4 md:p-6"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
@@ -531,7 +531,7 @@ export const CardDetailModal = memo(function CardDetailModal({
       <div 
         ref={modalRef}
         tabIndex={-1}
-        className="bg-gradient-to-b from-slate-800 to-slate-900 rounded-2xl border border-slate-700 shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col"
+        className="bg-gradient-to-b from-slate-800 to-slate-900 rounded-2xl border border-slate-700 shadow-2xl w-full max-w-xl max-h-[90vh] overflow-hidden flex flex-col mt-12"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
