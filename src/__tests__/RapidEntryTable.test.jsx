@@ -343,4 +343,113 @@ describe('RapidEntryTable Component', () => {
       })
     );
   });
+
+  // ========== LOT MODE TESTS ==========
+  describe('Lot Mode', () => {
+    it('renders lot mode toggle', () => {
+      render(<RapidEntryTable {...mockProps} />);
+      
+      expect(screen.getByText('Lot/Pack Mode')).toBeInTheDocument();
+      expect(screen.getByText('OFF')).toBeInTheDocument();
+    });
+
+    it('toggles lot mode on and off', () => {
+      render(<RapidEntryTable {...mockProps} />);
+      
+      // Initially OFF
+      expect(screen.getByText('OFF')).toBeInTheDocument();
+      
+      // Click toggle
+      const toggleButton = screen.getByText('OFF').closest('button');
+      fireEvent.click(toggleButton);
+      
+      // Now ON
+      expect(screen.getByText('ON')).toBeInTheDocument();
+      
+      // Click again to turn off
+      const toggleButtonOn = screen.getByText('ON').closest('button');
+      fireEvent.click(toggleButtonOn);
+      
+      // Back to OFF
+      expect(screen.getByText('OFF')).toBeInTheDocument();
+    });
+
+    it('shows lot name and total cost inputs when lot mode is enabled', () => {
+      render(<RapidEntryTable {...mockProps} />);
+      
+      // Toggle lot mode on
+      const toggleButton = screen.getByText('OFF').closest('button');
+      fireEvent.click(toggleButton);
+      
+      // Check for lot name input
+      expect(screen.getByPlaceholderText(/Mystery Booster Box/)).toBeInTheDocument();
+      
+      // Check for total lot cost label
+      expect(screen.getByText('Total Lot Cost')).toBeInTheDocument();
+    });
+
+    it('shows lot summary with 0 cards and $0.00 per card initially', () => {
+      render(<RapidEntryTable {...mockProps} />);
+      
+      // Toggle lot mode on
+      const toggleButton = screen.getByText('OFF').closest('button');
+      fireEvent.click(toggleButton);
+      
+      // Check for initial totals
+      expect(screen.getByText('Total Cards:')).toBeInTheDocument();
+      expect(screen.getByText('0')).toBeInTheDocument();
+      expect(screen.getByText('Cost Per Card:')).toBeInTheDocument();
+    });
+
+    it('shows Submit All Cards button when lot mode is enabled', () => {
+      render(<RapidEntryTable {...mockProps} />);
+      
+      // Toggle lot mode on
+      const toggleButton = screen.getByText('OFF').closest('button');
+      fireEvent.click(toggleButton);
+      
+      expect(screen.getByText('Submit All Cards')).toBeInTheDocument();
+    });
+
+    it('disables price input when lot mode is enabled', () => {
+      render(<RapidEntryTable {...mockProps} />);
+      
+      // Toggle lot mode on
+      const toggleButton = screen.getByText('OFF').closest('button');
+      fireEvent.click(toggleButton);
+      
+      // Price input should have placeholder "Auto" and be disabled
+      const priceInput = screen.getByPlaceholderText('Auto');
+      expect(priceInput).toBeDisabled();
+    });
+
+    it('allows entering lot name', () => {
+      render(<RapidEntryTable {...mockProps} />);
+      
+      // Toggle lot mode on
+      const toggleButton = screen.getByText('OFF').closest('button');
+      fireEvent.click(toggleButton);
+      
+      // Enter lot name
+      const lotNameInput = screen.getByPlaceholderText(/Mystery Booster Box/);
+      fireEvent.change(lotNameInput, { target: { value: 'My Test Lot' } });
+      
+      expect(lotNameInput).toHaveValue('My Test Lot');
+    });
+
+    it('allows entering total lot cost', () => {
+      render(<RapidEntryTable {...mockProps} />);
+      
+      // Toggle lot mode on
+      const toggleButton = screen.getByText('OFF').closest('button');
+      fireEvent.click(toggleButton);
+      
+      // Find the lot total cost input (the one with placeholder 0.00 in the lot section)
+      const inputs = screen.getAllByPlaceholderText('0.00');
+      const lotCostInput = inputs[0]; // First one is the lot total cost
+      fireEvent.change(lotCostInput, { target: { value: '45.00' } });
+      
+      expect(lotCostInput).toHaveValue(45);
+    });
+  });
 });
