@@ -129,3 +129,5 @@ export const SalesHistoryTab = () => {
     </div>
   );
 };
+
+export default SalesHistoryTab;
