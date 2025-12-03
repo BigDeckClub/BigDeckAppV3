@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApi } from '../hooks/useApi';
+import { API_ENDPOINTS } from '../config/api';
 
 export const SalesHistoryTab = () => {
   const { get } = useApi();
@@ -12,7 +13,7 @@ export const SalesHistoryTab = () => {
 
   const loadSalesHistory = async () => {
     try {
-      const data = await get('/api/sales');
+      const data = await get(API_ENDPOINTS.SALES);
       setSales((data || []).sort((a, b) => new Date(b.created_at) - new Date(a.created_at)));
     } catch (error) {
       setSales([]);

@@ -5,6 +5,7 @@ import { ToastProvider, useToast, TOAST_TYPES } from "./context/ToastContext";
 import { ConfirmProvider } from "./context/ConfirmContext";
 import { LoginForm } from "./components/LoginForm";
 import ErrorBoundary from "./components/ErrorBoundary";
+import ErrorBoundaryWithRetry from "./components/ErrorBoundaryWithRetry";
 import { ToastContainer } from "./components/ToastContainer";
 import { ConfirmDialog } from "./components/ConfirmDialog";
 import { OfflineBanner } from "./components/OfflineBanner";
@@ -84,14 +85,8 @@ function MTGInventoryTrackerContent() {
 
   const loadAllSets = useCallback(async () => {
     try {
-      const response = await fetch("https://api.scryfall.com/sets");
-      const data = await response.json();
-      if (data.data) {
-        const validSets = data.data
-          .filter((set) => set.set_type !== "token" && set.set_type !== "memorabilia")
-          .map((set) => ({ code: set.code.toUpperCase(), name: set.name }));
-        setAllSets(validSets);
-      }
+      const validSets = await getAllSets();
+      setAllSets(validSets);
     } catch (error) {}
   }, []);
 
@@ -188,62 +183,70 @@ function MTGInventoryTrackerContent() {
         )}
 
         {activeTab === "inventory" && !isLoading && (
-          <InventoryTab
-            inventory={inventory}
-            successMessage={successMessage}
-            setSuccessMessage={setSuccessMessage}
-            newEntry={newEntry}
-            setNewEntry={setNewEntry}
-            selectedCardSets={selectedCardSets}
-            allSets={allSets}
-            defaultSearchSet={defaultSearchSet}
-            setDefaultSearchSet={setDefaultSearchSet}
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-            searchResults={searchResults}
-            searchIsLoading={searchIsLoading}
-            showDropdown={showDropdown}
-            setShowDropdown={setShowDropdown}
-            selectCard={selectCard}
-            addCard={addCard}
-            expandedCards={expandedCards}
-            setExpandedCards={setExpandedCards}
-            editingId={editingId}
-            editForm={editForm}
-            setEditForm={setEditForm}
-            startEditingItem={startEditingItem}
-            updateInventoryItem={updateInventoryItem}
-            deleteInventoryItem={deleteInventoryItem}
-            handleSearch={handleSearch}
-            deckRefreshTrigger={deckRefreshTrigger}
-            onLoadInventory={loadInventory}
-            onSell={handleSell}
-          />
+          <ErrorBoundaryWithRetry>
+            <Suspense fallback={<TabLoadingSpinner />}>
+              <InventoryTab
+                inventory={inventory}
+                successMessage={successMessage}
+                setSuccessMessage={setSuccessMessage}
+                newEntry={newEntry}
+                setNewEntry={setNewEntry}
+                selectedCardSets={selectedCardSets}
+                allSets={allSets}
+                defaultSearchSet={defaultSearchSet}
+                setDefaultSearchSet={setDefaultSearchSet}
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                searchResults={searchResults}
+                searchIsLoading={searchIsLoading}
+                showDropdown={showDropdown}
+                setShowDropdown={setShowDropdown}
+                selectCard={selectCard}
+                addCard={addCard}
+                expandedCards={expandedCards}
+                setExpandedCards={setExpandedCards}
+                editingId={editingId}
+                editForm={editForm}
+                setEditForm={setEditForm}
+                startEditingItem={startEditingItem}
+                updateInventoryItem={updateInventoryItem}
+                deleteInventoryItem={deleteInventoryItem}
+                handleSearch={handleSearch}
+                deckRefreshTrigger={deckRefreshTrigger}
+                onLoadInventory={loadInventory}
+                onSell={handleSell}
+              />
+            </Suspense>
+          </ErrorBoundaryWithRetry>
         )}
 
         {activeTab === "imports" && !isLoading && (
-          <ImportTab
-            imports={imports}
-            onLoadImports={loadImports}
-            successMessage={successMessage}
-            setSuccessMessage={setSuccessMessage}
-            newEntry={newEntry}
-            setNewEntry={setNewEntry}
-            selectedCardSets={selectedCardSets}
-            allSets={allSets}
-            defaultSearchSet={defaultSearchSet}
-            setDefaultSearchSet={setDefaultSearchSet}
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-            searchResults={searchResults}
-            showDropdown={showDropdown}
-            setShowDropdown={setShowDropdown}
-            selectCard={selectCard}
-            addCard={addCard}
-            handleSearch={handleSearch}
-            searchIsLoading={searchIsLoading}
-            addInventoryItem={addInventoryItem}
-          />
+          <ErrorBoundaryWithRetry>
+            <Suspense fallback={<TabLoadingSpinner />}>
+              <ImportTab
+                imports={imports}
+                onLoadImports={loadImports}
+                successMessage={successMessage}
+                setSuccessMessage={setSuccessMessage}
+                newEntry={newEntry}
+                setNewEntry={setNewEntry}
+                selectedCardSets={selectedCardSets}
+                allSets={allSets}
+                defaultSearchSet={defaultSearchSet}
+                setDefaultSearchSet={setDefaultSearchSet}
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                searchResults={searchResults}
+                showDropdown={showDropdown}
+                setShowDropdown={setShowDropdown}
+                selectCard={selectCard}
+                addCard={addCard}
+                handleSearch={handleSearch}
+                searchIsLoading={searchIsLoading}
+                addInventoryItem={addInventoryItem}
+              />
+            </Suspense>
+          </ErrorBoundaryWithRetry>
         )}
 
         {activeTab === "analytics" && !isLoading && <AnalyticsTab inventory={inventory} />}
