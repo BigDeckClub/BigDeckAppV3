@@ -7,6 +7,9 @@ const router = express.Router();
 // Reserved folder names that cannot be created by users (case-insensitive)
 const RESERVED_FOLDER_NAMES = ['unsorted', 'uncategorized', 'all cards'];
 
+// Default folder name for unsorted/uncategorized cards
+const DEFAULT_FOLDER_NAME = 'Uncategorized';
+
 // ========== FOLDERS ENDPOINTS ==========
 
 // GET /api/folders - Fetch all folders
@@ -114,10 +117,10 @@ router.delete('/api/folders/:id', validateId, async (req, res) => {
     
     const folderName = folderResult.rows[0].name;
     
-    // Move all cards in this folder to 'Uncategorized'
+    // Move all cards in this folder to the default folder
     await pool.query(
-      `UPDATE inventory SET folder = 'Uncategorized' WHERE folder = $1`,
-      [folderName]
+      `UPDATE inventory SET folder = $1 WHERE folder = $2`,
+      [DEFAULT_FOLDER_NAME, folderName]
     );
     
     // Delete the folder
