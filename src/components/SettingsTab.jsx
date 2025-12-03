@@ -903,3 +903,5 @@ export const SettingsTab = ({ inventory }) => {
     </div>
   );
 };
+
+export default SettingsTab;

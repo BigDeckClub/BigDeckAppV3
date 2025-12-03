@@ -325,3 +325,5 @@ export const AnalyticsTab = ({ inventory }) => {
 AnalyticsTab.propTypes = {
   inventory: PropTypes.array.isRequired,
 };
+
+export default AnalyticsTab;

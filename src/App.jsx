@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense, lazy, useCallback } from "react";
 import {
   Layers,
   Download,
@@ -8,11 +8,6 @@ import {
   Settings,
 } from "lucide-react";
 import { useDebounce } from "./utils/useDebounce";
-import { InventoryTab } from "./components/InventoryTab";
-import { ImportTab } from "./components/ImportTab";
-import { AnalyticsTab } from "./components/AnalyticsTab";
-import { DeckTab } from "./components/DeckTab";
-import { SalesHistoryTab } from "./components/SalesHistoryTab";
 import { PriceCacheProvider, usePriceCache } from "./context/PriceCacheContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ToastProvider, useToast, TOAST_TYPES } from "./context/ToastContext";
@@ -25,8 +20,16 @@ import { ConfirmDialog } from "./components/ConfirmDialog";
 import { OfflineBanner } from "./components/OfflineBanner";
 import { useApi } from "./hooks/useApi";
 import { TutorialModal } from "./components/TutorialModal";
-import { SettingsTab } from "./components/SettingsTab";
+import { TabLoadingSpinner } from "./components/TabLoadingSpinner";
 import { getCachedSearch, setCachedSearch, getPopularCardMatches } from "./utils/popularCards";
+
+// Lazy load tab components for code splitting
+const InventoryTab = lazy(() => import("./components/InventoryTab"));
+const ImportTab = lazy(() => import("./components/ImportTab"));
+const AnalyticsTab = lazy(() => import("./components/AnalyticsTab"));
+const DeckTab = lazy(() => import("./components/DeckTab"));
+const SalesHistoryTab = lazy(() => import("./components/SalesHistoryTab"));
+const SettingsTab = lazy(() => import("./components/SettingsTab"));
 
 const API_BASE = "/api";
 
@@ -71,7 +74,7 @@ function MTGInventoryTrackerContent() {
 
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
-  const loadInventory = async () => {
+  const loadInventory = useCallback(async () => {
     console.log('=== LOAD INVENTORY CALLED ===');
     try {
       const data = await get(`${API_BASE}/inventory`);
@@ -88,20 +91,20 @@ function MTGInventoryTrackerContent() {
       console.error('Error loading inventory:', error);
       setInventory([]);
     }
-  };
+  }, [get]);
 
 
 
-  const loadImports = async () => {
+  const loadImports = useCallback(async () => {
     try {
       const data = await get(`${API_BASE}/imports`);
       setImports(data || []);
     } catch (error) {
       setImports([]);
     }
-  };
+  }, [get]);
 
-  const loadAllSets = async () => {
+  const loadAllSets = useCallback(async () => {
     try {
       const response = await fetch("https://api.scryfall.com/sets");
       const data = await response.json();
@@ -112,10 +115,10 @@ function MTGInventoryTrackerContent() {
         setAllSets(validSets);
       }
     } catch (error) {}
-  };
+  }, []);
 
   // Score function for smart search ranking
-  const scoreCardMatch = (cardName, query) => {
+  const scoreCardMatch = useCallback((cardName, query) => {
     const lowerName = cardName.toLowerCase();
     const lowerQuery = query.toLowerCase();
     
@@ -170,9 +173,9 @@ function MTGInventoryTrackerContent() {
       matchPos++;
     }
     return 50;
-  };
+  }, []);
 
-  const handleSearch = async (query) => {
+  const handleSearch = useCallback(async (query) => {
     if (!query || query.length < 2) {
       setSearchResults([]);
       setShowDropdown(false);
@@ -230,7 +233,7 @@ function MTGInventoryTrackerContent() {
     } finally {
       setSearchIsLoading(false);
     }
-  };
+  }, [scoreCardMatch]);
 
   useEffect(() => {
     if (debouncedSearchQuery) {
@@ -259,14 +262,9 @@ function MTGInventoryTrackerContent() {
       setIsLoading(false);
     };
     loadAllData();
-  }, [user]);
+  }, [user, loadInventory, loadAllSets]);
 
-  const addInventoryItem = async (item) => {
-    // Optimistic update: add temporary item to state immediately
-    const tempId = `temp-${Date.now()}`;
-    const tempItem = { ...item, id: tempId, quantity: item.quantity || 1 };
-    setInventory(prev => [...prev, tempItem].sort((a, b) => a.name.localeCompare(b.name)));
-    
+  const addInventoryItem = useCallback(async (item) => {
     try {
       await post(`${API_BASE}/inventory`, item);
       await loadInventory(); // Refresh to get real data
@@ -280,17 +278,9 @@ function MTGInventoryTrackerContent() {
       });
       return false;
     }
-  };
+  }, [post, loadInventory]);
 
-  const updateInventoryItem = async (id, updates) => {
-    // Store previous state for potential rollback
-    const previousInventory = [...inventory];
-    
-    // Optimistic update
-    setInventory(prev => prev.map(item => 
-      item.id === id ? { ...item, ...updates } : item
-    ));
-    
+  const updateInventoryItem = useCallback(async (id, updates) => {
     try {
       // Add last_modified timestamp to track changes
       const updateWithTimestamp = {
@@ -308,29 +298,16 @@ function MTGInventoryTrackerContent() {
         action: { label: 'Retry', onClick: () => updateInventoryItem(id, updates) }
       });
     }
-  };
+  }, [put, loadInventory]);
 
-  const deleteInventoryItem = async (id) => {
-    const item = inventory.find(i => i.id === id);
-    const confirmed = await confirm({
-      title: 'Move to Uncategorized',
-      message: `Are you sure you want to move "${item?.name || 'this card'}" to Uncategorized?`,
-      confirmText: 'Move',
-      variant: 'default'
-    });
-    
-    if (!confirmed) return;
-    
+  const deleteInventoryItem = useCallback(async (id) => {
     try {
       await put(`${API_BASE}/inventory/${id}`, { folder: 'Uncategorized' });
       await loadInventory();
-      showToast("Card moved to Uncategorized", TOAST_TYPES.INFO);
-    } catch (error) {
-      showToast("Error moving card", TOAST_TYPES.ERROR);
-    }
-  };
+    } catch (error) {}
+  }, [put, loadInventory]);
 
-  const startEditingItem = (item) => {
+  const startEditingItem = useCallback((item) => {
     setEditingId(item.id);
     setEditForm({
       quantity: item.quantity,
@@ -338,15 +315,15 @@ function MTGInventoryTrackerContent() {
       folder: item.folder || "Uncategorized",
       reorder_type: item.reorder_type || "normal",
     });
-  };
+  }, []);
 
-  const selectCard = (card) => {
-    setNewEntry({ ...newEntry, selectedSet: card });
+  const selectCard = useCallback((card) => {
+    setNewEntry(prev => ({ ...prev, selectedSet: card }));
     setSearchQuery(card.name);
     setShowDropdown(false);
-  };
+  }, []);
 
-  const addCard = async () => {
+  const addCard = useCallback(async () => {
     if (!newEntry.selectedSet) {
       showToast("Please select a card", TOAST_TYPES.WARNING);
       return;
@@ -376,10 +353,10 @@ function MTGInventoryTrackerContent() {
       setSearchResults([]);
       setShowDropdown(false);
     }
-  };
+  }, [newEntry, addInventoryItem]);
 
 
-  const handleSell = async (saleData) => {
+  const handleSell = useCallback(async (saleData) => {
     try {
       await post(`${API_BASE}/sales`, saleData);
       if (saleData.itemType === 'deck') {
@@ -391,7 +368,7 @@ function MTGInventoryTrackerContent() {
       showToast("Failed to record sale", TOAST_TYPES.ERROR);
       throw error;
     }
-  };
+  }, [post, loadInventory]);
 
   // Conditional returns AFTER all hooks are called
   if (authLoading) {
