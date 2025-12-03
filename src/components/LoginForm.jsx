@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Layers, TrendingUp, BookOpen, BarChart3, ArrowRight, Sparkles } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { Input, Button, Alert } from './ui';
 
 // Animated background particles
 function AnimatedParticles() {
@@ -91,6 +92,10 @@ function FeatureCard({ feature, index }) {
   );
 }
 
+/**
+ * LoginForm - Authentication form with signup/login toggle
+ * Refactored to use shared UI components
+ */
 export function LoginForm({ onSuccess }) {
   const { login, signup } = useAuth();
   const [email, setEmail] = useState('');
@@ -98,7 +103,6 @@ export function LoginForm({ onSuccess }) {
   const [isSignup, setIsSignup] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [focusedField, setFocusedField] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -223,65 +227,47 @@ export function LoginForm({ onSuccess }) {
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="animate-fade-up" style={{ animationDelay: '0.2s' }}>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">
-                      Email Address
-                    </label>
-                    <div className={`relative transition-all duration-300 ${focusedField === 'email' ? 'ring-2 ring-teal-500/50 rounded-lg' : ''}`}>
-                      <input
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        onFocus={() => setFocusedField('email')}
-                        onBlur={() => setFocusedField(null)}
-                        className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-teal-400 focus:ring-1 focus:ring-teal-400/50 transition backdrop-blur-sm"
-                        placeholder="you@example.com"
-                        required
-                      />
-                    </div>
+                    <Input
+                      label="Email Address"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="you@example.com"
+                      required
+                      className="bg-slate-700/50 border-slate-600/50"
+                    />
                   </div>
 
                   <div className="animate-fade-up" style={{ animationDelay: '0.3s' }}>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">
-                      Password
-                    </label>
-                    <div className={`relative transition-all duration-300 ${focusedField === 'password' ? 'ring-2 ring-teal-500/50 rounded-lg' : ''}`}>
-                      <input
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        onFocus={() => setFocusedField('password')}
-                        onBlur={() => setFocusedField(null)}
-                        className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-teal-400 focus:ring-1 focus:ring-teal-400/50 transition backdrop-blur-sm"
-                        placeholder="••••••••"
-                        required
-                      />
-                    </div>
+                    <Input
+                      label="Password"
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      required
+                      className="bg-slate-700/50 border-slate-600/50"
+                    />
                   </div>
 
                   {error && (
-                    <div className="p-4 bg-red-900/30 border border-red-700/50 rounded-lg text-red-300 text-sm animate-fade-up">
+                    <Alert variant="error" className="animate-fade-up">
                       {error}
-                    </div>
+                    </Alert>
                   )}
 
-                  <button
+                  <Button
                     type="submit"
-                    disabled={loading}
-                    className="w-full px-4 py-3 mt-6 bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white font-semibold rounded-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition duration-300 animate-fade-up shadow-lg hover:shadow-xl hover:shadow-teal-500/20"
+                    variant="primary"
+                    size="lg"
+                    fullWidth
+                    loading={loading}
+                    iconRight={!loading ? <ArrowRight className="w-4 h-4" /> : undefined}
+                    className="mt-6 animate-fade-up shadow-lg hover:shadow-xl hover:shadow-teal-500/20"
                     style={{ animationDelay: '0.4s' }}
                   >
-                    {loading ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        Loading...
-                      </>
-                    ) : (
-                      <>
-                        {isSignup ? 'Create Account' : 'Sign In'}
-                        <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                      </>
-                    )}
-                  </button>
+                    {loading ? 'Loading...' : isSignup ? 'Create Account' : 'Sign In'}
+                  </Button>
                 </form>
 
                 <div className="mt-6 pt-6 border-t border-slate-700/50 text-center animate-fade-up" style={{ animationDelay: '0.5s' }}>
