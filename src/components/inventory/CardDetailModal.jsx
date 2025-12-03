@@ -1,4 +1,4 @@
-import React, { memo, useState, useEffect } from 'react';
+import React, { memo, useState, useEffect, useRef, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { X, Trash2, Edit2, Bell, BellOff, ChevronDown, ChevronUp, Package, DollarSign, Calendar, Hash, FolderOpen, Save, XCircle, Image } from 'lucide-react';
 import { calculateSmartThreshold } from '../../utils/thresholdCalculator';
@@ -353,6 +353,88 @@ export const CardDetailModal = memo(function CardDetailModal({
   const [imageLoading, setImageLoading] = useState(true);
   const [showAllSkus, setShowAllSkus] = useState(false);
   
+  // Refs for focus management
+  const modalRef = useRef(null);
+  const previousActiveElement = useRef(null);
+  
+  // Get all focusable elements within a container
+  const getFocusableElements = useCallback((container) => {
+    const focusableSelectors = [
+      'button:not([disabled])',
+      'a[href]',
+      'input:not([disabled])',
+      'select:not([disabled])',
+      'textarea:not([disabled])',
+      '[tabindex]:not([tabindex="-1"])',
+    ].join(', ');
+    return container ? Array.from(container.querySelectorAll(focusableSelectors)) : [];
+  }, []);
+
+  // Keyboard accessibility: Escape key to close and focus trap
+  useEffect(() => {
+    if (!isOpen) return;
+    
+    // Store the previously focused element
+    previousActiveElement.current = document.activeElement;
+    
+    // Handle keyboard events
+    const handleKeyDown = (e) => {
+      // Close on Escape
+      if (e.key === 'Escape') {
+        onClose();
+        return;
+      }
+      
+      // Focus trap
+      if (e.key === 'Tab' && modalRef.current) {
+        const focusableElements = getFocusableElements(modalRef.current);
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+        
+        if (focusableElements.length === 0) {
+          e.preventDefault();
+          return;
+        }
+        
+        if (e.shiftKey) {
+          // Shift + Tab: if on first element, go to last
+          if (document.activeElement === firstElement) {
+            e.preventDefault();
+            lastElement?.focus();
+          }
+        } else {
+          // Tab: if on last element, go to first
+          if (document.activeElement === lastElement) {
+            e.preventDefault();
+            firstElement?.focus();
+          }
+        }
+      }
+    };
+    
+    // Add event listener
+    document.addEventListener('keydown', handleKeyDown);
+    
+    // Focus the first focusable element in the modal
+    if (modalRef.current) {
+      const focusableElements = getFocusableElements(modalRef.current);
+      if (focusableElements.length > 0) {
+        focusableElements[0].focus();
+      } else {
+        modalRef.current.focus();
+      }
+    }
+    
+    // Cleanup
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      // Restore focus to the previously focused element
+      if (previousActiveElement.current && typeof previousActiveElement.current.focus === 'function') {
+        previousActiveElement.current.focus();
+      }
+    };
+  }, [isOpen, onClose, getFocusableElements]);
+  
   // Load sales history and threshold settings on mount
   useEffect(() => {
     const saved = localStorage.getItem('thresholdSettings');
@@ -390,14 +472,6 @@ export const CardDetailModal = memo(function CardDetailModal({
   // Get unique sets
   const uniqueSets = [...new Set(items.map(item => item.set?.toUpperCase()).filter(Boolean))];
   const firstItem = items[0];
-
-  // Group items by set for display
-  const groupedBySet = items.reduce((acc, item) => {
-    const setKey = item.set?.toUpperCase() || 'Unknown';
-    if (!acc[setKey]) acc[setKey] = [];
-    acc[setKey].push(item);
-    return acc;
-  }, {});
 
   // Determine which SKUs to show
   const maxInitialSkus = 3;
@@ -455,6 +529,8 @@ export const CardDetailModal = memo(function CardDetailModal({
       aria-labelledby="card-detail-title"
     >
       <div 
+        ref={modalRef}
+        tabIndex={-1}
         className="bg-gradient-to-b from-slate-800 to-slate-900 rounded-2xl border border-slate-700 shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col"
         onClick={e => e.stopPropagation()}
       >

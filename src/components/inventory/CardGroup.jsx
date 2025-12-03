@@ -120,7 +120,7 @@ export const CardGroup = memo(function CardGroup({
             e.dataTransfer.setData('skuData', JSON.stringify(items[0]));
           }
         }}
-        className="relative bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 hover:border-teal-400 rounded-lg p-3 md:p-4 transition-all duration-300 flex flex-col h-32 sm:h-36 md:h-40 hover:shadow-2xl hover:shadow-teal-500/30 hover:-translate-y-1 cursor-pointer active:cursor-grabbing group active:scale-95" 
+        className="relative bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 hover:border-teal-400 rounded-lg p-3 md:p-4 transition-all duration-300 flex flex-col h-32 sm:h-36 md:h-40 hover:shadow-2xl hover:shadow-teal-500/30 hover:-translate-y-1 cursor-grab active:cursor-grabbing group active:scale-95" 
         onClick={handleOpenModal}
       >
         {isTrashView ? (
@@ -225,7 +225,7 @@ export const CardGroup = memo(function CardGroup({
               e.dataTransfer.setData('skuData', JSON.stringify(items[0]));
             }
           }}
-          className="relative bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 hover:border-teal-400 rounded-lg p-4 transition-all duration-300 cursor-pointer active:cursor-grabbing hover:shadow-2xl hover:shadow-teal-500/30 group"
+          className="relative bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 hover:border-teal-400 rounded-lg p-4 transition-all duration-300 cursor-grab active:cursor-grabbing hover:shadow-2xl hover:shadow-teal-500/30 group"
           onClick={handleOpenModal}
         >
           <button
