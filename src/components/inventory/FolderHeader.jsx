@@ -1,10 +1,10 @@
 import React, { memo } from 'react';
 import PropTypes from 'prop-types';
-import { DollarSign } from 'lucide-react';
+import { DollarSign, Trash2 } from 'lucide-react';
 
 /**
  * FolderHeader - Header component for folder view
- * Shows folder name, description, stats, and sell button
+ * Shows folder name, description, stats, sell button, and delete button
  */
 export const FolderHeader = memo(function FolderHeader({
   folderName,
@@ -18,7 +18,9 @@ export const FolderHeader = memo(function FolderHeader({
   setEditingFolderDesc,
   setFolderMetadata,
   setSellModalData,
-  setShowSellModal
+  setShowSellModal,
+  onDeleteFolder,
+  isUnsorted
 }) {
   return (
     <div className="bg-slate-800 rounded-lg border border-slate-600 p-4 mb-4">
@@ -86,6 +88,15 @@ export const FolderHeader = memo(function FolderHeader({
           >
             <DollarSign className="w-4 h-4" />
           </button>
+          {!isUnsorted && onDeleteFolder && (
+            <button
+              onClick={() => onDeleteFolder(folderName)}
+              className="bg-red-600 hover:bg-red-500 text-white p-2 rounded transition-colors flex items-center"
+              title="Delete this folder"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -104,7 +115,9 @@ FolderHeader.propTypes = {
   setEditingFolderDesc: PropTypes.func.isRequired,
   setFolderMetadata: PropTypes.func.isRequired,
   setSellModalData: PropTypes.func.isRequired,
-  setShowSellModal: PropTypes.func.isRequired
+  setShowSellModal: PropTypes.func.isRequired,
+  onDeleteFolder: PropTypes.func,
+  isUnsorted: PropTypes.bool
 };
 
 export default FolderHeader;

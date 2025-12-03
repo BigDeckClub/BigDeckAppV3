@@ -63,7 +63,7 @@ export const FolderSidebar = memo(function FolderSidebar({
               onChange={(e) => setNewFolderName(e.target.value)}
               className="w-full bg-slate-800 border border-teal-600 rounded px-3 py-2 text-white placeholder-gray-400 text-sm"
               autoFocus
-              onKeyDown={(e) => {
+              onKeyDown={async (e) => {
                 if (e.key === 'Enter' && newFolderName.trim()) {
                   addCreatedFolder(newFolderName);
                   setNewFolderName('');
@@ -79,7 +79,7 @@ export const FolderSidebar = memo(function FolderSidebar({
             />
             <div className="flex gap-2">
               <button
-                onClick={() => {
+                onClick={async () => {
                   if (newFolderName.trim()) {
                     addCreatedFolder(newFolderName);
                     setNewFolderName('');

@@ -4,6 +4,12 @@ import { validateId } from '../middleware/index.js';
 
 const router = express.Router();
 
+// Reserved folder names that cannot be created by users (case-insensitive)
+const RESERVED_FOLDER_NAMES = ['unsorted', 'uncategorized', 'all cards'];
+
+// Default folder name for unsorted/uncategorized cards
+const DEFAULT_FOLDER_NAME = 'Uncategorized';
+
 // ========== FOLDERS ENDPOINTS ==========
 
 // GET /api/folders - Fetch all folders
@@ -30,9 +36,16 @@ router.post('/api/folders', async (req, res) => {
       return res.status(400).json({ error: 'Folder name is required' });
     }
     
+    const trimmedName = name.trim();
+    
+    // Check for reserved folder names (case-insensitive)
+    if (RESERVED_FOLDER_NAMES.includes(trimmedName.toLowerCase())) {
+      return res.status(400).json({ error: `"${trimmedName}" is a reserved folder name and cannot be used` });
+    }
+    
     const result = await pool.query(
       `INSERT INTO folders (name, description) VALUES ($1, $2) RETURNING *`,
-      [name.trim(), description || null]
+      [trimmedName, description || null]
     );
     
     res.json(result.rows[0]);
@@ -92,14 +105,29 @@ router.delete('/api/folders/:id', validateId, async (req, res) => {
   const id = req.validatedId;
   
   try {
+    // Get the folder name first
+    const folderResult = await pool.query(
+      `SELECT name FROM folders WHERE id = $1`,
+      [id]
+    );
+    
+    if (folderResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Folder not found' });
+    }
+    
+    const folderName = folderResult.rows[0].name;
+    
+    // Move all cards in this folder to the default folder
+    await pool.query(
+      `UPDATE inventory SET folder = $1 WHERE folder = $2`,
+      [DEFAULT_FOLDER_NAME, folderName]
+    );
+    
+    // Delete the folder
     const result = await pool.query(
       `DELETE FROM folders WHERE id = $1 RETURNING *`,
       [id]
     );
-    
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Folder not found' });
-    }
     
     res.json({ success: true, folder: result.rows[0] });
   } catch (error) {

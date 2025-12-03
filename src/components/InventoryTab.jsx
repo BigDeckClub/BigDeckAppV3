@@ -13,6 +13,9 @@ import { SellModal } from './SellModal';
 import { useFolderOperations } from '../hooks/useFolderOperations';
 import { useDeckReservations } from '../hooks/useDeckReservations';
 
+// Reserved folder names that cannot be created by users (case-insensitive)
+const RESERVED_FOLDER_NAMES = ['unsorted', 'uncategorized', 'all cards'];
+
 /**
  * InventoryTab - Main inventory management component
  * Refactored to use smaller sub-components and custom hooks for maintainability
@@ -333,6 +336,8 @@ export const InventoryTab = ({
                       setFolderMetadata={folderOps.setFolderMetadata}
                       setSellModalData={setSellModalData}
                       setShowSellModal={setShowSellModal}
+                      onDeleteFolder={deleteFolder}
+                      isUnsorted={activeTab === 'Uncategorized'}
                     />
                     {folderCards.length > 0 ? (
                       <CardGrid cards={folderCards} {...cardGridProps} />
