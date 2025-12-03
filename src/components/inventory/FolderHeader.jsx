@@ -24,7 +24,7 @@ export const FolderHeader = memo(function FolderHeader({
     <div className="bg-slate-800 rounded-lg border border-slate-600 p-4 mb-4">
       <div className="flex justify-between items-start">
         <div className="flex-1">
-          <h2 className="text-2xl font-bold text-teal-300">{folderName}</h2>
+          <h2 className="text-2xl font-bold text-teal-300">{folderName === 'Uncategorized' ? 'Unsorted' : folderName}</h2>
           {editingFolderName === folderName ? (
             <input
               type="text"
