@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { Plus, Trash2, X, ChevronDown, ChevronRight, Grid3X3, List, Menu, Wand2, DollarSign } from 'lucide-react';
 import { usePriceCache } from "../context/PriceCacheContext";
@@ -950,7 +950,7 @@ export const InventoryTab = ({
                     onClick={() => openDeckTab(deck)}
                     onDragOver={(e) => {
                       e.preventDefault();
-                      this?.classList?.add('bg-green-700/60', 'border-green-300');
+                      e.currentTarget.classList.add('bg-green-700/60', 'border-green-300');
                     }}
                     onDragLeave={(e) => {
                       e.currentTarget?.classList?.remove('bg-green-700/60', 'border-green-300');
