@@ -32,6 +32,13 @@ export const PresetManager = ({
       }, {});
   }, [inventory]);
 
+  // Create a flattened array and lookup map for efficient card access
+  const { flattenedCards, cardLookup } = useMemo(() => {
+    const flattened = Object.values(cardsWithAlerts).flat();
+    const lookup = new Map(flattened.map(item => [item.id, item]));
+    return { flattenedCards: flattened, cardLookup: lookup };
+  }, [cardsWithAlerts]);
+
   const toggleCardSelection = useCallback((itemId) => {
     setSelectedCards(prev => 
       prev.includes(itemId) 
@@ -43,8 +50,8 @@ export const PresetManager = ({
   const handleApplyPreset = useCallback(async () => {
     const preset = THRESHOLD_PRESETS[selectedCategory];
     const cardsToUpdate = presetMode === 'single' && selectedCards.length > 0 
-      ? selectedCards.map(id => Object.values(cardsWithAlerts).flat().find(item => item.id === id)).filter(Boolean)
-      : Object.values(cardsWithAlerts).flat();
+      ? selectedCards.map(id => cardLookup.get(id)).filter(Boolean)
+      : flattenedCards;
     
     if (cardsToUpdate.length === 0) {
       setSuccessMessage('No cards selected');
@@ -73,7 +80,7 @@ export const PresetManager = ({
     } finally {
       setSaving(false);
     }
-  }, [selectedCategory, presetMode, selectedCards, cardsWithAlerts, put, onSuccess]);
+  }, [selectedCategory, presetMode, selectedCards, flattenedCards, cardLookup, put, onSuccess]);
 
   return (
     <div className="bg-slate-800 rounded-lg border border-slate-600 p-6">
@@ -113,9 +120,9 @@ export const PresetManager = ({
           </p>
         </div>
 
-        {presetMode === 'single' && Object.keys(cardsWithAlerts).length > 0 && (
+        {presetMode === 'single' && flattenedCards.length > 0 && (
           <div className="max-h-32 overflow-y-auto space-y-2 bg-slate-700/30 rounded p-3 border border-slate-600">
-            {Object.values(cardsWithAlerts).flat().map(item => (
+            {flattenedCards.map(item => (
               <label key={item.id} className="flex items-center gap-2 cursor-pointer hover:bg-slate-600/50 p-1 rounded">
                 <input
                   type="checkbox"

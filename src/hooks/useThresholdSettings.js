@@ -14,11 +14,15 @@ export function useThresholdSettings() {
   const [saveStatus, setSaveStatus] = useState(''); // '', 'saving', 'saved'
   const saveTimeoutRef = useRef(null);
   const debounceTimeoutRef = useRef(null);
+  
+  // Flag to skip auto-save during initial load
+  const isInitializedRef = useRef(false);
 
-  // Cleanup saveTimeoutRef on unmount to prevent memory leaks
+  // Cleanup timeouts on unmount to prevent memory leaks
   useEffect(() => {
     return () => {
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+      if (debounceTimeoutRef.current) clearTimeout(debounceTimeoutRef.current);
     };
   }, []);
 
@@ -38,8 +42,13 @@ export function useThresholdSettings() {
     }
   }, [post]);
 
-  // Debounced save effect (500ms)
+  // Debounced save effect (500ms) - skips during initial load
   useEffect(() => {
+    // Skip auto-save during initial load
+    if (!isInitializedRef.current) {
+      return;
+    }
+    
     if (debounceTimeoutRef.current) {
       clearTimeout(debounceTimeoutRef.current);
     }
@@ -52,6 +61,22 @@ export function useThresholdSettings() {
     };
   }, [thresholdSettings, saveSettingsToBackend]);
 
+  // Helper function to load settings from localStorage
+  const loadFromLocalStorage = useCallback(() => {
+    const saved = localStorage.getItem('thresholdSettings');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        setThresholdSettings(parsed);
+        console.log('[Settings] Threshold settings loaded from localStorage:', parsed);
+        return true;
+      } catch (err) {
+        console.error('[Settings] Failed to parse saved threshold settings:', err);
+      }
+    }
+    return false;
+  }, []);
+
   // Load threshold settings from localStorage/backend on mount
   useEffect(() => {
     // Try to load from backend first
@@ -63,31 +88,18 @@ export function useThresholdSettings() {
           console.log('[Settings] Threshold settings loaded from backend:', data);
         } else {
           // Fallback to localStorage if backend has no data
-          const saved = localStorage.getItem('thresholdSettings');
-          if (saved) {
-            try {
-              const parsed = JSON.parse(saved);
-              setThresholdSettings(parsed);
-              console.log('[Settings] Threshold settings loaded from localStorage:', parsed);
-            } catch (err) {
-              console.error('[Settings] Failed to parse saved threshold settings:', err);
-            }
-          }
+          loadFromLocalStorage();
         }
       })
       .catch(err => {
         console.error('[Settings] Error loading from backend, falling back to localStorage:', err);
-        const saved = localStorage.getItem('thresholdSettings');
-        if (saved) {
-          try {
-            const parsed = JSON.parse(saved);
-            setThresholdSettings(parsed);
-          } catch (err) {
-            console.error('[Settings] Failed to parse saved threshold settings:', err);
-          }
-        }
+        loadFromLocalStorage();
+      })
+      .finally(() => {
+        // Mark as initialized after initial load completes
+        isInitializedRef.current = true;
       });
-  }, []);
+  }, [loadFromLocalStorage]);
 
   // Handler to update slider values
   const handleSliderChange = useCallback((key, value) => {
