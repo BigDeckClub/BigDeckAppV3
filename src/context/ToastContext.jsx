@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
 import PropTypes from 'prop-types';
 
 const ToastContext = createContext(null);
@@ -22,20 +22,26 @@ const DEFAULT_OPTIONS = {
   action: null, // { label: string, onClick: () => void }
 };
 
-let toastIdCounter = 0;
-
 /**
  * ToastProvider component that wraps the application
  * and provides toast notification functionality
  */
 export function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([]);
+  const toastIdCounterRef = useRef(0);
+  const timeoutIdsRef = useRef(new Map());
 
   /**
    * Dismiss a specific toast by ID
    * @param {string} id - The toast ID to dismiss
    */
   const dismissToast = useCallback((id) => {
+    // Clear the timeout for this toast if it exists
+    const timeoutId = timeoutIdsRef.current.get(id);
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      timeoutIdsRef.current.delete(id);
+    }
     setToasts((prev) => prev.filter((toast) => toast.id !== id));
   }, []);
 
@@ -50,7 +56,7 @@ export function ToastProvider({ children }) {
    * @returns {string} The toast ID
    */
   const showToast = useCallback((message, type = TOAST_TYPES.INFO, options = {}) => {
-    const id = `toast-${++toastIdCounter}`;
+    const id = `toast-${++toastIdCounterRef.current}-${Date.now()}`;
     const mergedOptions = { ...DEFAULT_OPTIONS, ...options };
 
     const toast = {
@@ -65,9 +71,10 @@ export function ToastProvider({ children }) {
 
     // Auto-dismiss if duration is set
     if (mergedOptions.duration > 0) {
-      setTimeout(() => {
+      const timeoutId = setTimeout(() => {
         dismissToast(id);
       }, mergedOptions.duration);
+      timeoutIdsRef.current.set(id, timeoutId);
     }
 
     return id;
@@ -77,6 +84,9 @@ export function ToastProvider({ children }) {
    * Dismiss all toasts
    */
   const dismissAllToasts = useCallback(() => {
+    // Clear all timeouts
+    timeoutIdsRef.current.forEach((timeoutId) => clearTimeout(timeoutId));
+    timeoutIdsRef.current.clear();
     setToasts([]);
   }, []);
 

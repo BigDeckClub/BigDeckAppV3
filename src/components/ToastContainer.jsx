@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { X, CheckCircle, AlertCircle, AlertTriangle, Info } from 'lucide-react';
 import { useToast, TOAST_TYPES } from '../context/ToastContext';
 
@@ -59,31 +59,56 @@ function Toast({ toast, onDismiss }) {
   const [isExiting, setIsExiting] = useState(false);
   const [progress, setProgress] = useState(100);
   const styles = getToastStyles(toast.type);
+  const mountedRef = useRef(true);
+  const dismissTimeoutRef = useRef(null);
+
+  // Track component mount state
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      // Clear dismiss timeout on unmount
+      if (dismissTimeoutRef.current) {
+        clearTimeout(dismissTimeoutRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (toast.duration > 0) {
       const startTime = toast.createdAt;
       const endTime = startTime + toast.duration;
+      let rafId;
 
       const updateProgress = () => {
+        if (!mountedRef.current) return;
+        
         const now = Date.now();
         const remaining = Math.max(0, endTime - now);
         const newProgress = (remaining / toast.duration) * 100;
         setProgress(newProgress);
 
         if (newProgress > 0) {
-          requestAnimationFrame(updateProgress);
+          rafId = requestAnimationFrame(updateProgress);
         }
       };
 
-      requestAnimationFrame(updateProgress);
+      rafId = requestAnimationFrame(updateProgress);
+      
+      return () => {
+        if (rafId) {
+          cancelAnimationFrame(rafId);
+        }
+      };
     }
   }, [toast.duration, toast.createdAt]);
 
   const handleDismiss = () => {
     setIsExiting(true);
-    setTimeout(() => {
-      onDismiss(toast.id);
+    dismissTimeoutRef.current = setTimeout(() => {
+      if (mountedRef.current) {
+        onDismiss(toast.id);
+      }
     }, 200); // Match animation duration
   };
 

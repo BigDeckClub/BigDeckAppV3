@@ -94,6 +94,7 @@ class ErrorBoundary extends React.Component {
       showDetails: false,
       reportCopied: false,
     };
+    this.copyTimeoutId = null;
   }
 
   static getDerivedStateFromError(error) {
@@ -103,6 +104,12 @@ class ErrorBoundary extends React.Component {
   componentDidCatch(error, errorInfo) {
     this.setState({ errorInfo });
     reportError(error, errorInfo);
+  }
+
+  componentWillUnmount() {
+    if (this.copyTimeoutId) {
+      clearTimeout(this.copyTimeoutId);
+    }
   }
 
   handleRetry = () => {
@@ -128,7 +135,7 @@ class ErrorBoundary extends React.Component {
     try {
       await navigator.clipboard.writeText(report);
       this.setState({ reportCopied: true });
-      setTimeout(() => this.setState({ reportCopied: false }), 2000);
+      this.copyTimeoutId = setTimeout(() => this.setState({ reportCopied: false }), 2000);
     } catch (err) {
       console.error('Failed to copy error report:', err);
     }
@@ -136,7 +143,7 @@ class ErrorBoundary extends React.Component {
 
   render() {
     if (this.state.hasError) {
-      const { error, errorInfo, showDetails, reportCopied } = this.state;
+      const { error, showDetails, reportCopied } = this.state;
       const errorDetails = getErrorDetails(error);
 
       return (
