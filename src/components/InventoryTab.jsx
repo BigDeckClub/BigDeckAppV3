@@ -12,9 +12,7 @@ import {
 import { SellModal } from './SellModal';
 import { useFolderOperations } from '../hooks/useFolderOperations';
 import { useDeckReservations } from '../hooks/useDeckReservations';
-
-// Reserved folder names that cannot be created by users (case-insensitive)
-const RESERVED_FOLDER_NAMES = ['unsorted', 'uncategorized', 'all cards', 'trash'];
+import { useConfirm } from '../context/ConfirmContext';
 
 /**
  * InventoryTab - Main inventory management component
@@ -39,6 +37,8 @@ export const InventoryTab = ({
   onLoadInventory,
   onSell
 }) => {
+  const { confirm } = useConfirm();
+  
   // UI State
   const [activeTab, setActiveTab] = useState('all');
   const [viewMode, setViewMode] = useState('card');
@@ -177,9 +177,6 @@ export const InventoryTab = ({
     onToggleLowInventory: toggleAlertHandler,
     onSetThreshold: setThresholdHandler
   };
-
-  // Check if we're viewing the Trash folder
-  const isTrashView = activeTab === 'Trash';
 
   // Get current deck for deck detail view
   const currentDeckId = deckOps.openDecks.find(id => `deck-${id}` === activeTab);
@@ -342,7 +339,14 @@ export const InventoryTab = ({
                         {trashStats.totalCount > 0 && (
                           <button
                             onClick={async () => {
-                              if (emptyTrash) {
+                              const confirmed = await confirm({
+                                title: 'Empty Trash?',
+                                message: `This will permanently delete ${trashStats.totalCount} card${trashStats.totalCount !== 1 ? 's' : ''} from ${trashStats.uniqueCount} unique card${trashStats.uniqueCount !== 1 ? 's' : ''}. This action cannot be undone.`,
+                                confirmText: 'Empty Trash',
+                                cancelText: 'Cancel',
+                                variant: 'danger'
+                              });
+                              if (confirmed && emptyTrash) {
                                 await emptyTrash();
                               }
                             }}

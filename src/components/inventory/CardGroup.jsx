@@ -1,6 +1,6 @@
 import React, { memo, useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { X, Trash2, Bell, BellOff, Lightbulb, RotateCcw } from 'lucide-react';
+import { X, Trash2, Bell, BellOff, RotateCcw } from 'lucide-react';
 import { calculateSmartThreshold } from '../../utils/thresholdCalculator';
 import { useConfirm } from '../../context/ConfirmContext';
 
@@ -195,9 +195,7 @@ export const CardGroup = memo(function CardGroup({
         variant: 'danger'
       });
       if (confirmed && permanentlyDeleteItem) {
-        for (const item of items) {
-          await permanentlyDeleteItem(item.id);
-        }
+        await Promise.all(items.map(item => permanentlyDeleteItem(item.id)));
       }
     } else {
       const confirmed = await confirm({
@@ -208,9 +206,7 @@ export const CardGroup = memo(function CardGroup({
         variant: 'warning'
       });
       if (confirmed) {
-        for (const item of items) {
-          await deleteInventoryItem(item.id);
-        }
+        await Promise.all(items.map(item => deleteInventoryItem(item.id)));
       }
     }
   };
@@ -227,9 +223,7 @@ export const CardGroup = memo(function CardGroup({
   const handleRestoreAll = async (e) => {
     if (e) e.stopPropagation();
     if (restoreFromTrash) {
-      for (const item of items) {
-        await restoreFromTrash(item.id);
-      }
+      await Promise.all(items.map(item => restoreFromTrash(item.id)));
     }
   };
 
