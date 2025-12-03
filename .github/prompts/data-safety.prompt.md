@@ -27,10 +27,10 @@ const getSetCode = (set) => {
 
 ## Never Do This
 ```jsx
-// BAD - will crash if set is an object
+// BAD - will display [object Object] if set is an object
 <span>{card.set}</span>
 
-// BAD - doesn't handle object case
+// BAD - will crash if set is an object (TypeError)
 <span>{card.set.toUpperCase()}</span>
 ```
 
@@ -40,5 +40,5 @@ const getSetCode = (set) => {
 <span>{getSetDisplayName(card.set)}</span>
 
 // GOOD - inline handling
-<span>{typeof card.set === 'string' ? card.set : card.set?.editionname}</span>
+<span>{typeof card.set === 'string' ? card.set : (card.set?.editionname || card.set?.editioncode || 'Unknown')}</span>
 ```

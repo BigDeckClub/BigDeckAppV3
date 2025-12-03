@@ -72,8 +72,6 @@ MyComponent.propTypes = {
   prop1: PropTypes.string.isRequired,
   prop2: PropTypes.func
 };
-
-export default MyComponent;
 ```
 
 ### Defensive Coding
