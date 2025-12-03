@@ -29,6 +29,7 @@ export { Card } from './Card';
 
 // Feedback components
 export { LoadingSpinner } from './LoadingSpinner';
+export { FullPageSpinner } from './FullPageSpinner';
 export { Alert } from './Alert';
 export { EmptyState } from './EmptyState';
 
