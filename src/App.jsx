@@ -15,9 +15,14 @@ import { DeckTab } from "./components/DeckTab";
 import { SalesHistoryTab } from "./components/SalesHistoryTab";
 import { PriceCacheProvider, usePriceCache } from "./context/PriceCacheContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { ToastProvider, useToast, TOAST_TYPES } from "./context/ToastContext";
+import { ConfirmProvider, useConfirm } from "./context/ConfirmContext";
 import { LoginForm } from "./components/LoginForm";
 import { UserDropdown } from "./components/UserDropdown";
 import ErrorBoundary from "./components/ErrorBoundary";
+import { ToastContainer } from "./components/ToastContainer";
+import { ConfirmDialog } from "./components/ConfirmDialog";
+import { OfflineBanner } from "./components/OfflineBanner";
 import { useApi } from "./hooks/useApi";
 import { TutorialModal } from "./components/TutorialModal";
 import { SettingsTab } from "./components/SettingsTab";
@@ -30,6 +35,8 @@ function MTGInventoryTrackerContent() {
   const { user, loading: authLoading } = useAuth();
   const { getPrice } = usePriceCache();
   const { get, post, put, del } = useApi();
+  const { showToast } = useToast();
+  const { confirm } = useConfirm();
 
   // ALL useState hooks
   const [activeTab, setActiveTab] = useState("inventory");
@@ -255,19 +262,35 @@ function MTGInventoryTrackerContent() {
   }, [user]);
 
   const addInventoryItem = async (item) => {
+    // Optimistic update: add temporary item to state immediately
+    const tempId = `temp-${Date.now()}`;
+    const tempItem = { ...item, id: tempId, quantity: item.quantity || 1 };
+    setInventory(prev => [...prev, tempItem].sort((a, b) => a.name.localeCompare(b.name)));
+    
     try {
       await post(`${API_BASE}/inventory`, item);
-      await loadInventory();
-      setSuccessMessage("Card added successfully!");
-      setTimeout(() => setSuccessMessage(""), 3000);
+      await loadInventory(); // Refresh to get real data
+      showToast("Card added successfully!", TOAST_TYPES.SUCCESS);
       return true;
     } catch (error) {
-      alert("Error adding card: " + error.message);
+      // Rollback on error
+      setInventory(prev => prev.filter(i => i.id !== tempId));
+      showToast("Error adding card: " + error.message, TOAST_TYPES.ERROR, {
+        action: { label: 'Retry', onClick: () => addInventoryItem(item) }
+      });
       return false;
     }
   };
 
   const updateInventoryItem = async (id, updates) => {
+    // Store previous state for potential rollback
+    const previousInventory = [...inventory];
+    
+    // Optimistic update
+    setInventory(prev => prev.map(item => 
+      item.id === id ? { ...item, ...updates } : item
+    ));
+    
     try {
       // Add last_modified timestamp to track changes
       const updateWithTimestamp = {
@@ -277,18 +300,34 @@ function MTGInventoryTrackerContent() {
       await put(`${API_BASE}/inventory/${id}`, updateWithTimestamp);
       await loadInventory();
       setEditingId(null);
-      setSuccessMessage("Card updated!");
-      setTimeout(() => setSuccessMessage(""), 3000);
+      showToast("Card updated!", TOAST_TYPES.SUCCESS);
     } catch (error) {
-      alert("Error updating card");
+      // Rollback on error
+      setInventory(previousInventory);
+      showToast("Error updating card", TOAST_TYPES.ERROR, {
+        action: { label: 'Retry', onClick: () => updateInventoryItem(id, updates) }
+      });
     }
   };
 
   const deleteInventoryItem = async (id) => {
+    const item = inventory.find(i => i.id === id);
+    const confirmed = await confirm({
+      title: 'Move to Uncategorized',
+      message: `Are you sure you want to move "${item?.name || 'this card'}" to Uncategorized?`,
+      confirmText: 'Move',
+      variant: 'default'
+    });
+    
+    if (!confirmed) return;
+    
     try {
       await put(`${API_BASE}/inventory/${id}`, { folder: 'Uncategorized' });
       await loadInventory();
-    } catch (error) {}
+      showToast("Card moved to Uncategorized", TOAST_TYPES.INFO);
+    } catch (error) {
+      showToast("Error moving card", TOAST_TYPES.ERROR);
+    }
   };
 
   const startEditingItem = (item) => {
@@ -309,7 +348,7 @@ function MTGInventoryTrackerContent() {
 
   const addCard = async () => {
     if (!newEntry.selectedSet) {
-      alert("Please select a card");
+      showToast("Please select a card", TOAST_TYPES.WARNING);
       return;
     }
 
@@ -347,7 +386,9 @@ function MTGInventoryTrackerContent() {
         setDeckRefreshTrigger(prev => prev + 1);
         await loadInventory();
       }
+      showToast(`${saleData.itemName} sold successfully!`, TOAST_TYPES.SUCCESS);
     } catch (error) {
+      showToast("Failed to record sale", TOAST_TYPES.ERROR);
       throw error;
     }
   };
@@ -542,6 +583,15 @@ function MTGInventoryTrackerContent() {
 
       {/* Tutorial Modal */}
       <TutorialModal isOpen={showTutorial} onClose={() => setShowTutorial(false)} />
+      
+      {/* Toast Notifications */}
+      <ToastContainer />
+      
+      {/* Confirmation Dialog */}
+      <ConfirmDialog />
+      
+      {/* Offline Banner */}
+      <OfflineBanner />
     </div>
   );
 }
@@ -551,7 +601,11 @@ function MTGInventoryTracker() {
     <ErrorBoundary>
       <AuthProvider>
         <PriceCacheProvider>
-          <MTGInventoryTrackerContent />
+          <ToastProvider>
+            <ConfirmProvider>
+              <MTGInventoryTrackerContent />
+            </ConfirmProvider>
+          </ToastProvider>
         </PriceCacheProvider>
       </AuthProvider>
     </ErrorBoundary>

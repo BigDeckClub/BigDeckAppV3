@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Bell, AlertCircle, Zap, Lightbulb, Settings, Package, Mountain, TrendingUp, RotateCcw, HelpCircle, ChevronDown, Save } from 'lucide-react';
 import { useApi } from '../hooks/useApi';
+import { useToast, TOAST_TYPES } from '../context/ToastContext';
 import { calculateSmartThreshold } from '../utils/thresholdCalculator';
 
 const THRESHOLD_PRESETS = {
@@ -52,6 +53,7 @@ const DEFAULT_SETTINGS = {
 
 export const SettingsTab = ({ inventory }) => {
   const { put, post } = useApi();
+  const { showToast } = useToast();
   const [alertSettings, setAlertSettings] = useState({});
   const [saving, setSaving] = useState({});
   const [successMessage, setSuccessMessage] = useState('');
@@ -333,13 +335,7 @@ export const SettingsTab = ({ inventory }) => {
   // Step 4: Apply Smart Thresholds to ALL Inventory
   const handleApplySmartThresholds = async () => {
     if (!inventory || inventory.length === 0) {
-      alert('❌ No inventory loaded. Please wait for inventory to load first.');
-      return;
-    }
-    
-    const confirmMsg = `This will calculate and apply optimal thresholds for all ${inventory.length} items. Continue?`;
-    
-    if (!window.confirm(confirmMsg)) {
+      showToast('No inventory loaded. Please wait for inventory to load first.', TOAST_TYPES.WARNING);
       return;
     }
     
@@ -398,19 +394,14 @@ export const SettingsTab = ({ inventory }) => {
       const result = await response.json();
       
       if (result.errors > 0) {
-        alert(`✅ Updated ${result.updated} items!\n⚠️ ${result.errors} errors occurred.`);
+        showToast(`Updated ${result.updated} items! ${result.errors} errors occurred.`, TOAST_TYPES.WARNING);
       } else {
-        alert(`✅ Successfully updated all ${result.updated} items with smart thresholds!`);
+        showToast(`Successfully updated all ${result.updated} items with smart thresholds!`, TOAST_TYPES.SUCCESS);
       }
-      
-      setSuccessMessage(`✅ Applied smart thresholds to ${result.updated}/${result.updated + result.errors} items`);
-      setTimeout(() => setSuccessMessage(''), 5000);
       
     } catch (error) {
       console.error('[Settings] Error applying thresholds:', error.message);
-      alert(`❌ Error: ${error.message}`);
-      setSuccessMessage('Error applying smart thresholds');
-      setTimeout(() => setSuccessMessage(''), 3000);
+      showToast(`Error: ${error.message}`, TOAST_TYPES.ERROR);
     } finally {
       setSaving(prev => ({ ...prev, applying: false }));
       setApplyProgress({ current: 0, total: 0 });
