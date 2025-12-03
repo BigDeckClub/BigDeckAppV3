@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { BookOpen, Download } from 'lucide-react';
 import { useDeckOperations } from '../hooks/useDeckOperations';
@@ -10,7 +10,6 @@ import {
   ImportDecklistModal,
   CopyToDeckModal
 } from './decks';
-import { useEffect } from 'react';
 
 
 export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
@@ -63,28 +62,28 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
     onInventoryUpdate
   });
 
-  // Load inventory mapping (name -> available quantity) once on mount
-  useEffect(() => {
-    let mounted = true;
-    async function loadInventory() {
-      try {
-        const res = await fetch('/api/inventory');
-        if (!res.ok) return;
-        const items = await res.json();
-        const map = {};
-        (items || []).forEach(i => {
-          const key = (i.name || '').toLowerCase().trim();
-          const qty = (parseInt(i.quantity || 0) || 0) - (parseInt(i.reserved_quantity || 0) || 0);
-          map[key] = (map[key] || 0) + Math.max(0, qty);
-        });
-        if (mounted) setInventoryByName(map);
-      } catch (err) {
-        // ignore
-      }
+  // Reusable function to load inventory mapping (name -> available quantity)
+  const refreshInventoryMap = useCallback(async () => {
+    try {
+      const res = await fetch('/api/inventory');
+      if (!res.ok) return;
+      const items = await res.json();
+      const map = {};
+      (items || []).forEach(i => {
+        const key = (i.name || '').toLowerCase().trim();
+        const qty = (parseInt(i.quantity || 0) || 0) - (parseInt(i.reserved_quantity || 0) || 0);
+        map[key] = (map[key] || 0) + Math.max(0, qty);
+      });
+      setInventoryByName(map);
+    } catch (err) {
+      // ignore
     }
-    loadInventory();
-    return () => { mounted = false; };
   }, []);
+
+  // Load inventory mapping on mount
+  useEffect(() => {
+    refreshInventoryMap();
+  }, [refreshInventoryMap]);
 
   // Handle text deck import
   const handleImportFromText = async () => {
@@ -214,6 +213,7 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
       ) : (
         <DeckDetailsView
           deck={selectedDeck}
+          inventoryByName={inventoryByName}
           onBack={() => setSelectedDeck(null)}
           onDelete={deleteDeck}
           onUpdateDescription={updateDeckDescription}
