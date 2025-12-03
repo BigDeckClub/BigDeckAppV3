@@ -41,6 +41,7 @@ export function useDeckOperations({ onDeckCreatedOrDeleted, onInventoryUpdate })
       }
     } catch (error) {
       setDecks([]);
+      showToast('Failed to load decks', TOAST_TYPES.ERROR);
     } finally {
       setIsLoading(false);
     }
@@ -70,12 +71,8 @@ export function useDeckOperations({ onDeckCreatedOrDeleted, onInventoryUpdate })
           }
           showToast('Deck deleted!', TOAST_TYPES.SUCCESS);
           
-          if (onDeckCreatedOrDeleted) {
-            onDeckCreatedOrDeleted();
-          }
-          if (onInventoryUpdate) {
-            onInventoryUpdate();
-          }
+          onDeckCreatedOrDeleted?.();
+          onInventoryUpdate?.();
         }
       } catch (error) {
         showToast('Error deleting deck', TOAST_TYPES.ERROR);
@@ -174,9 +171,7 @@ export function useDeckOperations({ onDeckCreatedOrDeleted, onInventoryUpdate })
       await loadDecks();
       showToast(`Deck created with ${cards.length} cards!`, TOAST_TYPES.SUCCESS);
       
-      if (onInventoryUpdate) {
-        onInventoryUpdate();
-      }
+      onInventoryUpdate?.();
       
       return true;
     } catch (error) {
@@ -212,12 +207,8 @@ export function useDeckOperations({ onDeckCreatedOrDeleted, onInventoryUpdate })
       setSuccessMessage(`Deck created! ${result.reservedCount} cards reserved, ${result.missingCount} cards missing.`);
       setTimeout(() => setSuccessMessage(''), 5000);
       
-      if (onDeckCreatedOrDeleted) {
-        onDeckCreatedOrDeleted();
-      }
-      if (onInventoryUpdate) {
-        onInventoryUpdate();
-      }
+      onDeckCreatedOrDeleted?.();
+      onInventoryUpdate?.();
       
     } catch (error) {
       showToast('Error copying deck to inventory', TOAST_TYPES.ERROR);

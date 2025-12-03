@@ -81,8 +81,8 @@ describe('decklistParser', () => {
       expect(result).toHaveLength(2);
     });
 
-    it('handles lowercase set codes in parentheses', () => {
-      const input = '4 Card Name (MH2)';
+    it('converts lowercase set codes to uppercase', () => {
+      const input = '4 Card Name (mh2)';
       const result = parseDeckList(input);
       expect(result[0].set).toBe('MH2');
     });

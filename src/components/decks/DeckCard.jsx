@@ -52,7 +52,7 @@ export function DeckCard({
               e.stopPropagation();
               onDelete(deck.id);
             }}
-            className="text-slate-400 hover:text-cyan-400 transition-colors"
+            className="text-slate-400 hover:text-red-400 transition-colors"
             title="Delete"
           >
             <Trash2 className="w-4 h-4" />

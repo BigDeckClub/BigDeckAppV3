@@ -29,7 +29,7 @@ export function DeckDetailsView({
           </div>
           <button
             onClick={() => onDelete(deck.id)}
-            className="text-slate-400 hover:text-cyan-400 transition-colors"
+            className="text-slate-400 hover:text-red-400 transition-colors"
             title="Delete"
           >
             <Trash2 className="w-5 h-5" />

@@ -22,7 +22,7 @@ export const parseDeckList = (text) => {
       const name = match[2].trim();
 
       // Try to extract set code from parentheses: "Card Name (MH2)" or "Card Name (MH2) 123"
-      const setMatch = name.match(/^(.+?)\s*\(\s*([A-Z0-9]{2,})\s*\)(?:\s+\d+)?$/);
+      const setMatch = name.match(/^(.+?)\s*\(\s*([A-Za-z0-9]{2,})\s*\)(?:\s+\d+)?$/);
       
       if (setMatch) {
         cards.push({
