@@ -244,7 +244,7 @@ export const FolderSidebar = memo(function FolderSidebar({
 
         {/* Other Folders */}
         {Object.entries(groupedByFolder)
-          .filter(([folder]) => folder !== 'Uncategorized' && !createdFolders.includes(folder))
+          .filter(([folder]) => folder !== 'Uncategorized' && folder !== 'Trash' && !createdFolders.includes(folder))
           .map(([folder, cardsByName]) => {
             const folderInStockCards = Object.entries(cardsByName).filter(([_, items]) => {
               const totalQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);

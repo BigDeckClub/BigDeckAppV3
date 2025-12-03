@@ -1,6 +1,6 @@
 import React, { memo, useState } from 'react';
 import PropTypes from 'prop-types';
-import { X, Bell, BellOff, ChevronRight, Eye } from 'lucide-react';
+import { X, Bell, BellOff, ChevronRight, Eye, RotateCcw } from 'lucide-react';
 import { CardDetailModal } from './CardDetailModal';
 import { useConfirm } from '../../context/ConfirmContext';
 
@@ -89,6 +89,14 @@ export const CardGroup = memo(function CardGroup({
   const handleCloseModal = () => {
     setIsModalOpen(false);
   };
+
+  // Handle restoring all items from trash
+  const handleRestoreAll = (e) => {
+    e.stopPropagation();
+    if (restoreFromTrash) {
+      items.forEach(item => restoreFromTrash(item.id));
+    }
+  };
   
   return (
     <div>
@@ -128,7 +136,7 @@ export const CardGroup = memo(function CardGroup({
           <button
             type="button"
             onClick={handleRestoreAll}
-            className="absolute top-2 left-2 p-1.5 bg-slate-700/80 hover:bg-green-600/60 text-slate-300 hover:text-green-300 rounded-lg transition-all z-20 duration-200"
+            className="absolute top-2 left-2 p-1.5 bg-slate-700/80 hover:bg-green-600/60 text-slate-300 hover:text-green-300 rounded-lg transition-all z-20 duration-200 min-w-[36px] min-h-[36px] flex items-center justify-center"
             title="Restore all copies"
           >
             <RotateCcw className="w-5 h-5" />
@@ -139,24 +147,13 @@ export const CardGroup = memo(function CardGroup({
             onClick={(e) => {
               handleToggleLowInventory(items[0], e);
             }}
-            className="absolute top-2 left-2 p-1.5 bg-slate-700/80 hover:bg-yellow-600/60 text-slate-300 hover:text-yellow-300 rounded-lg transition-all z-20 duration-200"
+            className="absolute top-2 left-2 p-1.5 bg-slate-700/80 hover:bg-yellow-600/60 text-slate-300 hover:text-yellow-300 rounded-lg transition-all z-20 duration-200 min-w-[36px] min-h-[36px] flex items-center justify-center"
             title={items[0]?.low_inventory_alert ? "Alert enabled" : "Enable low inventory alert"}
             disabled={togglingId === items[0]?.id}
           >
             {items[0]?.low_inventory_alert ? <Bell className="w-5 h-5" /> : <BellOff className="w-5 h-5" />}
           </button>
         )}
-        <button
-          type="button"
-          onClick={(e) => {
-            handleToggleLowInventory(items[0], e);
-          }}
-          className="absolute top-2 left-2 p-1.5 bg-slate-700/80 hover:bg-yellow-600/60 text-slate-300 hover:text-yellow-300 rounded-lg transition-all z-20 duration-200 min-w-[36px] min-h-[36px] flex items-center justify-center"
-          title={items[0]?.low_inventory_alert ? "Alert enabled" : "Enable low inventory alert"}
-          disabled={togglingId === items[0]?.id}
-        >
-          {items[0]?.low_inventory_alert ? <Bell className="w-5 h-5" /> : <BellOff className="w-5 h-5" />}
-        </button>
         <button
           onClick={(e) => {
             e.stopPropagation();

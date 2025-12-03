@@ -138,11 +138,14 @@ export const InventoryTab = ({
   }, [filteredInventory]);
 
   const groupedInventory = useMemo(() => {
-    return filteredInventory.reduce((acc, item) => {
-      if (!acc[item.name]) acc[item.name] = [];
-      acc[item.name].push(item);
-      return acc;
-    }, {});
+    // Exclude items in Trash folder from "all cards" view
+    return filteredInventory
+      .filter(item => item.folder !== 'Trash')
+      .reduce((acc, item) => {
+        if (!acc[item.name]) acc[item.name] = [];
+        acc[item.name].push(item);
+        return acc;
+      }, {});
   }, [filteredInventory]);
 
   const { inStockCards, outOfStockCards } = useMemo(() => {

@@ -22,12 +22,41 @@ A modern Magic: The Gathering inventory management application built with React 
 ### Prerequisites
 
 - Node.js 18+
-- PostgreSQL database
+- NeonDB account (or any PostgreSQL database)
 
-### Installation
+### Setup
 
-```bash
-npm install
+1. **Configure environment variables**:
+   ```bash
+   cp .env.example .env
+   # Edit .env with your NeonDB connection string
+   ```
+
+2. **Install dependencies**:
+   ```bash
+   npm install
+   ```
+
+3. **Run the development server**:
+   ```bash
+   npm run dev
+   ```
+
+The app will be available at http://localhost:5000
+
+### Environment Variables
+
+Create a `.env` file in the root directory:
+
+```env
+# NeonDB connection string (required)
+DATABASE_URL=postgresql://username:password@ep-xxxxx.us-east-1.aws.neon.tech/bigdeck?sslmode=require
+
+# Server port (optional, defaults to 5000)
+PORT=5000
+
+# Node environment
+NODE_ENV=development
 ```
 
 ### Development
@@ -36,15 +65,14 @@ npm install
 npm run dev
 ```
 
-This starts both the Express backend server and Vite dev server concurrently.
+This builds the React app and starts the Express backend server.
 
 ### Production
 
 ```bash
-npm run prod
+npm run build
+npm start
 ```
-
-This builds the React app and starts the production server.
 
 ### Testing
 

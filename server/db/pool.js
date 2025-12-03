@@ -1,14 +1,17 @@
 import pkg from 'pg';
+import dotenv from 'dotenv';
+
+// Load environment variables from .env file
+dotenv.config();
 
 const { Pool } = pkg;
 
-// PostgreSQL connection - separate dev and production databases
-const dbUrl = process.env.REPLIT_DEPLOYMENT 
-  ? (process.env.PRODUCTION_DATABASE_URL || process.env.DATABASE_URL)
-  : process.env.DATABASE_URL;
+// PostgreSQL connection - use DATABASE_URL from environment
+const dbUrl = process.env.DATABASE_URL;
 
 if (!dbUrl) {
   console.error('[DB] ✗ DATABASE_URL environment variable is not set');
+  console.error('[DB] Please create a .env file with DATABASE_URL=postgresql://username:password@host:port/database');
   // Allow the application to start but log a warning - pool operations will fail
 }
 
