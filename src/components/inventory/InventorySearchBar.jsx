@@ -105,10 +105,10 @@ export const InventorySearchBar = memo(function InventorySearchBar({
     }
   }, [shouldShowDropdown, filteredSearches, highlightedIndex, handleSelectSearch]);
 
-  // Reset highlighted index when filtered searches change
+  // Reset highlighted index when search input changes
   useEffect(() => {
     setHighlightedIndex(-1);
-  }, [filteredSearches.length]);
+  }, [inventorySearch]);
 
   return (
     <div className="mb-8 px-1 md:px-0" ref={containerRef}>

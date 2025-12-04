@@ -75,7 +75,7 @@ export function useSearchHistory() {
 
     // Set up debounced add
     debounceTimerRef.current = setTimeout(() => {
-      const trimmedTerm = term?.trim();
+      const trimmedTerm = (term || '').trim();
       
       // Don't store empty searches
       if (!trimmedTerm) {
@@ -99,6 +99,8 @@ export function useSearchHistory() {
    * @param {string} term - Search term to remove
    */
   const removeSearch = useCallback((term) => {
+    if (!term) return;
+    
     setRecentSearches((prev) =>
       prev.filter((search) => search.toLowerCase() !== term.toLowerCase())
     );
