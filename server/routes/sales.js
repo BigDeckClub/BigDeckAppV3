@@ -8,7 +8,8 @@ const router = express.Router();
 // ========== SALES ENDPOINTS ==========
 
 // POST /api/sales - Record a sale for folder or deck
-router.post('/api/sales', authenticate, validateBody(createSaleSchema), async (req, res) => {
+// POST /sales - Create a new sale
+router.post('/sales', authenticate, validateBody(createSaleSchema), async (req, res) => {
   const userId = req.userId;
   const { itemType, itemId, itemName, purchasePrice, sellPrice, quantity } = req.body;
   
@@ -76,7 +77,7 @@ router.post('/api/sales', authenticate, validateBody(createSaleSchema), async (r
 });
 
 // GET /api/sales - Fetch all sales history
-router.get('/api/sales', authenticate, async (req, res) => {
+router.get('/sales', authenticate, async (req, res) => {
   const userId = req.userId;
   try {
     const result = await pool.query(`
@@ -92,7 +93,7 @@ router.get('/api/sales', authenticate, async (req, res) => {
 });
 
 // GET /api/transactions - Fetch sales transactions (for threshold calculations)
-router.get('/api/transactions', authenticate, async (req, res) => {
+router.get('/transactions', authenticate, async (req, res) => {
   const userId = req.userId;
   try {
     const { type } = req.query;

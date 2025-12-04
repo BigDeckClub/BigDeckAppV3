@@ -15,28 +15,32 @@ export const THRESHOLD_PRESETS = {
  */
 export const QUICK_PRESETS = {
   lowVolume: {
-    label: '🏃 Low Volume Shop',
+    label: 'Low Volume Shop',
+    icon: 'Zap',
     baseStock: 5,
     landMultiplier: 15,
     velocityWeeks: 2,
     description: 'Minimal inventory, quick turnover'
   },
   balanced: {
-    label: '⚖️ Balanced (Default)',
+    label: 'Balanced (Default)',
+    icon: 'Scale',
     baseStock: 10,
     landMultiplier: 10,
     velocityWeeks: 4,
     description: 'Standard settings for most shops'
   },
   highVolume: {
-    label: '📦 High Volume Shop',
+    label: 'High Volume Shop',
+    icon: 'Warehouse',
     baseStock: 20,
     landMultiplier: 15,
     velocityWeeks: 6,
     description: 'Large inventory, high turnover'
   },
   commander: {
-    label: '🎴 Commander Focus',
+    label: 'Commander Focus',
+    icon: 'Crown',
     baseStock: 15,
     landMultiplier: 20,
     velocityWeeks: 4,

@@ -9,7 +9,7 @@ const router = express.Router();
 // ========== PURCHASE LOTS ENDPOINTS ==========
 
 // GET /api/lots - Fetch all purchase lots
-router.get('/api/lots', authenticate, async (req, res) => {
+router.get('/lots', authenticate, async (req, res) => {
   const userId = req.userId;
   try {
     const result = await pool.query(
@@ -24,7 +24,7 @@ router.get('/api/lots', authenticate, async (req, res) => {
 });
 
 // POST /api/lots - Create a new purchase lot
-router.post('/api/lots', authenticate, async (req, res) => {
+router.post('/lots', authenticate, async (req, res) => {
   const userId = req.userId;
   const { name, total_cost, card_count } = req.body;
   
@@ -64,7 +64,7 @@ router.post('/api/lots', authenticate, async (req, res) => {
 });
 
 // POST /api/lots/:id/cards - Bulk add cards to a lot
-router.post('/api/lots/:id/cards', authenticate, validateId, async (req, res) => {
+router.post('/lots/:id/cards', authenticate, validateId, async (req, res) => {
   const userId = req.userId;
   const lotId = req.validatedId;
   const { cards } = req.body;
@@ -215,7 +215,7 @@ router.post('/api/lots/:id/cards', authenticate, validateId, async (req, res) =>
 });
 
 // GET /api/lots/:id - Get a specific lot with its cards
-router.get('/api/lots/:id', authenticate, validateId, async (req, res) => {
+router.get('/lots/:id', authenticate, validateId, async (req, res) => {
   const userId = req.userId;
   const lotId = req.validatedId;
 

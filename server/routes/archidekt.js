@@ -4,7 +4,7 @@ import express from 'express';
 const router = express.Router();
 
 // Proxy Archidekt deck data
-router.get('/api/archidekt/deck/:deckId', async (req, res) => {
+router.get('/archidekt/deck/:deckId', async (req, res) => {
   const { deckId } = req.params;
   
   if (!deckId || !/^\d+$/.test(deckId)) {

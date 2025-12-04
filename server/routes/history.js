@@ -7,7 +7,7 @@ const router = express.Router();
 // ========== CHANGE HISTORY ENDPOINTS ==========
 
 // GET /api/history/changes - Fetch change history with filtering
-router.get('/api/history/changes', authenticate, async (req, res) => {
+router.get('/history/changes', authenticate, async (req, res) => {
   const userId = req.userId;
   try {
     const { field_changed, start_date, end_date, limit = 100, offset = 0 } = req.query;
@@ -74,7 +74,7 @@ router.get('/api/history/changes', authenticate, async (req, res) => {
 });
 
 // POST /api/history/changes - Record a change (internal use)
-router.post('/api/history/changes', authenticate, async (req, res) => {
+router.post('/history/changes', authenticate, async (req, res) => {
   const userId = req.userId;
   const { card_id, card_name, field_changed, old_value, new_value } = req.body;
   
@@ -99,7 +99,7 @@ router.post('/api/history/changes', authenticate, async (req, res) => {
 // ========== AUDIT LOG ENDPOINTS ==========
 
 // GET /api/history/audit - Fetch audit log with filtering
-router.get('/api/history/audit', authenticate, async (req, res) => {
+router.get('/history/audit', authenticate, async (req, res) => {
   const userId = req.userId;
   try {
     const { action_type, start_date, end_date, limit = 100, offset = 0 } = req.query;
@@ -161,7 +161,7 @@ router.get('/api/history/audit', authenticate, async (req, res) => {
 });
 
 // POST /api/history/audit - Record an audit entry
-router.post('/api/history/audit', authenticate, async (req, res) => {
+router.post('/history/audit', authenticate, async (req, res) => {
   const userId = req.userId;
   const { action_type, description, entity_type, entity_id, metadata } = req.body;
   
@@ -186,7 +186,7 @@ router.post('/api/history/audit', authenticate, async (req, res) => {
 // ========== ACTIVITY FEED ENDPOINTS ==========
 
 // GET /api/history/activity - Fetch activity feed
-router.get('/api/history/activity', authenticate, async (req, res) => {
+router.get('/history/activity', authenticate, async (req, res) => {
   const userId = req.userId;
   try {
     const { activity_type, limit = 50, offset = 0 } = req.query;
@@ -230,7 +230,7 @@ router.get('/api/history/activity', authenticate, async (req, res) => {
 });
 
 // POST /api/history/activity - Record an activity
-router.post('/api/history/activity', authenticate, async (req, res) => {
+router.post('/history/activity', authenticate, async (req, res) => {
   const userId = req.userId;
   const { activity_type, title, description, entity_type, entity_id, metadata } = req.body;
   

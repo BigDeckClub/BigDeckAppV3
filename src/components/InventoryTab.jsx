@@ -184,30 +184,7 @@ export const InventoryTab = ({
     };
   }, [groupedInventory, inventorySearch, sortField, sortDirection]);
 
-  // Common CardGrid props
-  const cardGridProps = {
-    viewMode,
-    expandedCards,
-    setExpandedCards,
-    editingId,
-    editForm,
-    setEditForm,
-    startEditingItem,
-    updateInventoryItem,
-    deleteInventoryItem,
-    permanentlyDeleteItem,
-    restoreFromTrash,
-    createdFolders: folderOps.createdFolders,
-    onToggleLowInventory: toggleAlertHandler,
-    onSetThreshold: setThresholdHandler
-  };
-
-  // Get current deck for deck detail view
-  const currentDeckId = deckOps.openDecks.find(id => `deck-${id}` === activeTab);
-  const currentDeck = deckOps.deckInstances.find(d => d.id === currentDeckId);
-  const currentDeckDetails = deckOps.deckDetailsCache[currentDeckId];
-
-  // Navigation path for breadcrumb
+  // Navigation path for breadcrumb - MUST be before any non-hook logic
   const navigationPath = useMemo(() => {
     if (activeTab === 'all') {
       return [{ label: 'All Cards', tab: 'all' }];
@@ -232,6 +209,29 @@ export const InventoryTab = ({
       { label: activeTab === 'Uncategorized' ? 'Unsorted' : activeTab, tab: activeTab }
     ];
   }, [activeTab, deckOps.deckInstances]);
+
+  // Common CardGrid props (non-hook logic after all hooks)
+  const cardGridProps = {
+    viewMode,
+    expandedCards,
+    setExpandedCards,
+    editingId,
+    editForm,
+    setEditForm,
+    startEditingItem,
+    updateInventoryItem,
+    deleteInventoryItem,
+    permanentlyDeleteItem,
+    restoreFromTrash,
+    createdFolders: folderOps.createdFolders,
+    onToggleLowInventory: toggleAlertHandler,
+    onSetThreshold: setThresholdHandler
+  };
+
+  // Get current deck for deck detail view (non-hook logic)
+  const currentDeckId = deckOps.openDecks.find(id => `deck-${id}` === activeTab);
+  const currentDeck = deckOps.deckInstances.find(d => d.id === currentDeckId);
+  const currentDeckDetails = deckOps.deckDetailsCache[currentDeckId];
 
   // Handle breadcrumb navigation
   const handleBreadcrumbNavigate = useCallback((tab) => {
@@ -463,6 +463,7 @@ export const InventoryTab = ({
           purchasePrice={sellModalData.purchasePrice}
           itemType={sellModalData.itemType}
           deckId={sellModalData.itemId}
+          quantity={sellModalData.quantity || 1}
           onClose={() => {
             setShowSellModal(false);
             setSellModalData(null);

@@ -13,7 +13,7 @@ const DEFAULT_FOLDER_NAME = 'Uncategorized';
 // ========== FOLDERS ENDPOINTS ==========
 
 // GET /api/folders - Fetch all folders
-router.get('/api/folders', authenticate, async (req, res) => {
+router.get('/folders', authenticate, async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT id, name, description, created_at, updated_at 
@@ -29,7 +29,7 @@ router.get('/api/folders', authenticate, async (req, res) => {
 });
 
 // POST /api/folders - Create a new folder
-router.post('/api/folders', authenticate, async (req, res) => {
+router.post('/folders', authenticate, async (req, res) => {
   const { name, description } = req.body;
   
   try {
@@ -60,7 +60,7 @@ router.post('/api/folders', authenticate, async (req, res) => {
 });
 
 // PUT /api/folders/:id - Update folder
-router.put('/api/folders/:id', authenticate, validateId, async (req, res) => {
+router.put('/folders/:id', authenticate, validateId, async (req, res) => {
   const id = req.validatedId;
   const { name, description } = req.body;
   
@@ -103,7 +103,7 @@ router.put('/api/folders/:id', authenticate, validateId, async (req, res) => {
 });
 
 // DELETE /api/folders/:id - Delete folder
-router.delete('/api/folders/:id', authenticate, validateId, async (req, res) => {
+router.delete('/folders/:id', authenticate, validateId, async (req, res) => {
   const id = req.validatedId;
   
   try {

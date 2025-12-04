@@ -6,7 +6,7 @@ import { batchInsertReservations, batchInsertMissingCards } from '../utils/index
 const router = express.Router();
 
 // ========== DECKS ENDPOINTS ==========
-router.get('/api/decks', authenticate, async (req, res) => {
+router.get('/decks', authenticate, async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT * FROM decks 
@@ -21,7 +21,7 @@ router.get('/api/decks', authenticate, async (req, res) => {
   }
 });
 
-router.post('/api/decks', authenticate, async (req, res) => {
+router.post('/decks', authenticate, async (req, res) => {
   const { name, format, description } = req.body;
   
   if (!name || typeof name !== 'string' || name.trim().length === 0) {
@@ -42,7 +42,7 @@ router.post('/api/decks', authenticate, async (req, res) => {
   }
 });
 
-router.put('/api/decks/:id', authenticate, validateId, async (req, res) => {
+router.put('/decks/:id', authenticate, validateId, async (req, res) => {
   const id = req.validatedId;
   const { name, format, description, cards, archidekt_url } = req.body;
   
@@ -95,7 +95,7 @@ router.put('/api/decks/:id', authenticate, validateId, async (req, res) => {
 });
 
 // POST sync deck from Archidekt
-router.post('/api/decks/:id/sync-archidekt', authenticate, validateId, async (req, res) => {
+router.post('/decks/:id/sync-archidekt', authenticate, validateId, async (req, res) => {
   const id = req.validatedId;
   
   try {
@@ -202,7 +202,7 @@ router.post('/api/decks/:id/sync-archidekt', authenticate, validateId, async (re
 });
 
 // POST apply Archidekt sync changes
-router.post('/api/decks/:id/apply-sync', authenticate, validateId, async (req, res) => {
+router.post('/decks/:id/apply-sync', authenticate, validateId, async (req, res) => {
   const id = req.validatedId;
   const { cards, name, format, description } = req.body;
   
@@ -240,7 +240,7 @@ router.post('/api/decks/:id/apply-sync', authenticate, validateId, async (req, r
   }
 });
 
-router.delete('/api/decks/:id', authenticate, validateId, async (req, res) => {
+router.delete('/decks/:id', authenticate, validateId, async (req, res) => {
   const id = req.validatedId;
   
   try {
@@ -260,7 +260,7 @@ router.delete('/api/decks/:id', authenticate, validateId, async (req, res) => {
 // ========== DECK INSTANCES (Two-Tier System) ==========
 
 // GET all deck instances
-router.get('/api/deck-instances', authenticate, async (req, res) => {
+router.get('/deck-instances', authenticate, async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT d.*,
@@ -282,7 +282,7 @@ router.get('/api/deck-instances', authenticate, async (req, res) => {
 });
 
 // GET full details of a deck instance
-router.get('/api/deck-instances/:id/details', authenticate, validateId, async (req, res) => {
+router.get('/deck-instances/:id/details', authenticate, validateId, async (req, res) => {
   const id = req.validatedId;
   
   try {
@@ -359,7 +359,7 @@ router.get('/api/deck-instances/:id/details', authenticate, validateId, async (r
 });
 
 // POST copy decklist to inventory (create deck instance)
-router.post('/api/decks/:id/copy-to-inventory', authenticate, validateId, async (req, res) => {
+router.post('/decks/:id/copy-to-inventory', authenticate, validateId, async (req, res) => {
   const id = req.validatedId;
   const { name } = req.body;
   
@@ -482,7 +482,7 @@ router.post('/api/decks/:id/copy-to-inventory', authenticate, validateId, async 
 });
 
 // POST add card to deck instance
-router.post('/api/deck-instances/:id/add-card', authenticate, validateId, async (req, res) => {
+router.post('/deck-instances/:id/add-card', authenticate, validateId, async (req, res) => {
   const id = req.validatedId;
   const { inventory_item_id, quantity } = req.body;
   
@@ -536,7 +536,7 @@ router.post('/api/deck-instances/:id/add-card', authenticate, validateId, async 
 });
 
 // DELETE remove card from deck instance
-router.delete('/api/deck-instances/:id/remove-card', authenticate, validateId, async (req, res) => {
+router.delete('/deck-instances/:id/remove-card', authenticate, validateId, async (req, res) => {
   const id = req.validatedId;
   const { reservation_id, quantity } = req.body;
   
@@ -575,7 +575,7 @@ router.delete('/api/deck-instances/:id/remove-card', authenticate, validateId, a
 
 
 // POST release entire deck instance
-router.post('/api/deck-instances/:id/release', authenticate, validateId, async (req, res) => {
+router.post('/deck-instances/:id/release', authenticate, validateId, async (req, res) => {
   const id = req.validatedId;
   
   try {
@@ -607,7 +607,7 @@ router.post('/api/deck-instances/:id/release', authenticate, validateId, async (
 });
 
 // POST reoptimize deck instance
-router.post('/api/deck-instances/:id/reoptimize', authenticate, validateId, async (req, res) => {
+router.post('/deck-instances/:id/reoptimize', authenticate, validateId, async (req, res) => {
   const id = req.validatedId;
   
   // Use a transaction to avoid TOCTOU race conditions
@@ -730,7 +730,7 @@ router.post('/api/deck-instances/:id/reoptimize', authenticate, validateId, asyn
 });
 
 // PUT update deck instance metadata
-router.put('/api/deck-instances/:id', authenticate, validateId, async (req, res) => {
+router.put('/deck-instances/:id', authenticate, validateId, async (req, res) => {
   const id = req.validatedId;
   const { name, format, description } = req.body;
   

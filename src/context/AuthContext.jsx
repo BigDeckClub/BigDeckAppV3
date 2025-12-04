@@ -26,8 +26,17 @@ export function AuthProvider({ children }) {
 
     initAuth();
 
+    // Listen for auth expiration events
+    const handleAuthExpired = () => {
+      console.log('[AUTH] Auth expired event received, logging out user');
+      setUser(null);
+    };
+
+    window.addEventListener('auth-expired', handleAuthExpired);
+
     return () => {
       mounted = false;
+      window.removeEventListener('auth-expired', handleAuthExpired);
     };
   }, []);
 

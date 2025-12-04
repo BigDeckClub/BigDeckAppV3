@@ -3,16 +3,26 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+console.log('[AUTH] Supabase config check:', {
+  hasUrl: !!supabaseUrl,
+  hasKey: !!supabaseServiceRoleKey
+});
+
 const supabase = supabaseUrl && supabaseServiceRoleKey 
   ? createClient(supabaseUrl, supabaseServiceRoleKey)
   : null;
+
+if (!supabase) {
+  console.error('[AUTH] ✗ WARNING: Supabase client not initialized - authentication will fail');
+} else {
+  console.log('[AUTH] ✓ Supabase client initialized successfully');
+}
 
 /**
  * Authentication middleware - validates Supabase JWT token and attaches user to request
  */
 export async function authenticate(req, res, next) {
   try {
-    // Get token from Authorization header
     const authHeader = req.headers.authorization;
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -24,9 +34,8 @@ export async function authenticate(req, res, next) {
       return res.status(500).json({ error: 'Authentication service not available' });
     }
 
-    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+    const token = authHeader.substring(7);
 
-    // Verify the JWT token with Supabase
     const { data: { user }, error } = await supabase.auth.getUser(token);
 
     if (error || !user) {
@@ -34,7 +43,6 @@ export async function authenticate(req, res, next) {
       return res.status(401).json({ error: 'Invalid or expired token' });
     }
 
-    // Attach user to request object
     req.user = user;
     req.userId = user.id;
 

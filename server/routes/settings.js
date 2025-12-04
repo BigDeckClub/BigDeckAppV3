@@ -5,7 +5,7 @@ const router = express.Router();
 
 // ========== SETTINGS ENDPOINTS ==========
 // GET /api/settings/:key - Retrieve a setting
-router.get('/api/settings/:key', async (req, res) => {
+router.get('/settings/:key', async (req, res) => {
   try {
     const { key } = req.params;
     const result = await pool.query('SELECT value FROM settings WHERE key = $1', [key]);
@@ -26,7 +26,7 @@ router.get('/api/settings/:key', async (req, res) => {
 });
 
 // POST /api/settings/:key - Store a setting
-router.post('/api/settings/:key', async (req, res) => {
+router.post('/settings/:key', async (req, res) => {
   try {
     const { key } = req.params;
     const { value } = req.body;

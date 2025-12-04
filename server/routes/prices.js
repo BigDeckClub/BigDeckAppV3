@@ -6,7 +6,7 @@ import { mtgjsonService } from '../mtgjsonPriceService.js';
 const router = express.Router();
 
 // ========== PRICES ENDPOINT ==========
-router.get('/api/prices/:cardName/:setCode', priceLimiter, async (req, res) => {
+router.get('/prices/:cardName/:setCode', priceLimiter, async (req, res) => {
   const { cardName, setCode } = req.params;
   const cacheKey = `${cardName.toLowerCase()}_${(setCode || '').toLowerCase()}`;
   

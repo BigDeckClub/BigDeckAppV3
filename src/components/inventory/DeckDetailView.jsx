@@ -343,7 +343,8 @@ export const DeckDetailView = memo(function DeckDetailView({
                     itemType: 'deck',
                     itemId: deck.id,
                     itemName: deck.name,
-                    purchasePrice: parseFloat(deckDetails.totalCost) || 0
+                    purchasePrice: parseFloat(deckDetails.totalCost) || 0,
+                    quantity: deckDetails.reservedCount || 1
                   });
                   setShowSellModal(true);
                 }}

@@ -10,7 +10,7 @@ import { API_ENDPOINTS } from '../config/api';
  * SettingsTab component - Main settings page with tab navigation
  * Manages tab state and delegates to sub-components for each settings area
  */
-export const SettingsTab = ({ inventory }) => {
+export const SettingsTab = ({ inventory = [] }) => {
   // Tab navigation state
   const [activeTab, setActiveTab] = useState('thresholds');
   
@@ -125,10 +125,6 @@ export const SettingsTab = ({ inventory }) => {
 
 SettingsTab.propTypes = {
   inventory: PropTypes.arrayOf(PropTypes.object)
-};
-
-SettingsTab.defaultProps = {
-  inventory: []
 };
 
 export default SettingsTab;

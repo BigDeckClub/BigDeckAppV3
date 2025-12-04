@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { X } from 'lucide-react';
+import { X, Package } from 'lucide-react';
 import { useToast, TOAST_TYPES } from '../context/ToastContext';
 
-export const SellModal = ({ isOpen, itemName, purchasePrice, onClose, onSell, itemType, deckId }) => {
+export const SellModal = ({ isOpen, itemName, purchasePrice, onClose, onSell, itemType, deckId, quantity = 1 }) => {
   const [sellPrice, setSellPrice] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [validationError, setValidationError] = useState('');
@@ -25,7 +25,7 @@ export const SellModal = ({ isOpen, itemName, purchasePrice, onClose, onSell, it
         itemName,
         purchasePrice: parseFloat(purchasePrice),
         sellPrice: parseFloat(sellPrice),
-        quantity: 1
+        quantity: parseInt(quantity, 10) // Ensure quantity is a number, not a string
       });
       setSellPrice('');
       onClose();
@@ -62,7 +62,15 @@ export const SellModal = ({ isOpen, itemName, purchasePrice, onClose, onSell, it
         <div className="space-y-4">
           <div>
             <label className="block text-sm text-slate-300 mb-1">Item</label>
-            <div className="text-white font-semibold bg-slate-700 p-2 rounded">{itemName}</div>
+            <div className="text-white font-semibold bg-slate-700 p-2 rounded flex items-center justify-between">
+              <span>{itemName}</span>
+              {quantity > 1 && (
+                <span className="flex items-center gap-1 text-teal-400 text-sm">
+                  <Package className="w-4 h-4" />
+                  {quantity} cards
+                </span>
+              )}
+            </div>
           </div>
 
           <div>

@@ -46,20 +46,16 @@ export function getAuthHeaders() {
   };
 
   try {
-    const userStr = localStorage.getItem('supabase_user');
-    if (userStr) {
-      const userData = JSON.parse(userStr);
-      // Supabase stores the session with access_token
-      const sessionStr = localStorage.getItem('supabase_session');
-      if (sessionStr) {
-        const session = JSON.parse(sessionStr);
-        if (session.access_token) {
-          headers['Authorization'] = `Bearer ${session.access_token}`;
-        }
+    const sessionStr = localStorage.getItem('supabase_session');
+    
+    if (sessionStr) {
+      const session = JSON.parse(sessionStr);
+      if (session.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
       }
     }
   } catch (err) {
-    console.error('Error getting auth headers:', err);
+    console.error('[AUTH] Error getting auth headers:', err);
   }
 
   return headers;

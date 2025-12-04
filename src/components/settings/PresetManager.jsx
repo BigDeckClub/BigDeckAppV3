@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import PropTypes from 'prop-types';
-import { Zap } from 'lucide-react';
+import { Zap, ChevronDown, ChevronUp } from 'lucide-react';
 import { useApi } from '../../hooks/useApi';
 import { THRESHOLD_PRESETS } from '../../constants/thresholds';
 
@@ -9,8 +9,8 @@ import { THRESHOLD_PRESETS } from '../../constants/thresholds';
  * Allows applying predefined thresholds to selected cards
  */
 export const PresetManager = ({ 
-  inventory, 
-  onSuccess 
+  inventory = [], 
+  onSuccess = null 
 }) => {
   const { put } = useApi();
   const [presetMode, setPresetMode] = useState('single'); // 'single' or 'bulk'
@@ -18,19 +18,66 @@ export const PresetManager = ({
   const [selectedCards, setSelectedCards] = useState([]);
   const [saving, setSaving] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [expandedMerged, setExpandedMerged] = useState({});
 
-  // Group inventory with alerts enabled by card name - MEMOIZED to prevent recreating on every render
+  // Helper to get normalized set name
+  const getSetName = useCallback((set) => {
+    if (!set) return 'unknown';
+    if (typeof set === 'string') return set.toLowerCase().trim();
+    return (set.editioncode || set.editionname || 'unknown').toLowerCase().trim();
+  }, []);
+
+  // Group inventory with alerts enabled by card name and variant - MEMOIZED
   const cardsWithAlerts = useMemo(() => {
-    return inventory
-      .filter(item => item.low_inventory_alert)
-      .reduce((acc, item) => {
-        if (!acc[item.name]) {
-          acc[item.name] = [];
+    const items = inventory.filter(item => item.low_inventory_alert);
+    
+    // Group by card name first
+    const byName = items.reduce((acc, item) => {
+      if (!acc[item.name]) {
+        acc[item.name] = [];
+      }
+      acc[item.name].push(item);
+      return acc;
+    }, {});
+    
+    // For each card name, group by variant (set + foil + quality)
+    Object.keys(byName).forEach(cardName => {
+      const cardItems = byName[cardName];
+      
+      // Create a map of variant -> items
+      const variantMap = {};
+      cardItems.forEach(item => {
+        const setName = getSetName(item.set);
+        const foilStatus = item.foil ? 'foil' : 'nonfoil';
+        const qualityValue = (item.quality || 'NM').toLowerCase().trim();
+        const variantKey = `${setName}_${foilStatus}_${qualityValue}`;
+        
+        if (!variantMap[variantKey]) {
+          variantMap[variantKey] = [];
         }
-        acc[item.name].push(item);
-        return acc;
-      }, {});
-  }, [inventory]);
+        variantMap[variantKey].push(item);
+      });
+      
+      // Merge identical variants
+      const variants = Object.values(variantMap);
+      const mergedVariants = variants.map(variantItems => {
+        if (variantItems.length > 1) {
+          return {
+            ...variantItems[0],
+            _mergedCount: variantItems.length,
+            _mergedIds: variantItems.map(i => i.id),
+            _mergedItems: variantItems,
+            _totalQuantity: variantItems.reduce((sum, i) => sum + (i.quantity || 0), 0)
+          };
+        }
+        return variantItems[0];
+      });
+      
+      byName[cardName] = mergedVariants;
+    });
+    
+    return byName;
+  }, [inventory, getSetName]);
 
   // Create a flattened array and lookup map for efficient card access
   const { flattenedCards, cardLookup } = useMemo(() => {
@@ -49,9 +96,38 @@ export const PresetManager = ({
 
   const handleApplyPreset = useCallback(async () => {
     const preset = THRESHOLD_PRESETS[selectedCategory];
-    const cardsToUpdate = presetMode === 'single' && selectedCards.length > 0 
-      ? selectedCards.map(id => cardLookup.get(id)).filter(Boolean)
-      : flattenedCards;
+    let cardsToUpdate = [];
+    
+    if (presetMode === 'single' && selectedCards.length > 0) {
+      // Get selected cards and expand merged IDs
+      selectedCards.forEach(id => {
+        const card = cardLookup.get(id);
+        if (card) {
+          if (card._mergedIds && card._mergedIds.length > 1) {
+            // If merged, update all merged items
+            card._mergedIds.forEach(mergedId => {
+              const mergedCard = cardLookup.get(mergedId);
+              if (mergedCard) cardsToUpdate.push(mergedCard);
+            });
+          } else {
+            cardsToUpdate.push(card);
+          }
+        }
+      });
+    } else {
+      // Bulk mode - get all cards and expand merged entries
+      flattenedCards.forEach(card => {
+        if (card._mergedIds && card._mergedIds.length > 1) {
+          // If merged, get all individual items
+          card._mergedIds.forEach(mergedId => {
+            const mergedCard = inventory.find(i => i.id === mergedId);
+            if (mergedCard) cardsToUpdate.push(mergedCard);
+          });
+        } else {
+          cardsToUpdate.push(card);
+        }
+      });
+    }
     
     if (cardsToUpdate.length === 0) {
       setSuccessMessage('No cards selected');
@@ -122,15 +198,46 @@ export const PresetManager = ({
         {presetMode === 'single' && flattenedCards.length > 0 && (
           <div className="max-h-32 overflow-y-auto space-y-2 bg-slate-700/30 rounded p-3 border border-slate-600">
             {flattenedCards.map(item => (
-              <label key={item.id} className="flex items-center gap-2 cursor-pointer hover:bg-slate-600/50 p-1 rounded">
-                <input
-                  type="checkbox"
-                  checked={selectedCards.includes(item.id)}
-                  onChange={() => toggleCardSelection(item.id)}
-                  className="w-4 h-4 cursor-pointer"
-                />
-                <span className="text-sm text-slate-300">{item.name} ({item.set?.toUpperCase()})</span>
-              </label>
+              <div key={item.id}>
+                <label className="flex items-center gap-2 cursor-pointer hover:bg-slate-600/50 p-1 rounded">
+                  <input
+                    type="checkbox"
+                    checked={selectedCards.includes(item.id)}
+                    onChange={() => toggleCardSelection(item.id)}
+                    className="w-4 h-4 cursor-pointer"
+                  />
+                  <span className="text-sm text-slate-300 flex-1">
+                    {item.name} ({item.set?.toUpperCase()})
+                    {item.foil && <span className="ml-2 text-xs text-purple-400">FOIL</span>}
+                    {item.quality && item.quality !== 'NM' && <span className="ml-2 text-xs text-slate-400">{item.quality}</span>}
+                  </span>
+                  <span className="text-xs text-slate-400">Qty: {item._totalQuantity || item.quantity || 0}</span>
+                  {item._mergedCount > 1 && (
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setExpandedMerged(prev => ({ ...prev, [item.id]: !prev[item.id] }));
+                      }}
+                      className="text-xs bg-teal-600/30 text-teal-300 px-2 py-0.5 rounded hover:bg-teal-600/50 transition-colors flex items-center gap-1"
+                    >
+                      {item._mergedCount}
+                      {expandedMerged[item.id] ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                    </button>
+                  )}
+                </label>
+                {item._mergedCount > 1 && expandedMerged[item.id] && (
+                  <div className="ml-6 mt-1 space-y-1 bg-slate-700/30 rounded p-2 border-l-2 border-teal-500/30">
+                    {item._mergedItems.map((subItem, idx) => (
+                      <div key={subItem.id} className="flex items-center gap-2 text-xs text-slate-400 py-1">
+                        <span className="text-slate-500">#{idx + 1}</span>
+                        <span>ID: {subItem.id}</span>
+                        <span>Qty: {subItem.quantity || 0}</span>
+                        <span>Threshold: {subItem.low_inventory_threshold || 0}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         )}
@@ -173,11 +280,6 @@ export const PresetManager = ({
 PresetManager.propTypes = {
   inventory: PropTypes.arrayOf(PropTypes.object),
   onSuccess: PropTypes.func
-};
-
-PresetManager.defaultProps = {
-  inventory: [],
-  onSuccess: null
 };
 
 export default PresetManager;

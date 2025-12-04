@@ -16,18 +16,18 @@ export function registerRoutes(app) {
   // Health check (no /api prefix)
   app.use(healthRouter);
   
-  // API routes
-  app.use(pricesRouter);
-  app.use(inventoryRouter);
-  app.use(importsRouter);
-  app.use(analyticsRouter);
-  app.use(decksRouter);
-  app.use(foldersRouter);
-  app.use(salesRouter);
-  app.use(settingsRouter);
-  app.use(authRouter);
-  app.use(lotsRouter);
-  app.use(historyRouter);
+  // API routes (mounted with /api prefix)
+  app.use('/api', pricesRouter);
+  app.use('/api', inventoryRouter);
+  app.use('/api', importsRouter);
+  app.use('/api', analyticsRouter);
+  app.use('/api', decksRouter);
+  app.use('/api', foldersRouter);
+  app.use('/api', salesRouter);
+  app.use('/api', settingsRouter);
+  app.use('/api', authRouter);
+  app.use('/api', lotsRouter);
+  app.use('/api', historyRouter);
 }
 
 export {

@@ -9,7 +9,7 @@ import { createInventoryItemSchema, updateInventoryItemSchema, validateBody } fr
 const router = express.Router();
 
 // ========== INVENTORY ENDPOINTS ==========
-router.get('/api/inventory', authenticate, async (req, res) => {
+router.get('/inventory', authenticate, async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT i.id, i.name, i.set, i.set_name, i.quantity, i.purchase_price, i.purchase_date, 
@@ -30,7 +30,7 @@ router.get('/api/inventory', authenticate, async (req, res) => {
   }
 });
 
-router.post('/api/inventory', authenticate, validateBody(createInventoryItemSchema), async (req, res) => {
+router.post('/inventory', authenticate, validateBody(createInventoryItemSchema), async (req, res) => {
   const { name, set, set_name, quantity, purchase_price, purchase_date, reorder_type, image_url, folder, foil, quality } = req.body;
   
   try {
@@ -105,7 +105,7 @@ router.post('/api/inventory', authenticate, validateBody(createInventoryItemSche
   }
 });
 
-router.put('/api/inventory/:id', authenticate, validateId, validateBody(updateInventoryItemSchema), async (req, res) => {
+router.put('/inventory/:id', authenticate, validateId, validateBody(updateInventoryItemSchema), async (req, res) => {
   const id = req.validatedId;
   const { quantity, purchase_price, purchase_date, reorder_type, folder, low_inventory_alert, low_inventory_threshold, foil, quality } = req.body;
 
@@ -211,7 +211,7 @@ router.put('/api/inventory/:id', authenticate, validateId, validateBody(updateIn
 });
 
 // Empty Trash - permanently delete all items in Trash folder
-router.delete('/api/inventory/trash', authenticate, async (req, res) => {
+router.delete('/inventory/trash', authenticate, async (req, res) => {
   try {
     const result = await pool.query(
       "DELETE FROM inventory WHERE folder = 'Trash' AND user_id = $1 RETURNING *",
@@ -242,7 +242,7 @@ router.delete('/api/inventory/trash', authenticate, async (req, res) => {
   }
 });
 
-router.delete('/api/inventory/:id', authenticate, validateId, async (req, res) => {
+router.delete('/inventory/:id', authenticate, validateId, async (req, res) => {
   const id = req.validatedId;
 
   try {
@@ -273,7 +273,7 @@ router.delete('/api/inventory/:id', authenticate, validateId, async (req, res) =
 });
 
 // Toggle low inventory alert for a specific card
-router.post('/api/inventory/:id/toggle-alert', authenticate, validateId, async (req, res) => {
+router.post('/inventory/:id/toggle-alert', authenticate, validateId, async (req, res) => {
   const id = req.validatedId;
   console.log('[API] TOGGLE-ALERT ENDPOINT HIT with id:', id);
 
@@ -318,7 +318,7 @@ router.post('/api/inventory/:id/toggle-alert', authenticate, validateId, async (
 });
 
 // Set low inventory threshold for a specific card
-router.post('/api/inventory/:id/set-threshold', authenticate, validateId, async (req, res) => {
+router.post('/inventory/:id/set-threshold', authenticate, validateId, async (req, res) => {
   const id = req.validatedId;
   const { threshold } = req.body;
 
@@ -344,7 +344,7 @@ router.post('/api/inventory/:id/set-threshold', authenticate, validateId, async 
 });
 
 // POST /api/inventory/backfill-scryfall-ids - Backfill missing Scryfall IDs for price tracking
-router.post('/api/inventory/backfill-scryfall-ids', authenticate, async (req, res) => {
+router.post('/inventory/backfill-scryfall-ids', authenticate, async (req, res) => {
   try {
     // Find all inventory items without Scryfall IDs for this user
     const result = await pool.query(
@@ -430,7 +430,7 @@ router.post('/api/inventory/backfill-scryfall-ids', authenticate, async (req, re
 });
 
 // POST /api/inventory/bulk-threshold - Bulk update thresholds and alerts (DEBUG VERSION)
-router.post('/api/inventory/bulk-threshold', authenticate, async (req, res) => {
+router.post('/inventory/bulk-threshold', authenticate, async (req, res) => {
   console.log('[BULK-THRESHOLD] Endpoint hit');
   console.log('[BULK-THRESHOLD] Request body:', JSON.stringify(req.body).substring(0, 500));
   
@@ -496,7 +496,7 @@ router.post('/api/inventory/bulk-threshold', authenticate, async (req, res) => {
 });
 
 // GET /api/inventory/alerts/deck-card-names - Get card names from all deck templates for filtering alerts
-router.get('/api/inventory/alerts/deck-card-names', authenticate, async (req, res) => {
+router.get('/inventory/alerts/deck-card-names', authenticate, async (req, res) => {
   try {
     // Get all unique card names from deck templates (non-deck-instances)
     const result = await pool.query(`

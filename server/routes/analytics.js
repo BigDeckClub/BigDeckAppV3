@@ -6,7 +6,7 @@ import { authenticate } from '../middleware/auth.js';
 const router = express.Router();
 
 // ========== ANALYTICS ENDPOINTS ==========
-router.get('/api/analytics/market-values', authenticate, async (req, res) => {
+router.get('/analytics/market-values', authenticate, async (req, res) => {
   const userId = req.userId;
   try {
     const result = await pool.query('SELECT scryfall_id, quantity FROM inventory WHERE scryfall_id IS NOT NULL AND user_id = $1', [userId]);
@@ -34,7 +34,7 @@ router.get('/api/analytics/market-values', authenticate, async (req, res) => {
   }
 });
 
-router.get('/api/analytics/card-metrics', authenticate, async (req, res) => {
+router.get('/analytics/card-metrics', authenticate, async (req, res) => {
   const userId = req.userId;
   try {
     // Current inventory (total cards and unique cards)

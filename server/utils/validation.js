@@ -82,6 +82,12 @@ export const validateBody = (schema) => {
         message: err.message,
       }));
       
+      console.error('[VALIDATION] Request body validation failed:', {
+        endpoint: req.path,
+        body: req.body,
+        errors
+      });
+      
       return res.status(400).json({
         error: 'Validation failed',
         details: errors,

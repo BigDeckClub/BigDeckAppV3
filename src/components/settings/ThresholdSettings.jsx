@@ -1,23 +1,31 @@
 import React, { useMemo, useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
-import { Settings, Package, Mountain, TrendingUp, RotateCcw, HelpCircle, ChevronDown, Save, Lightbulb, Coins, Gem, BarChart3, Rocket } from 'lucide-react';
+import { Settings, Package, Mountain, TrendingUp, RotateCcw, HelpCircle, ChevronDown, Save, Lightbulb, Coins, Gem, BarChart3, Rocket, Zap, Scale, Warehouse, Crown } from 'lucide-react';
 import { useToast, TOAST_TYPES } from '../../context/ToastContext';
 import { calculateSmartThreshold } from '../../utils/thresholdCalculator';
 import { QUICK_PRESETS } from '../../constants/thresholds';
 import { fetchWithAuth } from '../../utils/apiClient';
+
+// Map icon names to components
+const PRESET_ICONS = {
+  Zap: Zap,
+  Scale: Scale,
+  Warehouse: Warehouse,
+  Crown: Crown
+};
 
 /**
  * ThresholdSettings component - Smart threshold settings tab
  * Includes slider controls, quick presets, live preview, and apply functionality
  */
 export const ThresholdSettings = ({
-  inventory,
+  inventory = [],
   thresholdSettings,
-  saveStatus,
+  saveStatus = '',
   handleSliderChange,
   handleResetSliders,
   handleApplyQuickPreset,
-  salesHistory
+  salesHistory = []
 }) => {
   const { showToast } = useToast();
   
@@ -195,19 +203,23 @@ export const ThresholdSettings = ({
       <div className="space-y-3">
         <p className="text-sm font-medium text-slate-300">Quick Presets</p>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-          {Object.entries(QUICK_PRESETS).map(([key, preset]) => (
-            <button
-              key={key}
-              onClick={() => handleApplyQuickPreset(preset)}
-              className="px-3 py-2 bg-slate-700/50 hover:bg-slate-600/70 border border-slate-600/50 hover:border-purple-500/50 rounded-lg text-xs text-left transition-all duration-200 hover:shadow-lg hover:shadow-purple-500/10 group"
-              aria-label={`Apply ${preset.label} preset: ${preset.description}`}
-            >
-              <span className="block font-semibold text-white group-hover:text-purple-300 transition-colors">
-                {preset.label}
-              </span>
-              <span className="block text-slate-400 mt-0.5">{preset.description}</span>
-            </button>
-          ))}
+          {Object.entries(QUICK_PRESETS).map(([key, preset]) => {
+            const IconComponent = PRESET_ICONS[preset.icon];
+            return (
+              <button
+                key={key}
+                onClick={() => handleApplyQuickPreset(preset)}
+                className="px-3 py-2.5 bg-slate-700/50 hover:bg-slate-600/70 border border-slate-600/50 hover:border-purple-500/50 rounded-lg text-xs text-left transition-all duration-200 hover:shadow-lg hover:shadow-purple-500/10 group"
+                aria-label={`Apply ${preset.label} preset: ${preset.description}`}
+              >
+                <span className="flex items-center gap-2 font-semibold text-white group-hover:text-purple-300 transition-colors">
+                  {IconComponent && <IconComponent className="w-4 h-4 text-purple-400 group-hover:text-purple-300" />}
+                  {preset.label}
+                </span>
+                <span className="block text-slate-400 mt-1">{preset.description}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -462,12 +474,6 @@ ThresholdSettings.propTypes = {
   handleResetSliders: PropTypes.func.isRequired,
   handleApplyQuickPreset: PropTypes.func.isRequired,
   salesHistory: PropTypes.array
-};
-
-ThresholdSettings.defaultProps = {
-  inventory: [],
-  saveStatus: '',
-  salesHistory: []
 };
 
 export default ThresholdSettings;

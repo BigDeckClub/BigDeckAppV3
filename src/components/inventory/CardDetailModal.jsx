@@ -4,6 +4,7 @@ import { X, Trash2, Edit2, Bell, BellOff, ChevronDown, ChevronUp, Package, Dolla
 import { calculateSmartThreshold } from '../../utils/thresholdCalculator';
 import { EXTERNAL_APIS } from '../../config/api';
 import { Button } from '../ui/Button';
+import { useAuthFetch } from '../../hooks/useAuthFetch';
 
 /**
  * Get card image URL from Scryfall
@@ -344,6 +345,7 @@ export const CardDetailModal = memo(function CardDetailModal({
   onToggleLowInventory,
   onSetThreshold
 }) {
+  const { authFetch } = useAuthFetch();
   const [togglingId, setTogglingId] = useState(null);
   const [settingThresholdId, setSettingThresholdId] = useState(null);
   const [thresholdInput, setThresholdInput] = useState({});
@@ -352,6 +354,7 @@ export const CardDetailModal = memo(function CardDetailModal({
   const [imageError, setImageError] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
   const [showAllSkus, setShowAllSkus] = useState(false);
+  const [expandedMerged, setExpandedMerged] = useState({});
   
   // Refs for focus management
   const modalRef = useRef(null);
@@ -446,13 +449,13 @@ export const CardDetailModal = memo(function CardDetailModal({
       }
     }
     
-    fetch('/api/sales')
+    authFetch('/api/sales')
       .then(res => res.json())
       .then(data => {
         setSalesHistory(data || []);
       })
       .catch(err => console.error('[CardDetailModal] Error loading sales:', err));
-  }, []);
+  }, [authFetch]);
 
   // Reset image state when card changes
   useEffect(() => {
@@ -462,21 +465,71 @@ export const CardDetailModal = memo(function CardDetailModal({
 
   if (!isOpen || !items || items.length === 0) return null;
 
-  // Calculate totals
-  const totalQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
-  const reservedQty = items.reduce((sum, item) => sum + (parseInt(item.reserved_quantity) || 0), 0);
+  // Helper to get normalized set name
+  const getSetName = (set) => {
+    if (!set) return 'unknown';
+    if (typeof set === 'string') return set.toLowerCase().trim();
+    return (set.editioncode || set.editionname || 'unknown').toLowerCase().trim();
+  };
+
+  // Merge duplicate items (same set/foil/quality)
+  const mergedItems = React.useMemo(() => {
+    const variantMap = {};
+    
+    items.forEach(item => {
+      const setName = getSetName(item.set);
+      const foilStatus = item.foil ? 'foil' : 'nonfoil';
+      const qualityValue = (item.quality || 'NM').toLowerCase().trim();
+      const variantKey = `${setName}_${foilStatus}_${qualityValue}`;
+      
+      if (!variantMap[variantKey]) {
+        variantMap[variantKey] = [];
+      }
+      variantMap[variantKey].push(item);
+    });
+    
+    // Create merged items with stable keys
+    return Object.entries(variantMap).map(([variantKey, variantItems]) => {
+      if (variantItems.length > 1) {
+        return {
+          ...variantItems[0],
+          _variantKey: variantKey,
+          _mergedCount: variantItems.length,
+          _mergedIds: variantItems.map(i => i.id),
+          _mergedItems: variantItems,
+          _totalQuantity: variantItems.reduce((sum, i) => sum + (i.quantity || 0), 0),
+          _totalReserved: variantItems.reduce((sum, i) => sum + (parseInt(i.reserved_quantity) || 0), 0),
+          quantity: variantItems.reduce((sum, i) => sum + (i.quantity || 0), 0),
+          reserved_quantity: variantItems.reduce((sum, i) => sum + (parseInt(i.reserved_quantity) || 0), 0)
+        };
+      }
+      return {
+        ...variantItems[0],
+        _variantKey: variantKey
+      };
+    });
+  }, [items]);
+
+  // Calculate totals using merged items
+  const totalQty = mergedItems.reduce((sum, item) => sum + (item.quantity || 0), 0);
+  const reservedQty = mergedItems.reduce((sum, item) => sum + (parseInt(item.reserved_quantity) || 0), 0);
   const availableQty = totalQty - reservedQty;
   const avgPrice = calculateAvgPrice(items);
   const totalValue = totalQty * avgPrice;
 
-  // Get unique sets
-  const uniqueSets = [...new Set(items.map(item => item.set?.toUpperCase()).filter(Boolean))];
-  const firstItem = items[0];
+  // Get unique sets from merged items
+  const uniqueSets = [...new Set(mergedItems.map(item => {
+    const set = item.set;
+    if (!set) return 'UNKNOWN';
+    if (typeof set === 'string') return set.toUpperCase();
+    return (set.editioncode || set.editionname || 'UNKNOWN').toUpperCase();
+  }).filter(Boolean))];
+  const firstItem = mergedItems[0];
 
-  // Determine which SKUs to show
+  // Determine which SKUs to show (using merged items)
   const maxInitialSkus = 3;
-  const displayedItems = showAllSkus ? items : items.slice(0, maxInitialSkus);
-  const hasMoreSkus = items.length > maxInitialSkus;
+  const displayedItems = showAllSkus ? mergedItems : mergedItems.slice(0, maxInitialSkus);
+  const hasMoreSkus = mergedItems.length > maxInitialSkus;
 
   // Handlers
   const handleToggleLowInventory = async (item, e) => {
@@ -631,26 +684,62 @@ export const CardDetailModal = memo(function CardDetailModal({
             </h3>
             <div className="space-y-3">
               {displayedItems.map(item => (
-                <SkuRow
-                  key={item.id}
-                  item={item}
-                  isEditing={editingId === item.id}
-                  editForm={editForm}
-                  setEditForm={setEditForm}
-                  onStartEdit={startEditingItem}
-                  onSaveEdit={handleSaveEdit}
-                  onCancelEdit={handleCancelEdit}
-                  onDelete={deleteInventoryItem}
-                  onToggleAlert={handleToggleLowInventory}
-                  onSetThreshold={handleSetThreshold}
-                  togglingId={togglingId}
-                  settingThresholdId={settingThresholdId}
-                  thresholdInput={thresholdInput}
-                  setThresholdInput={setThresholdInput}
-                  salesHistory={salesHistory}
-                  thresholdSettings={thresholdSettings}
-                  createdFolders={createdFolders}
-                />
+                <div key={item._variantKey || item.id}>
+                  <SkuRow
+                    item={item}
+                    isEditing={editingId === item.id}
+                    editForm={editForm}
+                    setEditForm={setEditForm}
+                    onStartEdit={startEditingItem}
+                    onSaveEdit={handleSaveEdit}
+                    onCancelEdit={handleCancelEdit}
+                    onDelete={deleteInventoryItem}
+                    onToggleAlert={handleToggleLowInventory}
+                    onSetThreshold={handleSetThreshold}
+                    togglingId={togglingId}
+                    settingThresholdId={settingThresholdId}
+                    thresholdInput={thresholdInput}
+                    setThresholdInput={setThresholdInput}
+                    salesHistory={salesHistory}
+                    thresholdSettings={thresholdSettings}
+                    createdFolders={createdFolders}
+                  />
+                  
+                  {/* Merged items badge and dropdown */}
+                  {item._mergedCount > 1 && (
+                    <div className="mt-2 ml-4">
+                      <button
+                        onClick={() => setExpandedMerged(prev => ({ ...prev, [item._variantKey]: !prev[item._variantKey] }))}
+                        className="text-xs bg-teal-600/30 text-teal-300 px-3 py-1.5 rounded hover:bg-teal-600/50 transition-colors flex items-center gap-2"
+                      >
+                        <Package className="w-3 h-3" />
+                        {item._mergedCount} identical SKUs merged
+                        {expandedMerged[item._variantKey] ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                      </button>
+                      
+                      {/* Expanded dropdown showing individual entries */}
+                      {expandedMerged[item._variantKey] && (
+                        <div className="mt-2 ml-4 space-y-1 bg-slate-700/30 rounded p-3 border-l-2 border-teal-500/30">
+                          {item._mergedItems.map((subItem, idx) => (
+                            <div key={subItem.id} className="flex items-center gap-3 text-xs text-slate-400 py-2 border-b border-slate-600/30 last:border-0">
+                              <span className="text-slate-500 font-mono">#{idx + 1}</span>
+                              <span className="font-mono">ID: {subItem.id}</span>
+                              <span>Qty: {subItem.quantity || 0}</span>
+                              <span>Reserved: {subItem.reserved_quantity || 0}</span>
+                              <span>Cost: {formatCurrency(parseFloat(subItem.purchase_price) || 0)}</span>
+                              {subItem.purchase_date && (
+                                <span>Added: {formatDate(subItem.purchase_date)}</span>
+                              )}
+                              {subItem.folder && subItem.folder !== 'Uncategorized' && (
+                                <span className="bg-slate-600 px-2 py-0.5 rounded">{subItem.folder}</span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               ))}
             </div>
             

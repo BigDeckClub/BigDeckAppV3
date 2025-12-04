@@ -74,7 +74,8 @@ export const DeckSidebar = memo(function DeckSidebar({
                     itemType: 'deck',
                     itemId: deck.id,
                     itemName: deck.name,
-                    purchasePrice: deckCost
+                    purchasePrice: deckCost,
+                    quantity: deck.reserved_count || 1
                   });
                   setShowSellModal(true);
                 }}

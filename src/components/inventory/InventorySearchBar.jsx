@@ -1,4 +1,4 @@
-import React, { memo, useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import React, { memo, useState, useRef, useEffect, useCallback, useMemo, forwardRef, useImperativeHandle } from 'react';
 import PropTypes from 'prop-types';
 import { X, Clock, Trash2 } from 'lucide-react';
 import { useSearchHistory } from '../../hooks/useSearchHistory';
@@ -10,12 +10,19 @@ import { useSearchHistory } from '../../hooks/useSearchHistory';
 export const InventorySearchBar = memo(forwardRef(function InventorySearchBar({
   inventorySearch,
   setInventorySearch
-}) {
+}, ref) {
   const { recentSearches, addSearch, removeSearch, clearHistory } = useSearchHistory();
   const [showDropdown, setShowDropdown] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const containerRef = useRef(null);
   const inputRef = useRef(null);
+
+  // Expose input methods to parent via ref
+  useImperativeHandle(ref, () => ({
+    focus: () => inputRef.current?.focus(),
+    select: () => inputRef.current?.select(),
+    blur: () => inputRef.current?.blur()
+  }), []);
 
   // Filter recent searches based on current input (memoized to avoid recalculation on every render)
   const filteredSearches = useMemo(() => {

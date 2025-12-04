@@ -36,7 +36,7 @@ async function ensureUserInDatabase(user) {
   }
 }
 
-router.post('/api/auth/login', async (req, res) => {
+router.post('/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     
@@ -70,7 +70,7 @@ router.post('/api/auth/login', async (req, res) => {
   }
 });
 
-router.post('/api/auth/signup', async (req, res) => {
+router.post('/auth/signup', async (req, res) => {
   try {
     const { email, password } = req.body;
     
@@ -109,7 +109,7 @@ router.post('/api/auth/signup', async (req, res) => {
 });
 
 // Get current session endpoint
-router.get('/api/auth/session', async (req, res) => {
+router.get('/auth/session', async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
     
@@ -136,7 +136,7 @@ router.get('/api/auth/session', async (req, res) => {
   }
 });
 
-router.post('/api/auth/logout', (req, res) => {
+router.post('/auth/logout', (req, res) => {
   res.json({ success: true });
 });
 

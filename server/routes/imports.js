@@ -7,7 +7,7 @@ import { recordAudit, recordActivity } from './history.js';
 const router = express.Router();
 
 // ========== IMPORTS ENDPOINTS ==========
-router.get('/api/imports', authenticate, async (req, res) => {
+router.get('/imports', authenticate, async (req, res) => {
   const userId = req.userId;
   try {
     const result = await pool.query(
@@ -21,7 +21,7 @@ router.get('/api/imports', authenticate, async (req, res) => {
   }
 });
 
-router.post('/api/imports', authenticate, async (req, res) => {
+router.post('/imports', authenticate, async (req, res) => {
   const userId = req.userId;
   const { title, description, cardList, source, status } = req.body;
   
@@ -83,7 +83,7 @@ router.post('/api/imports', authenticate, async (req, res) => {
   }
 });
 
-router.delete('/api/imports/:id', authenticate, validateId, async (req, res) => {
+router.delete('/imports/:id', authenticate, validateId, async (req, res) => {
   const userId = req.userId;
   const id = req.validatedId;
 
@@ -104,7 +104,7 @@ router.delete('/api/imports/:id', authenticate, validateId, async (req, res) => 
   }
 });
 
-router.patch('/api/imports/:id/complete', authenticate, validateId, async (req, res) => {
+router.patch('/imports/:id/complete', authenticate, validateId, async (req, res) => {
   const userId = req.userId;
   const id = req.validatedId;
 
@@ -151,7 +151,7 @@ router.patch('/api/imports/:id/complete', authenticate, validateId, async (req, 
   }
 });
 
-router.patch('/api/imports/:id', authenticate, validateId, async (req, res) => {
+router.patch('/imports/:id', authenticate, validateId, async (req, res) => {
   const userId = req.userId;
   const id = req.validatedId;
   const { title, description, cardList, source, status } = req.body;
