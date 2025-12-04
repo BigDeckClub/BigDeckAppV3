@@ -3,6 +3,7 @@ import { PriceCacheProvider } from "./context/PriceCacheContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ToastProvider, useToast, TOAST_TYPES } from "./context/ToastContext";
 import { ConfirmProvider } from "./context/ConfirmContext";
+import { InventoryProvider, useInventory } from "./context/InventoryContext";
 import { LoginForm } from "./components/LoginForm";
 import ErrorBoundary from "./components/ErrorBoundary";
 import ErrorBoundaryWithRetry from "./components/ErrorBoundaryWithRetry";
@@ -14,7 +15,6 @@ import { TutorialModal } from "./components/TutorialModal";
 import { TabLoadingSpinner } from "./components/TabLoadingSpinner";
 import { Navigation } from "./components/Navigation";
 import { useCardSearch } from "./hooks/useCardSearch";
-import { useInventoryOperations } from "./hooks/useInventoryOperations";
 import { getAllSets } from "./utils/scryfallApi";
 import { FullPageSpinner } from "./components/ui";
 
@@ -41,20 +41,12 @@ function MTGInventoryTrackerContent() {
     handleSearch,
   } = useCardSearch();
 
+  // Use inventory context instead of hook
   const {
     inventory,
     loadInventory,
     addInventoryItem,
-    updateInventoryItem,
-    deleteInventoryItem,
-    permanentlyDeleteItem,
-    restoreFromTrash,
-    emptyTrash,
-    editingId,
-    editForm,
-    setEditForm,
-    startEditingItem,
-  } = useInventoryOperations();
+  } = useInventory();
 
   // ALL useState hooks
   const [activeTab, setActiveTab] = useState("inventory");
@@ -97,9 +89,9 @@ function MTGInventoryTrackerContent() {
         await loadInventory();
       }
       showToast(`${saleData.itemName} sold successfully!`, TOAST_TYPES.SUCCESS);
-    } catch (error) {
+    } catch (_error) {
       showToast("Failed to record sale", TOAST_TYPES.ERROR);
-      throw error;
+      throw _error;
     }
   }, [post, loadInventory, showToast]);
 
@@ -130,22 +122,11 @@ function MTGInventoryTrackerContent() {
           <ErrorBoundaryWithRetry>
             <Suspense fallback={<TabLoadingSpinner />}> 
               <InventoryTab
-                inventory={inventory}
                 successMessage={successMessage}
                 setSuccessMessage={setSuccessMessage}
                 expandedCards={expandedCards}
                 setExpandedCards={setExpandedCards}
-                editingId={editingId}
-                editForm={editForm}
-                setEditForm={setEditForm}
-                startEditingItem={startEditingItem}
-                updateInventoryItem={updateInventoryItem}
-                deleteInventoryItem={deleteInventoryItem}
-                permanentlyDeleteItem={permanentlyDeleteItem}
-                restoreFromTrash={restoreFromTrash}
-                emptyTrash={emptyTrash}
                 deckRefreshTrigger={deckRefreshTrigger}
-                onLoadInventory={loadInventory}
                 onSell={handleSell}
               />
             </Suspense>
@@ -211,7 +192,9 @@ function MTGInventoryTracker() {
         <PriceCacheProvider>
           <ToastProvider>
             <ConfirmProvider>
-              <MTGInventoryTrackerContent />
+              <InventoryProvider>
+                <MTGInventoryTrackerContent />
+              </InventoryProvider>
             </ConfirmProvider>
           </ToastProvider>
         </PriceCacheProvider>
