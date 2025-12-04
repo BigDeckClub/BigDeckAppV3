@@ -4,6 +4,41 @@
 
 This is a React-based MTG (Magic: The Gathering) card inventory management application that helps users track their card collection, manage decks, and monitor prices.
 
+**Live App:** https://bigdeck.app
+
+---
+
+## Deployment
+
+### Google Cloud Run
+- **Project:** `big-deck-app`
+- **Service:** `big-deck-app`
+- **Region:** `us-central1`
+- **Live URL:** https://bigdeck.app
+
+### Deploy to Production
+To deploy changes to the live app:
+
+```bash
+# Ensure gcloud is in PATH
+export PATH="$HOME/google-cloud-sdk/bin:$PATH"
+
+# Deploy to Cloud Run (from project root)
+gcloud run deploy big-deck-app --source . --region us-central1 --allow-unauthenticated --quiet
+```
+
+### Quick Deploy Command (copy/paste)
+```bash
+export PATH="$HOME/google-cloud-sdk/bin:$PATH" && cd /workspaces/BigDeckAppV3 && gcloud run deploy big-deck-app --source . --region us-central1 --allow-unauthenticated --quiet
+```
+
+### Environment Variables (set in Cloud Run)
+The following env vars are configured in Cloud Run console:
+- `DATABASE_URL` - PostgreSQL connection string (NeonDB)
+- `SUPABASE_URL` - Supabase project URL
+- `SUPABASE_SERVICE_ROLE_KEY` - Supabase service role key
+- `PORT` - Set to 8080 by Cloud Run
+
 ---
 
 ## Tech Stack
@@ -213,13 +248,39 @@ const cards = inventory.cards.map(card => ...);
 
 | Command | Description |
 |---------|-------------|
-| `npm run dev` | Build and start development server |
+| `npm run dev` | Build and start development server (localhost:5000) |
 | `npm run build` | Production build with Vite |
 | `npm run preview` | Preview production build |
 | `npm start` | Start Express server |
 | `npm run prod` | Build and start production server |
 | `npm test` | Run tests once |
 | `npm run test:watch` | Run tests in watch mode |
+
+---
+
+## Development Workflow
+
+### Local Development
+```bash
+# Start dev server (builds + runs on port 5000)
+npm run dev
+```
+Access at: http://localhost:5000
+
+### Restart Dev Environment
+```bash
+# Kill existing processes and restart
+cd /workspaces/BigDeckAppV3 && fuser -k 5000/tcp 2>/dev/null || true && sleep 1 && npm run dev
+```
+
+### Deploy to Production
+```bash
+# Push to GitHub first
+git add -A && git commit -m "your message" && git push origin main
+
+# Deploy to Cloud Run
+export PATH="$HOME/google-cloud-sdk/bin:$PATH" && cd /workspaces/BigDeckAppV3 && gcloud run deploy big-deck-app --source . --region us-central1 --allow-unauthenticated --quiet
+```
 
 ---
 
