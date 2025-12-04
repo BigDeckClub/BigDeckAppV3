@@ -34,6 +34,8 @@ export const createInventoryItemSchema = z.object({
 
 /**
  * Schema for updating an inventory item
+ * Note: quantity allows 0 (nonnegative) for updates since items can be sold out,
+ * unlike creation which requires positive quantity
  */
 export const updateInventoryItemSchema = z.object({
   quantity: z.number().int().nonnegative('Quantity must be a non-negative integer').optional(),
@@ -45,6 +47,7 @@ export const updateInventoryItemSchema = z.object({
   low_inventory_threshold: z.number().int().nonnegative().optional(),
   foil: z.boolean().optional(),
   quality: z.enum(VALID_QUALITIES).optional(),
+  last_modified: z.string().datetime().optional(),
 }).refine(
   data => Object.keys(data).length > 0,
   { message: 'At least one field must be provided for update' }

@@ -55,9 +55,7 @@ export function InventoryProvider({ children }) {
       }
       return true;
     } catch (error) {
-      showToast('Error adding card: ' + error.message, TOAST_TYPES.ERROR, {
-        action: { label: 'Retry', onClick: () => addInventoryItem(item, options) }
-      });
+      showToast('Error adding card: ' + error.message, TOAST_TYPES.ERROR);
       return false;
     }
   }, [post, loadInventory, showToast]);
@@ -68,7 +66,6 @@ export function InventoryProvider({ children }) {
    * @param {Object} updates - Fields to update
    */
   const updateInventoryItem = useCallback(async (id, updates) => {
-    const previousInventory = [...inventory];
     try {
       // Add last_modified timestamp to track changes
       const updateWithTimestamp = {
@@ -80,13 +77,11 @@ export function InventoryProvider({ children }) {
       setEditingId(null);
       showToast('Card updated!', TOAST_TYPES.SUCCESS);
     } catch (_error) {
-      // Rollback on error
-      setInventory(previousInventory);
-      showToast('Error updating card', TOAST_TYPES.ERROR, {
-        action: { label: 'Retry', onClick: () => updateInventoryItem(id, updates) }
-      });
+      // No rollback needed - loadInventory() is called on success to refresh state
+      // On error, the server state is unchanged
+      showToast('Error updating card', TOAST_TYPES.ERROR);
     }
-  }, [put, loadInventory, showToast, inventory]);
+  }, [put, loadInventory, showToast]);
 
   /**
    * Soft delete - moves item to Trash folder

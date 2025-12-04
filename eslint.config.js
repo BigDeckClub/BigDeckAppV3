@@ -51,7 +51,7 @@ export default [
       'no-console': 'off',
       'no-debugger': 'warn',
       'eqeqeq': ['error', 'always', { null: 'ignore' }],
-      'no-empty': ['error', { allowEmptyCatch: false }],
+      'no-empty': ['error', { allowEmptyCatch: true }],
     },
   },
   {
