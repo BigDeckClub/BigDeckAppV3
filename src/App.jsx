@@ -29,19 +29,16 @@ const SettingsTab = lazy(() => import("./components/SettingsTab"));
 function MTGInventoryTrackerContent() {
   // ALL hooks must be called before any conditional returns
   const { user, loading: authLoading } = useAuth();
-  const { get, post } = useApi();
+  const { post } = useApi();
   const { showToast } = useToast();
 
   // Custom hooks for extracted functionality
   const {
-    searchQuery,
-    setSearchQuery,
     searchResults,
     showDropdown,
     setShowDropdown,
     searchIsLoading,
     handleSearch,
-    clearSearch,
   } = useCardSearch();
 
   const {
@@ -64,16 +61,7 @@ function MTGInventoryTrackerContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [deckRefreshTrigger, setDeckRefreshTrigger] = useState(0);
   const [showTutorial, setShowTutorial] = useState(false);
-  const [selectedCardSets, setSelectedCardSets] = useState([]);
 
-  const [newEntry, setNewEntry] = useState({
-    quantity: 1,
-    purchaseDate: new Date().toISOString().split("T")[0],
-    purchasePrice: "",
-    reorderType: "normal",
-    selectedSet: null,
-  });
-  const [defaultSearchSet, setDefaultSearchSet] = useState("");
   const [allSets, setAllSets] = useState([]);
   const [successMessage, setSuccessMessage] = useState("");
   const [expandedCards, setExpandedCards] = useState({});
@@ -82,8 +70,11 @@ function MTGInventoryTrackerContent() {
     try {
       const validSets = await getAllSets();
       setAllSets(validSets);
-    } catch (error) {}
-  }, []);
+    } catch (error) {
+      console.error('[APP] Failed to load sets:', error);
+      showToast('Failed to load card sets. Some features may be limited.', TOAST_TYPES.WARNING);
+    }
+  }, [showToast]);
 
   useEffect(() => {
     if (!user) return;
@@ -97,42 +88,6 @@ function MTGInventoryTrackerContent() {
     };
     loadAllData();
   }, [user, loadInventory, loadAllSets]);
-
-  const selectCard = useCallback((card) => {
-    setNewEntry(prev => ({ ...prev, selectedSet: card }));
-    setSearchQuery(card.name);
-    setShowDropdown(false);
-  }, [setSearchQuery, setShowDropdown]);
-
-  const addCard = useCallback(async () => {
-    if (!newEntry.selectedSet) {
-      showToast("Please select a card", TOAST_TYPES.WARNING);
-      return;
-    }
-
-    const item = {
-      name: newEntry.selectedSet.name,
-      set: newEntry.selectedSet.set,
-      set_name: newEntry.selectedSet.setName,
-      quantity: newEntry.quantity,
-      purchase_date: newEntry.purchaseDate,
-      purchase_price: newEntry.purchasePrice ? parseFloat(newEntry.purchasePrice) : null,
-      reorder_type: newEntry.reorderType,
-      image_url: newEntry.selectedSet.imageUrl,
-    };
-
-    if (await addInventoryItem(item)) {
-      setNewEntry({
-        quantity: 1,
-        purchaseDate: new Date().toISOString().split("T")[0],
-        purchasePrice: "",
-        reorderType: "normal",
-        selectedSet: null,
-        folder: "Uncategorized",
-      });
-      clearSearch();
-    }
-  }, [newEntry, addInventoryItem, showToast, clearSearch]);
 
   const handleSell = useCallback(async (saleData) => {
     try {
@@ -178,20 +133,6 @@ function MTGInventoryTrackerContent() {
                 inventory={inventory}
                 successMessage={successMessage}
                 setSuccessMessage={setSuccessMessage}
-                newEntry={newEntry}
-                setNewEntry={setNewEntry}
-                selectedCardSets={selectedCardSets}
-                allSets={allSets}
-                defaultSearchSet={defaultSearchSet}
-                setDefaultSearchSet={setDefaultSearchSet}
-                searchQuery={searchQuery}
-                setSearchQuery={setSearchQuery}
-                searchResults={searchResults}
-                searchIsLoading={searchIsLoading}
-                showDropdown={showDropdown}
-                setShowDropdown={setShowDropdown}
-                selectCard={selectCard}
-                addCard={addCard}
                 expandedCards={expandedCards}
                 setExpandedCards={setExpandedCards}
                 editingId={editingId}
@@ -203,7 +144,6 @@ function MTGInventoryTrackerContent() {
                 permanentlyDeleteItem={permanentlyDeleteItem}
                 restoreFromTrash={restoreFromTrash}
                 emptyTrash={emptyTrash}
-                handleSearch={handleSearch}
                 deckRefreshTrigger={deckRefreshTrigger}
                 onLoadInventory={loadInventory}
                 onSell={handleSell}
