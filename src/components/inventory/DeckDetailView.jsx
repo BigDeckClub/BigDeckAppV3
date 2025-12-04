@@ -1,7 +1,9 @@
-import React, { memo } from 'react';
+import React, { memo, useState } from 'react';
 import PropTypes from 'prop-types';
-import { Trash2, X, ChevronDown, Wand2, DollarSign } from 'lucide-react';
+import { Trash2, X, ChevronDown, Wand2, DollarSign, ShoppingCart } from 'lucide-react';
 import { getSetDisplayName } from '../../utils/cardHelpers';
+import { BuyCardsModal } from '../buy/BuyCardsModal';
+import { BuyButton } from '../buy/BuyButton';
 
 /**
  * DeckDetailView - Renders the deck detail view with reserved and missing cards
@@ -26,11 +28,23 @@ export const DeckDetailView = memo(function DeckDetailView({
   setSellModalData,
   setShowSellModal
 }) {
+  const [showBuyModal, setShowBuyModal] = useState(false);
+
   if (!deck || !deckDetails) return null;
 
   const deckId = deck.id;
   const decklistTotal = (deck.cards || []).reduce((sum, c) => sum + (c.quantity || 1), 0);
   const actualMissingCount = Math.max(0, decklistTotal - (deckDetails.reservedCount || 0));
+
+  // Calculate missing cards for the buy modal
+  const missingCards = (deck.cards || []).map((card) => {
+    const reservedQty = (deckDetails.reservations || [])
+      .filter(r => r.name.toLowerCase() === card.name.toLowerCase())
+      .reduce((sum, r) => sum + parseInt(r.quantity_reserved || 0), 0);
+    const needed = Math.max(0, (card.quantity || 1) - reservedQty);
+    if (needed === 0) return null;
+    return { name: card.name, quantity: needed, set: card.set };
+  }).filter(Boolean);
 
   // Group reservations by card name for grid view
   const groupedReservations = (deckDetails.reservations || []).reduce((acc, res) => {
@@ -299,6 +313,15 @@ export const DeckDetailView = memo(function DeckDetailView({
               </div>
             </div>
             <div className="flex gap-1.5">
+              {missingCards.length > 0 && (
+                <button
+                  onClick={() => setShowBuyModal(true)}
+                  className="bg-gradient-to-br from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white p-2 rounded-lg transition-all duration-200 hover:shadow-lg hover:shadow-amber-500/30 flex items-center"
+                  title="Buy missing cards from marketplace"
+                >
+                  <ShoppingCart className="w-4 h-4" />
+                </button>
+              )}
               <button
                 onClick={() => autoFillMissingCards(deck, deck.id)}
                 className="bg-gradient-to-br from-teal-600 to-teal-700 hover:from-teal-500 hover:to-teal-600 text-white p-2 rounded-lg transition-all duration-200 hover:shadow-lg hover:shadow-teal-500/30 flex items-center"
@@ -380,13 +403,16 @@ export const DeckDetailView = memo(function DeckDetailView({
                           <span className="text-white">{needed}x {card.name}</span>
                           <span className="text-xs text-slate-500 ml-2">{getSetDisplayName(card.set, true)}</span>
                         </div>
-                        <button
-                          onClick={() => autoFillSingleCard(card, needed, deck.id)}
-                          className="bg-teal-600 hover:bg-teal-500 text-white p-1 rounded transition-colors flex items-center ml-2"
-                          title="Auto-fill this card from inventory"
-                        >
-                          <Wand2 className="w-3 h-3" />
-                        </button>
+                        <div className="flex items-center gap-1">
+                          <BuyButton card={card} quantity={needed} size="sm" />
+                          <button
+                            onClick={() => autoFillSingleCard(card, needed, deck.id)}
+                            className="bg-teal-600 hover:bg-teal-500 text-white p-1 rounded transition-colors flex items-center ml-2"
+                            title="Auto-fill this card from inventory"
+                          >
+                            <Wand2 className="w-3 h-3" />
+                          </button>
+                        </div>
                       </div>
                     );
                   }).filter(Boolean)}
@@ -396,6 +422,14 @@ export const DeckDetailView = memo(function DeckDetailView({
           </div>
         )}
       </div>
+
+      {/* Buy Cards Modal */}
+      <BuyCardsModal
+        isOpen={showBuyModal}
+        onClose={() => setShowBuyModal(false)}
+        cards={missingCards}
+        deckName={deck.name}
+      />
     </div>
   );
 });

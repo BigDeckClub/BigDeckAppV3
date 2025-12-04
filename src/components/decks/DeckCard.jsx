@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
-import { Download, Edit2, Trash2, FileEdit, Link2 } from 'lucide-react';
+import { Download, Edit2, Trash2, FileEdit, Link2, ShoppingCart } from 'lucide-react';
+import { BuyButton } from '../buy/BuyButton';
+import { BuyCardsModal } from '../buy/BuyCardsModal';
 
 /**
  * DeckCard component - Displays a single deck in the deck list grid
@@ -19,16 +21,18 @@ export function DeckCard({
   onCancelEdit
 }) {
   const [showMissing, setShowMissing] = useState(false);
+  const [showBuyModal, setShowBuyModal] = useState(false);
 
   // Compute missing cards based on inventory mapping passed from parent
   const missingEntries = (deck.cards || []).map((card) => {
     const nameKey = (card.name || '').toLowerCase().trim();
     const available = inventoryByName?.[nameKey] || 0;
     const needed = Math.max(0, (card.quantity || 1) - available);
-    return { name: card.name, needed, set: card.set };
-  }).filter(m => m.needed > 0);
-  const totalMissing = missingEntries.reduce((sum, m) => sum + m.needed, 0);
+    return { name: card.name, quantity: needed, set: card.set };
+  }).filter(m => m.quantity > 0);
+  const totalMissing = missingEntries.reduce((sum, m) => sum + m.quantity, 0);
   return (
+    <>
     <div
       className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 hover:border-teal-500 rounded-lg p-4 cursor-pointer transition-all hover:shadow-lg hover:shadow-teal-500/20"
       onClick={() => onSelect(deck)}
@@ -120,13 +124,24 @@ export function DeckCard({
           </button>
           {showMissing && (
             <div className="mt-2 bg-slate-900 rounded p-2 max-h-40 overflow-y-auto border border-red-700/20">
+              <div className="flex justify-end mb-2">
+                <button
+                  onClick={(e) => { e.stopPropagation(); setShowBuyModal(true); }}
+                  className="flex items-center gap-1 px-2 py-1 bg-amber-600 hover:bg-amber-500 text-white text-xs rounded transition-colors"
+                  title="Buy all missing cards"
+                >
+                  <ShoppingCart className="w-3 h-3" />
+                  Buy Missing
+                </button>
+              </div>
               {missingEntries.map((m, i) => (
                 <div key={i} className="flex justify-between items-center text-sm bg-red-900/40 text-red-200 rounded px-2 py-1 mb-1">
-                  <div>
-                    <span className="font-semibold">{m.needed}x</span>
+                  <div className="flex-1">
+                    <span className="font-semibold">{m.quantity}x</span>
                     <span className="ml-2">{m.name}</span>
                     <span className="text-xs text-red-200 ml-2">{(m.set && (typeof m.set === 'string' ? m.set : (m.set.editioncode || m.set.editionname))) || ''}</span>
                   </div>
+                  <BuyButton card={m} quantity={m.quantity} size="sm" />
                 </div>
               ))}
             </div>
@@ -167,6 +182,15 @@ export function DeckCard({
         </button>
       )}
     </div>
+
+    {/* Buy Cards Modal */}
+    <BuyCardsModal
+      isOpen={showBuyModal}
+      onClose={() => setShowBuyModal(false)}
+      cards={missingEntries}
+      deckName={deck.name}
+    />
+    </>
   );
 }
 

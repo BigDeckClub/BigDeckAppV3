@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
-import { X, Trash2, ChevronDown, FileEdit, Link2 } from 'lucide-react';
+import { X, Trash2, ChevronDown, FileEdit, Link2, ShoppingCart } from 'lucide-react';
 import { getSetDisplayName } from '../../utils/cardHelpers';
+import { BuyButton } from '../buy/BuyButton';
+import { BuyCardsModal } from '../buy/BuyCardsModal';
 
 /**
  * DeckDetailsView component - Displays detailed view of a single deck
@@ -16,15 +18,16 @@ export function DeckDetailsView({
   onArchidektSync
 }) {
   const [showMissing, setShowMissing] = useState(false);
+  const [showBuyModal, setShowBuyModal] = useState(false);
 
   // Compute missing cards
   const missingEntries = (deck.cards || []).map((card) => {
     const nameKey = (card.name || '').toLowerCase().trim();
     const available = inventoryByName?.[nameKey] || 0;
     const needed = Math.max(0, (card.quantity || 1) - available);
-    return { name: card.name, needed, set: card.set };
-  }).filter(m => m.needed > 0);
-  const totalMissing = missingEntries.reduce((sum, m) => sum + m.needed, 0);
+    return { name: card.name, quantity: needed, set: card.set };
+  }).filter(m => m.quantity > 0);
+  const totalMissing = missingEntries.reduce((sum, m) => sum + m.quantity, 0);
   return (
     <div className="space-y-4">
       <button
@@ -47,6 +50,16 @@ export function DeckDetailsView({
             </p>
           </div>
           <div className="flex gap-2">
+            {totalMissing > 0 && (
+              <button
+                onClick={() => setShowBuyModal(true)}
+                className="text-slate-100 bg-amber-600 hover:bg-amber-500 transition-colors px-3 py-2 rounded-lg flex items-center gap-2 font-medium"
+                title="Buy missing cards from marketplace"
+              >
+                <ShoppingCart className="w-4 h-4" />
+                Buy Missing
+              </button>
+            )}
             {onArchidektSync && (
               <button
                 onClick={() => onArchidektSync(deck)}
@@ -135,8 +148,11 @@ export function DeckDetailsView({
               <div className="mt-2 bg-slate-900 rounded-lg p-3 max-h-48 overflow-y-auto border border-red-700/20">
                 {missingEntries.map((m, i) => (
                   <div key={i} className="flex justify-between items-center text-sm bg-red-900/40 text-red-200 rounded px-3 py-2 mb-1">
-                    <span><span className="font-bold">{m.needed}x</span> {m.name}</span>
-                    <span className="text-xs text-red-300">{getSetDisplayName(m.set, true)}</span>
+                    <div className="flex-1">
+                      <span><span className="font-bold">{m.quantity}x</span> {m.name}</span>
+                      <span className="text-xs text-red-300 ml-2">{getSetDisplayName(m.set, true)}</span>
+                    </div>
+                    <BuyButton card={m} quantity={m.quantity} size="sm" />
                   </div>
                 ))}
               </div>
@@ -148,6 +164,14 @@ export function DeckDetailsView({
           Created: {new Date(deck.created_at).toLocaleDateString()}
         </p>
       </div>
+
+      {/* Buy Cards Modal */}
+      <BuyCardsModal
+        isOpen={showBuyModal}
+        onClose={() => setShowBuyModal(false)}
+        cards={missingEntries}
+        deckName={deck.name}
+      />
     </div>
   );
 }
