@@ -248,6 +248,7 @@ export async function initializeDatabase() {
         created_at TIMESTAMP DEFAULT NOW()
       )
     `);
+    await pool.query(`ALTER TABLE inventory_transactions ADD COLUMN IF NOT EXISTS user_id VARCHAR(255)`).catch(() => {});
 
     // Sales history table
     await pool.query(`
@@ -263,6 +264,7 @@ export async function initializeDatabase() {
         created_at TIMESTAMP DEFAULT NOW()
       )
     `);
+    await pool.query(`ALTER TABLE sales_history ADD COLUMN IF NOT EXISTS user_id VARCHAR(255)`).catch(() => {});
 
     // Change history table - tracks card edits
     await pool.query(`

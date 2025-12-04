@@ -1,6 +1,12 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import PropTypes from 'prop-types';
-import { BarChart3, CheckCircle2, AlertCircle, TrendingUp, Package } from 'lucide-react';
+import { 
+  BarChart3, CheckCircle2, AlertCircle, TrendingUp, Package, 
+  Search, Filter, ChevronDown, ChevronUp, Download,
+  DollarSign, Eye, X, List, Grid3X3, SortAsc, SortDesc,
+  ShoppingCart, Copy, Check
+} from 'lucide-react';
+import { EXTERNAL_APIS } from '../../config/api';
 
 /**
  * DeckAnalysisView - Advanced multi-deck analysis and comparison
@@ -11,6 +17,23 @@ export function DeckAnalysisView({ decks, selectedDeckIds, inventoryByName }) {
   const [deckQuantities, setDeckQuantities] = useState(
     selectedDeckIds.reduce((acc, id) => ({ ...acc, [id]: 1 }), {})
   );
+
+  // UI State
+  const [activeTab, setActiveTab] = useState('overview'); // overview, missing, shared, breakdown
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState('missing'); // missing, name, quantity, decks
+  const [sortOrder, setSortOrder] = useState('desc');
+  const [filterMissingOnly, setFilterMissingOnly] = useState(false);
+  const [expandedSections, setExpandedSections] = useState({
+    quantities: true,
+    stats: true,
+    shared: true,
+    missing: true,
+    breakdown: false
+  });
+  const [hoveredCard, setHoveredCard] = useState(null);
+  const [copiedToClipboard, setCopiedToClipboard] = useState(false);
+  const [viewMode, setViewMode] = useState('list'); // list, grid
 
   // Get selected decks
   const selectedDecks = useMemo(() => {
@@ -23,11 +46,13 @@ export function DeckAnalysisView({ decks, selectedDeckIds, inventoryByName }) {
       return {
         sharedCards: [],
         missingFromAll: [],
-        cardRequirements: {},
+        missingCards: [],
+        cardRequirements: [],
         totalCardsNeeded: 0,
         totalCardsOwned: 0,
         completionRate: 0,
-        deckStats: []
+        deckStats: [],
+        estimatedCost: 0
       };
     }
 
@@ -47,7 +72,8 @@ export function DeckAnalysisView({ decks, selectedDeckIds, inventoryByName }) {
             totalRequired: 0,
             available: inventoryByName?.[cardKey] || 0,
             set: card.set,
-            decks: []
+            decks: [],
+            estimatedPrice: card.price || 0.50 // Default estimate if no price
           };
           cardAppearances[cardKey] = new Set();
         }
@@ -93,6 +119,11 @@ export function DeckAnalysisView({ decks, selectedDeckIds, inventoryByName }) {
       ? (totalCardsOwned / totalCardsNeeded) * 100 
       : 100;
 
+    // Estimate cost to complete
+    const estimatedCost = missingCards.reduce((sum, card) => 
+      sum + (card.missing * card.estimatedPrice), 0
+    );
+
     // Per-deck statistics
     const deckStats = selectedDecks.map(deck => {
       const deckQty = deckQuantities[deck.id] || 1;
@@ -126,13 +157,57 @@ export function DeckAnalysisView({ decks, selectedDeckIds, inventoryByName }) {
     return {
       sharedCards,
       missingFromAll,
+      missingCards,
       cardRequirements: Object.values(cardRequirements),
       totalCardsNeeded,
       totalCardsOwned,
       completionRate,
-      deckStats
+      deckStats,
+      estimatedCost
     };
   }, [selectedDecks, deckQuantities, inventoryByName]);
+
+  // Filter and sort cards based on current settings
+  const filteredCards = useMemo(() => {
+    let cards = [...analysis.cardRequirements];
+    
+    // Apply search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      cards = cards.filter(card => 
+        card.name.toLowerCase().includes(query)
+      );
+    }
+    
+    // Apply missing only filter
+    if (filterMissingOnly) {
+      cards = cards.filter(card => card.totalRequired > card.available);
+    }
+    
+    // Apply sorting
+    cards.sort((a, b) => {
+      let comparison = 0;
+      switch (sortBy) {
+        case 'missing':
+          comparison = (b.totalRequired - b.available) - (a.totalRequired - a.available);
+          break;
+        case 'name':
+          comparison = a.name.localeCompare(b.name);
+          break;
+        case 'quantity':
+          comparison = b.totalRequired - a.totalRequired;
+          break;
+        case 'decks':
+          comparison = b.decks.length - a.decks.length;
+          break;
+        default:
+          comparison = 0;
+      }
+      return sortOrder === 'desc' ? comparison : -comparison;
+    });
+    
+    return cards;
+  }, [analysis.cardRequirements, searchQuery, filterMissingOnly, sortBy, sortOrder]);
 
   // Handle quantity slider change
   const handleQuantityChange = (deckId, quantity) => {
@@ -140,6 +215,52 @@ export function DeckAnalysisView({ decks, selectedDeckIds, inventoryByName }) {
       ...prev,
       [deckId]: Math.max(1, Math.min(10, quantity))
     }));
+  };
+
+  // Toggle section expansion
+  const toggleSection = (section) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
+
+  // Export missing cards to CSV
+  const exportToCSV = useCallback(() => {
+    const headers = ['Card Name', 'Quantity Needed', 'Quantity Owned', 'Missing', 'Estimated Price', 'Decks'];
+    const rows = analysis.missingCards.map(card => [
+      card.name,
+      card.totalRequired,
+      card.available,
+      card.missing,
+      `$${card.estimatedPrice.toFixed(2)}`,
+      card.decks.map(d => d.deckName).join('; ')
+    ]);
+    
+    const csv = [headers, ...rows].map(row => row.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `deck-analysis-missing-cards-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [analysis.missingCards]);
+
+  // Copy missing cards list to clipboard
+  const copyToClipboard = useCallback(() => {
+    const text = analysis.missingCards
+      .map(card => `${card.missing}x ${card.name}`)
+      .join('\n');
+    navigator.clipboard.writeText(text);
+    setCopiedToClipboard(true);
+    setTimeout(() => setCopiedToClipboard(false), 2000);
+  }, [analysis.missingCards]);
+
+  // Get card image URL
+  const getCardImageUrl = (cardName) => {
+    const encodedName = encodeURIComponent(cardName.split('//')[0].trim());
+    return `${EXTERNAL_APIS.SCRYFALL}/cards/named?exact=${encodedName}&format=image&version=normal`;
   };
 
   if (selectedDeckIds.length === 0) {
@@ -151,245 +272,617 @@ export function DeckAnalysisView({ decks, selectedDeckIds, inventoryByName }) {
     );
   }
 
+  // Tab navigation
+  const tabs = [
+    { id: 'overview', label: 'Overview', icon: BarChart3 },
+    { id: 'missing', label: `Missing (${analysis.missingCards.length})`, icon: AlertCircle },
+    { id: 'shared', label: `Shared (${analysis.sharedCards.length})`, icon: CheckCircle2 },
+    { id: 'breakdown', label: 'Full Breakdown', icon: List }
+  ];
+
   return (
-    <div className="space-y-6">
-      {/* Overall Summary */}
-      <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-lg border border-slate-600 p-6">
-        <h2 className="text-2xl font-bold text-teal-300 mb-4 flex items-center gap-2">
-          <BarChart3 className="w-6 h-6" />
-          Multi-Deck Analysis
-        </h2>
-        
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-slate-900/50 rounded-lg p-4">
-            <div className="text-slate-400 text-sm mb-1">Decks Selected</div>
-            <div className="text-2xl font-bold text-teal-300">{selectedDecks.length}</div>
-          </div>
-          <div className="bg-slate-900/50 rounded-lg p-4">
-            <div className="text-slate-400 text-sm mb-1">Total Cards Needed</div>
-            <div className="text-2xl font-bold text-blue-300">{analysis.totalCardsNeeded}</div>
-          </div>
-          <div className="bg-slate-900/50 rounded-lg p-4">
-            <div className="text-slate-400 text-sm mb-1">Cards Owned</div>
-            <div className="text-2xl font-bold text-green-300">{analysis.totalCardsOwned}</div>
-          </div>
-          <div className="bg-slate-900/50 rounded-lg p-4">
-            <div className="text-slate-400 text-sm mb-1">Completion</div>
-            <div className="text-2xl font-bold text-amber-300">
-              {analysis.completionRate.toFixed(1)}%
-            </div>
+    <div className="space-y-4">
+      {/* Card Preview Tooltip */}
+      {hoveredCard && (
+        <div 
+          className="fixed z-50 pointer-events-none"
+          style={{ 
+            left: Math.min(window.innerWidth - 260, Math.max(10, hoveredCard.x)),
+            top: Math.min(window.innerHeight - 370, Math.max(10, hoveredCard.y - 180))
+          }}
+        >
+          <div className="bg-slate-900 rounded-lg shadow-2xl border border-slate-600 p-2">
+            <img
+              src={getCardImageUrl(hoveredCard.name)}
+              alt={hoveredCard.name}
+              className="w-60 h-auto rounded"
+              onError={(e) => { e.target.style.display = 'none'; }}
+            />
           </div>
         </div>
+      )}
 
-        {/* Completion Progress Bar */}
-        <div className="bg-slate-900 rounded-full h-4 overflow-hidden">
-          <div
-            className="h-full bg-gradient-to-r from-teal-600 to-green-500 transition-all duration-500"
-            style={{ width: `${Math.min(100, analysis.completionRate)}%` }}
-          />
+      {/* Tab Navigation */}
+      <div className="bg-slate-800 rounded-lg border border-slate-600 p-2">
+        <div className="flex flex-wrap gap-2">
+          {tabs.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all text-sm font-medium ${
+                activeTab === tab.id
+                  ? 'bg-teal-600 text-white shadow-lg shadow-teal-600/30'
+                  : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+              }`}
+            >
+              <tab.icon className="w-4 h-4" />
+              {tab.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Deck Quantity Sliders */}
-      <div className="bg-slate-800 rounded-lg border border-slate-600 p-6">
-        <h3 className="text-lg font-semibold text-teal-300 mb-4 flex items-center gap-2">
-          <Package className="w-5 h-5" />
-          Deck Quantities
-        </h3>
-        <div className="space-y-4">
-          {selectedDecks.map(deck => (
-            <div key={deck.id} className="bg-slate-900/50 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-slate-200 font-medium">{deck.name}</span>
-                <span className="text-teal-300 font-bold text-lg">
-                  {deckQuantities[deck.id] || 1}x
-                </span>
+      {/* Overview Tab */}
+      {activeTab === 'overview' && (
+        <>
+          {/* Overall Summary */}
+          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-lg border border-slate-600 p-6">
+            <h2 className="text-2xl font-bold text-teal-300 mb-4 flex items-center gap-2">
+              <BarChart3 className="w-6 h-6" />
+              Multi-Deck Analysis
+            </h2>
+            
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+              <div className="bg-slate-900/50 rounded-lg p-4">
+                <div className="text-slate-400 text-sm mb-1">Decks</div>
+                <div className="text-2xl font-bold text-teal-300">{selectedDecks.length}</div>
               </div>
-              <input
-                type="range"
-                min="1"
-                max="10"
-                value={deckQuantities[deck.id] || 1}
-                onChange={(e) => handleQuantityChange(deck.id, parseInt(e.target.value))}
-                className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-teal-500"
+              <div className="bg-slate-900/50 rounded-lg p-4">
+                <div className="text-slate-400 text-sm mb-1">Cards Needed</div>
+                <div className="text-2xl font-bold text-blue-300">{analysis.totalCardsNeeded}</div>
+              </div>
+              <div className="bg-slate-900/50 rounded-lg p-4">
+                <div className="text-slate-400 text-sm mb-1">Cards Owned</div>
+                <div className="text-2xl font-bold text-green-300">{analysis.totalCardsOwned}</div>
+              </div>
+              <div className="bg-slate-900/50 rounded-lg p-4">
+                <div className="text-slate-400 text-sm mb-1">Completion</div>
+                <div className="text-2xl font-bold text-amber-300">
+                  {analysis.completionRate.toFixed(1)}%
+                </div>
+              </div>
+              <div className="bg-slate-900/50 rounded-lg p-4">
+                <div className="text-slate-400 text-sm mb-1 flex items-center gap-1">
+                  <DollarSign className="w-3 h-3" />
+                  Est. Cost
+                </div>
+                <div className="text-2xl font-bold text-emerald-300">
+                  ${analysis.estimatedCost.toFixed(2)}
+                </div>
+              </div>
+            </div>
+
+            {/* Completion Progress Bar */}
+            <div className="bg-slate-900 rounded-full h-4 overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-teal-600 to-green-500 transition-all duration-500"
+                style={{ width: `${Math.min(100, analysis.completionRate)}%` }}
               />
-              <div className="flex justify-between text-xs text-slate-500 mt-1">
-                <span>1 copy</span>
-                <span>10 copies</span>
-              </div>
             </div>
-          ))}
-        </div>
-      </div>
+          </div>
 
-      {/* Per-Deck Statistics */}
-      <div className="bg-slate-800 rounded-lg border border-slate-600 p-6">
-        <h3 className="text-lg font-semibold text-teal-300 mb-4 flex items-center gap-2">
-          <TrendingUp className="w-5 h-5" />
-          Individual Deck Stats
-        </h3>
-        <div className="space-y-3">
-          {analysis.deckStats.map(stat => (
-            <div key={stat.deckId} className="bg-slate-900/50 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-2">
-                <div>
-                  <span className="text-slate-200 font-medium">{stat.deckName}</span>
-                  {stat.copies > 1 && (
-                    <span className="ml-2 text-xs bg-teal-600 text-white px-2 py-0.5 rounded">
-                      {stat.copies}x
-                    </span>
-                  )}
-                </div>
-                <span className={`font-bold ${
-                  stat.completion === 100 ? 'text-green-400' : 
-                  stat.completion >= 75 ? 'text-amber-400' : 'text-red-400'
-                }`}>
-                  {stat.completion.toFixed(0)}%
-                </span>
-              </div>
-              <div className="grid grid-cols-3 gap-4 text-sm">
-                <div>
-                  <div className="text-slate-400">Required</div>
-                  <div className="text-blue-300 font-semibold">{stat.required}</div>
-                </div>
-                <div>
-                  <div className="text-slate-400">Owned</div>
-                  <div className="text-green-300 font-semibold">{stat.owned}</div>
-                </div>
-                <div>
-                  <div className="text-slate-400">Missing</div>
-                  <div className="text-red-300 font-semibold">{stat.missing}</div>
-                </div>
-              </div>
-              <div className="mt-2 bg-slate-900 rounded-full h-2 overflow-hidden">
-                <div
-                  className={`h-full transition-all duration-500 ${
-                    stat.completion === 100 ? 'bg-green-500' : 
-                    stat.completion >= 75 ? 'bg-amber-500' : 'bg-red-500'
-                  }`}
-                  style={{ width: `${Math.min(100, stat.completion)}%` }}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Shared Cards */}
-      {analysis.sharedCards.length > 0 && (
-        <div className="bg-slate-800 rounded-lg border border-slate-600 p-6">
-          <h3 className="text-lg font-semibold text-teal-300 mb-4 flex items-center gap-2">
-            <CheckCircle2 className="w-5 h-5" />
-            Shared Cards ({analysis.sharedCards.length})
-          </h3>
-          <div className="space-y-2 max-h-96 overflow-y-auto">
-            {analysis.sharedCards.map((card, idx) => (
-              <div key={idx} className="bg-slate-900 rounded-lg p-3">
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex-1">
-                    <div className="text-slate-200 font-medium">{card.name}</div>
-                    <div className="text-xs text-slate-400 mt-1">
-                      Used in {card.decks.length} deck{card.decks.length > 1 ? 's' : ''}
+          {/* Deck Quantity Sliders - Collapsible */}
+          <div className="bg-slate-800 rounded-lg border border-slate-600 overflow-hidden">
+            <button
+              onClick={() => toggleSection('quantities')}
+              className="w-full flex items-center justify-between p-4 hover:bg-slate-700/50 transition-colors"
+            >
+              <h3 className="text-lg font-semibold text-teal-300 flex items-center gap-2">
+                <Package className="w-5 h-5" />
+                Deck Quantities
+              </h3>
+              {expandedSections.quantities ? (
+                <ChevronUp className="w-5 h-5 text-slate-400" />
+              ) : (
+                <ChevronDown className="w-5 h-5 text-slate-400" />
+              )}
+            </button>
+            {expandedSections.quantities && (
+              <div className="p-4 pt-0 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {selectedDecks.map(deck => (
+                  <div key={deck.id} className="bg-slate-900/50 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-slate-200 font-medium truncate">{deck.name}</span>
+                      <span className="text-teal-300 font-bold text-lg ml-2">
+                        {deckQuantities[deck.id] || 1}x
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min="1"
+                      max="10"
+                      value={deckQuantities[deck.id] || 1}
+                      onChange={(e) => handleQuantityChange(deck.id, parseInt(e.target.value))}
+                      className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-teal-500"
+                    />
+                    <div className="flex justify-between text-xs text-slate-500 mt-1">
+                      <span>1</span>
+                      <span>10</span>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="text-sm">
-                      <span className="text-blue-300 font-semibold">{card.totalRequired}</span>
-                      <span className="text-slate-400 mx-1">/</span>
-                      <span className="text-green-300 font-semibold">{card.available}</span>
-                    </div>
-                    {card.totalRequired > card.available && (
-                      <div className="text-xs text-red-400 mt-1">
-                        Need {card.totalRequired - card.available} more
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Per-Deck Statistics - Collapsible */}
+          <div className="bg-slate-800 rounded-lg border border-slate-600 overflow-hidden">
+            <button
+              onClick={() => toggleSection('stats')}
+              className="w-full flex items-center justify-between p-4 hover:bg-slate-700/50 transition-colors"
+            >
+              <h3 className="text-lg font-semibold text-teal-300 flex items-center gap-2">
+                <TrendingUp className="w-5 h-5" />
+                Individual Deck Stats
+              </h3>
+              {expandedSections.stats ? (
+                <ChevronUp className="w-5 h-5 text-slate-400" />
+              ) : (
+                <ChevronDown className="w-5 h-5 text-slate-400" />
+              )}
+            </button>
+            {expandedSections.stats && (
+              <div className="p-4 pt-0 space-y-3">
+                {analysis.deckStats.map(stat => (
+                  <div key={stat.deckId} className="bg-slate-900/50 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-slate-200 font-medium">{stat.deckName}</span>
+                        {stat.copies > 1 && (
+                          <span className="text-xs bg-teal-600 text-white px-2 py-0.5 rounded">
+                            {stat.copies}x
+                          </span>
+                        )}
                       </div>
-                    )}
+                      <span className={`font-bold ${
+                        stat.completion === 100 ? 'text-green-400' : 
+                        stat.completion >= 75 ? 'text-amber-400' : 'text-red-400'
+                      }`}>
+                        {stat.completion.toFixed(0)}%
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-4 text-sm mb-2">
+                      <div>
+                        <div className="text-slate-400">Required</div>
+                        <div className="text-blue-300 font-semibold">{stat.required}</div>
+                      </div>
+                      <div>
+                        <div className="text-slate-400">Owned</div>
+                        <div className="text-green-300 font-semibold">{stat.owned}</div>
+                      </div>
+                      <div>
+                        <div className="text-slate-400">Missing</div>
+                        <div className="text-red-300 font-semibold">{stat.missing}</div>
+                      </div>
+                    </div>
+                    <div className="bg-slate-900 rounded-full h-2 overflow-hidden">
+                      <div
+                        className={`h-full transition-all duration-500 ${
+                          stat.completion === 100 ? 'bg-green-500' : 
+                          stat.completion >= 75 ? 'bg-amber-500' : 'bg-red-500'
+                        }`}
+                        style={{ width: `${Math.min(100, stat.completion)}%` }}
+                      />
+                    </div>
                   </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Quick Stats Summary */}
+          {analysis.missingCards.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-gradient-to-br from-red-900/30 to-slate-800 rounded-lg border border-red-600/30 p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-red-300 font-semibold flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4" />
+                    Top Missing Cards
+                  </h4>
+                  <button
+                    onClick={() => setActiveTab('missing')}
+                    className="text-xs text-red-400 hover:text-red-300"
+                  >
+                    View All →
+                  </button>
                 </div>
-                <div className="flex flex-wrap gap-1">
-                  {card.decks.map((deckInfo, i) => (
-                    <span
-                      key={i}
-                      className="text-xs bg-slate-700 text-slate-300 px-2 py-1 rounded"
-                    >
-                      {deckInfo.deckName}: {deckInfo.quantity}×{deckInfo.copies}
-                    </span>
+                <div className="space-y-1">
+                  {analysis.missingCards.slice(0, 5).map((card, idx) => (
+                    <div key={idx} className="flex items-center justify-between text-sm">
+                      <span className="text-slate-300 truncate">{card.name}</span>
+                      <span className="text-red-400 font-medium ml-2">-{card.missing}</span>
+                    </div>
                   ))}
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
-      )}
 
-      {/* Missing from All Decks */}
-      {analysis.missingFromAll.length > 0 && (
-        <div className="bg-gradient-to-br from-red-900/30 to-slate-800 rounded-lg border border-red-600/30 p-6">
-          <h3 className="text-lg font-semibold text-red-300 mb-4 flex items-center gap-2">
-            <AlertCircle className="w-5 h-5" />
-            Missing from All Selected Decks ({analysis.missingFromAll.length})
-          </h3>
-          <p className="text-sm text-red-200/70 mb-4">
-            These cards are needed by every selected deck but you don't have enough copies
-          </p>
-          <div className="space-y-2 max-h-96 overflow-y-auto">
-            {analysis.missingFromAll.map((card, idx) => (
-              <div key={idx} className="bg-red-900/20 rounded-lg p-3 border border-red-700/30">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="text-red-100 font-medium">{card.name}</div>
-                    <div className="text-xs text-red-300 mt-1">
-                      Need {card.totalRequired} total • Have {card.available} • Missing {card.missing}
-                    </div>
+              {analysis.sharedCards.length > 0 && (
+                <div className="bg-gradient-to-br from-teal-900/30 to-slate-800 rounded-lg border border-teal-600/30 p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-teal-300 font-semibold flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4" />
+                      Most Shared Cards
+                    </h4>
+                    <button
+                      onClick={() => setActiveTab('shared')}
+                      className="text-xs text-teal-400 hover:text-teal-300"
+                    >
+                      View All →
+                    </button>
                   </div>
-                  <div className="text-2xl font-bold text-red-400">
-                    -{card.missing}
+                  <div className="space-y-1">
+                    {analysis.sharedCards.slice(0, 5).map((card, idx) => (
+                      <div key={idx} className="flex items-center justify-between text-sm">
+                        <span className="text-slate-300 truncate">{card.name}</span>
+                        <span className="text-teal-400 font-medium ml-2">{card.decks.length} decks</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
+              )}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Missing Cards Tab */}
+      {activeTab === 'missing' && (
+        <div className="space-y-4">
+          {/* Actions Bar */}
+          <div className="bg-slate-800 rounded-lg border border-slate-600 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <h3 className="text-lg font-semibold text-red-300 flex items-center gap-2">
+                <AlertCircle className="w-5 h-5" />
+                Missing Cards ({analysis.missingCards.length})
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={copyToClipboard}
+                  className="flex items-center gap-2 px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg transition-colors text-sm"
+                >
+                  {copiedToClipboard ? (
+                    <>
+                      <Check className="w-4 h-4 text-green-400" />
+                      Copied!
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-4 h-4" />
+                      Copy List
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={exportToCSV}
+                  className="flex items-center gap-2 px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg transition-colors text-sm"
+                >
+                  <Download className="w-4 h-4" />
+                  Export CSV
+                </button>
               </div>
-            ))}
+            </div>
+            
+            {/* Estimated Cost Banner */}
+            <div className="mt-4 p-3 bg-emerald-900/30 rounded-lg border border-emerald-600/30">
+              <div className="flex items-center justify-between">
+                <span className="text-emerald-300 flex items-center gap-2">
+                  <ShoppingCart className="w-4 h-4" />
+                  Estimated Cost to Complete
+                </span>
+                <span className="text-2xl font-bold text-emerald-300">
+                  ${analysis.estimatedCost.toFixed(2)}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Search and Filters */}
+          <div className="bg-slate-800 rounded-lg border border-slate-600 p-4">
+            <div className="flex flex-wrap gap-3">
+              <div className="flex-1 min-w-[200px] relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search cards..."
+                  className="w-full pl-10 pr-4 py-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-200 placeholder-slate-500 focus:border-teal-500 focus:outline-none"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-200 focus:border-teal-500 focus:outline-none"
+              >
+                <option value="missing">Sort by Missing</option>
+                <option value="name">Sort by Name</option>
+                <option value="quantity">Sort by Quantity</option>
+                <option value="decks">Sort by # Decks</option>
+              </select>
+              <button
+                onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+                className="p-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-400 hover:text-slate-200"
+              >
+                {sortOrder === 'asc' ? <SortAsc className="w-5 h-5" /> : <SortDesc className="w-5 h-5" />}
+              </button>
+              <div className="flex gap-1 bg-slate-900 border border-slate-600 rounded-lg p-1">
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`p-2 rounded ${viewMode === 'list' ? 'bg-teal-600 text-white' : 'text-slate-400 hover:text-slate-200'}`}
+                >
+                  <List className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={`p-2 rounded ${viewMode === 'grid' ? 'bg-teal-600 text-white' : 'text-slate-400 hover:text-slate-200'}`}
+                >
+                  <Grid3X3 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Missing Cards List/Grid */}
+          {viewMode === 'list' ? (
+            <div className="bg-slate-800 rounded-lg border border-slate-600 overflow-hidden">
+              <div className="max-h-[600px] overflow-y-auto">
+                {analysis.missingCards
+                  .filter(card => !searchQuery || card.name.toLowerCase().includes(searchQuery.toLowerCase()))
+                  .map((card, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center justify-between p-4 border-b border-slate-700 last:border-0 hover:bg-slate-700/50 transition-colors"
+                      onMouseEnter={(e) => setHoveredCard({ name: card.name, x: e.clientX, y: e.clientY })}
+                      onMouseLeave={() => setHoveredCard(null)}
+                    >
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <Eye className="w-4 h-4 text-slate-500" />
+                          <span className="text-slate-200 font-medium">{card.name}</span>
+                        </div>
+                        <div className="text-xs text-slate-400 mt-1">
+                          Used in {card.decks.map(d => d.deckName).join(', ')}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="text-sm text-right">
+                          <div className="text-slate-400">
+                            Need <span className="text-blue-300 font-semibold">{card.totalRequired}</span>
+                            {' / '}
+                            Have <span className="text-green-300 font-semibold">{card.available}</span>
+                          </div>
+                        </div>
+                        <div className="text-2xl font-bold text-red-400 w-16 text-right">
+                          -{card.missing}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              {analysis.missingCards
+                .filter(card => !searchQuery || card.name.toLowerCase().includes(searchQuery.toLowerCase()))
+                .map((card, idx) => (
+                  <div
+                    key={idx}
+                    className="bg-slate-800 rounded-lg border border-slate-600 overflow-hidden hover:border-red-500/50 transition-colors"
+                  >
+                    <div className="aspect-[3/4] bg-slate-900 relative">
+                      <img
+                        src={getCardImageUrl(card.name)}
+                        alt={card.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => { 
+                          e.target.style.display = 'none';
+                          e.target.nextSibling.style.display = 'flex';
+                        }}
+                      />
+                      <div className="absolute inset-0 hidden items-center justify-center bg-slate-900 text-slate-500 text-sm p-2 text-center">
+                        {card.name}
+                      </div>
+                      <div className="absolute top-2 right-2 bg-red-600 text-white font-bold px-2 py-1 rounded text-sm">
+                        -{card.missing}
+                      </div>
+                    </div>
+                    <div className="p-2">
+                      <div className="text-xs text-slate-400 truncate">{card.name}</div>
+                      <div className="text-xs text-slate-500">{card.decks.length} deck(s)</div>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Shared Cards Tab */}
+      {activeTab === 'shared' && (
+        <div className="space-y-4">
+          <div className="bg-slate-800 rounded-lg border border-slate-600 p-4">
+            <h3 className="text-lg font-semibold text-teal-300 flex items-center gap-2">
+              <CheckCircle2 className="w-5 h-5" />
+              Shared Cards ({analysis.sharedCards.length})
+            </h3>
+            <p className="text-sm text-slate-400 mt-1">
+              Cards that appear in multiple selected decks - these share inventory across decks
+            </p>
+          </div>
+
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search shared cards..."
+              className="w-full pl-10 pr-4 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-200 placeholder-slate-500 focus:border-teal-500 focus:outline-none"
+            />
+          </div>
+
+          <div className="bg-slate-800 rounded-lg border border-slate-600 overflow-hidden">
+            <div className="max-h-[600px] overflow-y-auto divide-y divide-slate-700">
+              {analysis.sharedCards
+                .filter(card => !searchQuery || card.name.toLowerCase().includes(searchQuery.toLowerCase()))
+                .map((card, idx) => (
+                  <div
+                    key={idx}
+                    className="p-4 hover:bg-slate-700/50 transition-colors"
+                    onMouseEnter={(e) => setHoveredCard({ name: card.name, x: e.clientX, y: e.clientY })}
+                    onMouseLeave={() => setHoveredCard(null)}
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <Eye className="w-4 h-4 text-slate-500" />
+                          <span className="text-slate-200 font-medium">{card.name}</span>
+                          <span className="text-xs bg-teal-600 text-white px-2 py-0.5 rounded">
+                            {card.decks.length} decks
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm">
+                          <span className="text-blue-300 font-semibold">{card.totalRequired}</span>
+                          <span className="text-slate-400 mx-1">/</span>
+                          <span className="text-green-300 font-semibold">{card.available}</span>
+                        </div>
+                        {card.totalRequired > card.available && (
+                          <div className="text-xs text-red-400 mt-1">
+                            Need {card.totalRequired - card.available} more
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {card.decks.map((deckInfo, i) => (
+                        <span
+                          key={i}
+                          className="text-xs bg-slate-700 text-slate-300 px-2 py-1 rounded"
+                        >
+                          {deckInfo.deckName}: {deckInfo.quantity}×{deckInfo.copies}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+            </div>
           </div>
         </div>
       )}
 
-      {/* All Card Requirements */}
-      <div className="bg-slate-800 rounded-lg border border-slate-600 p-6">
-        <h3 className="text-lg font-semibold text-teal-300 mb-4">
-          Complete Card Breakdown ({analysis.cardRequirements.length} unique cards)
-        </h3>
-        <div className="space-y-2 max-h-96 overflow-y-auto">
-          {analysis.cardRequirements
-            .sort((a, b) => (b.totalRequired - b.available) - (a.totalRequired - a.available))
-            .map((card, idx) => {
-              const missing = Math.max(0, card.totalRequired - card.available);
-              const isComplete = missing === 0;
-              
-              return (
-                <div
-                  key={idx}
-                  className={`rounded-lg p-3 ${
-                    isComplete ? 'bg-green-900/20 border border-green-700/30' : 'bg-slate-900'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-200">{card.name}</span>
-                    <div className="flex items-center gap-3">
+      {/* Full Breakdown Tab */}
+      {activeTab === 'breakdown' && (
+        <div className="space-y-4">
+          {/* Search and Filters */}
+          <div className="bg-slate-800 rounded-lg border border-slate-600 p-4">
+            <div className="flex flex-wrap gap-3 items-center">
+              <div className="flex-1 min-w-[200px] relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search all cards..."
+                  className="w-full pl-10 pr-4 py-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-200 placeholder-slate-500 focus:border-teal-500 focus:outline-none"
+                />
+              </div>
+              <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={filterMissingOnly}
+                  onChange={(e) => setFilterMissingOnly(e.target.checked)}
+                  className="w-4 h-4 rounded border-slate-600 text-teal-500 focus:ring-teal-500"
+                />
+                <Filter className="w-4 h-4" />
+                Missing only
+              </label>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-200 focus:border-teal-500 focus:outline-none"
+              >
+                <option value="missing">Sort by Missing</option>
+                <option value="name">Sort by Name</option>
+                <option value="quantity">Sort by Quantity</option>
+                <option value="decks">Sort by # Decks</option>
+              </select>
+              <button
+                onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+                className="p-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-400 hover:text-slate-200"
+              >
+                {sortOrder === 'asc' ? <SortAsc className="w-5 h-5" /> : <SortDesc className="w-5 h-5" />}
+              </button>
+            </div>
+            <div className="mt-3 text-sm text-slate-400">
+              Showing {filteredCards.length} of {analysis.cardRequirements.length} unique cards
+            </div>
+          </div>
+
+          {/* All Cards List */}
+          <div className="bg-slate-800 rounded-lg border border-slate-600 overflow-hidden">
+            <div className="max-h-[600px] overflow-y-auto">
+              {filteredCards.map((card, idx) => {
+                const missing = Math.max(0, card.totalRequired - card.available);
+                const isComplete = missing === 0;
+                
+                return (
+                  <div
+                    key={idx}
+                    className={`flex items-center justify-between p-3 border-b border-slate-700 last:border-0 hover:bg-slate-700/30 transition-colors ${
+                      isComplete ? 'bg-green-900/10' : ''
+                    }`}
+                    onMouseEnter={(e) => setHoveredCard({ name: card.name, x: e.clientX, y: e.clientY })}
+                    onMouseLeave={() => setHoveredCard(null)}
+                  >
+                    <div className="flex items-center gap-3 flex-1">
+                      <Eye className="w-4 h-4 text-slate-500 flex-shrink-0" />
+                      <span className="text-slate-200">{card.name}</span>
+                      {card.decks.length > 1 && (
+                        <span className="text-xs bg-teal-600/50 text-teal-200 px-1.5 py-0.5 rounded">
+                          {card.decks.length} decks
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-4">
                       <span className="text-sm">
                         <span className="text-blue-300">{card.totalRequired}</span>
-                        <span className="text-slate-400 mx-1">/</span>
+                        <span className="text-slate-500 mx-1">/</span>
                         <span className="text-green-300">{card.available}</span>
                       </span>
                       {isComplete ? (
                         <CheckCircle2 className="w-5 h-5 text-green-400" />
                       ) : (
-                        <span className="text-red-400 font-semibold">-{missing}</span>
+                        <span className="text-red-400 font-semibold w-12 text-right">-{missing}</span>
                       )}
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -401,7 +894,8 @@ DeckAnalysisView.propTypes = {
     cards: PropTypes.arrayOf(PropTypes.shape({
       name: PropTypes.string,
       quantity: PropTypes.number,
-      set: PropTypes.string
+      set: PropTypes.string,
+      price: PropTypes.number
     }))
   })).isRequired,
   selectedDeckIds: PropTypes.arrayOf(

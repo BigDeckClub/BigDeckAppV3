@@ -453,8 +453,7 @@ export function useFileImport({ addInventoryItem, showToast }) {
           quality: card.condition,
         };
         
-        // Use silent flag to suppress individual toasts during bulk import
-        await addInventoryItem(item, { silent: true });
+        await addInventoryItem(item);
         
         // Mark as imported
         setParsedCards(prev => prev.map(c => 

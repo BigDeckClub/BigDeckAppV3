@@ -1,5 +1,6 @@
 import express from 'express';
 import { createClient } from '@supabase/supabase-js';
+import { pool } from '../db/pool.js';
 
 const router = express.Router();
 
@@ -12,6 +13,28 @@ const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabaseServer = supabaseUrl && supabaseServiceRoleKey 
   ? createClient(supabaseUrl, supabaseServiceRoleKey)
   : null;
+
+/**
+ * Ensure user exists in local users table (for foreign key constraints)
+ * Creates or updates the user record when they log in or sign up
+ */
+async function ensureUserInDatabase(user) {
+  if (!user || !user.id) return;
+  
+  try {
+    await pool.query(`
+      INSERT INTO users (id, email, created_at, updated_at)
+      VALUES ($1, $2, NOW(), NOW())
+      ON CONFLICT (id) DO UPDATE SET
+        email = EXCLUDED.email,
+        updated_at = NOW()
+    `, [user.id, user.email || null]);
+    console.log('[AUTH] User synced to database:', user.id);
+  } catch (err) {
+    console.error('[AUTH] Failed to sync user to database:', err.message);
+    // Don't throw - auth should still succeed even if local sync fails
+  }
+}
 
 router.post('/api/auth/login', async (req, res) => {
   try {
@@ -32,6 +55,11 @@ router.post('/api/auth/login', async (req, res) => {
     if (error) {
       console.error('[AUTH] Login error:', error.message);
       return res.status(error.status || 401).json({ error: error.message });
+    }
+
+    // Sync user to local database for foreign key constraints
+    if (data?.user) {
+      await ensureUserInDatabase(data.user);
     }
 
     console.log('[AUTH] Login successful for:', email);
@@ -65,6 +93,11 @@ router.post('/api/auth/signup', async (req, res) => {
     if (error) {
       console.error('[AUTH] Signup error:', error.message);
       return res.status(400).json({ error: error.message });
+    }
+
+    // Sync user to local database for foreign key constraints
+    if (data?.user) {
+      await ensureUserInDatabase(data.user);
     }
 
     console.log('[AUTH] Signup successful for:', email);
