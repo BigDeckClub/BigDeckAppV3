@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { Bell } from 'lucide-react';
 import { useApi } from '../../hooks/useApi';
@@ -8,22 +8,69 @@ import { useApi } from '../../hooks/useApi';
  * Displays and manages cards with alerts enabled
  */
 export const AlertSettings = ({ inventory }) => {
-  const { put } = useApi();
+  const { put, get } = useApi();
   const [saving, setSaving] = useState({});
   const [successMessage, setSuccessMessage] = useState('');
+  const [deckCardsOnly, setDeckCardsOnly] = useState(false);
+  const [deckCardNames, setDeckCardNames] = useState(new Set());
+  const [loadingDeckCards, setLoadingDeckCards] = useState(false);
+  const hasFetchedDeckCards = useRef(false);
+
+  // Fetch deck template card names when filter is enabled
+  useEffect(() => {
+    if (deckCardsOnly && !hasFetchedDeckCards.current) {
+      hasFetchedDeckCards.current = true;
+      const fetchDeckCardNames = async () => {
+        setLoadingDeckCards(true);
+        try {
+          const response = await get('/api/inventory/alerts/deck-card-names');
+          if (response?.cardNames) {
+            setDeckCardNames(new Set(response.cardNames));
+          }
+        } catch (error) {
+          console.error('Error fetching deck card names:', error);
+          // Reset flag on error so user can retry
+          hasFetchedDeckCards.current = false;
+        } finally {
+          setLoadingDeckCards(false);
+        }
+      };
+      fetchDeckCardNames();
+    }
+  }, [deckCardsOnly, get]);
 
   // Group inventory with alerts enabled by card name - MEMOIZED to prevent recreating on every render
   const cardsWithAlerts = useMemo(() => {
-    return inventory
-      .filter(item => item.low_inventory_alert)
-      .reduce((acc, item) => {
-        if (!acc[item.name]) {
-          acc[item.name] = [];
-        }
-        acc[item.name].push(item);
-        return acc;
-      }, {});
+    let items = inventory.filter(item => item.low_inventory_alert);
+    
+    // Filter by deck cards if toggle is enabled
+    if (deckCardsOnly && deckCardNames.size > 0) {
+      items = items.filter(item => 
+        item.name && deckCardNames.has(item.name.toLowerCase().trim())
+      );
+    }
+    
+    return items.reduce((acc, item) => {
+      if (!acc[item.name]) {
+        acc[item.name] = [];
+      }
+      acc[item.name].push(item);
+      return acc;
+    }, {});
+  }, [inventory, deckCardsOnly, deckCardNames]);
+
+  // Calculate counts for display
+  const totalAlertsCount = useMemo(() => {
+    const uniqueNames = new Set();
+    inventory.forEach(item => {
+      if (item.low_inventory_alert) {
+        uniqueNames.add(item.name);
+      }
+    });
+    return uniqueNames.size;
   }, [inventory]);
+
+  const filteredCount = Object.keys(cardsWithAlerts).length;
 
   const handleThresholdChange = useCallback(async (itemId, newThreshold) => {
     setSaving(prev => ({ ...prev, [itemId]: true }));
@@ -73,10 +120,44 @@ export const AlertSettings = ({ inventory }) => {
         </div>
       )}
 
+      {/* Filter Toggle */}
+      {totalAlertsCount > 0 && (
+        <div className="flex items-center justify-between mb-4 p-3 bg-slate-700/50 rounded-lg">
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="deckCardsOnly"
+              checked={deckCardsOnly}
+              onChange={(e) => setDeckCardsOnly(e.target.checked)}
+              disabled={loadingDeckCards}
+              className="rounded border-slate-500 bg-slate-600 text-teal-500 focus:ring-teal-500"
+            />
+            <label htmlFor="deckCardsOnly" className="text-sm text-slate-300">
+              Show only cards in deck templates
+            </label>
+            {loadingDeckCards && (
+              <span className="text-xs text-slate-400 ml-2">Loading...</span>
+            )}
+          </div>
+          <span className="text-xs text-slate-400">
+            {deckCardsOnly ? `${filteredCount} of ${totalAlertsCount} cards` : `${totalAlertsCount} cards`}
+          </span>
+        </div>
+      )}
+
       {Object.keys(cardsWithAlerts).length === 0 ? (
         <div className="text-center py-8">
-          <p className="text-slate-400">No low inventory alerts enabled yet</p>
-          <p className="text-slate-500 text-sm mt-2">Go to Inventory tab and click the bell icon to enable alerts for specific cards</p>
+          {deckCardsOnly && totalAlertsCount > 0 ? (
+            <>
+              <p className="text-slate-400">No alerts match cards in your deck templates</p>
+              <p className="text-slate-500 text-sm mt-2">Try turning off the deck filter or add cards from your deck templates to alerts</p>
+            </>
+          ) : (
+            <>
+              <p className="text-slate-400">No low inventory alerts enabled yet</p>
+              <p className="text-slate-500 text-sm mt-2">Go to Inventory tab and click the bell icon to enable alerts for specific cards</p>
+            </>
+          )}
         </div>
       ) : (
         <div className="space-y-4">

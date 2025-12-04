@@ -515,4 +515,29 @@ router.post('/api/inventory/bulk-threshold', authenticate, async (req, res) => {
   }
 });
 
+// GET /api/inventory/alerts/deck-card-names - Get card names from all deck templates for filtering alerts
+router.get('/api/inventory/alerts/deck-card-names', authenticate, async (req, res) => {
+  try {
+    // Get all unique card names from deck templates (non-deck-instances)
+    const result = await pool.query(`
+      SELECT DISTINCT LOWER(TRIM(jsonb_array_elements(cards)->>'name')) as card_name
+      FROM decks 
+      WHERE user_id = $1 
+        AND (is_deck_instance = FALSE OR is_deck_instance IS NULL)
+        AND cards IS NOT NULL
+        AND jsonb_array_length(cards) > 0
+    `, [req.userId]);
+    
+    // Filter out null/empty card names and return as array
+    const cardNames = result.rows
+      .map(row => row.card_name)
+      .filter(name => name && name.trim().length > 0);
+    
+    res.json({ cardNames });
+  } catch (error) {
+    console.error('[INVENTORY] Error fetching deck card names:', error.message);
+    res.status(500).json({ error: 'Failed to fetch deck card names' });
+  }
+});
+
 export default router;
