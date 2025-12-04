@@ -143,13 +143,8 @@ export const sortDeckCards = (entries, sortField = 'name', sortDirection = 'asc'
         break;
         
       case 'price': {
-        const avgA = itemsA.length > 0 
-          ? itemsA.reduce((sum, item) => sum + (parseFloat(item.purchase_price) || 0), 0) / itemsA.length 
-          : 0;
-        const avgB = itemsB.length > 0 
-          ? itemsB.reduce((sum, item) => sum + (parseFloat(item.purchase_price) || 0), 0) / itemsB.length 
-          : 0;
-        comparison = avgA - avgB;
+        // Reuse getAveragePrice for consistent price calculation
+        comparison = getAveragePrice(itemsA) - getAveragePrice(itemsB);
         break;
       }
         
