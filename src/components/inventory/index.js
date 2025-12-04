@@ -11,3 +11,4 @@ export { CardGrid } from './CardGrid';
 export { FolderHeader } from './FolderHeader';
 export { TrashView } from './TrashView';
 export { FolderView } from './FolderView';
+export { SortControls } from './SortControls';

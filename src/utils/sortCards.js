@@ -1,0 +1,184 @@
+/**
+ * Sorting utility functions for inventory cards
+ * Cards are represented as [cardName, items[]] tuples
+ */
+
+/**
+ * Get the total quantity from a card's items array
+ * @param {Array} items - Array of card SKU items
+ * @returns {number} Total quantity across all items
+ */
+export const getTotalQuantity = (items) => {
+  return items.reduce((sum, item) => sum + (item.quantity || 0), 0);
+};
+
+/**
+ * Get the average purchase price from a card's items array
+ * Calculates the mean of all purchase_price values
+ * @param {Array} items - Array of card SKU items
+ * @returns {number} Average purchase price
+ */
+export const getAveragePrice = (items) => {
+  if (items.length === 0) return 0;
+  const totalPrice = items.reduce((sum, item) => sum + (parseFloat(item.purchase_price) || 0), 0);
+  return totalPrice / items.length;
+};
+
+/**
+ * Get the total value from a card's items array
+ * @param {Array} items - Array of card SKU items
+ * @returns {number} Total value (sum of price * quantity for each item)
+ */
+export const getTotalValue = (items) => {
+  return items.reduce((sum, item) => {
+    const price = parseFloat(item.purchase_price) || 0;
+    const qty = item.quantity || 0;
+    return sum + (price * qty);
+  }, 0);
+};
+
+/**
+ * Get the set code from a card's items array for sorting purposes
+ * Uses the set code from the first item, returns lowercase for consistent sorting
+ * @param {Array} items - Array of card SKU items
+ * @returns {string} Set code string (lowercase)
+ */
+export const getSetCodeForSorting = (items) => {
+  if (items.length === 0) return '';
+  const firstItem = items[0];
+  if (!firstItem.set) return '';
+  // Handle both string and object set formats with defensive optional chaining
+  if (typeof firstItem.set === 'string') return firstItem.set.toLowerCase();
+  return (firstItem.set?.editioncode || firstItem.set?.mtgoCode || '').toLowerCase();
+};
+
+/**
+ * Get the latest created_at date from a card's items array
+ * @param {Array} items - Array of card SKU items
+ * @returns {Date} The latest date added, or epoch if none found
+ */
+export const getDateAdded = (items) => {
+  if (items.length === 0) return new Date(0);
+  
+  const dates = items
+    .map(item => item.created_at ? new Date(item.created_at) : null)
+    .filter(d => d && !isNaN(d.getTime())); // Filter out null and invalid dates
+  
+  if (dates.length === 0) return new Date(0);
+  
+  // Always return the latest date for the card
+  return new Date(Math.max(...dates.map(d => d.getTime())));
+};
+
+/**
+ * Sort cards array based on specified field and direction
+ * @param {Array} cards - Array of [cardName, items[]] tuples
+ * @param {string} sortField - Field to sort by ('name', 'price', 'quantity', 'set', 'dateAdded')
+ * @param {string} sortDirection - Sort direction ('asc' or 'desc')
+ * @returns {Array} Sorted array of [cardName, items[]] tuples
+ */
+export const sortCards = (cards, sortField = 'name', sortDirection = 'asc') => {
+  if (!cards || cards.length === 0) return cards;
+  
+  const sorted = [...cards].sort((a, b) => {
+    const [nameA, itemsA] = a;
+    const [nameB, itemsB] = b;
+    
+    let comparison = 0;
+    
+    switch (sortField) {
+      case 'name':
+        comparison = nameA.localeCompare(nameB);
+        break;
+        
+      case 'price':
+        comparison = getAveragePrice(itemsA) - getAveragePrice(itemsB);
+        break;
+        
+      case 'quantity':
+        comparison = getTotalQuantity(itemsA) - getTotalQuantity(itemsB);
+        break;
+        
+      case 'set':
+        comparison = getSetCodeForSorting(itemsA).localeCompare(getSetCodeForSorting(itemsB));
+        break;
+        
+      case 'dateAdded': {
+        // Compare by latest date added for each card
+        const dateA = getDateAdded(itemsA);
+        const dateB = getDateAdded(itemsB);
+        comparison = dateA.getTime() - dateB.getTime();
+        break;
+      }
+        
+      default:
+        comparison = nameA.localeCompare(nameB);
+    }
+    
+    return sortDirection === 'asc' ? comparison : -comparison;
+  });
+  
+  return sorted;
+};
+
+/**
+ * Sort deck reservation entries based on specified field and direction
+ * Deck reservations are [cardName, reservations[]] tuples with different structure
+ * @param {Array} entries - Array of [cardName, reservations[]] tuples
+ * @param {string} sortField - Field to sort by
+ * @param {string} sortDirection - Sort direction ('asc' or 'desc')
+ * @returns {Array} Sorted array
+ */
+export const sortDeckCards = (entries, sortField = 'name', sortDirection = 'asc') => {
+  if (!entries || entries.length === 0) return entries;
+  
+  const sorted = [...entries].sort((a, b) => {
+    const [nameA, itemsA] = a;
+    const [nameB, itemsB] = b;
+    
+    let comparison = 0;
+    
+    switch (sortField) {
+      case 'name':
+        comparison = nameA.localeCompare(nameB);
+        break;
+        
+      case 'price': {
+        // Reuse getAveragePrice for consistent price calculation
+        comparison = getAveragePrice(itemsA) - getAveragePrice(itemsB);
+        break;
+      }
+        
+      case 'quantity': {
+        const qtyA = itemsA.reduce((sum, item) => sum + (item.quantity_reserved || 0), 0);
+        const qtyB = itemsB.reduce((sum, item) => sum + (item.quantity_reserved || 0), 0);
+        comparison = qtyA - qtyB;
+        break;
+      }
+        
+      case 'set': {
+        const setA = itemsA[0]?.set || '';
+        const setB = itemsB[0]?.set || '';
+        const codeA = typeof setA === 'string' ? setA : (setA?.editioncode || '');
+        const codeB = typeof setB === 'string' ? setB : (setB?.editioncode || '');
+        comparison = codeA.toLowerCase().localeCompare(codeB.toLowerCase());
+        break;
+      }
+        
+      case 'dateAdded': {
+        // Reuse getDateAdded for consistent date comparison
+        const dateA = getDateAdded(itemsA);
+        const dateB = getDateAdded(itemsB);
+        comparison = dateA.getTime() - dateB.getTime();
+        break;
+      }
+        
+      default:
+        comparison = nameA.localeCompare(nameB);
+    }
+    
+    return sortDirection === 'asc' ? comparison : -comparison;
+  });
+  
+  return sorted;
+};

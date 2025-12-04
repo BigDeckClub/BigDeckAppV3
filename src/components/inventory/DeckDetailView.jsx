@@ -4,6 +4,7 @@ import { Trash2, X, ChevronDown, Wand2, DollarSign, ShoppingCart } from 'lucide-
 import { getSetDisplayName } from '../../utils/cardHelpers';
 import { BuyCardsModal } from '../buy/BuyCardsModal';
 import { BuyButton } from '../buy/BuyButton';
+import { sortDeckCards } from '../../utils/sortCards';
 
 /**
  * DeckDetailView - Renders the deck detail view with reserved and missing cards
@@ -26,7 +27,9 @@ export const DeckDetailView = memo(function DeckDetailView({
   releaseDeck,
   moveCardSkuToDeck,
   setSellModalData,
-  setShowSellModal
+  setShowSellModal,
+  sortField = 'name',
+  sortDirection = 'asc'
 }) {
   const [showBuyModal, setShowBuyModal] = useState(false);
 
@@ -58,9 +61,11 @@ export const DeckDetailView = memo(function DeckDetailView({
     acc[cardName].push(res);
     return acc;
   }, {});
-  const reservationEntries = Object.entries(groupedReservations).filter(([cardName]) => 
+  const filteredEntries = Object.entries(groupedReservations).filter(([cardName]) => 
     inventorySearch === '' || cardName.toLowerCase().includes(inventorySearch.toLowerCase())
   );
+  // Apply sorting to the reservation entries
+  const reservationEntries = sortDeckCards(filteredEntries, sortField, sortDirection);
 
   // Helper function for rendering deck card groups
   const renderDeckCardGroup = ([cardName, items]) => {
@@ -454,7 +459,9 @@ DeckDetailView.propTypes = {
   releaseDeck: PropTypes.func.isRequired,
   moveCardSkuToDeck: PropTypes.func.isRequired,
   setSellModalData: PropTypes.func.isRequired,
-  setShowSellModal: PropTypes.func.isRequired
+  setShowSellModal: PropTypes.func.isRequired,
+  sortField: PropTypes.oneOf(['name', 'price', 'quantity', 'set', 'dateAdded']),
+  sortDirection: PropTypes.oneOf(['asc', 'desc'])
 };
 
 export default DeckDetailView;

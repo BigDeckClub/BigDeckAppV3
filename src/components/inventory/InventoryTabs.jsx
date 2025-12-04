@@ -1,6 +1,7 @@
 import React, { memo } from 'react';
 import PropTypes from 'prop-types';
 import { X, Grid3X3, List, Folder, Image } from 'lucide-react';
+import { SortControls } from './SortControls';
 
 /**
  * InventoryTabs - Tab navigation for inventory views
@@ -19,7 +20,10 @@ export const InventoryTabs = memo(function InventoryTabs({
   setSidebarOpen,
   draggedTabData,
   setDraggedTabData,
-  reorderTabs
+  reorderTabs,
+  sortField = 'name',
+  sortDirection = 'asc',
+  onSortChange,
 }) {
   return (
     <div className="flex flex-col md:flex-row gap-3 md:gap-4 mb-6 md:mb-8 border-b border-slate-700 pb-4 items-start md:items-center justify-between">
@@ -147,41 +151,53 @@ export const InventoryTabs = memo(function InventoryTabs({
         })}
       </div>
       
-      {/* View Mode Toggle */}
-      <div className="flex gap-1 bg-slate-800/50 rounded-lg p-1.5 border border-slate-700">
-        <button
-          onClick={() => setViewMode('card')}
-          className={`p-2 rounded-lg transition-all duration-300 ${
-            viewMode === 'card'
-              ? 'bg-gradient-to-br from-teal-600 to-teal-700 text-white shadow-lg shadow-teal-500/30'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/30'
-          }`}
-          title="Card View"
-        >
-          <Grid3X3 className="w-4 h-4" />
-        </button>
-        <button
-          onClick={() => setViewMode('list')}
-          className={`p-2 rounded-lg transition-all duration-300 ${
-            viewMode === 'list'
-              ? 'bg-gradient-to-br from-teal-600 to-teal-700 text-white shadow-lg shadow-teal-500/30'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/30'
-          }`}
-          title="List View"
-        >
-          <List className="w-4 h-4" />
-        </button>
-        <button
-          onClick={() => setViewMode('image')}
-          className={`p-2 rounded-lg transition-all duration-300 ${
-            viewMode === 'image'
-              ? 'bg-gradient-to-br from-teal-600 to-teal-700 text-white shadow-lg shadow-teal-500/30'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/30'
-          }`}
-          title="Image View"
-        >
-          <Image className="w-4 h-4" />
-        </button>
+      {/* Sort and View Controls */}
+      <div className="flex gap-2 items-center">
+        {/* Sort Controls */}
+        {onSortChange && (
+          <SortControls
+            sortField={sortField}
+            sortDirection={sortDirection}
+            onSortChange={onSortChange}
+          />
+        )}
+
+        {/* View Mode Toggle */}
+        <div className="flex gap-1 bg-slate-800/50 rounded-lg p-1.5 border border-slate-700">
+          <button
+            onClick={() => setViewMode('card')}
+            className={`p-2 rounded-lg transition-all duration-300 ${
+              viewMode === 'card'
+                ? 'bg-gradient-to-br from-teal-600 to-teal-700 text-white shadow-lg shadow-teal-500/30'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/30'
+            }`}
+            title="Card View"
+          >
+            <Grid3X3 className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => setViewMode('list')}
+            className={`p-2 rounded-lg transition-all duration-300 ${
+              viewMode === 'list'
+                ? 'bg-gradient-to-br from-teal-600 to-teal-700 text-white shadow-lg shadow-teal-500/30'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/30'
+            }`}
+            title="List View"
+          >
+            <List className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => setViewMode('image')}
+            className={`p-2 rounded-lg transition-all duration-300 ${
+              viewMode === 'image'
+                ? 'bg-gradient-to-br from-teal-600 to-teal-700 text-white shadow-lg shadow-teal-500/30'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/30'
+            }`}
+            title="Image View"
+          >
+            <Image className="w-4 h-4" />
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -200,7 +216,10 @@ InventoryTabs.propTypes = {
   setSidebarOpen: PropTypes.func.isRequired,
   draggedTabData: PropTypes.object,
   setDraggedTabData: PropTypes.func.isRequired,
-  reorderTabs: PropTypes.func.isRequired
+  reorderTabs: PropTypes.func.isRequired,
+  sortField: PropTypes.oneOf(['name', 'price', 'quantity', 'set', 'dateAdded']),
+  sortDirection: PropTypes.oneOf(['asc', 'desc']),
+  onSortChange: PropTypes.func
 };
 
 export default InventoryTabs;
