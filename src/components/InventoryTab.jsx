@@ -206,7 +206,7 @@ export const InventoryTab = ({
       const deckId = activeTab.replace('deck-', '');
       const deck = deckOps.deckInstances.find(d => String(d.id) === deckId);
       return [
-        { label: 'Decks', tab: 'all' },
+        { label: 'All Cards', tab: 'all' },
         { label: deck?.name || 'Deck', tab: activeTab }
       ];
     }

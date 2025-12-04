@@ -65,14 +65,14 @@ describe('Breadcrumb Component', () => {
     render(
       <Breadcrumb 
         navigationPath={[
-          { label: 'Decks', tab: 'all' },
+          { label: 'All Cards', tab: 'all' },
           { label: 'My Commander Deck', tab: 'deck-123' }
         ]} 
         onNavigate={handleNavigate} 
       />
     );
     
-    expect(screen.getByRole('button', { name: /Decks/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /All Cards/i })).toBeInTheDocument();
     expect(screen.getByText('My Commander Deck')).toBeInTheDocument();
   });
 
