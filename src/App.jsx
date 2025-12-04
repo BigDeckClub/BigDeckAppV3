@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ToastProvider, useToast, TOAST_TYPES } from "./context/ToastContext";
 import { ConfirmProvider } from "./context/ConfirmContext";
 import { InventoryProvider, useInventory } from "./context/InventoryContext";
+import { UndoProvider } from "./context/UndoContext";
 import { LoginForm } from "./components/LoginForm";
 import ErrorBoundary from "./components/ErrorBoundary";
 import ErrorBoundaryWithRetry from "./components/ErrorBoundaryWithRetry";
@@ -192,9 +193,11 @@ function MTGInventoryTracker() {
         <PriceCacheProvider>
           <ToastProvider>
             <ConfirmProvider>
-              <InventoryProvider>
-                <MTGInventoryTrackerContent />
-              </InventoryProvider>
+              <UndoProvider>
+                <InventoryProvider>
+                  <MTGInventoryTrackerContent />
+                </InventoryProvider>
+              </UndoProvider>
             </ConfirmProvider>
           </ToastProvider>
         </PriceCacheProvider>

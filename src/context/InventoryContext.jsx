@@ -8,8 +8,16 @@ import React, { createContext, useContext, useState, useCallback, useMemo } from
 import PropTypes from 'prop-types';
 import { useApi } from '../hooks/useApi';
 import { useToast, TOAST_TYPES } from './ToastContext';
+import UndoContext, { UNDO_ACTION_TYPES } from './UndoContext';
 
 const InventoryContext = createContext(null);
+
+/**
+ * Hook to safely get undo context (returns null if not available)
+ */
+function useUndoSafe() {
+  return useContext(UndoContext);
+}
 
 /**
  * InventoryProvider component that wraps the application
@@ -18,6 +26,7 @@ const InventoryContext = createContext(null);
 export function InventoryProvider({ children }) {
   const { get, post, put, del } = useApi();
   const { showToast } = useToast();
+  const undoContext = useUndoSafe();
 
   const [inventory, setInventory] = useState([]);
   const [editingId, setEditingId] = useState(null);
@@ -66,6 +75,11 @@ export function InventoryProvider({ children }) {
    * @param {Object} updates - Fields to update
    */
   const updateInventoryItem = useCallback(async (id, updates) => {
+    // Find the item to get its previous state for undo
+    const item = inventory.find(i => i.id === id);
+    const previousState = item ? { ...item } : null;
+    const itemName = item?.name || 'Card';
+
     try {
       // Add last_modified timestamp to track changes
       const updateWithTimestamp = {
@@ -75,27 +89,76 @@ export function InventoryProvider({ children }) {
       await put(`/inventory/${id}`, updateWithTimestamp);
       await loadInventory();
       setEditingId(null);
-      showToast('Card updated!', TOAST_TYPES.SUCCESS);
+
+      // Register undo action if undo context is available
+      if (undoContext?.registerAction && previousState) {
+        undoContext.registerAction({
+          type: UNDO_ACTION_TYPES.UPDATE_ITEM,
+          description: `Updated ${itemName}`,
+          data: { id, updates, previousState, itemName },
+          undoFn: async () => {
+            // Restore previous state
+            const restoreData = {
+              quantity: previousState.quantity,
+              purchase_price: previousState.purchase_price,
+              folder: previousState.folder,
+              reorder_type: previousState.reorder_type,
+              last_modified: new Date().toISOString(),
+            };
+            await put(`/inventory/${id}`, restoreData);
+            await loadInventory();
+          },
+          redoFn: async () => {
+            await put(`/inventory/${id}`, updateWithTimestamp);
+            await loadInventory();
+          },
+        });
+      } else {
+        showToast('Card updated!', TOAST_TYPES.SUCCESS);
+      }
     } catch (_error) {
       // No rollback needed - loadInventory() is called on success to refresh state
       // On error, the server state is unchanged
       showToast('Error updating card', TOAST_TYPES.ERROR);
     }
-  }, [put, loadInventory, showToast]);
+  }, [put, loadInventory, showToast, inventory, undoContext]);
 
   /**
    * Soft delete - moves item to Trash folder
    * @param {number} id - Item ID to delete
    */
   const deleteInventoryItem = useCallback(async (id) => {
+    // Find the item to get its details for undo
+    const item = inventory.find(i => i.id === id);
+    const previousFolder = item?.folder || 'Uncategorized';
+    const itemName = item?.name || 'Card';
+
     try {
       await put(`/inventory/${id}`, { folder: 'Trash' });
       await loadInventory();
-      showToast('Card moved to Trash', TOAST_TYPES.SUCCESS);
+
+      // Register undo action if undo context is available
+      if (undoContext?.registerAction) {
+        undoContext.registerAction({
+          type: UNDO_ACTION_TYPES.DELETE_ITEM,
+          description: `Deleted ${itemName}`,
+          data: { id, previousFolder, itemName },
+          undoFn: async () => {
+            await put(`/inventory/${id}`, { folder: previousFolder });
+            await loadInventory();
+          },
+          redoFn: async () => {
+            await put(`/inventory/${id}`, { folder: 'Trash' });
+            await loadInventory();
+          },
+        });
+      } else {
+        showToast('Card moved to Trash', TOAST_TYPES.SUCCESS);
+      }
     } catch (_error) {
       showToast('Failed to delete card', TOAST_TYPES.ERROR);
     }
-  }, [put, loadInventory, showToast]);
+  }, [put, loadInventory, showToast, inventory, undoContext]);
 
   /**
    * Permanently delete - actually removes the item from database
@@ -116,14 +179,37 @@ export function InventoryProvider({ children }) {
    * @param {number} id - Item ID to restore
    */
   const restoreFromTrash = useCallback(async (id) => {
+    // Find the item to get its name for the undo message
+    const item = inventory.find(i => i.id === id);
+    const itemName = item?.name || 'Card';
+
     try {
       await put(`/inventory/${id}`, { folder: 'Uncategorized' });
       await loadInventory();
-      showToast('Card restored from Trash', TOAST_TYPES.SUCCESS);
+
+      // Register undo action if undo context is available
+      if (undoContext?.registerAction) {
+        undoContext.registerAction({
+          type: UNDO_ACTION_TYPES.RESTORE_ITEM,
+          description: `Restored ${itemName}`,
+          data: { id, itemName },
+          undoFn: async () => {
+            // Move back to Trash
+            await put(`/inventory/${id}`, { folder: 'Trash' });
+            await loadInventory();
+          },
+          redoFn: async () => {
+            await put(`/inventory/${id}`, { folder: 'Uncategorized' });
+            await loadInventory();
+          },
+        });
+      } else {
+        showToast('Card restored from Trash', TOAST_TYPES.SUCCESS);
+      }
     } catch (_error) {
       showToast('Failed to restore card', TOAST_TYPES.ERROR);
     }
-  }, [put, loadInventory, showToast]);
+  }, [put, loadInventory, showToast, inventory, undoContext]);
 
   /**
    * Empty entire Trash folder - permanently deletes all trash items
