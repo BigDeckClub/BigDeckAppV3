@@ -32,10 +32,8 @@ const ShortcutRow = memo(function ShortcutRow({ shortcut, description }) {
     ? shortcut 
     : formatShortcut(shortcut);
   
-  // Split by '+' for Windows format, but handle Mac format (no '+' separator)
-  const parts = formatted.includes('+') 
-    ? formatted.split('+') 
-    : [formatted];
+  // Split by '+' - formatShortcut now always uses '+' separator
+  const parts = formatted.split('+');
   
   return (
     <div className="flex items-center justify-between py-2 border-b border-slate-700/50 last:border-b-0">

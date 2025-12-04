@@ -125,13 +125,31 @@ export const SHORTCUT_KEYS = {
 };
 
 /**
- * Format shortcut for display (e.g., "Ctrl+K" or "⌘K" on Mac)
+ * Detect if the current platform is Mac
+ * Uses multiple detection methods for better compatibility
+ * @returns {boolean}
+ */
+export function isMacPlatform() {
+  if (typeof navigator === 'undefined') return false;
+  
+  // Check userAgentData first (modern browsers)
+  if (navigator.userAgentData?.platform === 'macOS') return true;
+  
+  // Check userAgent (reliable fallback)
+  if (navigator.userAgent?.includes('Mac')) return true;
+  
+  // Check platform (deprecated but still works)
+  return /Mac|iPod|iPhone|iPad/.test(navigator.platform);
+}
+
+/**
+ * Format shortcut for display (e.g., "Ctrl+K" or "⌘+K" on Mac)
+ * Always uses '+' separator for consistent parsing in the UI
  * @param {ShortcutConfig} shortcut
  * @returns {string}
  */
 export function formatShortcut(shortcut) {
-  const isMac = typeof navigator !== 'undefined' && 
-    /Mac|iPod|iPhone|iPad/.test(navigator.platform);
+  const isMac = isMacPlatform();
   
   const parts = [];
   
@@ -153,7 +171,8 @@ export function formatShortcut(shortcut) {
   
   parts.push(keyDisplay);
   
-  return isMac ? parts.join('') : parts.join('+');
+  // Always use '+' separator for consistent parsing
+  return parts.join('+');
 }
 
 export default useKeyboardShortcuts;
