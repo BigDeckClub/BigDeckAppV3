@@ -9,15 +9,6 @@ import { ToastContainer } from '../components/ToastContainer';
 const mockWindowOpen = vi.fn();
 vi.stubGlobal('open', mockWindowOpen);
 
-// Mock clipboard
-const mockWriteText = vi.fn();
-vi.stubGlobal('navigator', {
-  ...navigator,
-  clipboard: {
-    writeText: mockWriteText,
-  },
-});
-
 // Helper to render with providers
 const renderWithProviders = (ui) => {
   return render(
@@ -31,7 +22,7 @@ const renderWithProviders = (ui) => {
 describe('BuyButton', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockClipboard.writeText.mockResolvedValue(undefined);
+    vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue(undefined);
     localStorage.clear();
   });
 
@@ -157,7 +148,7 @@ describe('BuyButton', () => {
       fireEvent.click(screen.getByText('Copy to clipboard'));
       
       await waitFor(() => {
-        expect(mockClipboard.writeText).toHaveBeenCalled();
+        expect(navigator.clipboard.writeText).toHaveBeenCalled();
       });
     });
 
@@ -173,7 +164,7 @@ describe('BuyButton', () => {
     });
 
     it('should show error toast when copy fails', async () => {
-      mockClipboard.writeText.mockRejectedValue(new Error('Copy failed'));
+      vi.spyOn(navigator.clipboard, 'writeText').mockRejectedValue(new Error('Copy failed'));
       
       renderWithProviders(<BuyButton card={{ name: 'Lightning Bolt' }} />);
       
