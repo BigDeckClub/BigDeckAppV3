@@ -46,7 +46,7 @@ export const AlertSettings = ({ inventory }) => {
     // Filter by deck cards if toggle is enabled
     if (deckCardsOnly && deckCardNames.size > 0) {
       items = items.filter(item => 
-        deckCardNames.has(item.name?.toLowerCase().trim())
+        item.name && deckCardNames.has(item.name.toLowerCase().trim())
       );
     }
     
@@ -61,14 +61,13 @@ export const AlertSettings = ({ inventory }) => {
 
   // Calculate counts for display
   const totalAlertsCount = useMemo(() => {
-    return Object.keys(
-      inventory
-        .filter(item => item.low_inventory_alert)
-        .reduce((acc, item) => {
-          acc[item.name] = true;
-          return acc;
-        }, {})
-    ).length;
+    const uniqueNames = new Set();
+    inventory.forEach(item => {
+      if (item.low_inventory_alert) {
+        uniqueNames.add(item.name);
+      }
+    });
+    return uniqueNames.size;
   }, [inventory]);
 
   const filteredCount = Object.keys(cardsWithAlerts).length;
@@ -151,7 +150,7 @@ export const AlertSettings = ({ inventory }) => {
           {deckCardsOnly && totalAlertsCount > 0 ? (
             <>
               <p className="text-slate-400">No alerts match cards in your deck templates</p>
-              <p className="text-slate-500 text-sm mt-2">Try turning off the deck filter or add cards from your decks to alerts</p>
+              <p className="text-slate-500 text-sm mt-2">Try turning off the deck filter or add cards from your deck templates to alerts</p>
             </>
           ) : (
             <>

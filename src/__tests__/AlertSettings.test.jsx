@@ -120,4 +120,38 @@ describe('AlertSettings', () => {
     
     expect(screen.getByText('How to Use Low Inventory Alerts')).toBeInTheDocument();
   });
+
+  it('should filter cards based on deck card names when filter is enabled', async () => {
+    render(<AlertSettings inventory={mockInventory} />);
+    
+    const checkbox = screen.getByRole('checkbox', { name: /show only cards in deck templates/i });
+    fireEvent.click(checkbox);
+    
+    // Wait for filter to apply - deck card names are ['lightning bolt', 'sol ring', 'counterspell']
+    await waitFor(() => {
+      expect(screen.getByText('Lightning Bolt')).toBeInTheDocument();
+      expect(screen.getByText('Sol Ring')).toBeInTheDocument();
+      expect(screen.getByText('Counterspell')).toBeInTheDocument();
+      // Forest is NOT in deck templates, so should be filtered out
+      expect(screen.queryByText('Forest')).not.toBeInTheDocument();
+    });
+  });
+
+  it('should show filtered empty state when no cards match deck templates', async () => {
+    // Create inventory with cards that don't match the mock deck card names
+    const inventoryWithNoMatches = [
+      { id: 1, name: 'Mountain', set: 'M21', low_inventory_alert: true, low_inventory_threshold: 5 },
+      { id: 2, name: 'Plains', set: 'M21', low_inventory_alert: true, low_inventory_threshold: 10 },
+    ];
+    
+    render(<AlertSettings inventory={inventoryWithNoMatches} />);
+    
+    const checkbox = screen.getByRole('checkbox', { name: /show only cards in deck templates/i });
+    fireEvent.click(checkbox);
+    
+    await waitFor(() => {
+      expect(screen.getByText('No alerts match cards in your deck templates')).toBeInTheDocument();
+      expect(screen.getByText(/Try turning off the deck filter/)).toBeInTheDocument();
+    });
+  });
 });
