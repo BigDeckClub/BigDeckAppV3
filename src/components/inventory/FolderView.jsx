@@ -225,8 +225,8 @@ FolderView.propTypes = {
   setSellModalData: PropTypes.func.isRequired,
   setShowSellModal: PropTypes.func.isRequired,
   onDeleteFolder: PropTypes.func.isRequired,
-  sortField: PropTypes.string,
-  sortDirection: PropTypes.string,
+  sortField: PropTypes.oneOf(['name', 'price', 'quantity', 'set', 'dateAdded']),
+  sortDirection: PropTypes.oneOf(['asc', 'desc']),
 };
 
 export default FolderView;

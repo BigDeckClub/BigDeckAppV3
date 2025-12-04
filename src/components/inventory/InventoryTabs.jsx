@@ -217,8 +217,8 @@ InventoryTabs.propTypes = {
   draggedTabData: PropTypes.object,
   setDraggedTabData: PropTypes.func.isRequired,
   reorderTabs: PropTypes.func.isRequired,
-  sortField: PropTypes.string,
-  sortDirection: PropTypes.string,
+  sortField: PropTypes.oneOf(['name', 'price', 'quantity', 'set', 'dateAdded']),
+  sortDirection: PropTypes.oneOf(['asc', 'desc']),
   onSortChange: PropTypes.func
 };
 
