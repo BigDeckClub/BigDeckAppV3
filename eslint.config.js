@@ -55,6 +55,6 @@ export default [
     },
   },
   {
-    ignores: ['dist/**', 'node_modules/**', 'coverage/**', '*.config.js', '*.config.cjs'],
+    ignores: ['dist/**', 'node_modules/**', 'coverage/**', 'vite.config.js', 'tailwind.config.js', 'postcss.config.js', 'vitest.config.js'],
   },
 ];

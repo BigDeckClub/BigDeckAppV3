@@ -31,10 +31,12 @@ export function InventoryProvider({ children }) {
       const data = await get('/inventory');
       const sortedData = (data || []).sort((a, b) => a.name.localeCompare(b.name));
       setInventory(sortedData);
-    } catch (_error) {
+    } catch (error) {
+      console.error('[INVENTORY] Failed to load inventory:', error);
+      showToast('Failed to load inventory. Please refresh the page.', TOAST_TYPES.ERROR);
       setInventory([]);
     }
-  }, [get]);
+  }, [get, showToast]);
 
   /**
    * Add a new inventory item

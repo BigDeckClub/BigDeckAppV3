@@ -9,6 +9,12 @@ export const VALID_REORDER_TYPES = ['normal', 'foil', 'none'];
 // Valid sale item types
 export const VALID_ITEM_TYPES = ['folder', 'deck', 'card'];
 
+// Date validation pattern (YYYY-MM-DD format)
+const dateSchema = z.string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format')
+  .optional()
+  .nullable();
+
 /**
  * Schema for creating a new inventory item
  */
@@ -18,7 +24,7 @@ export const createInventoryItemSchema = z.object({
   set_name: z.string().max(255).optional().nullable(),
   quantity: z.number().int().positive('Quantity must be a positive integer').optional().default(1),
   purchase_price: z.number().nonnegative('Purchase price must be a non-negative number').optional().nullable(),
-  purchase_date: z.string().optional().nullable(),
+  purchase_date: dateSchema,
   reorder_type: z.enum(VALID_REORDER_TYPES).optional().default('normal'),
   image_url: z.string().url().max(500).optional().nullable(),
   folder: z.string().max(100).optional().default('Uncategorized'),
@@ -32,7 +38,7 @@ export const createInventoryItemSchema = z.object({
 export const updateInventoryItemSchema = z.object({
   quantity: z.number().int().nonnegative('Quantity must be a non-negative integer').optional(),
   purchase_price: z.number().nonnegative('Purchase price must be a non-negative number').optional().nullable(),
-  purchase_date: z.string().optional().nullable(),
+  purchase_date: dateSchema,
   reorder_type: z.enum(VALID_REORDER_TYPES).optional(),
   folder: z.string().max(100).optional(),
   low_inventory_alert: z.boolean().optional(),
