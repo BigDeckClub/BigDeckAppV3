@@ -1,4 +1,4 @@
-import React, { memo, useState } from 'react';
+import React, { memo, useState, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import { Trash2, X, ChevronDown, Wand2, DollarSign, ShoppingCart } from 'lucide-react';
 import { getSetDisplayName } from '../../utils/cardHelpers';
@@ -30,21 +30,24 @@ export const DeckDetailView = memo(function DeckDetailView({
 }) {
   const [showBuyModal, setShowBuyModal] = useState(false);
 
+  // Calculate missing cards for the buy modal - memoized to avoid recalculation on every render
+  const missingCards = useMemo(() => {
+    if (!deck || !deckDetails) return [];
+    return (deck.cards || []).map((card) => {
+      const reservedQty = (deckDetails.reservations || [])
+        .filter(r => r.name.toLowerCase() === card.name.toLowerCase())
+        .reduce((sum, r) => sum + parseInt(r.quantity_reserved || 0), 0);
+      const needed = Math.max(0, (card.quantity || 1) - reservedQty);
+      if (needed === 0) return null;
+      return { name: card.name, quantity: needed, set: card.set };
+    }).filter(Boolean);
+  }, [deck, deckDetails]);
+
   if (!deck || !deckDetails) return null;
 
   const deckId = deck.id;
   const decklistTotal = (deck.cards || []).reduce((sum, c) => sum + (c.quantity || 1), 0);
   const actualMissingCount = Math.max(0, decklistTotal - (deckDetails.reservedCount || 0));
-
-  // Calculate missing cards for the buy modal
-  const missingCards = (deck.cards || []).map((card) => {
-    const reservedQty = (deckDetails.reservations || [])
-      .filter(r => r.name.toLowerCase() === card.name.toLowerCase())
-      .reduce((sum, r) => sum + parseInt(r.quantity_reserved || 0), 0);
-    const needed = Math.max(0, (card.quantity || 1) - reservedQty);
-    if (needed === 0) return null;
-    return { name: card.name, quantity: needed, set: card.set };
-  }).filter(Boolean);
 
   // Group reservations by card name for grid view
   const groupedReservations = (deckDetails.reservations || []).reduce((acc, res) => {

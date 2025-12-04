@@ -1,4 +1,4 @@
-import React, { useState, useMemo, memo } from 'react';
+import React, { useState, useMemo, useEffect, memo } from 'react';
 import PropTypes from 'prop-types';
 import { ShoppingCart, Copy, ExternalLink, Plus, Minus, Check } from 'lucide-react';
 import { Modal } from '../ui/Modal';
@@ -6,6 +6,21 @@ import { MarketplaceSelector } from './MarketplaceSelector';
 import { useMarketplacePreferences } from '../../hooks/useMarketplacePreferences';
 import { useToast, TOAST_TYPES } from '../../context/ToastContext';
 import { MARKETPLACES, buildCartUrl, buildClipboardText } from '../../utils/marketplaceUrls';
+
+/**
+ * Helper function to create initial card selections
+ */
+const createInitialSelections = (cards) => {
+  const selections = {};
+  cards.forEach((card, index) => {
+    const key = `${card.name}-${index}`;
+    selections[key] = {
+      selected: true,
+      quantity: card.quantity || 1,
+    };
+  });
+  return selections;
+};
 
 /**
  * BuyCardsModal - Modal for purchasing missing cards from marketplaces
@@ -25,29 +40,11 @@ export const BuyCardsModal = memo(function BuyCardsModal({
   } = useMarketplacePreferences();
 
   // Initialize card selection state with all cards selected
-  const [cardSelections, setCardSelections] = useState(() => {
-    const selections = {};
-    cards.forEach((card, index) => {
-      const key = `${card.name}-${index}`;
-      selections[key] = {
-        selected: true,
-        quantity: card.quantity || 1,
-      };
-    });
-    return selections;
-  });
+  const [cardSelections, setCardSelections] = useState(() => createInitialSelections(cards));
 
   // Reset selections when cards change
-  useMemo(() => {
-    const selections = {};
-    cards.forEach((card, index) => {
-      const key = `${card.name}-${index}`;
-      selections[key] = {
-        selected: true,
-        quantity: card.quantity || 1,
-      };
-    });
-    setCardSelections(selections);
+  useEffect(() => {
+    setCardSelections(createInitialSelections(cards));
   }, [cards]);
 
   // Get selected cards with their quantities

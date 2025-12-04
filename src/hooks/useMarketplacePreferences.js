@@ -7,7 +7,10 @@ import { getPreferredMarketplace, setPreferredMarketplace as savePreference } fr
  */
 export function useMarketplacePreferences() {
   const [preferredMarketplace, setMarketplace] = useState(() => getPreferredMarketplace());
-  const [rememberPreference, setRememberPreference] = useState(false);
+  // Initialize rememberPreference based on whether a preference exists in localStorage
+  const [rememberPreference, setRememberPreference] = useState(() => {
+    return localStorage.getItem('preferredMarketplace') !== null;
+  });
 
   const setPreferredMarketplace = useCallback((marketplace) => {
     setMarketplace(marketplace);
