@@ -8,16 +8,9 @@ import React, { createContext, useContext, useState, useCallback, useMemo } from
 import PropTypes from 'prop-types';
 import { useApi } from '../hooks/useApi';
 import { useToast, TOAST_TYPES } from './ToastContext';
-import UndoContext, { UNDO_ACTION_TYPES } from './UndoContext';
+import { useUndoSafe, UNDO_ACTION_TYPES } from './UndoContext';
 
 const InventoryContext = createContext(null);
-
-/**
- * Hook to safely get undo context (returns null if not available)
- */
-function useUndoSafe() {
-  return useContext(UndoContext);
-}
 
 /**
  * InventoryProvider component that wraps the application

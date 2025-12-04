@@ -11,6 +11,14 @@ import { useToast, TOAST_TYPES } from './ToastContext';
 const UndoContext = createContext(null);
 
 /**
+ * Hook to safely get undo context (returns null if not available)
+ * Use this in components that want optional undo support
+ */
+export function useUndoSafe() {
+  return useContext(UndoContext);
+}
+
+/**
  * Action types for undo/redo operations
  */
 export const UNDO_ACTION_TYPES = {
@@ -97,13 +105,19 @@ export function UndoProvider({ children }) {
         action: {
           label: 'Undo',
           onClick: async () => {
-            // Use the wrapped undo() function for consistent feedback and error handling
-            await undo();
+            // Use undoAction directly and show feedback manually
+            // This avoids circular dependency with undo()
+            const success = await undoAction();
+            if (success) {
+              showToast(`Undone: ${action.description}`, TOAST_TYPES.SUCCESS);
+            } else {
+              showToast('Failed to undo action', TOAST_TYPES.ERROR);
+            }
           },
         },
       });
     }
-  }, [addAction, showToast, undo]);
+  }, [addAction, showToast, undoAction]);
 
   /**
    * Handle keyboard shortcuts for undo/redo

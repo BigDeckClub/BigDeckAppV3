@@ -1,17 +1,10 @@
-import { useState, useEffect, useCallback, useContext } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useToast, TOAST_TYPES } from '../context/ToastContext';
 import { fetchWithAuth } from '../utils/apiClient';
-import UndoContext, { UNDO_ACTION_TYPES } from '../context/UndoContext';
+import { useUndoSafe, UNDO_ACTION_TYPES } from '../context/UndoContext';
 
 // Reserved folder names that cannot be created by users (case-insensitive)
 const RESERVED_FOLDER_NAMES = ['unsorted', 'uncategorized', 'all cards', 'all', 'trash'];
-
-/**
- * Hook to safely get undo context (returns null if not available)
- */
-function useUndoSafe() {
-  return useContext(UndoContext);
-}
 
 /**
  * useFolderOperations - Custom hook for folder-related operations
