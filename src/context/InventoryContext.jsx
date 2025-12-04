@@ -102,7 +102,12 @@ export function InventoryProvider({ children }) {
             await loadInventory();
           },
           redoFn: async () => {
-            await put(`/inventory/${id}`, updateWithTimestamp);
+            // Generate fresh timestamp for redo to avoid stale timestamps
+            const redoData = {
+              ...updates,
+              last_modified: new Date().toISOString(),
+            };
+            await put(`/inventory/${id}`, redoData);
             await loadInventory();
           },
         });

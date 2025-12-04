@@ -94,6 +94,7 @@ export function useFolderOperations({ inventory, onLoadInventory }) {
 
       const previousFolder = item.folder || 'Uncategorized';
       const itemName = item.name;
+      const itemQuantity = item.quantity;
       
       // Update API first
       const response = await fetchWithAuth(`/api/inventory/${itemId}`, {
@@ -146,7 +147,7 @@ export function useFolderOperations({ inventory, onLoadInventory }) {
         });
       } else {
         // Show success toast after API call succeeds (only if no undo context)
-        showToast(`Moved ${item.quantity}x ${itemName} to ${targetFolder}`, TOAST_TYPES.SUCCESS);
+        showToast(`Moved ${itemQuantity}x ${itemName} to ${targetFolder}`, TOAST_TYPES.SUCCESS);
       }
     } catch (error) {
       showToast(`Error moving item: ${error.message}`, TOAST_TYPES.ERROR);

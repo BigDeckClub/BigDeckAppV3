@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { UndoProvider, useUndo, UNDO_ACTION_TYPES } from '../context/UndoContext';
 import { ToastProvider } from '../context/ToastContext';
