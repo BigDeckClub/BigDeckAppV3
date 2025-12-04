@@ -1,33 +1,16 @@
 import express from 'express';
 import { pool } from '../db/pool.js';
 import { authenticate } from '../middleware/auth.js';
+import { createSaleSchema, validateBody } from '../utils/validation.js';
 
 const router = express.Router();
 
 // ========== SALES ENDPOINTS ==========
 
 // POST /api/sales - Record a sale for folder or deck
-router.post('/api/sales', authenticate, async (req, res) => {
+router.post('/api/sales', authenticate, validateBody(createSaleSchema), async (req, res) => {
   const userId = req.userId;
   const { itemType, itemId, itemName, purchasePrice, sellPrice, quantity } = req.body;
-  
-  // Validate required fields
-  if (!itemType || !itemName || sellPrice === undefined || purchasePrice === undefined) {
-    return res.status(400).json({ error: 'Missing required fields' });
-  }
-  
-  // Validate numeric fields
-  const parsedSellPrice = Number(sellPrice);
-  const parsedPurchasePrice = Number(purchasePrice);
-  const parsedQuantity = quantity !== undefined ? Number(quantity) : 1;
-  
-  if (
-    isNaN(parsedSellPrice) || parsedSellPrice < 0 ||
-    isNaN(parsedPurchasePrice) || parsedPurchasePrice < 0 ||
-    isNaN(parsedQuantity) || parsedQuantity <= 0 || !Number.isInteger(parsedQuantity)
-  ) {
-    return res.status(400).json({ error: 'Invalid numeric values: sellPrice, purchasePrice must be non-negative numbers; quantity must be a positive integer.' });
-  }
   
   // Use a transaction to ensure database consistency
   const client = await pool.connect();
@@ -35,19 +18,19 @@ router.post('/api/sales', authenticate, async (req, res) => {
   try {
     await client.query('BEGIN');
     
-    const profit = (parsedSellPrice - parsedPurchasePrice) * parsedQuantity;
+    const profit = (sellPrice - purchasePrice) * quantity;
     
     const result = await client.query(
       `INSERT INTO sales_history (item_type, item_id, item_name, purchase_price, sell_price, profit, quantity, user_id)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-      [itemType, itemId || null, itemName, parsedPurchasePrice, parsedSellPrice, profit, parsedQuantity, userId]
+      [itemType, itemId || null, itemName, purchasePrice, sellPrice, profit, quantity, userId]
     );
     
     // Log transaction to inventory_transactions
     await client.query(
       `INSERT INTO inventory_transactions (card_name, transaction_type, quantity, purchase_price, sale_price, transaction_date, user_id)
        VALUES ($1, $2, $3, $4, $5, CURRENT_DATE, $6)`,
-      [itemName, 'SALE', parsedQuantity, parsedPurchasePrice, parsedSellPrice, userId]
+      [itemName, 'SALE', quantity, purchasePrice, sellPrice, userId]
     );
 
     // If selling a deck, reduce the reserved inventory items and the deck

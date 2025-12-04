@@ -6,9 +6,7 @@ import {
   InventorySearchBar, 
   InventoryTabs, 
   DeckDetailView,
-  FolderHeader,
   FolderSidebar,
-  TrashView,
   FolderView
 } from './inventory';
 import { SellModal } from './SellModal';
@@ -16,32 +14,37 @@ import { useFolderOperations } from '../hooks/useFolderOperations';
 import { useDeckReservations } from '../hooks/useDeckReservations';
 import { useConfirm } from '../context/ConfirmContext';
 import { useApi } from '../hooks/useApi';
+import { useInventory } from '../context/InventoryContext';
 
 /**
  * InventoryTab - Main inventory management component
  * Refactored to use smaller sub-components and custom hooks for maintainability
  */
 export const InventoryTab = ({
-  inventory,
   successMessage,
   setSuccessMessage,
   expandedCards,
   setExpandedCards,
-  editingId,
-  editForm,
-  setEditForm,
-  startEditingItem,
-  updateInventoryItem,
-  deleteInventoryItem,
-  permanentlyDeleteItem,
-  restoreFromTrash,
-  emptyTrash,
   deckRefreshTrigger,
-  onLoadInventory,
   onSell
 }) => {
   const { confirm } = useConfirm();
   const { post } = useApi();
+  
+  // Get inventory state and operations from context
+  const {
+    inventory,
+    loadInventory,
+    editingId,
+    editForm,
+    setEditForm,
+    startEditingItem,
+    updateInventoryItem,
+    deleteInventoryItem,
+    permanentlyDeleteItem,
+    restoreFromTrash,
+    emptyTrash,
+  } = useInventory();
   
   // UI State
   const [activeTab, setActiveTab] = useState('all');
@@ -53,28 +56,28 @@ export const InventoryTab = ({
   const [sellModalData, setSellModalData] = useState(null);
 
   // Folder operations hook
-  const folderOps = useFolderOperations({ inventory, onLoadInventory });
+  const folderOps = useFolderOperations({ inventory, onLoadInventory: loadInventory });
   // Deck operations hook
-  const deckOps = useDeckReservations({ inventory, onLoadInventory });
+  const deckOps = useDeckReservations({ inventory, onLoadInventory: loadInventory });
 
   // Centralized handlers for low inventory alerts
   const toggleAlertHandler = useCallback(async (itemId) => {
     try {
       await post(`/inventory/${itemId}/toggle-alert`);
-      onLoadInventory?.();
+      loadInventory?.();
     } catch (error) {
       console.error('Error toggling alert:', error);
     }
-  }, [post, onLoadInventory]);
+  }, [post, loadInventory]);
 
   const setThresholdHandler = useCallback(async (itemId, threshold) => {
     try {
       await post(`/inventory/${itemId}/set-threshold`, { threshold });
-      onLoadInventory?.();
+      loadInventory?.();
     } catch (error) {
       console.error('Error setting threshold:', error);
     }
-  }, [post, onLoadInventory]);
+  }, [post, loadInventory]);
 
   // Reorder tabs when drag ends
   const reorderTabs = useCallback((sourceType, sourceIndex, destIndex) => {
@@ -414,30 +417,11 @@ export const InventoryTab = ({
 };
 
 InventoryTab.propTypes = {
-  inventory: PropTypes.arrayOf(PropTypes.shape({
-    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-    name: PropTypes.string,
-    set: PropTypes.oneOfType([PropTypes.string, PropTypes.object]),
-    quantity: PropTypes.number,
-    purchaseDate: PropTypes.string,
-    purchasePrice: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-    reorderType: PropTypes.string,
-  })).isRequired,
   successMessage: PropTypes.string,
   setSuccessMessage: PropTypes.func.isRequired,
   expandedCards: PropTypes.object.isRequired,
   setExpandedCards: PropTypes.func.isRequired,
-  editingId: PropTypes.string,
-  editForm: PropTypes.object.isRequired,
-  setEditForm: PropTypes.func.isRequired,
-  startEditingItem: PropTypes.func.isRequired,
-  updateInventoryItem: PropTypes.func.isRequired,
-  deleteInventoryItem: PropTypes.func.isRequired,
-  permanentlyDeleteItem: PropTypes.func,
-  restoreFromTrash: PropTypes.func,
-  emptyTrash: PropTypes.func,
   deckRefreshTrigger: PropTypes.number,
-  onLoadInventory: PropTypes.func,
   onSell: PropTypes.func
 };
 
