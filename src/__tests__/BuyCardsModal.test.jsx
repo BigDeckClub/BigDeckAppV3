@@ -28,9 +28,17 @@ const mockCards = [
 describe('BuyCardsModal', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.restoreAllMocks();
     vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue(undefined);
     localStorage.clear();
   });
+
+  // Helper to find card selection checkboxes
+  const getCardCheckboxes = () => {
+    return screen.getAllByRole('button').filter(btn => 
+      btn.className.includes('w-5 h-5 rounded border')
+    );
+  };
 
   describe('rendering', () => {
     it('should not render when isOpen is false', () => {
@@ -122,10 +130,7 @@ describe('BuyCardsModal', () => {
         <BuyCardsModal isOpen onClose={() => {}} cards={mockCards} />
       );
       
-      // Find and click the first checkbox
-      const checkboxes = screen.getAllByRole('button').filter(btn => 
-        btn.className.includes('w-5 h-5 rounded border')
-      );
+      const checkboxes = getCardCheckboxes();
       
       // Initially should have teal background (selected)
       expect(checkboxes[0]).toHaveClass('bg-teal-600');
@@ -143,11 +148,7 @@ describe('BuyCardsModal', () => {
       
       fireEvent.click(screen.getByText('Deselect All'));
       
-      // All checkboxes should be deselected
-      const checkboxes = screen.getAllByRole('button').filter(btn => 
-        btn.className.includes('w-5 h-5 rounded border')
-      );
-      
+      const checkboxes = getCardCheckboxes();
       checkboxes.forEach(checkbox => {
         expect(checkbox).toHaveClass('bg-slate-700');
       });
@@ -164,11 +165,7 @@ describe('BuyCardsModal', () => {
       // Then select all
       fireEvent.click(screen.getByText('Select All'));
       
-      // All checkboxes should be selected
-      const checkboxes = screen.getAllByRole('button').filter(btn => 
-        btn.className.includes('w-5 h-5 rounded border')
-      );
-      
+      const checkboxes = getCardCheckboxes();
       checkboxes.forEach(checkbox => {
         expect(checkbox).toHaveClass('bg-teal-600');
       });
