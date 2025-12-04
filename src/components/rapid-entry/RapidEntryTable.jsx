@@ -1,5 +1,6 @@
 import React, { useCallback } from 'react';
 import PropTypes from 'prop-types';
+import { Send, Loader2 } from 'lucide-react';
 import { useRapidEntry } from '../../hooks/useRapidEntry';
 import { LotModeSection } from './LotModeSection';
 import { RapidEntryRow } from './RapidEntryRow';
@@ -55,9 +56,15 @@ export function RapidEntryTable({
     handleSubmitLot,
     handleRemoveCardFromLot,
     handleAddCardToInventory,
+    handleAddNewRow,
+    handleSubmitAll,
     handleClearRow,
     handleDuplicatePrevious,
     updateRowField,
+    pendingCount,
+    isSubmitting,
+    submitError,
+    setSubmitError,
   } = rapidEntry;
 
   // All available folders
@@ -108,12 +115,20 @@ export function RapidEntryTable({
       return;
     }
     
-    // Shift+Enter to add card and create new row
+    // Ctrl+Shift+Enter to submit all pending cards
+    if (e.key === 'Enter' && e.shiftKey && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      e.stopPropagation();
+      handleSubmitAll();
+      return;
+    }
+    
+    // Shift+Enter to add new row (queue card for batch submit)
     if (e.key === 'Enter' && e.shiftKey) {
       e.preventDefault();
       e.stopPropagation();
-      if (row.status === 'valid') {
-        handleAddCardToInventory(rowIndex);
+      if (row.status === 'valid' || row.selectedCard) {
+        handleAddNewRow(rowIndex);
       } else {
         // Visual feedback when Shift+Enter fails (card not selected)
         setShakeRowIndex(rowIndex);
@@ -129,7 +144,7 @@ export function RapidEntryTable({
       handleDuplicatePrevious(rowIndex);
       return;
     }
-  }, [rows, showDropdown, searchResults, highlightedResult, setHighlightedResult, handleSelectCard, handleClearRow, handleAddCardToInventory, setShakeRowIndex, handleDuplicatePrevious]);
+  }, [rows, showDropdown, searchResults, highlightedResult, setHighlightedResult, handleSelectCard, handleClearRow, handleAddNewRow, handleSubmitAll, setShakeRowIndex, handleDuplicatePrevious]);
 
   return (
     <div className="space-y-4">
@@ -196,23 +211,71 @@ export function RapidEntryTable({
         ))}
       </div>
 
-      {/* Running Totals */}
-      <div className="flex justify-end items-center gap-6 px-3 py-3 bg-slate-800/30 rounded-lg border border-slate-700">
-        <div className="text-sm text-slate-400">
-          Running total: <span className="font-semibold text-white">{runningTotal.count} cards</span>
+      {/* Running Totals and Submit All */}
+      <div className="flex flex-wrap justify-between items-center gap-4 px-3 py-3 bg-slate-800/30 rounded-lg border border-slate-700">
+        <div className="flex flex-wrap items-center gap-4 sm:gap-6">
+          <div className="text-sm text-slate-400">
+            Running total: <span className="font-semibold text-white">{runningTotal.count} cards</span>
+          </div>
+          <div className="text-sm text-slate-400">
+            Total: <span className="font-semibold text-teal-400">${runningTotal.price.toFixed(2)}</span>
+          </div>
+          {pendingCount > 0 && (
+            <div className="text-sm text-amber-400">
+              <span className="font-semibold">{pendingCount}</span> card{pendingCount !== 1 ? 's' : ''} ready to submit
+            </div>
+          )}
         </div>
-        <div className="text-sm text-slate-400">
-          Total: <span className="font-semibold text-teal-400">${runningTotal.price.toFixed(2)}</span>
-        </div>
+        
+        {/* Submit All Button */}
+        {!lotModeEnabled && (
+          <button
+            onClick={handleSubmitAll}
+            disabled={pendingCount === 0 || isSubmitting}
+            className={`
+              flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all
+              ${pendingCount > 0 && !isSubmitting
+                ? 'bg-teal-600 hover:bg-teal-500 text-white shadow-lg shadow-teal-600/20'
+                : 'bg-slate-700 text-slate-500 cursor-not-allowed'
+              }
+            `}
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Submitting...
+              </>
+            ) : (
+              <>
+                <Send className="w-4 h-4" />
+                Submit All ({pendingCount})
+              </>
+            )}
+          </button>
+        )}
       </div>
+      
+      {/* Submit Error */}
+      {submitError && (
+        <div className="px-3 py-2 bg-red-900/30 border border-red-700 rounded-lg text-red-300 text-sm flex items-center justify-between">
+          <span>{submitError}</span>
+          <button
+            onClick={() => setSubmitError(null)}
+            className="text-red-400 hover:text-red-300 ml-2"
+          >
+            ×
+          </button>
+        </div>
+      )}
 
       {/* Keyboard Shortcuts Help */}
       <div className="text-xs text-slate-500 flex flex-wrap gap-x-4 gap-y-1">
         <span><kbd className="px-1.5 py-0.5 bg-slate-700 rounded">Enter</kbd> Select card</span>
-        <span><kbd className="px-1.5 py-0.5 bg-slate-700 rounded">Shift+Enter</kbd> Add &amp; new row</span>
+        <span><kbd className="px-1.5 py-0.5 bg-slate-700 rounded">Shift+Enter</kbd> Add row</span>
+        <span><kbd className="px-1.5 py-0.5 bg-slate-700 rounded">Ctrl+Shift+Enter</kbd> Submit all</span>
         <span><kbd className="px-1.5 py-0.5 bg-slate-700 rounded">Tab</kbd> Next field</span>
         <span><kbd className="px-1.5 py-0.5 bg-slate-700 rounded">Esc</kbd> Clear row</span>
-        <span><kbd className="px-1.5 py-0.5 bg-slate-700 rounded">Ctrl+D</kbd> Duplicate previous</span>
+        <span><kbd className="px-1.5 py-0.5 bg-slate-700 rounded">Ctrl+D</kbd> Duplicate</span>
       </div>
     </div>
   );

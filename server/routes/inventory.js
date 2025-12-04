@@ -95,7 +95,8 @@ router.post('/inventory', authenticate, validateBody(createInventoryItemSchema),
       description: `Added ${quantity || 1} cop${(quantity || 1) === 1 ? 'y' : 'ies'} to inventory`,
       entityType: 'inventory',
       entityId: addedItem.id,
-      metadata: { quantity: quantity || 1, set: set || null, folder: folder || 'Uncategorized' }
+      metadata: { quantity: quantity || 1, set: set || null, folder: folder || 'Uncategorized' },
+      userId: req.userId
     });
     
     res.status(201).json(result.rows[0]);
@@ -199,7 +200,8 @@ router.put('/inventory/:id', authenticate, validateId, validateBody(updateInvent
         cardName: currentItem.name,
         fieldChanged: change.field,
         oldValue: change.old,
-        newValue: change.new
+        newValue: change.new,
+        userId: req.userId
       });
     }
     
@@ -227,7 +229,8 @@ router.delete('/inventory/trash', authenticate, async (req, res) => {
         metadata: { 
           deletedCount: result.rows.length,
           deletedItems: result.rows.map(item => ({ id: item.id, name: item.name }))
-        }
+        },
+        userId: req.userId
       });
     }
     
@@ -262,7 +265,8 @@ router.delete('/inventory/:id', authenticate, validateId, async (req, res) => {
       description: `Permanently deleted "${deletedItem.name}"`,
       entityType: 'inventory',
       entityId: id,
-      metadata: { cardName: deletedItem.name, quantity: deletedItem.quantity }
+      metadata: { cardName: deletedItem.name, quantity: deletedItem.quantity },
+      userId: req.userId
     });
     
     res.json({ message: 'Inventory item deleted', item: result.rows[0] });

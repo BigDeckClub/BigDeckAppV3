@@ -6,7 +6,7 @@ import { API_ENDPOINTS } from '../config/api';
 export const QUALITY_OPTIONS = ['NM', 'LP', 'MP', 'HP', 'DMG'];
 
 // Create a blank row template
-export const createEmptyRow = (stickyFolder = 'Unsorted') => ({
+export const createEmptyRow = (stickyFolder = 'Uncategorized') => ({
   id: `row-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
   cardName: '',
   searchQuery: '',
@@ -55,11 +55,15 @@ export function useRapidEntry({
   // Row state
   const [rows, setRows] = useState([createEmptyRow()]);
   const [activeRowIndex, setActiveRowIndex] = useState(0);
-  const [stickyFolder, setStickyFolder] = useState('Unsorted');
+  const [stickyFolder, setStickyFolder] = useState('Uncategorized');
   const [addedCards, setAddedCards] = useState([]);
   const [duplicateWarning, setDuplicateWarning] = useState(null);
   const [highlightedResult, setHighlightedResult] = useState(0);
   const [shakeRowIndex, setShakeRowIndex] = useState(null);
+  
+  // Batch submission state
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
   
   // Lot Mode state
   const [lotModeEnabled, setLotModeEnabled] = useState(false);
@@ -92,6 +96,14 @@ export function useRapidEntry({
     calculatePerCardCost(lotTotalCost, lotTotalCards),
     [lotTotalCost, lotTotalCards]
   );
+
+  // Count pending valid cards (cards that are valid but not yet submitted)
+  const pendingCards = useMemo(() => 
+    rows.filter(row => row.status === 'valid' || row.status === 'pending'),
+    [rows]
+  );
+  
+  const pendingCount = pendingCards.length;
 
   // Handle card name input change
   const handleCardNameChange = useCallback((rowIndex, value) => {
@@ -197,7 +209,7 @@ export function useRapidEntry({
       quantity: row.quantity,
       foil: row.foil,
       quality: row.quality,
-      folder: row.folder || 'Unsorted',
+      folder: row.folder || 'Uncategorized',
       image_url: row.imageUrl,
     };
 
@@ -211,7 +223,7 @@ export function useRapidEntry({
     }));
 
     // Update sticky folder
-    if (row.folder && row.folder !== 'Unsorted') {
+    if (row.folder && row.folder !== 'Uncategorized') {
       setStickyFolder(row.folder);
     }
 
@@ -312,7 +324,7 @@ export function useRapidEntry({
       purchase_price: row.price ? parseFloat(row.price) : null,
       foil: row.foil,
       quality: row.quality,
-      folder: row.folder || 'Unsorted',
+      folder: row.folder || 'Uncategorized',
       image_url: row.imageUrl,
     };
 
@@ -333,7 +345,7 @@ export function useRapidEntry({
       }]);
 
       // Update sticky folder
-      if (row.folder && row.folder !== 'Unsorted') {
+      if (row.folder && row.folder !== 'Uncategorized') {
         setStickyFolder(row.folder);
       }
 
@@ -411,6 +423,147 @@ export function useRapidEntry({
     ));
   }, [setRows]);
 
+  // Add a new row without submitting (Shift+Enter)
+  const handleAddNewRow = useCallback((rowIndex) => {
+    const row = rows[rowIndex];
+    
+    if (!row.selectedCard) {
+      return false;
+    }
+
+    // Mark current row as pending
+    setRows(prev => prev.map((r, idx) => {
+      if (idx !== rowIndex) return r;
+      return { ...r, status: 'pending' };
+    }));
+
+    // Update sticky folder
+    if (row.folder && row.folder !== 'Uncategorized') {
+      setStickyFolder(row.folder);
+    }
+
+    // Add new empty row and focus it
+    const newRow = createEmptyRow(stickyFolder);
+    const newRowIndex = rows.length;
+    setRows(prev => [...prev, newRow]);
+    setActiveRowIndex(newRowIndex);
+    
+    // Clear duplicate warning
+    setDuplicateWarning(null);
+    
+    // Focus on new row's card name input
+    setTimeout(() => {
+      const newInput = inputRefs.current[`name-${newRowIndex}`];
+      if (newInput) newInput.focus();
+    }, 50);
+    
+    return true;
+  }, [rows, stickyFolder, setRows, setStickyFolder, setActiveRowIndex, setDuplicateWarning]);
+
+  // Submit all pending cards at once (Ctrl+Shift+Enter)
+  const handleSubmitAll = useCallback(async () => {
+    const cardsToSubmit = rows.filter(row => 
+      (row.status === 'valid' || row.status === 'pending') && row.selectedCard
+    );
+    
+    if (cardsToSubmit.length === 0) {
+      return { success: false, count: 0 };
+    }
+
+    // If lot mode is enabled, add all to lot instead
+    if (lotModeEnabled) {
+      cardsToSubmit.forEach(row => {
+        const cardData = {
+          name: row.cardName,
+          set: row.set,
+          set_name: row.setName,
+          quantity: row.quantity,
+          foil: row.foil,
+          quality: row.quality,
+          folder: row.folder || 'Uncategorized',
+          image_url: row.imageUrl,
+        };
+        setLotCards(prev => [...prev, cardData]);
+      });
+      
+      // Mark all as added and reset
+      setRows([createEmptyRow(stickyFolder)]);
+      setActiveRowIndex(0);
+      setDuplicateWarning(null);
+      
+      setTimeout(() => {
+        const firstInput = inputRefs.current['name-0'];
+        if (firstInput) firstInput.focus();
+      }, 50);
+      
+      return { success: true, count: cardsToSubmit.length };
+    }
+
+    setIsSubmitting(true);
+    setSubmitError(null);
+    
+    try {
+      // Submit all cards in parallel for speed
+      const results = await Promise.all(
+        cardsToSubmit.map(row => {
+          const cardData = {
+            name: row.cardName,
+            set: row.set,
+            set_name: row.setName,
+            quantity: row.quantity,
+            purchase_price: row.price ? parseFloat(row.price) : null,
+            foil: row.foil,
+            quality: row.quality,
+            folder: row.folder || 'Uncategorized',
+            image_url: row.imageUrl,
+          };
+          return onAddCard(cardData).then(() => ({ success: true, row })).catch(err => ({ success: false, row, error: err }));
+        })
+      );
+      
+      const successCount = results.filter(r => r.success).length;
+      const failedCount = results.filter(r => !r.success).length;
+      
+      // Track added cards for duplicate detection and totals
+      results.filter(r => r.success).forEach(({ row }) => {
+        setAddedCards(prev => [...prev, {
+          cardName: row.cardName,
+          quantity: row.quantity,
+          price: row.price,
+        }]);
+      });
+      
+      // Reset rows (keep failed ones if any)
+      if (failedCount === 0) {
+        setRows([createEmptyRow(stickyFolder)]);
+        setActiveRowIndex(0);
+      } else {
+        // Mark successful ones as added, keep failed ones
+        const successRowIds = new Set(results.filter(r => r.success).map(r => r.row.id));
+        setRows(prev => {
+          const remainingRows = prev.filter(r => !successRowIds.has(r.id));
+          return remainingRows.length > 0 ? remainingRows : [createEmptyRow(stickyFolder)];
+        });
+      }
+      
+      setDuplicateWarning(null);
+      
+      // Focus on first row
+      setTimeout(() => {
+        const firstInput = inputRefs.current['name-0'];
+        if (firstInput) firstInput.focus();
+      }, 50);
+      
+      return { success: true, count: successCount, failed: failedCount };
+    } catch (error) {
+      console.error('Error submitting cards:', error);
+      setSubmitError(error.message || 'Failed to submit cards. Please try again.');
+      return { success: false, count: 0, error };
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [rows, lotModeEnabled, stickyFolder, onAddCard, setRows, setAddedCards, setActiveRowIndex, setDuplicateWarning, setLotCards]);
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -464,9 +617,17 @@ export function useRapidEntry({
     handleSubmitLot,
     handleRemoveCardFromLot,
     handleAddCardToInventory,
+    handleAddNewRow,
+    handleSubmitAll,
     handleClearRow,
     handleDuplicatePrevious,
     updateRowField,
+    
+    // Batch submission state
+    pendingCount,
+    isSubmitting,
+    submitError,
+    setSubmitError,
   };
 }
 

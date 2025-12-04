@@ -1,4 +1,4 @@
-import React, { memo, useState, useEffect, useRef, useCallback } from 'react';
+import React, { memo, useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import { X, Trash2, Edit2, Bell, BellOff, ChevronDown, ChevronUp, Package, DollarSign, Calendar, Hash, FolderOpen, Save, XCircle, Image } from 'lucide-react';
 import { calculateSmartThreshold } from '../../utils/thresholdCalculator';
@@ -463,17 +463,18 @@ export const CardDetailModal = memo(function CardDetailModal({
     setImageLoading(true);
   }, [cardName]);
 
-  if (!isOpen || !items || items.length === 0) return null;
-
-  // Helper to get normalized set name
-  const getSetName = (set) => {
+  // Helper to get normalized set name (defined before useMemo)
+  const getSetName = useCallback((set) => {
     if (!set) return 'unknown';
     if (typeof set === 'string') return set.toLowerCase().trim();
     return (set.editioncode || set.editionname || 'unknown').toLowerCase().trim();
-  };
+  }, []);
 
-  // Merge duplicate items (same set/foil/quality)
-  const mergedItems = React.useMemo(() => {
+  // Merge duplicate items (same set/foil/quality) - MUST be before early return
+  const mergedItems = useMemo(() => {
+    // Return empty array if no items to process
+    if (!items || items.length === 0) return [];
+    
     const variantMap = {};
     
     items.forEach(item => {
@@ -508,7 +509,10 @@ export const CardDetailModal = memo(function CardDetailModal({
         _variantKey: variantKey
       };
     });
-  }, [items]);
+  }, [items, getSetName]);
+
+  // Early return AFTER all hooks are called
+  if (!isOpen || !items || items.length === 0) return null;
 
   // Calculate totals using merged items
   const totalQty = mergedItems.reduce((sum, item) => sum + (item.quantity || 0), 0);

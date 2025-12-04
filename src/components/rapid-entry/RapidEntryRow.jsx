@@ -1,6 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { Plus, Check, X, Copy, AlertTriangle } from 'lucide-react';
+import { Plus, Check, X, Copy, AlertTriangle, Clock } from 'lucide-react';
 import { QUALITY_OPTIONS } from '../../hooks/useRapidEntry';
 
 /**
@@ -39,6 +39,7 @@ export function RapidEntryRow({
       className={`
         relative rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-teal-400/50
         ${row.status === 'added' ? 'bg-emerald-900/20 border-emerald-500/50' : ''}
+        ${row.status === 'pending' ? 'bg-amber-900/20 border-amber-500/50' : ''}
         ${row.status === 'valid' ? 'bg-slate-800/50 border-teal-500/50' : ''}
         ${row.status === 'editing' ? 'bg-slate-800/30 border-slate-600' : ''}
         ${row.status === 'error' ? 'bg-red-900/20 border-red-500/50' : ''}
@@ -229,6 +230,11 @@ export function RapidEntryRow({
               <Check className="w-5 h-5" />
             </span>
           )}
+          {row.status === 'pending' && (
+            <span className="text-amber-400" title="Pending - press Ctrl+Shift+Enter to submit all">
+              <Clock className="w-5 h-5" />
+            </span>
+          )}
           {row.status === 'valid' && (
             <button
               onClick={() => handleAddCardToInventory(rowIndex)}
@@ -242,7 +248,7 @@ export function RapidEntryRow({
               <Plus className="w-4 h-4" />
             </button>
           )}
-          {row.status !== 'added' && (
+          {row.status !== 'added' && row.status !== 'pending' && (
             <>
               {rowIndex > 0 && rows[rowIndex - 1].selectedCard && (
                 <button

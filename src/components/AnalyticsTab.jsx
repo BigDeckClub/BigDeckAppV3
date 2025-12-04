@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { BarChart3, TrendingUp, Package, DollarSign, History, Filter, Activity, Shield } from 'lucide-react';
+import { BarChart3, TrendingUp, Package, DollarSign, History, Filter, Activity, Shield, Bell } from 'lucide-react';
 import { ChangeLogTab } from './ChangeLogTab';
 import { ActivityFeed } from './ActivityFeed';
 import { AuditLog } from './AuditLog';
+import { AlertSettings } from './settings/AlertSettings';
 import { fetchWithAuth } from '../utils/apiClient';
 
 export const AnalyticsTab = ({ inventory }) => {
@@ -18,7 +19,7 @@ export const AnalyticsTab = ({ inventory }) => {
     lifetimeTotalValue: 0
   });
   const [showHistory, setShowHistory] = useState(false);
-  const [historyTab, setHistoryTab] = useState('changes');
+  const [historyTab, setHistoryTab] = useState('alerts');
 
   useEffect(() => {
     const fetchAnalytics = async () => {
@@ -78,6 +79,7 @@ export const AnalyticsTab = ({ inventory }) => {
 
   // History sub-tabs configuration
   const historyTabs = [
+    { id: 'alerts', label: 'Alerts', icon: Bell },
     { id: 'changes', label: 'Change History', icon: Filter },
     { id: 'activity', label: 'Activity Feed', icon: Activity },
     { id: 'audit', label: 'Audit Log', icon: Shield }
@@ -98,8 +100,8 @@ export const AnalyticsTab = ({ inventory }) => {
               : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
           }`}
         >
-          <History className="w-4 h-4" />
-          History
+          <Bell className="w-4 h-4" />
+          Alerts & History
         </button>
       </div>
 
@@ -135,6 +137,7 @@ export const AnalyticsTab = ({ inventory }) => {
               {historyTabs.find(t => t.id === historyTab)?.label}
             </h3>
             
+            {historyTab === 'alerts' && <AlertSettings inventory={inventory} />}
             {historyTab === 'changes' && <ChangeLogTab />}
             {historyTab === 'activity' && <ActivityFeed />}
             {historyTab === 'audit' && <AuditLog />}
