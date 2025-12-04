@@ -4,6 +4,7 @@ import { validateId, authenticate } from '../middleware/index.js';
 import { fetchRetry } from '../utils/index.js';
 import { scryfallQueue } from '../utils/scryfallQueue.js';
 import { recordChange, recordAudit, recordActivity } from './history.js';
+import { createInventoryItemSchema, updateInventoryItemSchema, validateBody } from '../utils/validation.js';
 
 const router = express.Router();
 
@@ -29,30 +30,9 @@ router.get('/api/inventory', authenticate, async (req, res) => {
   }
 });
 
-router.post('/api/inventory', authenticate, async (req, res) => {
+router.post('/api/inventory', authenticate, validateBody(createInventoryItemSchema), async (req, res) => {
   const { name, set, set_name, quantity, purchase_price, purchase_date, reorder_type, image_url, folder, foil, quality } = req.body;
   
-  // Input validation
-  if (!name || typeof name !== 'string' || name.trim().length === 0) {
-    return res.status(400).json({ error: 'Card name is required and must be a non-empty string' });
-  }
-  
-  // Quantity is optional but must be a positive integer greater than zero when provided
-  if (quantity !== undefined && quantity !== null && (typeof quantity !== 'number' || quantity <= 0 || !Number.isInteger(quantity))) {
-    return res.status(400).json({ error: 'Quantity must be a positive integer greater than zero when provided' });
-  }
-  
-  // Purchase price is optional but must be a non-negative number when provided
-  if (purchase_price !== undefined && purchase_price !== null && (typeof purchase_price !== 'number' || purchase_price < 0)) {
-    return res.status(400).json({ error: 'Purchase price must be a non-negative number when provided' });
-  }
-  
-  // Validate quality if provided
-  const validQualities = ['NM', 'LP', 'MP', 'HP', 'DMG'];
-  if (quality !== undefined && quality !== null && !validQualities.includes(quality)) {
-    return res.status(400).json({ error: `Quality must be one of: ${validQualities.join(', ')}` });
-  }
-
   try {
     // Fetch Scryfall ID for better market value tracking
     let scryfallId = null;
@@ -125,7 +105,7 @@ router.post('/api/inventory', authenticate, async (req, res) => {
   }
 });
 
-router.put('/api/inventory/:id', authenticate, validateId, async (req, res) => {
+router.put('/api/inventory/:id', authenticate, validateId, validateBody(updateInventoryItemSchema), async (req, res) => {
   const id = req.validatedId;
   const { quantity, purchase_price, purchase_date, reorder_type, folder, low_inventory_alert, low_inventory_threshold, foil, quality } = req.body;
 
