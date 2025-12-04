@@ -5,7 +5,7 @@ import {
   getTotalQuantity, 
   getAveragePrice, 
   getTotalValue,
-  getSetCode,
+  getSetCodeForSorting,
   getDateAdded
 } from '../utils/sortCards';
 
@@ -36,6 +36,16 @@ describe('sortCards utility', () => {
     it('should return 0 for empty array', () => {
       expect(getTotalQuantity([])).toBe(0);
     });
+
+    it('should handle items with missing quantity', () => {
+      const items = [{ purchase_price: 1.00 }, { quantity: 5 }];
+      expect(getTotalQuantity(items)).toBe(5);
+    });
+
+    it('should handle items with null quantity', () => {
+      const items = [{ quantity: null }, { quantity: 3 }];
+      expect(getTotalQuantity(items)).toBe(3);
+    });
   });
 
   describe('getAveragePrice', () => {
@@ -47,6 +57,21 @@ describe('sortCards utility', () => {
     it('should return 0 for empty array', () => {
       expect(getAveragePrice([])).toBe(0);
     });
+
+    it('should handle items with missing purchase_price', () => {
+      const items = [{ quantity: 1 }, { purchase_price: 10.00 }];
+      expect(getAveragePrice(items)).toBeCloseTo(5); // (0 + 10) / 2 = 5
+    });
+
+    it('should handle items with null purchase_price', () => {
+      const items = [{ purchase_price: null }, { purchase_price: 8.00 }];
+      expect(getAveragePrice(items)).toBeCloseTo(4); // (0 + 8) / 2 = 4
+    });
+
+    it('should handle string purchase_price values', () => {
+      const items = [{ purchase_price: '5.50' }];
+      expect(getAveragePrice(items)).toBeCloseTo(5.5);
+    });
   });
 
   describe('getTotalValue', () => {
@@ -54,20 +79,53 @@ describe('sortCards utility', () => {
       // Brainstorm: (2.50 * 4) + (3.00 * 2) = 10 + 6 = 16
       expect(getTotalValue(testCards[0][1])).toBeCloseTo(16);
     });
+
+    it('should handle items with missing values', () => {
+      const items = [
+        { quantity: 5 }, // no price
+        { purchase_price: 10.00 } // no quantity
+      ];
+      expect(getTotalValue(items)).toBe(0); // 5*0 + 10*0 = 0
+    });
   });
 
-  describe('getSetCode', () => {
+  describe('getSetCodeForSorting', () => {
     it('should return set code as lowercase string', () => {
-      expect(getSetCode(testCards[0][1])).toBe('ice');
+      expect(getSetCodeForSorting(testCards[0][1])).toBe('ice');
     });
 
-    it('should handle object set format', () => {
+    it('should handle object set format with editioncode', () => {
       const items = [{ set: { editioncode: 'MH1', mtgoCode: 'mh1' } }];
-      expect(getSetCode(items)).toBe('mh1');
+      expect(getSetCodeForSorting(items)).toBe('mh1');
+    });
+
+    it('should handle object set format with only mtgoCode', () => {
+      const items = [{ set: { mtgoCode: 'MH2' } }];
+      expect(getSetCodeForSorting(items)).toBe('mh2');
     });
 
     it('should return empty string for empty array', () => {
-      expect(getSetCode([])).toBe('');
+      expect(getSetCodeForSorting([])).toBe('');
+    });
+
+    it('should return empty string for missing set', () => {
+      const items = [{ quantity: 1 }];
+      expect(getSetCodeForSorting(items)).toBe('');
+    });
+
+    it('should return empty string for null set', () => {
+      const items = [{ set: null }];
+      expect(getSetCodeForSorting(items)).toBe('');
+    });
+
+    it('should handle empty string set', () => {
+      const items = [{ set: '' }];
+      expect(getSetCodeForSorting(items)).toBe('');
+    });
+
+    it('should handle whitespace-only set', () => {
+      const items = [{ set: '   ' }];
+      expect(getSetCodeForSorting(items)).toBe('   ');
     });
   });
 
@@ -80,6 +138,40 @@ describe('sortCards utility', () => {
     it('should return epoch date for empty array', () => {
       const date = getDateAdded([]);
       expect(date.getTime()).toBe(0);
+    });
+
+    it('should handle items with missing created_at', () => {
+      const items = [
+        { quantity: 1 },
+        { created_at: '2024-01-01T10:00:00Z' }
+      ];
+      const date = getDateAdded(items);
+      expect(date.getTime()).toBe(new Date('2024-01-01T10:00:00Z').getTime());
+    });
+
+    it('should handle items with null created_at', () => {
+      const items = [
+        { created_at: null },
+        { created_at: '2024-06-15T10:00:00Z' }
+      ];
+      const date = getDateAdded(items);
+      expect(date.getTime()).toBe(new Date('2024-06-15T10:00:00Z').getTime());
+    });
+
+    it('should return epoch date when all items have no created_at', () => {
+      const items = [{ quantity: 1 }, { quantity: 2 }];
+      const date = getDateAdded(items);
+      expect(date.getTime()).toBe(0);
+    });
+
+    it('should handle invalid date strings gracefully', () => {
+      const items = [
+        { created_at: 'invalid-date' },
+        { created_at: '2024-01-01T10:00:00Z' }
+      ];
+      const date = getDateAdded(items);
+      // Invalid date becomes NaN, filtered out, so we get the valid one
+      expect(date.getTime()).toBe(new Date('2024-01-01T10:00:00Z').getTime());
     });
   });
 
@@ -155,10 +247,21 @@ describe('sortCards utility', () => {
       expect(sortCards([], 'name', 'asc')).toEqual([]);
     });
 
+    it('should handle null input', () => {
+      expect(sortCards(null, 'name', 'asc')).toBeNull();
+    });
+
     it('should not mutate the original array', () => {
       const original = [...testCards];
       sortCards(testCards, 'name', 'asc');
       expect(testCards).toEqual(original);
+    });
+
+    it('should use name as default sort when invalid field provided', () => {
+      const sorted = sortCards(testCards, 'invalid', 'asc');
+      expect(sorted.map(([name]) => name)).toEqual([
+        'Brainstorm', 'Dark Ritual', 'Force of Will', 'Lightning Bolt'
+      ]);
     });
   });
 
@@ -194,6 +297,14 @@ describe('sortCards utility', () => {
       expect(sorted.map(([name]) => name)).toEqual([
         'Force of Will', 'Brainstorm', 'Lightning Bolt'
       ]);
+    });
+
+    it('should handle empty array', () => {
+      expect(sortDeckCards([], 'name', 'asc')).toEqual([]);
+    });
+
+    it('should handle null input', () => {
+      expect(sortDeckCards(null, 'name', 'asc')).toBeNull();
     });
   });
 });

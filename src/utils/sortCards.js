@@ -13,7 +13,8 @@ export const getTotalQuantity = (items) => {
 };
 
 /**
- * Get the average price from a card's items array
+ * Get the average purchase price from a card's items array
+ * Calculates the mean of all purchase_price values
  * @param {Array} items - Array of card SKU items
  * @returns {number} Average purchase price
  */
@@ -37,18 +38,18 @@ export const getTotalValue = (items) => {
 };
 
 /**
- * Get the set code from a card's items array
- * Uses the set code from the first item
+ * Get the set code from a card's items array for sorting purposes
+ * Uses the set code from the first item, returns lowercase for consistent sorting
  * @param {Array} items - Array of card SKU items
- * @returns {string} Set code string
+ * @returns {string} Set code string (lowercase)
  */
-export const getSetCode = (items) => {
+export const getSetCodeForSorting = (items) => {
   if (items.length === 0) return '';
   const firstItem = items[0];
   if (!firstItem.set) return '';
-  // Handle both string and object set formats
+  // Handle both string and object set formats with defensive optional chaining
   if (typeof firstItem.set === 'string') return firstItem.set.toLowerCase();
-  return (firstItem.set.editioncode || firstItem.set.mtgoCode || '').toLowerCase();
+  return (firstItem.set?.editioncode || firstItem.set?.mtgoCode || '').toLowerCase();
 };
 
 /**
@@ -61,7 +62,7 @@ export const getDateAdded = (items) => {
   
   const dates = items
     .map(item => item.created_at ? new Date(item.created_at) : null)
-    .filter(Boolean);
+    .filter(d => d && !isNaN(d.getTime())); // Filter out null and invalid dates
   
   if (dates.length === 0) return new Date(0);
   
@@ -99,7 +100,7 @@ export const sortCards = (cards, sortField = 'name', sortDirection = 'asc') => {
         break;
         
       case 'set':
-        comparison = getSetCode(itemsA).localeCompare(getSetCode(itemsB));
+        comparison = getSetCodeForSorting(itemsA).localeCompare(getSetCodeForSorting(itemsB));
         break;
         
       case 'dateAdded': {
