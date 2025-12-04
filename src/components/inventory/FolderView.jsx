@@ -4,6 +4,7 @@ import { CheckSquare, Square, FolderInput } from 'lucide-react';
 import { CardGrid } from './CardGrid';
 import { FolderHeader } from './FolderHeader';
 import { useToast, TOAST_TYPES } from '../../context/ToastContext';
+import { sortCards } from '../../utils/sortCards';
 
 /**
  * FolderView - Renders a generic folder view with folder header and card grid
@@ -17,6 +18,8 @@ export function FolderView({
   setSellModalData,
   setShowSellModal,
   onDeleteFolder,
+  sortField = 'name',
+  sortDirection = 'asc',
 }) {
   const { showToast } = useToast();
   const [selectedCardIds, setSelectedCardIds] = useState(new Set());
@@ -47,8 +50,11 @@ export function FolderView({
     
     const desc = folderOps.folderMetadata[folderName]?.description || '';
     
-    return { folderCards: cards, availableCardsStats: stats, folderDesc: desc };
-  }, [folderName, groupedByFolder, inventorySearch, folderOps.folderMetadata]);
+    // Apply sorting to the cards
+    const sortedCards = sortCards(cards, sortField, sortDirection);
+    
+    return { folderCards: sortedCards, availableCardsStats: stats, folderDesc: desc };
+  }, [folderName, groupedByFolder, inventorySearch, folderOps.folderMetadata, sortField, sortDirection]);
 
   // Get all card IDs for select all
   const allCardIds = useMemo(() => {
@@ -214,10 +220,13 @@ FolderView.propTypes = {
     setEditingFolderDesc: PropTypes.func,
     setFolderMetadata: PropTypes.func,
     createdFolders: PropTypes.array,
+    moveInventoryItemToFolder: PropTypes.func,
   }).isRequired,
   setSellModalData: PropTypes.func.isRequired,
   setShowSellModal: PropTypes.func.isRequired,
   onDeleteFolder: PropTypes.func.isRequired,
+  sortField: PropTypes.string,
+  sortDirection: PropTypes.string,
 };
 
 export default FolderView;

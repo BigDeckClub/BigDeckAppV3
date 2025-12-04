@@ -16,6 +16,7 @@ import { useDeckReservations } from '../hooks/useDeckReservations';
 import { useConfirm } from '../context/ConfirmContext';
 import { useApi } from '../hooks/useApi';
 import { useInventory } from '../context/InventoryContext';
+import { sortCards } from '../utils/sortCards';
 
 /**
  * InventoryTab - Main inventory management component
@@ -56,6 +57,16 @@ export const InventoryTab = ({
   const [inventorySearch, setInventorySearch] = useState('');
   const [showSellModal, setShowSellModal] = useState(false);
   const [sellModalData, setSellModalData] = useState(null);
+  
+  // Sort State
+  const [sortField, setSortField] = useState('name');
+  const [sortDirection, setSortDirection] = useState('asc');
+  
+  // Sort change handler
+  const handleSortChange = useCallback((field, direction) => {
+    setSortField(field);
+    setSortDirection(direction);
+  }, []);
 
   // Folder operations hook
   const folderOps = useFolderOperations({ inventory, onLoadInventory: loadInventory });
@@ -166,8 +177,12 @@ export const InventoryTab = ({
       const totalQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
       return matchesSearch && totalQty === 0;
     });
-    return { inStockCards: inStock, outOfStockCards: outOfStock };
-  }, [groupedInventory, inventorySearch]);
+    // Apply sorting to both lists
+    return { 
+      inStockCards: sortCards(inStock, sortField, sortDirection), 
+      outOfStockCards: sortCards(outOfStock, sortField, sortDirection)
+    };
+  }, [groupedInventory, inventorySearch, sortField, sortDirection]);
 
   // Common CardGrid props
   const cardGridProps = {
@@ -307,6 +322,9 @@ export const InventoryTab = ({
           draggedTabData={draggedTabData}
           setDraggedTabData={setDraggedTabData}
           reorderTabs={reorderTabs}
+          sortField={sortField}
+          sortDirection={sortDirection}
+          onSortChange={handleSortChange}
         />
 
         {/* Deck Details View */}
@@ -323,6 +341,8 @@ export const InventoryTab = ({
             openDecks={deckOps.openDecks}
             activeTab={activeTab}
             removeCardFromDeck={deckOps.removeCardFromDeck}
+            sortField={sortField}
+            sortDirection={sortDirection}
             autoFillMissingCards={deckOps.autoFillMissingCards}
             autoFillSingleCard={deckOps.autoFillSingleCard}
             releaseDeck={handleReleaseDeck}
@@ -408,7 +428,7 @@ export const InventoryTab = ({
                       </p>
                     </div>
                     {trashCards.length > 0 ? (
-                      <CardGrid cards={trashCards} {...cardGridProps} isTrashView={true} />
+                      <CardGrid cards={sortCards(trashCards, sortField, sortDirection)} {...cardGridProps} isTrashView={true} />
                     ) : (
                       <p className="text-slate-400 text-center py-12">Trash is empty.</p>
                     )}
@@ -425,6 +445,8 @@ export const InventoryTab = ({
                 setSellModalData={setSellModalData}
                 setShowSellModal={setShowSellModal}
                 onDeleteFolder={handleDeleteFolder}
+                sortField={sortField}
+                sortDirection={sortDirection}
               />
             ) : (
               <p className="text-slate-400 text-center py-12">Select a view to display cards.</p>
