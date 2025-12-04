@@ -2,7 +2,9 @@ import React, { memo, useState, useCallback, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { X, Bell, BellOff, ChevronRight, Eye, RotateCcw, CheckSquare, Square, ImageOff } from 'lucide-react';
 import { CardDetailModal } from './CardDetailModal';
+import { CardPreviewTooltip } from './CardPreviewTooltip';
 import { useConfirm } from '../../context/ConfirmContext';
+import { useHoverPreview } from '../../hooks/useHoverPreview';
 import { EXTERNAL_APIS } from '../../config/api';
 import { getSetCode } from '../../utils/cardHelpers';
 
@@ -73,6 +75,14 @@ export const CardGroup = memo(function CardGroup({
       setImageLoading(true);
     }
   }, [cardName, viewMode]);
+  
+  // Hover preview hook - only for card and list views (not image view)
+  const {
+    isVisible: isPreviewVisible,
+    targetRect,
+    showPreview,
+    hidePreview
+  } = useHoverPreview(300, 0); // 300ms delay to show, hide immediately
   
   const totalQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
   const reservedQty = items.reduce((sum, item) => sum + (parseInt(item.reserved_quantity) || 0), 0);
@@ -152,6 +162,24 @@ export const CardGroup = memo(function CardGroup({
       items.forEach(item => restoreFromTrash(item.id));
     }
   };
+
+  // Handle mouse enter for hover preview
+  const handleMouseEnter = useCallback((e) => {
+    // Only show preview in card and list views
+    if (viewMode === 'image') return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    showPreview(e, rect);
+  }, [viewMode, showPreview]);
+
+  // Handle mouse leave for hover preview
+  const handleMouseLeave = useCallback(() => {
+    hidePreview();
+  }, [hidePreview]);
+
+  // Get the first item's image URI or set code for preview
+  const firstItem = items[0];
+  const previewImageUri = firstItem?.image_uri || firstItem?.image_uris?.normal || null;
+  const previewSetCode = firstItem?.set || null;
   
   return (
     <div>
@@ -172,6 +200,17 @@ export const CardGroup = memo(function CardGroup({
         onSetThreshold={onSetThreshold}
       />
 
+      {/* Card Preview Tooltip */}
+      {viewMode !== 'image' && (
+        <CardPreviewTooltip
+          isVisible={isPreviewVisible && !isModalOpen}
+          cardName={cardName}
+          setCode={previewSetCode}
+          imageUri={previewImageUri}
+          targetRect={targetRect}
+        />
+      )}
+
       {/* Card View */}
       {viewMode === 'card' && (
       <div 
@@ -183,7 +222,11 @@ export const CardGroup = memo(function CardGroup({
           if (items.length > 0) {
             e.dataTransfer.setData('skuData', JSON.stringify(items[0]));
           }
+          // Hide preview when dragging starts
+          hidePreview();
         }}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
         className={`relative bg-gradient-to-br from-slate-800 to-slate-900 border ${hasSelectedItems ? 'border-teal-500 ring-2 ring-teal-500/50' : 'border-slate-600 hover:border-teal-400'} rounded-lg p-3 md:p-4 transition-all duration-300 flex flex-col h-32 sm:h-36 md:h-40 hover:shadow-2xl hover:shadow-teal-500/30 hover:-translate-y-1 cursor-grab active:cursor-grabbing group active:scale-95`}
         onClick={handleOpenModal}
       >
@@ -390,7 +433,11 @@ export const CardGroup = memo(function CardGroup({
             if (items.length > 0) {
               e.dataTransfer.setData('skuData', JSON.stringify(items[0]));
             }
+            // Hide preview when dragging starts
+            hidePreview();
           }}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
           className="relative bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 hover:border-teal-400 rounded-lg p-4 transition-all duration-300 cursor-grab active:cursor-grabbing hover:shadow-2xl hover:shadow-teal-500/30 group"
           onClick={handleOpenModal}
         >
