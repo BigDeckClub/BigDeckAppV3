@@ -1,4 +1,4 @@
-import React, { memo, useState, useRef, useEffect, useCallback } from 'react';
+import React, { memo, useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import { X, Clock, Trash2 } from 'lucide-react';
 import { useSearchHistory } from '../../hooks/useSearchHistory';
@@ -17,12 +17,14 @@ export const InventorySearchBar = memo(forwardRef(function InventorySearchBar({
   const containerRef = useRef(null);
   const inputRef = useRef(null);
 
-  // Filter recent searches based on current input
-  const filteredSearches = inventorySearch.trim()
-    ? recentSearches.filter((search) =>
-        search.toLowerCase().includes(inventorySearch.toLowerCase())
-      )
-    : recentSearches;
+  // Filter recent searches based on current input (memoized to avoid recalculation on every render)
+  const filteredSearches = useMemo(() => {
+    return inventorySearch.trim()
+      ? recentSearches.filter((search) =>
+          search.toLowerCase().includes(inventorySearch.toLowerCase())
+        )
+      : recentSearches;
+  }, [inventorySearch, recentSearches]);
 
   // Determine if dropdown should show
   const shouldShowDropdown = showDropdown && filteredSearches.length > 0;
