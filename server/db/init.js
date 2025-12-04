@@ -179,6 +179,7 @@ export async function initializeDatabase() {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS decks (
         id SERIAL PRIMARY KEY,
+        user_id VARCHAR(255) REFERENCES users(id) ON DELETE CASCADE,
         name VARCHAR(255) NOT NULL,
         format VARCHAR(50) DEFAULT 'Casual',
         description TEXT,
@@ -187,12 +188,15 @@ export async function initializeDatabase() {
         updated_at TIMESTAMP DEFAULT NOW()
       )
     `);
+    await pool.query(`ALTER TABLE decks ADD COLUMN IF NOT EXISTS user_id VARCHAR(255) REFERENCES users(id) ON DELETE CASCADE`).catch(() => {});
     await pool.query(`ALTER TABLE decks ADD COLUMN IF NOT EXISTS format VARCHAR(50) DEFAULT 'Casual'`).catch(() => {});
     await pool.query(`ALTER TABLE decks ADD COLUMN IF NOT EXISTS cards JSONB DEFAULT '[]'`).catch(() => {});
     await pool.query(`ALTER TABLE decks ADD COLUMN IF NOT EXISTS description TEXT`).catch(() => {});
     await pool.query(`ALTER TABLE decks ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP`).catch(() => {});
     await pool.query(`ALTER TABLE decks ADD COLUMN IF NOT EXISTS decklist_id INTEGER`).catch(() => {});
     await pool.query(`ALTER TABLE decks ADD COLUMN IF NOT EXISTS is_deck_instance BOOLEAN DEFAULT FALSE`).catch(() => {});
+    await pool.query(`ALTER TABLE decks ADD COLUMN IF NOT EXISTS archidekt_url TEXT`).catch(() => {});
+    await pool.query(`ALTER TABLE decks ADD COLUMN IF NOT EXISTS last_synced TIMESTAMP`).catch(() => {});
 
     // Deck reservations table
     await pool.query(`
@@ -221,12 +225,15 @@ export async function initializeDatabase() {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS folders (
         id SERIAL PRIMARY KEY,
-        name VARCHAR(255) NOT NULL UNIQUE,
+        user_id VARCHAR(255) REFERENCES users(id) ON DELETE CASCADE,
+        name VARCHAR(255) NOT NULL,
         description TEXT,
         created_at TIMESTAMP DEFAULT NOW(),
-        updated_at TIMESTAMP DEFAULT NOW()
+        updated_at TIMESTAMP DEFAULT NOW(),
+        UNIQUE(user_id, name)
       )
     `);
+    await pool.query(`ALTER TABLE folders ADD COLUMN IF NOT EXISTS user_id VARCHAR(255) REFERENCES users(id) ON DELETE CASCADE`).catch(() => {});
 
     // Inventory transactions table - tracks purchases and sales for analytics
     await pool.query(`

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
-import { Download, Edit2, Trash2 } from 'lucide-react';
+import { Download, Edit2, Trash2, FileEdit, Link2 } from 'lucide-react';
 
 /**
  * DeckCard component - Displays a single deck in the deck list grid
@@ -12,6 +12,8 @@ export function DeckCard({
   onSelect,
   onCopy,
   onEdit,
+  onEditCards,
+  onArchidektSync,
   onDelete,
   onUpdateName,
   onCancelEdit
@@ -138,6 +140,32 @@ export function DeckCard({
       >
         View Details
       </button>
+      
+      {onEditCards && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onEditCards(deck);
+          }}
+          className="w-full mt-2 bg-purple-600 hover:bg-purple-500 text-white px-3 py-1 rounded text-sm transition-colors flex items-center justify-center gap-2"
+        >
+          <FileEdit className="w-4 h-4" />
+          Edit Cards
+        </button>
+      )}
+      
+      {onArchidektSync && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onArchidektSync(deck);
+          }}
+          className="w-full mt-2 bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded text-sm transition-colors flex items-center justify-center gap-2"
+        >
+          <Link2 className="w-4 h-4" />
+          Archidekt Sync
+        </button>
+      )}
     </div>
   );
 }
@@ -156,6 +184,8 @@ DeckCard.propTypes = {
   onSelect: PropTypes.func.isRequired,
   onCopy: PropTypes.func.isRequired,
   onEdit: PropTypes.func.isRequired,
+  onEditCards: PropTypes.func,
+  onArchidektSync: PropTypes.func,
   onDelete: PropTypes.func.isRequired,
   onUpdateName: PropTypes.func.isRequired,
   onCancelEdit: PropTypes.func.isRequired

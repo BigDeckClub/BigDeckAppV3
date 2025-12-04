@@ -22,7 +22,9 @@ export const CardGrid = memo(function CardGrid({
   isTrashView,
   createdFolders,
   onToggleLowInventory,
-  onSetThreshold
+  onSetThreshold,
+  selectedCardIds,
+  setSelectedCardIds
 }) {
   if (cards.length === 0) {
     return null;
@@ -51,6 +53,8 @@ export const CardGrid = memo(function CardGrid({
             createdFolders={createdFolders}
             onToggleLowInventory={onToggleLowInventory}
             onSetThreshold={onSetThreshold}
+            selectedCardIds={selectedCardIds}
+            setSelectedCardIds={setSelectedCardIds}
           />
         ))}
       </div>
@@ -79,6 +83,8 @@ export const CardGrid = memo(function CardGrid({
           createdFolders={createdFolders}
           onToggleLowInventory={onToggleLowInventory}
           onSetThreshold={onSetThreshold}
+          selectedCardIds={selectedCardIds}
+          setSelectedCardIds={setSelectedCardIds}
         />
       ))}
     </div>
@@ -101,7 +107,9 @@ CardGrid.propTypes = {
   isTrashView: PropTypes.bool,
   createdFolders: PropTypes.array.isRequired,
   onToggleLowInventory: PropTypes.func,
-  onSetThreshold: PropTypes.func
+  onSetThreshold: PropTypes.func,
+  selectedCardIds: PropTypes.instanceOf(Set),
+  setSelectedCardIds: PropTypes.func
 };
 
 export default CardGrid;

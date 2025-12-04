@@ -1,6 +1,6 @@
-import React, { memo, useState } from 'react';
+import React, { memo, useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
-import { X, Bell, BellOff, ChevronRight, Eye, RotateCcw } from 'lucide-react';
+import { X, Bell, BellOff, ChevronRight, Eye, RotateCcw, CheckSquare, Square } from 'lucide-react';
 import { CardDetailModal } from './CardDetailModal';
 import { useConfirm } from '../../context/ConfirmContext';
 
@@ -38,7 +38,9 @@ export const CardGroup = memo(function CardGroup({
   isTrashView,
   createdFolders,
   onToggleLowInventory,
-  onSetThreshold
+  onSetThreshold,
+  selectedCardIds,
+  setSelectedCardIds
 }) {
   const { confirm } = useConfirm();
   const [togglingId, setTogglingId] = useState(null);
@@ -62,6 +64,31 @@ export const CardGroup = memo(function CardGroup({
   const formatTotal = (value) => {
     return value >= 100 ? value.toFixed(0) : value.toFixed(2);
   };
+
+  // Check if selection mode is enabled
+  const isSelectionMode = selectedCardIds && setSelectedCardIds;
+  
+  // Check if any items from this card are selected
+  const hasSelectedItems = isSelectionMode && items.some(item => selectedCardIds.has(item.id));
+  
+  // Toggle selection for all items in this card group
+  const handleToggleSelection = useCallback((e) => {
+    e.stopPropagation();
+    if (!isSelectionMode) return;
+    
+    const newSelection = new Set(selectedCardIds);
+    const allSelected = items.every(item => selectedCardIds.has(item.id));
+    
+    if (allSelected) {
+      // Deselect all items
+      items.forEach(item => newSelection.delete(item.id));
+    } else {
+      // Select all items
+      items.forEach(item => newSelection.add(item.id));
+    }
+    
+    setSelectedCardIds(newSelection);
+  }, [isSelectionMode, selectedCardIds, setSelectedCardIds, items]);
 
   // Handle toggle low inventory alert
   const handleToggleLowInventory = async (item, e) => {
@@ -129,9 +156,25 @@ export const CardGroup = memo(function CardGroup({
             e.dataTransfer.setData('skuData', JSON.stringify(items[0]));
           }
         }}
-        className="relative bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 hover:border-teal-400 rounded-lg p-3 md:p-4 transition-all duration-300 flex flex-col h-32 sm:h-36 md:h-40 hover:shadow-2xl hover:shadow-teal-500/30 hover:-translate-y-1 cursor-grab active:cursor-grabbing group active:scale-95" 
+        className={`relative bg-gradient-to-br from-slate-800 to-slate-900 border ${hasSelectedItems ? 'border-teal-500 ring-2 ring-teal-500/50' : 'border-slate-600 hover:border-teal-400'} rounded-lg p-3 md:p-4 transition-all duration-300 flex flex-col h-32 sm:h-36 md:h-40 hover:shadow-2xl hover:shadow-teal-500/30 hover:-translate-y-1 cursor-grab active:cursor-grabbing group active:scale-95`}
         onClick={handleOpenModal}
       >
+        {/* Selection Checkbox (when selection mode enabled) */}
+        {isSelectionMode && (
+          <button
+            type="button"
+            onClick={handleToggleSelection}
+            className={`absolute top-1 right-1 p-1 rounded transition-all z-30 ${
+              hasSelectedItems 
+                ? 'bg-teal-600 text-white' 
+                : 'bg-slate-700/80 text-slate-300 hover:bg-slate-600'
+            }`}
+            title={hasSelectedItems ? "Deselect" : "Select"}
+          >
+            {hasSelectedItems ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
+          </button>
+        )}
+        
         {isTrashView ? (
           <button
             type="button"
@@ -300,7 +343,9 @@ CardGroup.propTypes = {
   isTrashView: PropTypes.bool,
   createdFolders: PropTypes.array.isRequired,
   onToggleLowInventory: PropTypes.func,
-  onSetThreshold: PropTypes.func
+  onSetThreshold: PropTypes.func,
+  selectedCardIds: PropTypes.instanceOf(Set),
+  setSelectedCardIds: PropTypes.func
 };
 
 export default CardGroup;

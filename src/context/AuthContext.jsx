@@ -49,6 +49,9 @@ export function AuthProvider({ children }) {
         setUser(data.user);
         localStorage.setItem('supabase_user', JSON.stringify(data.user));
       }
+      if (data.session) {
+        localStorage.setItem('supabase_session', JSON.stringify(data.session));
+      }
       return data;
     } catch (err) {
       console.error('Login error:', err);
@@ -83,6 +86,9 @@ export function AuthProvider({ children }) {
         setUser(data.user);
         localStorage.setItem('supabase_user', JSON.stringify(data.user));
       }
+      if (data.session) {
+        localStorage.setItem('supabase_session', JSON.stringify(data.session));
+      }
       return data;
     } catch (err) {
       console.error('Signup error:', err);
@@ -95,6 +101,7 @@ export function AuthProvider({ children }) {
       await fetch('/api/auth/logout', { method: 'POST' });
       setUser(null);
       localStorage.removeItem('supabase_user');
+      localStorage.removeItem('supabase_session');
     } catch (err) {
       console.error('Logout error:', err);
       throw err;

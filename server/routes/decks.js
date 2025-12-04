@@ -1,18 +1,19 @@
 import express from 'express';
 import { pool } from '../db/pool.js';
-import { validateId } from '../middleware/index.js';
+import { validateId, authenticate } from '../middleware/index.js';
 import { batchInsertReservations, batchInsertMissingCards } from '../utils/index.js';
 
 const router = express.Router();
 
 // ========== DECKS ENDPOINTS ==========
-router.get('/api/decks', async (req, res) => {
+router.get('/api/decks', authenticate, async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT * FROM decks 
-      WHERE is_deck_instance = FALSE OR is_deck_instance IS NULL
+      WHERE (is_deck_instance = FALSE OR is_deck_instance IS NULL)
+        AND user_id = $1
       ORDER BY created_at DESC
-    `);
+    `, [req.userId]);
     res.json(result.rows);
   } catch (error) {
     console.error('[DECKS] Error fetching decks:', error.message);
@@ -20,7 +21,7 @@ router.get('/api/decks', async (req, res) => {
   }
 });
 
-router.post('/api/decks', async (req, res) => {
+router.post('/api/decks', authenticate, async (req, res) => {
   const { name, format, description } = req.body;
   
   if (!name || typeof name !== 'string' || name.trim().length === 0) {
@@ -29,10 +30,10 @@ router.post('/api/decks', async (req, res) => {
   
   try {
     const result = await pool.query(
-      `INSERT INTO decks (name, format, description, cards, is_deck_instance, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, FALSE, NOW(), NOW())
+      `INSERT INTO decks (user_id, name, format, description, cards, is_deck_instance, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, FALSE, NOW(), NOW())
        RETURNING *`,
-      [name, format || 'Casual', description || '', '[]']
+      [req.userId, name, format || 'Casual', description || '', '[]']
     );
     res.status(201).json(result.rows[0]);
   } catch (error) {
@@ -41,9 +42,9 @@ router.post('/api/decks', async (req, res) => {
   }
 });
 
-router.put('/api/decks/:id', validateId, async (req, res) => {
+router.put('/api/decks/:id', authenticate, validateId, async (req, res) => {
   const id = req.validatedId;
-  const { name, format, description, cards } = req.body;
+  const { name, format, description, cards, archidekt_url } = req.body;
   
   try {
     const updates = [];
@@ -66,6 +67,10 @@ router.put('/api/decks/:id', validateId, async (req, res) => {
       updates.push(`cards = $${paramCount++}`);
       values.push(JSON.stringify(cards));
     }
+    if (archidekt_url !== undefined) {
+      updates.push(`archidekt_url = $${paramCount++}`);
+      values.push(archidekt_url);
+    }
     
     updates.push(`updated_at = NOW()`);
     
@@ -74,7 +79,8 @@ router.put('/api/decks/:id', validateId, async (req, res) => {
     }
     
     values.push(id);
-    const query = `UPDATE decks SET ${updates.join(', ')} WHERE id = $${paramCount} RETURNING *`;
+    values.push(req.userId);
+    const query = `UPDATE decks SET ${updates.join(', ')} WHERE id = $${paramCount} AND user_id = $${paramCount + 1} RETURNING *`;
     const result = await pool.query(query, values);
     
     if (result.rows.length === 0) {
@@ -88,11 +94,157 @@ router.put('/api/decks/:id', validateId, async (req, res) => {
   }
 });
 
-router.delete('/api/decks/:id', validateId, async (req, res) => {
+// POST sync deck from Archidekt
+router.post('/api/decks/:id/sync-archidekt', authenticate, validateId, async (req, res) => {
   const id = req.validatedId;
   
   try {
-    const result = await pool.query('DELETE FROM decks WHERE id = $1 RETURNING *', [id]);
+    // Get deck with archidekt_url - ensure user owns it
+    const deckResult = await pool.query('SELECT * FROM decks WHERE id = $1 AND user_id = $2', [id, req.userId]);
+    
+    if (deckResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Deck not found' });
+    }
+    
+    const deck = deckResult.rows[0];
+    
+    if (!deck.archidekt_url) {
+      return res.status(400).json({ error: 'No Archidekt URL linked to this deck' });
+    }
+    
+    // Extract deck ID from Archidekt URL
+    const archidektIdMatch = deck.archidekt_url.match(/archidekt\.com\/decks\/(\d+)/);
+    if (!archidektIdMatch) {
+      return res.status(400).json({ error: 'Invalid Archidekt URL format' });
+    }
+    
+    const archidektId = archidektIdMatch[1];
+    
+    // Fetch deck from Archidekt API
+    const archidektResponse = await fetch(`https://archidekt.com/api/decks/${archidektId}/small/`);
+    
+    if (!archidektResponse.ok) {
+      return res.status(502).json({ error: 'Failed to fetch deck from Archidekt' });
+    }
+    
+    const archidektData = await archidektResponse.json();
+    
+    // Transform Archidekt cards to our format
+    const archidektCards = archidektData.cards.map(card => ({
+      name: card.card.oracleCard.name,
+      quantity: card.quantity,
+      set: card.card.edition.editioncode || '',
+      collector_number: card.card.collectorNumber || '',
+      scryfall_id: card.card.uid || null
+    }));
+    
+    // Get local deck cards
+    const localCards = deck.cards || [];
+    
+    // Create maps for comparison
+    const localCardMap = new Map();
+    localCards.forEach(card => {
+      const key = `${card.name}|${card.set}|${card.collector_number}`;
+      localCardMap.set(key, card);
+    });
+    
+    const archidektCardMap = new Map();
+    archidektCards.forEach(card => {
+      const key = `${card.name}|${card.set}|${card.collector_number}`;
+      archidektCardMap.set(key, card);
+    });
+    
+    // Calculate differences
+    const added = [];
+    const removed = [];
+    const modified = [];
+    
+    // Find added and modified cards
+    archidektCards.forEach(archCard => {
+      const key = `${archCard.name}|${archCard.set}|${archCard.collector_number}`;
+      const localCard = localCardMap.get(key);
+      
+      if (!localCard) {
+        added.push(archCard);
+      } else if (localCard.quantity !== archCard.quantity) {
+        modified.push({
+          card: archCard,
+          oldQuantity: localCard.quantity,
+          newQuantity: archCard.quantity
+        });
+      }
+    });
+    
+    // Find removed cards
+    localCards.forEach(localCard => {
+      const key = `${localCard.name}|${localCard.set}|${localCard.collector_number}`;
+      if (!archidektCardMap.has(key)) {
+        removed.push(localCard);
+      }
+    });
+    
+    res.json({
+      archidektName: archidektData.name,
+      archidektFormat: archidektData.formats?.[0] || deck.format,
+      archidektDescription: archidektData.description || '',
+      changes: {
+        added,
+        removed,
+        modified
+      },
+      hasChanges: added.length > 0 || removed.length > 0 || modified.length > 0
+    });
+    
+  } catch (error) {
+    console.error('[DECKS] Error syncing from Archidekt:', error.message);
+    res.status(500).json({ error: 'Failed to sync deck from Archidekt' });
+  }
+});
+
+// POST apply Archidekt sync changes
+router.post('/api/decks/:id/apply-sync', authenticate, validateId, async (req, res) => {
+  const id = req.validatedId;
+  const { cards, name, format, description } = req.body;
+  
+  try {
+    const updates = ['cards = $1', 'last_synced = NOW()', 'updated_at = NOW()'];
+    const values = [JSON.stringify(cards)];
+    let paramCount = 2;
+    
+    if (name !== undefined) {
+      updates.push(`name = $${paramCount++}`);
+      values.push(name);
+    }
+    if (format !== undefined) {
+      updates.push(`format = $${paramCount++}`);
+      values.push(format);
+    }
+    if (description !== undefined) {
+      updates.push(`description = $${paramCount++}`);
+      values.push(description);
+    }
+    
+    values.push(id);
+    values.push(req.userId);
+    const query = `UPDATE decks SET ${updates.join(', ')} WHERE id = $${paramCount} AND user_id = $${paramCount + 1} RETURNING *`;
+    const result = await pool.query(query, values);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Deck not found' });
+    }
+    
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('[DECKS] Error applying sync:', error.message);
+    res.status(500).json({ error: 'Failed to apply sync changes' });
+  }
+});
+
+router.delete('/api/decks/:id', authenticate, validateId, async (req, res) => {
+  const id = req.validatedId;
+  
+  try {
+    const result = await pool.query('DELETE FROM decks WHERE id = $1 AND user_id = $2 RETURNING *', [id, req.userId]);
     
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Deck not found' });
@@ -108,7 +260,7 @@ router.delete('/api/decks/:id', validateId, async (req, res) => {
 // ========== DECK INSTANCES (Two-Tier System) ==========
 
 // GET all deck instances
-router.get('/api/deck-instances', async (req, res) => {
+router.get('/api/deck-instances', authenticate, async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT d.*,
@@ -119,9 +271,9 @@ router.get('/api/deck-instances', async (req, res) => {
          JOIN inventory i ON dr.inventory_item_id = i.id 
          WHERE dr.deck_id = d.id) as total_cost
       FROM decks d
-      WHERE d.is_deck_instance = TRUE
+      WHERE d.is_deck_instance = TRUE AND d.user_id = $1
       ORDER BY d.created_at DESC
-    `);
+    `, [req.userId]);
     res.json(result.rows);
   } catch (error) {
     console.error('[DECKS] Error fetching deck instances:', error.message);
@@ -130,11 +282,11 @@ router.get('/api/deck-instances', async (req, res) => {
 });
 
 // GET full details of a deck instance
-router.get('/api/deck-instances/:id/details', validateId, async (req, res) => {
+router.get('/api/deck-instances/:id/details', authenticate, validateId, async (req, res) => {
   const id = req.validatedId;
   
   try {
-    const deckResult = await pool.query('SELECT * FROM decks WHERE id = $1 AND is_deck_instance = TRUE', [id]);
+    const deckResult = await pool.query('SELECT * FROM decks WHERE id = $1 AND is_deck_instance = TRUE AND user_id = $2', [id, req.userId]);
     if (deckResult.rows.length === 0) {
       return res.status(404).json({ error: 'Deck instance not found' });
     }
@@ -207,12 +359,12 @@ router.get('/api/deck-instances/:id/details', validateId, async (req, res) => {
 });
 
 // POST copy decklist to inventory (create deck instance)
-router.post('/api/decks/:id/copy-to-inventory', validateId, async (req, res) => {
+router.post('/api/decks/:id/copy-to-inventory', authenticate, validateId, async (req, res) => {
   const id = req.validatedId;
   const { name } = req.body;
   
   try {
-    const decklistResult = await pool.query('SELECT * FROM decks WHERE id = $1', [id]);
+    const decklistResult = await pool.query('SELECT * FROM decks WHERE id = $1 AND user_id = $2', [id, req.userId]);
     if (decklistResult.rows.length === 0) {
       return res.status(404).json({ error: 'Decklist not found' });
     }
@@ -221,10 +373,10 @@ router.post('/api/decks/:id/copy-to-inventory', validateId, async (req, res) => 
     
     const deckName = name || decklist.name;
     const newDeckResult = await pool.query(
-      `INSERT INTO decks (name, format, description, cards, decklist_id, is_deck_instance, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, TRUE, NOW(), NOW())
+      `INSERT INTO decks (user_id, name, format, description, cards, decklist_id, is_deck_instance, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, TRUE, NOW(), NOW())
        RETURNING *`,
-      [deckName, decklist.format, decklist.description, JSON.stringify(cards), id]
+      [req.userId, deckName, decklist.format, decklist.description, JSON.stringify(cards), id]
     );
     const newDeck = newDeckResult.rows[0];
     
@@ -245,11 +397,12 @@ router.post('/api/decks/:id/copy-to-inventory', validateId, async (req, res) => 
           ) as available_quantity
         FROM inventory i
         WHERE LOWER(TRIM(i.name)) = ANY($1::text[])
+          AND i.user_id = $2
           AND COALESCE(i.quantity, 0) - COALESCE(
             (SELECT SUM(dr.quantity_reserved) FROM deck_reservations dr WHERE dr.inventory_item_id = i.id), 0
           ) > 0
         ORDER BY LOWER(TRIM(i.name)), COALESCE(i.purchase_price, 999999) ASC
-      `, [cardNames]);
+      `, [cardNames, req.userId]);
     }
     
     // Step 3: Group inventory items by card name for efficient lookup
@@ -329,18 +482,24 @@ router.post('/api/decks/:id/copy-to-inventory', validateId, async (req, res) => 
 });
 
 // POST add card to deck instance
-router.post('/api/deck-instances/:id/add-card', validateId, async (req, res) => {
+router.post('/api/deck-instances/:id/add-card', authenticate, validateId, async (req, res) => {
   const id = req.validatedId;
   const { inventory_item_id, quantity } = req.body;
   
   try {
+    // First verify user owns this deck
+    const deckCheck = await pool.query('SELECT id FROM decks WHERE id = $1 AND user_id = $2', [id, req.userId]);
+    if (deckCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Deck not found' });
+    }
+    
     const invResult = await pool.query(`
       SELECT i.*, 
         COALESCE(i.quantity, 0) - COALESCE(
           (SELECT SUM(dr.quantity_reserved) FROM deck_reservations dr WHERE dr.inventory_item_id = i.id), 0
         ) as available_quantity
-      FROM inventory i WHERE i.id = $1
-    `, [inventory_item_id]);
+      FROM inventory i WHERE i.id = $1 AND i.user_id = $2
+    `, [inventory_item_id, req.userId]);
     
     if (invResult.rows.length === 0) {
       return res.status(404).json({ error: 'Inventory item not found' });
@@ -377,11 +536,17 @@ router.post('/api/deck-instances/:id/add-card', validateId, async (req, res) => 
 });
 
 // DELETE remove card from deck instance
-router.delete('/api/deck-instances/:id/remove-card', validateId, async (req, res) => {
+router.delete('/api/deck-instances/:id/remove-card', authenticate, validateId, async (req, res) => {
   const id = req.validatedId;
   const { reservation_id, quantity } = req.body;
   
   try {
+    // Verify user owns this deck
+    const deckCheck = await pool.query('SELECT id FROM decks WHERE id = $1 AND user_id = $2', [id, req.userId]);
+    if (deckCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Deck not found' });
+    }
+    
     const resResult = await pool.query('SELECT * FROM deck_reservations WHERE id = $1 AND deck_id = $2', [reservation_id, id]);
     
     if (resResult.rows.length === 0) {
@@ -410,10 +575,16 @@ router.delete('/api/deck-instances/:id/remove-card', validateId, async (req, res
 
 
 // POST release entire deck instance
-router.post('/api/deck-instances/:id/release', validateId, async (req, res) => {
+router.post('/api/deck-instances/:id/release', authenticate, validateId, async (req, res) => {
   const id = req.validatedId;
   
   try {
+    // Verify user owns this deck
+    const deckCheck = await pool.query('SELECT id FROM decks WHERE id = $1 AND user_id = $2', [id, req.userId]);
+    if (deckCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Deck not found' });
+    }
+    
     // Get all reservations for this deck before deleting
     const reservationsResult = await pool.query('SELECT inventory_item_id FROM deck_reservations WHERE deck_id = $1', [id]);
     
@@ -436,7 +607,7 @@ router.post('/api/deck-instances/:id/release', validateId, async (req, res) => {
 });
 
 // POST reoptimize deck instance
-router.post('/api/deck-instances/:id/reoptimize', validateId, async (req, res) => {
+router.post('/api/deck-instances/:id/reoptimize', authenticate, validateId, async (req, res) => {
   const id = req.validatedId;
   
   // Use a transaction to avoid TOCTOU race conditions
@@ -445,7 +616,7 @@ router.post('/api/deck-instances/:id/reoptimize', validateId, async (req, res) =
   try {
     await client.query('BEGIN');
     
-    const deckResult = await client.query('SELECT * FROM decks WHERE id = $1 AND is_deck_instance = TRUE', [id]);
+    const deckResult = await client.query('SELECT * FROM decks WHERE id = $1 AND is_deck_instance = TRUE AND user_id = $2', [id, req.userId]);
     if (deckResult.rows.length === 0) {
       await client.query('ROLLBACK');
       return res.status(404).json({ error: 'Deck not found' });
@@ -559,7 +730,7 @@ router.post('/api/deck-instances/:id/reoptimize', validateId, async (req, res) =
 });
 
 // PUT update deck instance metadata
-router.put('/api/deck-instances/:id', validateId, async (req, res) => {
+router.put('/api/deck-instances/:id', authenticate, validateId, async (req, res) => {
   const id = req.validatedId;
   const { name, format, description } = req.body;
   
@@ -587,9 +758,10 @@ router.put('/api/deck-instances/:id', validateId, async (req, res) => {
     
     updates.push(`updated_at = NOW()`);
     values.push(id);
+    values.push(req.userId);
     
     const result = await pool.query(
-      `UPDATE decks SET ${updates.join(', ')} WHERE id = $${paramCount} AND is_deck_instance = TRUE RETURNING *`,
+      `UPDATE decks SET ${updates.join(', ')} WHERE id = $${paramCount} AND is_deck_instance = TRUE AND user_id = $${paramCount + 1} RETURNING *`,
       values
     );
     

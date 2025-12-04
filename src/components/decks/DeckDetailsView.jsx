@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
-import { X, Trash2, ChevronDown } from 'lucide-react';
+import { X, Trash2, ChevronDown, FileEdit, Link2 } from 'lucide-react';
 import { getSetDisplayName } from '../../utils/cardHelpers';
 
 /**
@@ -11,7 +11,9 @@ export function DeckDetailsView({
   inventoryByName,
   onBack,
   onDelete,
-  onUpdateDescription
+  onUpdateDescription,
+  onEditCards,
+  onArchidektSync
 }) {
   const [showMissing, setShowMissing] = useState(false);
 
@@ -44,13 +46,35 @@ export function DeckDetailsView({
               )}
             </p>
           </div>
-          <button
-            onClick={() => onDelete(deck.id)}
-            className="text-slate-400 hover:text-red-400 transition-colors"
-            title="Delete"
-          >
-            <Trash2 className="w-5 h-5" />
-          </button>
+          <div className="flex gap-2">
+            {onArchidektSync && (
+              <button
+                onClick={() => onArchidektSync(deck)}
+                className="text-slate-100 bg-blue-600 hover:bg-blue-500 transition-colors px-3 py-2 rounded-lg flex items-center gap-2 font-medium"
+                title="Sync with Archidekt"
+              >
+                <Link2 className="w-4 h-4" />
+                Archidekt
+              </button>
+            )}
+            {onEditCards && (
+              <button
+                onClick={() => onEditCards(deck)}
+                className="text-slate-100 bg-purple-600 hover:bg-purple-500 transition-colors px-3 py-2 rounded-lg flex items-center gap-2 font-medium"
+                title="Edit Deck Cards"
+              >
+                <FileEdit className="w-4 h-4" />
+                Edit Cards
+              </button>
+            )}
+            <button
+              onClick={() => onDelete(deck.id)}
+              className="text-slate-400 hover:text-red-400 transition-colors"
+              title="Delete"
+            >
+              <Trash2 className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         <div className="mb-4">
@@ -153,7 +177,9 @@ DeckDetailsView.propTypes = {
   inventoryByName: PropTypes.object,
   onBack: PropTypes.func.isRequired,
   onDelete: PropTypes.func.isRequired,
-  onUpdateDescription: PropTypes.func.isRequired
+  onUpdateDescription: PropTypes.func.isRequired,
+  onEditCards: PropTypes.func,
+  onArchidektSync: PropTypes.func
 };
 
 export default DeckDetailsView;

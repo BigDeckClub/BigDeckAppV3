@@ -70,17 +70,22 @@ export function useInventoryOperations() {
   /**
    * Add a new inventory item
    * @param {Object} item - Item data to add
+   * @param {Object} options - Optional configuration
+   * @param {boolean} options.silent - If true, suppress success toast (for bulk operations)
    * @returns {Promise<boolean>} Whether the add was successful
    */
-  const addInventoryItem = useCallback(async (item) => {
+  const addInventoryItem = useCallback(async (item, options = {}) => {
+    const { silent = false } = options;
     try {
       await post('/inventory', item);
       await loadInventory(); // Refresh to get real data
-      showToast('Card added successfully!', TOAST_TYPES.SUCCESS);
+      if (!silent) {
+        showToast('Card added successfully!', TOAST_TYPES.SUCCESS);
+      }
       return true;
     } catch (error) {
       showToast('Error adding card: ' + error.message, TOAST_TYPES.ERROR, {
-        action: { label: 'Retry', onClick: () => addInventoryItem(item) }
+        action: { label: 'Retry', onClick: () => addInventoryItem(item, options) }
       });
       return false;
     }

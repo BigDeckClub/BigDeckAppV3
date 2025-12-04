@@ -1,6 +1,6 @@
 import express from 'express';
 import { pool } from '../db/pool.js';
-import { validateId } from '../middleware/index.js';
+import { validateId, authenticate } from '../middleware/index.js';
 
 const router = express.Router();
 
@@ -13,13 +13,14 @@ const DEFAULT_FOLDER_NAME = 'Uncategorized';
 // ========== FOLDERS ENDPOINTS ==========
 
 // GET /api/folders - Fetch all folders
-router.get('/api/folders', async (req, res) => {
+router.get('/api/folders', authenticate, async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT id, name, description, created_at, updated_at 
       FROM folders 
+      WHERE user_id = $1
       ORDER BY name ASC
-    `);
+    `, [req.userId]);
     res.json(result.rows);
   } catch (error) {
     console.error('[FOLDERS] Error fetching folders:', error.message);
@@ -28,7 +29,7 @@ router.get('/api/folders', async (req, res) => {
 });
 
 // POST /api/folders - Create a new folder
-router.post('/api/folders', async (req, res) => {
+router.post('/api/folders', authenticate, async (req, res) => {
   const { name, description } = req.body;
   
   try {
@@ -44,8 +45,8 @@ router.post('/api/folders', async (req, res) => {
     }
     
     const result = await pool.query(
-      `INSERT INTO folders (name, description) VALUES ($1, $2) RETURNING *`,
-      [trimmedName, description || null]
+      `INSERT INTO folders (user_id, name, description) VALUES ($1, $2, $3) RETURNING *`,
+      [req.userId, trimmedName, description || null]
     );
     
     res.json(result.rows[0]);
@@ -59,7 +60,7 @@ router.post('/api/folders', async (req, res) => {
 });
 
 // PUT /api/folders/:id - Update folder
-router.put('/api/folders/:id', validateId, async (req, res) => {
+router.put('/api/folders/:id', authenticate, validateId, async (req, res) => {
   const id = req.validatedId;
   const { name, description } = req.body;
   
@@ -83,9 +84,10 @@ router.put('/api/folders/:id', validateId, async (req, res) => {
     
     updates.push(`updated_at = NOW()`);
     values.push(id);
+    values.push(req.userId);
     
     const result = await pool.query(
-      `UPDATE folders SET ${updates.join(', ')} WHERE id = $${paramCount} RETURNING *`,
+      `UPDATE folders SET ${updates.join(', ')} WHERE id = $${paramCount} AND user_id = $${paramCount + 1} RETURNING *`,
       values
     );
     
@@ -101,14 +103,14 @@ router.put('/api/folders/:id', validateId, async (req, res) => {
 });
 
 // DELETE /api/folders/:id - Delete folder
-router.delete('/api/folders/:id', validateId, async (req, res) => {
+router.delete('/api/folders/:id', authenticate, validateId, async (req, res) => {
   const id = req.validatedId;
   
   try {
-    // Get the folder name first
+    // Get the folder name first - ensure user owns it
     const folderResult = await pool.query(
-      `SELECT name FROM folders WHERE id = $1`,
-      [id]
+      `SELECT name FROM folders WHERE id = $1 AND user_id = $2`,
+      [id, req.userId]
     );
     
     if (folderResult.rows.length === 0) {
@@ -117,16 +119,16 @@ router.delete('/api/folders/:id', validateId, async (req, res) => {
     
     const folderName = folderResult.rows[0].name;
     
-    // Move all cards in this folder to the default folder
+    // Move all cards in this folder to the default folder (only for this user)
     await pool.query(
-      `UPDATE inventory SET folder = $1 WHERE folder = $2`,
-      [DEFAULT_FOLDER_NAME, folderName]
+      `UPDATE inventory SET folder = $1 WHERE folder = $2 AND user_id = $3`,
+      [DEFAULT_FOLDER_NAME, folderName, req.userId]
     );
     
     // Delete the folder
     const result = await pool.query(
-      `DELETE FROM folders WHERE id = $1 RETURNING *`,
-      [id]
+      `DELETE FROM folders WHERE id = $1 AND user_id = $2 RETURNING *`,
+      [id, req.userId]
     );
     
     res.json({ success: true, folder: result.rows[0] });

@@ -4,6 +4,7 @@ import { Settings, Package, Mountain, TrendingUp, RotateCcw, HelpCircle, Chevron
 import { useToast, TOAST_TYPES } from '../../context/ToastContext';
 import { calculateSmartThreshold } from '../../utils/thresholdCalculator';
 import { QUICK_PRESETS } from '../../constants/thresholds';
+import { fetchWithAuth } from '../../utils/apiClient';
 
 /**
  * ThresholdSettings component - Smart threshold settings tab
@@ -88,7 +89,7 @@ export const ThresholdSettings = ({
       let currentSalesHistory = salesHistory;
       if (!currentSalesHistory || currentSalesHistory.length === 0) {
         try {
-          const salesResponse = await fetch('/api/sales');
+          const salesResponse = await fetchWithAuth('/api/sales');
           if (salesResponse.ok) {
             currentSalesHistory = await salesResponse.json();
           }
@@ -125,7 +126,7 @@ export const ThresholdSettings = ({
       setApplyProgress({ current: inventory.length, total: inventory.length });
       
       // Send bulk update to backend
-      const response = await fetch('/api/inventory/bulk-threshold', {
+      const response = await fetchWithAuth('/api/inventory/bulk-threshold', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ updates })

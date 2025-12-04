@@ -1,13 +1,14 @@
 import express from 'express';
 import { pool } from '../db/pool.js';
-import { validateId } from '../middleware/index.js';
+import { validateId, authenticate } from '../middleware/index.js';
 import { fetchRetry } from '../utils/index.js';
+import { scryfallQueue } from '../utils/scryfallQueue.js';
 import { recordChange, recordAudit, recordActivity } from './history.js';
 
 const router = express.Router();
 
 // ========== INVENTORY ENDPOINTS ==========
-router.get('/api/inventory', async (req, res) => {
+router.get('/api/inventory', authenticate, async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT i.id, i.name, i.set, i.set_name, i.quantity, i.purchase_price, i.purchase_date, 
@@ -16,7 +17,10 @@ router.get('/api/inventory', async (req, res) => {
               COALESCE(
                 (SELECT SUM(dr.quantity_reserved) FROM deck_reservations dr WHERE dr.inventory_item_id = i.id), 0
               ) as reserved_quantity
-       FROM inventory i ORDER BY i.name ASC`
+       FROM inventory i 
+       WHERE i.user_id = $1
+       ORDER BY i.name ASC`,
+      [req.userId]
     );
     res.json(result.rows);
   } catch (error) {
@@ -25,7 +29,7 @@ router.get('/api/inventory', async (req, res) => {
   }
 });
 
-router.post('/api/inventory', async (req, res) => {
+router.post('/api/inventory', authenticate, async (req, res) => {
   const { name, set, set_name, quantity, purchase_price, purchase_date, reorder_type, image_url, folder, foil, quality } = req.body;
   
   // Input validation
@@ -53,35 +57,45 @@ router.post('/api/inventory', async (req, res) => {
     // Fetch Scryfall ID for better market value tracking
     let scryfallId = null;
     try {
-      let scryfallRes = null;
+      // Use rate-limited queue to prevent Scryfall API rate limit issues
+      scryfallId = await scryfallQueue.enqueue(async () => {
+        let scryfallRes = null;
+        
+        // Try exact match with set if available
+        if (set && set.length > 0) {
+          const exactUrl = `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(name)}&set=${set.toLowerCase()}`;
+          scryfallRes = await fetchRetry(exactUrl);
+          if (!scryfallRes?.ok) scryfallRes = null;
+        }
+        
+        // Fallback to fuzzy match
+        if (!scryfallRes) {
+          const fuzzyUrl = `https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(name)}`;
+          scryfallRes = await fetchRetry(fuzzyUrl);
+        }
+        
+        if (scryfallRes?.ok) {
+          const cardData = await scryfallRes.json();
+          return cardData.id || null;
+        }
+        return null;
+      });
       
-      // Try exact match with set if available
-      if (set && set.length > 0) {
-        const exactUrl = `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(name)}&set=${set.toLowerCase()}`;
-        scryfallRes = await fetchRetry(exactUrl);
-        if (!scryfallRes?.ok) scryfallRes = null;
-      }
-      
-      // Fallback to fuzzy match
-      if (!scryfallRes) {
-        const fuzzyUrl = `https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(name)}`;
-        scryfallRes = await fetchRetry(fuzzyUrl);
-      }
-      
-      if (scryfallRes?.ok) {
-        const cardData = await scryfallRes.json();
-        scryfallId = cardData.id || null;
+      if (scryfallId) {
+        console.log(`[INVENTORY] ✓ Found Scryfall ID for "${name}"${set ? ` (${set})` : ''}`);
+      } else {
+        console.warn(`[INVENTORY] ⚠ Could not find Scryfall ID for "${name}"${set ? ` (${set})` : ''} - market prices will not be available`);
       }
     } catch (err) {
-      console.debug('[INVENTORY] Failed to fetch Scryfall ID for market analytics:', err.message);
+      console.error(`[INVENTORY] ✗ Failed to fetch Scryfall ID for "${name}":`, err.message);
       // Continue without Scryfall ID - not critical
     }
 
     const result = await pool.query(
-      `INSERT INTO inventory (name, set, set_name, quantity, purchase_price, purchase_date, reorder_type, image_url, scryfall_id, folder, foil, quality, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW())
+      `INSERT INTO inventory (user_id, name, set, set_name, quantity, purchase_price, purchase_date, reorder_type, image_url, scryfall_id, folder, foil, quality, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW())
        RETURNING *`,
-      [name, set || null, set_name || null, quantity || 1, purchase_price || null, purchase_date || null, reorder_type || 'normal', image_url || null, scryfallId, folder || 'Uncategorized', foil || false, quality || 'NM']
+      [req.userId, name, set || null, set_name || null, quantity || 1, purchase_price || null, purchase_date || null, reorder_type || 'normal', image_url || null, scryfallId, folder || 'Uncategorized', foil || false, quality || 'NM']
     );
     
     // Record PURCHASE transaction for analytics
@@ -111,15 +125,15 @@ router.post('/api/inventory', async (req, res) => {
   }
 });
 
-router.put('/api/inventory/:id', validateId, async (req, res) => {
+router.put('/api/inventory/:id', authenticate, validateId, async (req, res) => {
   const id = req.validatedId;
   const { quantity, purchase_price, purchase_date, reorder_type, folder, low_inventory_alert, low_inventory_threshold, foil, quality } = req.body;
 
   try {
-    // Fetch current values to track changes
+    // Fetch current values to track changes - ensure user owns this item
     const currentResult = await pool.query(
-      'SELECT name, quantity, purchase_price, folder, quality, foil FROM inventory WHERE id = $1',
-      [id]
+      'SELECT name, quantity, purchase_price, folder, quality, foil FROM inventory WHERE id = $1 AND user_id = $2',
+      [id, req.userId]
     );
     
     if (currentResult.rows.length === 0) {
@@ -190,7 +204,8 @@ router.put('/api/inventory/:id', validateId, async (req, res) => {
     }
 
     values.push(id);
-    const query = `UPDATE inventory SET ${updates.join(', ')} WHERE id = $${paramCount} RETURNING *`;
+    const query = `UPDATE inventory SET ${updates.join(', ')} WHERE id = $${paramCount} AND user_id = $${paramCount + 1} RETURNING *`;
+    values.push(req.userId);
     const result = await pool.query(query, values);
     
     if (result.rows.length === 0) {
@@ -216,10 +231,11 @@ router.put('/api/inventory/:id', validateId, async (req, res) => {
 });
 
 // Empty Trash - permanently delete all items in Trash folder
-router.delete('/api/inventory/trash', async (req, res) => {
+router.delete('/api/inventory/trash', authenticate, async (req, res) => {
   try {
     const result = await pool.query(
-      "DELETE FROM inventory WHERE folder = 'Trash' RETURNING *"
+      "DELETE FROM inventory WHERE folder = 'Trash' AND user_id = $1 RETURNING *",
+      [req.userId]
     );
     
     // Record audit log for empty trash operation
@@ -246,13 +262,13 @@ router.delete('/api/inventory/trash', async (req, res) => {
   }
 });
 
-router.delete('/api/inventory/:id', validateId, async (req, res) => {
+router.delete('/api/inventory/:id', authenticate, validateId, async (req, res) => {
   const id = req.validatedId;
 
   try {
     const result = await pool.query(
-      'DELETE FROM inventory WHERE id = $1 RETURNING *',
-      [id]
+      'DELETE FROM inventory WHERE id = $1 AND user_id = $2 RETURNING *',
+      [id, req.userId]
     );
     
     if (result.rows.length === 0) {
@@ -277,7 +293,7 @@ router.delete('/api/inventory/:id', validateId, async (req, res) => {
 });
 
 // Toggle low inventory alert for a specific card
-router.post('/api/inventory/:id/toggle-alert', validateId, async (req, res) => {
+router.post('/api/inventory/:id/toggle-alert', authenticate, validateId, async (req, res) => {
   const id = req.validatedId;
   console.log('[API] TOGGLE-ALERT ENDPOINT HIT with id:', id);
 
@@ -285,8 +301,8 @@ router.post('/api/inventory/:id/toggle-alert', validateId, async (req, res) => {
     // Get current value
     console.log('[API] Fetching current state before toggle...');
     const beforeResult = await pool.query(
-      'SELECT id, name, low_inventory_alert FROM inventory WHERE id = $1',
-      [id]
+      'SELECT id, name, low_inventory_alert FROM inventory WHERE id = $1 AND user_id = $2',
+      [id, req.userId]
     );
     
     if (beforeResult.rows.length === 0) {
@@ -300,8 +316,8 @@ router.post('/api/inventory/:id/toggle-alert', validateId, async (req, res) => {
     // Toggle the value
     console.log('[API] Executing UPDATE query to toggle...');
     const result = await pool.query(
-      'UPDATE inventory SET low_inventory_alert = NOT low_inventory_alert WHERE id = $1 RETURNING *',
-      [id]
+      'UPDATE inventory SET low_inventory_alert = NOT low_inventory_alert WHERE id = $1 AND user_id = $2 RETURNING *',
+      [id, req.userId]
     );
     
     if (result.rows.length === 0) {
@@ -322,7 +338,7 @@ router.post('/api/inventory/:id/toggle-alert', validateId, async (req, res) => {
 });
 
 // Set low inventory threshold for a specific card
-router.post('/api/inventory/:id/set-threshold', validateId, async (req, res) => {
+router.post('/api/inventory/:id/set-threshold', authenticate, validateId, async (req, res) => {
   const id = req.validatedId;
   const { threshold } = req.body;
 
@@ -332,8 +348,8 @@ router.post('/api/inventory/:id/set-threshold', validateId, async (req, res) => 
     }
 
     const result = await pool.query(
-      'UPDATE inventory SET low_inventory_threshold = $1 WHERE id = $2 RETURNING *',
-      [threshold, id]
+      'UPDATE inventory SET low_inventory_threshold = $1 WHERE id = $2 AND user_id = $3 RETURNING *',
+      [threshold, id, req.userId]
     );
     
     if (result.rows.length === 0) {
@@ -347,8 +363,94 @@ router.post('/api/inventory/:id/set-threshold', validateId, async (req, res) => 
   }
 });
 
+// POST /api/inventory/backfill-scryfall-ids - Backfill missing Scryfall IDs for price tracking
+router.post('/api/inventory/backfill-scryfall-ids', authenticate, async (req, res) => {
+  try {
+    // Find all inventory items without Scryfall IDs for this user
+    const result = await pool.query(
+      'SELECT id, name, set FROM inventory WHERE (scryfall_id IS NULL OR scryfall_id = \'\') AND user_id = $1',
+      [req.userId]
+    );
+    
+    const itemsToUpdate = result.rows || [];
+    
+    if (itemsToUpdate.length === 0) {
+      return res.json({ 
+        success: true, 
+        message: 'All inventory items already have Scryfall IDs',
+        updated: 0,
+        total: 0
+      });
+    }
+    
+    console.log(`[BACKFILL] Starting to backfill ${itemsToUpdate.length} items with missing Scryfall IDs`);
+    
+    let successCount = 0;
+    let notFoundCount = 0;
+    let errorCount = 0;
+    
+    // Process items with rate limiting
+    for (const item of itemsToUpdate) {
+      try {
+        const scryfallId = await scryfallQueue.enqueue(async () => {
+          let scryfallRes = null;
+          
+          // Try exact match with set if available
+          if (item.set && item.set.length > 0) {
+            const exactUrl = `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(item.name)}&set=${item.set.toLowerCase()}`;
+            scryfallRes = await fetchRetry(exactUrl);
+            if (!scryfallRes?.ok) scryfallRes = null;
+          }
+          
+          // Fallback to fuzzy match
+          if (!scryfallRes) {
+            const fuzzyUrl = `https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(item.name)}`;
+            scryfallRes = await fetchRetry(fuzzyUrl);
+          }
+          
+          if (scryfallRes?.ok) {
+            const cardData = await scryfallRes.json();
+            return cardData.id || null;
+          }
+          return null;
+        });
+        
+        if (scryfallId) {
+          // Update the inventory item with the found Scryfall ID
+          await pool.query(
+            'UPDATE inventory SET scryfall_id = $1 WHERE id = $2',
+            [scryfallId, item.id]
+          );
+          successCount++;
+          console.log(`[BACKFILL] ✓ Updated item ${item.id}: "${item.name}" with Scryfall ID`);
+        } else {
+          notFoundCount++;
+          console.log(`[BACKFILL] ⚠ Could not find Scryfall ID for item ${item.id}: "${item.name}"`);
+        }
+      } catch (err) {
+        errorCount++;
+        console.error(`[BACKFILL] ✗ Error processing item ${item.id}:`, err.message);
+      }
+    }
+    
+    console.log(`[BACKFILL] Complete: ${successCount} updated, ${notFoundCount} not found, ${errorCount} errors`);
+    
+    res.json({
+      success: true,
+      message: `Backfill complete: ${successCount} items updated with Scryfall IDs`,
+      updated: successCount,
+      notFound: notFoundCount,
+      errors: errorCount,
+      total: itemsToUpdate.length
+    });
+  } catch (error) {
+    console.error('[BACKFILL] Fatal error:', error);
+    res.status(500).json({ error: 'Failed to backfill Scryfall IDs' });
+  }
+});
+
 // POST /api/inventory/bulk-threshold - Bulk update thresholds and alerts (DEBUG VERSION)
-router.post('/api/inventory/bulk-threshold', async (req, res) => {
+router.post('/api/inventory/bulk-threshold', authenticate, async (req, res) => {
   console.log('[BULK-THRESHOLD] Endpoint hit');
   console.log('[BULK-THRESHOLD] Request body:', JSON.stringify(req.body).substring(0, 500));
   
@@ -382,8 +484,8 @@ router.post('/api/inventory/bulk-threshold', async (req, res) => {
           `UPDATE inventory 
            SET low_inventory_threshold = $1,
                low_inventory_alert = $2
-           WHERE id = $3`,
-          [threshold, enableAlert ? true : false, id]
+           WHERE id = $3 AND user_id = $4`,
+          [threshold, enableAlert ? true : false, id, req.userId]
         );
         
         return { success: true, id };

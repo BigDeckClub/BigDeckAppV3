@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { parseDeckList } from '../utils/decklistParser';
 import { useToast, TOAST_TYPES } from '../context/ToastContext';
 import { useConfirm } from '../context/ConfirmContext';
+import { fetchWithAuth } from '../utils/apiClient';
 
 const API_BASE = '/api';
 
@@ -32,7 +33,7 @@ export function useDeckOperations({ onDeckCreatedOrDeleted, onInventoryUpdate })
   const loadDecks = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await fetch(`${API_BASE}/decks`);
+      const response = await fetchWithAuth(`${API_BASE}/decks`);
       if (response.ok) {
         const data = await response.json();
         setDecks(Array.isArray(data) ? data : []);
@@ -63,7 +64,7 @@ export function useDeckOperations({ onDeckCreatedOrDeleted, onInventoryUpdate })
     
     if (confirmed) {
       try {
-        const response = await fetch(`${API_BASE}/decks/${id}`, { method: 'DELETE' });
+        const response = await fetchWithAuth(`${API_BASE}/decks/${id}`, { method: 'DELETE' });
         if (response.ok) {
           await loadDecks();
           if (selectedDeck?.id === id) {
@@ -87,7 +88,7 @@ export function useDeckOperations({ onDeckCreatedOrDeleted, onInventoryUpdate })
       return;
     }
     try {
-      const response = await fetch(`${API_BASE}/decks/${id}`, {
+      const response = await fetchWithAuth(`${API_BASE}/decks/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: trimmedName })
@@ -109,7 +110,7 @@ export function useDeckOperations({ onDeckCreatedOrDeleted, onInventoryUpdate })
 
   const updateDeckDescription = useCallback(async (id, newDescription) => {
     try {
-      const response = await fetch(`${API_BASE}/decks/${id}`, {
+      const response = await fetchWithAuth(`${API_BASE}/decks/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ description: newDescription })
@@ -146,7 +147,7 @@ export function useDeckOperations({ onDeckCreatedOrDeleted, onInventoryUpdate })
     }
 
     try {
-      const response = await fetch(`${API_BASE}/decks`, {
+      const response = await fetchWithAuth(`${API_BASE}/decks`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -160,7 +161,7 @@ export function useDeckOperations({ onDeckCreatedOrDeleted, onInventoryUpdate })
 
       const newDeck = await response.json();
 
-      const updateResponse = await fetch(`${API_BASE}/decks/${newDeck.id}`, {
+      const updateResponse = await fetchWithAuth(`${API_BASE}/decks/${newDeck.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ cards })
@@ -191,7 +192,7 @@ export function useDeckOperations({ onDeckCreatedOrDeleted, onInventoryUpdate })
     
     setIsCopying(true);
     try {
-      const response = await fetch(`${API_BASE}/decks/${copyingDeck.id}/copy-to-inventory`, {
+      const response = await fetchWithAuth(`${API_BASE}/decks/${copyingDeck.id}/copy-to-inventory`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: copyDeckName })

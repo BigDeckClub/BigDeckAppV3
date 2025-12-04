@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { useToast, TOAST_TYPES } from '../context/ToastContext';
 import { useConfirm } from '../context/ConfirmContext';
+import { fetchWithAuth } from '../utils/apiClient';
 
 /**
  * useDeckReservations - Custom hook for deck reservation logic
@@ -29,7 +30,7 @@ export function useDeckReservations({ inventory, onLoadInventory }) {
   // Fetch deck instances on demand
   const refreshDeckInstances = useCallback(async () => {
     try {
-      const response = await fetch('/api/deck-instances');
+      const response = await fetchWithAuth('/api/deck-instances');
       if (response.ok) {
         const data = await response.json();
         setDeckInstances(data);
@@ -44,7 +45,7 @@ export function useDeckReservations({ inventory, onLoadInventory }) {
     if (deckDetailsCache[deckId] && !forceRefresh) return;
     setLoadingDeckDetails(true);
     try {
-      const response = await fetch(`/api/deck-instances/${deckId}/details`);
+      const response = await fetchWithAuth(`/api/deck-instances/${deckId}/details`);
       if (response.ok) {
         const data = await response.json();
         setDeckDetailsCache(prev => ({ ...prev, [deckId]: data }));
@@ -101,7 +102,7 @@ export function useDeckReservations({ inventory, onLoadInventory }) {
     if (!confirmed) return;
     
     try {
-      const response = await fetch(`/api/deck-instances/${deckId}/release`, {
+      const response = await fetchWithAuth(`/api/deck-instances/${deckId}/release`, {
         method: 'POST'
       });
       if (response.ok) {
@@ -124,7 +125,7 @@ export function useDeckReservations({ inventory, onLoadInventory }) {
   // Remove card from deck reservation
   const removeCardFromDeck = useCallback(async (deckId, reservationId, quantity = 1) => {
     try {
-      const response = await fetch(`/api/deck-instances/${deckId}/remove-card`, {
+      const response = await fetchWithAuth(`/api/deck-instances/${deckId}/remove-card`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reservation_id: reservationId, quantity: quantity })
@@ -142,7 +143,7 @@ export function useDeckReservations({ inventory, onLoadInventory }) {
   // Reoptimize deck to find cheapest cards
   const reoptimizeDeck = useCallback(async (deckId) => {
     try {
-      const response = await fetch(`/api/deck-instances/${deckId}/reoptimize`, {
+      const response = await fetchWithAuth(`/api/deck-instances/${deckId}/reoptimize`, {
         method: 'POST'
       });
       if (response.ok) {
@@ -168,7 +169,7 @@ export function useDeckReservations({ inventory, onLoadInventory }) {
       
       const qtyToUse = attemptQty !== null ? attemptQty : (inventoryItem.quantity || 1);
       
-      const response = await fetch(`/api/deck-instances/${deckId}/add-card`, {
+      const response = await fetchWithAuth(`/api/deck-instances/${deckId}/add-card`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -324,7 +325,7 @@ export function useDeckReservations({ inventory, onLoadInventory }) {
       const quantity = deckCardData.quantity_reserved;
       const inventoryItemId = deckCardData.inventory_item_id;
       
-      const removeResponse = await fetch(`/api/deck-instances/${sourceDeckId}/remove-card`, {
+      const removeResponse = await fetchWithAuth(`/api/deck-instances/${sourceDeckId}/remove-card`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reservation_id: reservationId, quantity: quantity })
@@ -334,7 +335,7 @@ export function useDeckReservations({ inventory, onLoadInventory }) {
         throw new Error('Failed to remove card from source deck');
       }
       
-      const addResponse = await fetch(`/api/deck-instances/${targetDeckId}/add-card`, {
+      const addResponse = await fetchWithAuth(`/api/deck-instances/${targetDeckId}/add-card`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ inventory_item_id: inventoryItemId, quantity: quantity })
@@ -362,7 +363,7 @@ export function useDeckReservations({ inventory, onLoadInventory }) {
       const reservationId = deckCardData.id;
       const quantity = deckCardData.quantity_reserved;
       
-      const removeResponse = await fetch(`/api/deck-instances/${deckId}/remove-card`, {
+      const removeResponse = await fetchWithAuth(`/api/deck-instances/${deckId}/remove-card`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reservation_id: reservationId, quantity: quantity })
@@ -372,7 +373,7 @@ export function useDeckReservations({ inventory, onLoadInventory }) {
         throw new Error('Failed to remove card from deck');
       }
       
-      const moveResponse = await fetch(`/api/inventory/${deckCardData.inventory_item_id}`, {
+      const moveResponse = await fetchWithAuth(`/api/inventory/${deckCardData.inventory_item_id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ folder: targetFolder })

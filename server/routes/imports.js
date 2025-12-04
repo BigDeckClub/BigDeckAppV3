@@ -1,15 +1,18 @@
 import express from 'express';
 import { pool } from '../db/pool.js';
 import { validateId } from '../middleware/index.js';
+import { authenticate } from '../middleware/auth.js';
 import { recordAudit, recordActivity } from './history.js';
 
 const router = express.Router();
 
 // ========== IMPORTS ENDPOINTS ==========
-router.get('/api/imports', async (req, res) => {
+router.get('/api/imports', authenticate, async (req, res) => {
+  const userId = req.userId;
   try {
     const result = await pool.query(
-      'SELECT * FROM imports ORDER BY created_at DESC'
+      'SELECT * FROM imports WHERE user_id = $1 ORDER BY created_at DESC',
+      [userId]
     );
     res.json(result.rows);
   } catch (error) {
@@ -18,7 +21,8 @@ router.get('/api/imports', async (req, res) => {
   }
 });
 
-router.post('/api/imports', async (req, res) => {
+router.post('/api/imports', authenticate, async (req, res) => {
+  const userId = req.userId;
   const { title, description, cardList, source, status } = req.body;
   
   // Input validation
@@ -42,10 +46,10 @@ router.post('/api/imports', async (req, res) => {
 
   try {
     const result = await pool.query(
-      `INSERT INTO imports (title, description, card_list, source, status, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+      `INSERT INTO imports (title, description, card_list, source, status, user_id, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
        RETURNING *`,
-      [title, description || null, cardList, source || 'wholesale', status || 'pending']
+      [title, description || null, cardList, source || 'wholesale', status || 'pending', userId]
     );
     
     // Count cards in the import (basic estimate from card list)
@@ -58,7 +62,8 @@ router.post('/api/imports', async (req, res) => {
       description: `Created import "${title}" with ~${cardCount} cards`,
       entityType: 'import',
       entityId: importRecord.id,
-      metadata: { title, source: source || 'wholesale', cardCount }
+      metadata: { title, source: source || 'wholesale', cardCount },
+      userId
     });
     
     await recordActivity({
@@ -67,7 +72,8 @@ router.post('/api/imports', async (req, res) => {
       description: `Started import with ~${cardCount} cards from ${source || 'wholesale'}`,
       entityType: 'import',
       entityId: importRecord.id,
-      metadata: { source: source || 'wholesale', cardCount }
+      metadata: { source: source || 'wholesale', cardCount },
+      userId
     });
     
     res.status(201).json(result.rows[0]);
@@ -77,13 +83,14 @@ router.post('/api/imports', async (req, res) => {
   }
 });
 
-router.delete('/api/imports/:id', validateId, async (req, res) => {
+router.delete('/api/imports/:id', authenticate, validateId, async (req, res) => {
+  const userId = req.userId;
   const id = req.validatedId;
 
   try {
     const result = await pool.query(
-      'DELETE FROM imports WHERE id = $1 RETURNING *',
-      [id]
+      'DELETE FROM imports WHERE id = $1 AND user_id = $2 RETURNING *',
+      [id, userId]
     );
     
     if (result.rows.length === 0) {
@@ -97,15 +104,16 @@ router.delete('/api/imports/:id', validateId, async (req, res) => {
   }
 });
 
-router.patch('/api/imports/:id/complete', validateId, async (req, res) => {
+router.patch('/api/imports/:id/complete', authenticate, validateId, async (req, res) => {
+  const userId = req.userId;
   const id = req.validatedId;
 
   try {
     const result = await pool.query(
       `UPDATE imports SET status = 'completed', updated_at = NOW()
-       WHERE id = $1
+       WHERE id = $1 AND user_id = $2
        RETURNING *`,
-      [id]
+      [id, userId]
     );
     
     if (result.rows.length === 0) {
@@ -122,7 +130,8 @@ router.patch('/api/imports/:id/complete', validateId, async (req, res) => {
       description: `Completed import "${completedImport.title}"`,
       entityType: 'import',
       entityId: id,
-      metadata: { title: completedImport.title, cardCount }
+      metadata: { title: completedImport.title, cardCount },
+      userId
     });
     
     await recordActivity({
@@ -131,7 +140,8 @@ router.patch('/api/imports/:id/complete', validateId, async (req, res) => {
       description: `Successfully imported ~${cardCount} cards`,
       entityType: 'import',
       entityId: id,
-      metadata: { cardCount }
+      metadata: { cardCount },
+      userId
     });
     
     res.json(result.rows[0]);
@@ -141,7 +151,8 @@ router.patch('/api/imports/:id/complete', validateId, async (req, res) => {
   }
 });
 
-router.patch('/api/imports/:id', validateId, async (req, res) => {
+router.patch('/api/imports/:id', authenticate, validateId, async (req, res) => {
+  const userId = req.userId;
   const id = req.validatedId;
   const { title, description, cardList, source, status } = req.body;
 
@@ -173,8 +184,9 @@ router.patch('/api/imports/:id', validateId, async (req, res) => {
 
     updates.push('updated_at = NOW()');
     values.push(id);
+    values.push(userId);
 
-    const query = `UPDATE imports SET ${updates.join(', ')} WHERE id = $${paramCount} RETURNING *`;
+    const query = `UPDATE imports SET ${updates.join(', ')} WHERE id = $${paramCount} AND user_id = $${paramCount + 1} RETURNING *`;
     const result = await pool.query(query, values);
     
     if (result.rows.length === 0) {

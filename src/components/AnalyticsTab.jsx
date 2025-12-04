@@ -4,6 +4,7 @@ import { BarChart3, TrendingUp, Package, DollarSign, History, Filter, Activity, 
 import { ChangeLogTab } from './ChangeLogTab';
 import { ActivityFeed } from './ActivityFeed';
 import { AuditLog } from './AuditLog';
+import { fetchWithAuth } from '../utils/apiClient';
 
 export const AnalyticsTab = ({ inventory }) => {
   const [marketValues, setMarketValues] = useState({ cardkingdom: 0, tcgplayer: 0 });
@@ -23,8 +24,8 @@ export const AnalyticsTab = ({ inventory }) => {
     const fetchAnalytics = async () => {
       try {
         const [marketRes, metricsRes] = await Promise.all([
-          fetch('/api/analytics/market-values'),
-          fetch('/api/analytics/card-metrics')
+          fetchWithAuth('/api/analytics/market-values'),
+          fetchWithAuth('/api/analytics/card-metrics')
         ]);
         const marketData = await marketRes.json();
         const metricsData = await metricsRes.json();

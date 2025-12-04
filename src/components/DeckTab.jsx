@@ -1,14 +1,18 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
-import { BookOpen, Download } from 'lucide-react';
+import { BookOpen, Download, BarChart3, CheckSquare, Square } from 'lucide-react';
 import { useDeckOperations } from '../hooks/useDeckOperations';
 import { useArchidektImport } from '../hooks/useArchidektImport';
+import { fetchWithAuth } from '../utils/apiClient';
 import {
   DeckCard,
   DeckDetailsView,
   ImportArchidektModal,
   ImportDecklistModal,
-  CopyToDeckModal
+  CopyToDeckModal,
+  DeckEditorModal,
+  DeckAnalysisView,
+  ArchidektSyncModal
 } from './decks';
 
 
@@ -16,6 +20,16 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
   // Import modals visibility state
   const [showImportDecklist, setShowImportDecklist] = useState(false);
   const [showImportArchidekt, setShowImportArchidekt] = useState(false);
+  
+  // Analysis mode state
+  const [showAnalysis, setShowAnalysis] = useState(false);
+  const [selectedDeckIds, setSelectedDeckIds] = useState([]);
+  
+  // Deck editor state
+  const [editingDeckForModal, setEditingDeckForModal] = useState(null);
+  
+  // Archidekt sync state
+  const [syncingDeck, setSyncingDeck] = useState(null);
   
   // Decklist import form state
   const [newDeckName, setNewDeckName] = useState('');
@@ -65,7 +79,7 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
   // Reusable function to load inventory mapping (name -> available quantity)
   const refreshInventoryMap = useCallback(async () => {
     try {
-      const res = await fetch('/api/inventory');
+      const res = await fetchWithAuth('/api/inventory');
       if (!res.ok) return;
       const items = await res.json();
       const map = {};
@@ -110,6 +124,50 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
     resetImport();
   };
 
+  // Handle deck edit save
+  const handleSaveDeckEdit = async (updatedCards) => {
+    if (!editingDeckForModal) return;
+    
+    const response = await fetch(`/api/decks/${editingDeckForModal.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cards: updatedCards })
+    });
+    
+    if (response.ok) {
+      await loadDecks();
+    } else {
+      throw new Error('Failed to update deck');
+    }
+  };
+
+  // Handle Archidekt sync complete
+  const handleSyncComplete = async (updatedDeck) => {
+    await loadDecks();
+    // If we're viewing the synced deck, update the selected deck
+    if (selectedDeck && selectedDeck.id === updatedDeck.id) {
+      setSelectedDeck(updatedDeck);
+    }
+  };
+
+  // Toggle deck selection
+  const toggleDeckSelection = (deckId) => {
+    setSelectedDeckIds(prev => 
+      prev.includes(deckId) 
+        ? prev.filter(id => id !== deckId)
+        : [...prev, deckId]
+    );
+  };
+
+  // Select all / deselect all
+  const toggleSelectAll = () => {
+    if (selectedDeckIds.length === decks.length) {
+      setSelectedDeckIds([]);
+    } else {
+      setSelectedDeckIds(decks.map(d => d.id));
+    }
+  };
+
   return (
     <div className="flex-1">
       {successMessage && (
@@ -129,37 +187,61 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
               <BookOpen className="w-5 h-5 md:w-6 md:h-6" />
               Your Decks
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 md:flex md:gap-2">
-              <button
-                onClick={() => {
-                  setShowImportArchidekt(!showImportArchidekt);
-                  setShowImportDecklist(false);
-                }}
-                className={`px-3 sm:px-4 py-2 rounded-lg flex items-center justify-center sm:justify-start gap-2 transition-colors text-white text-sm sm:text-base ${
-                  showImportArchidekt
-                    ? 'bg-blue-500 shadow-lg shadow-blue-500/50'
-                    : 'bg-blue-600 hover:bg-blue-700'
-                }`}
-              >
-                <Download className="w-4 h-4 flex-shrink-0" />
-                <span className="hidden sm:inline">Import from Archidekt</span>
-                <span className="sm:hidden">Archidekt</span>
-              </button>
-              <button
-                onClick={() => {
-                  setShowImportDecklist(!showImportDecklist);
-                  setShowImportArchidekt(false);
-                }}
-                className={`px-3 sm:px-4 py-2 rounded-lg flex items-center justify-center sm:justify-start gap-2 transition-colors text-white text-sm sm:text-base ${
-                  showImportDecklist
-                    ? 'bg-purple-500 shadow-lg shadow-purple-500/50'
-                    : 'bg-purple-600 hover:bg-purple-700'
-                }`}
-              >
-                <Download className="w-4 h-4 flex-shrink-0" />
-                <span className="hidden sm:inline">Import Decklist</span>
-                <span className="sm:hidden">Decklist</span>
-              </button>
+            <div className="flex flex-wrap gap-2">
+              {!showAnalysis && (
+                <>
+                  <button
+                    onClick={() => {
+                      setShowImportArchidekt(!showImportArchidekt);
+                      setShowImportDecklist(false);
+                    }}
+                    className={`px-3 sm:px-4 py-2 rounded-lg flex items-center justify-center sm:justify-start gap-2 transition-colors text-white text-sm ${
+                      showImportArchidekt
+                        ? 'bg-blue-500 shadow-lg shadow-blue-500/50'
+                        : 'bg-blue-600 hover:bg-blue-700'
+                    }`}
+                  >
+                    <Download className="w-4 h-4 flex-shrink-0" />
+                    <span className="hidden sm:inline">Import from Archidekt</span>
+                    <span className="sm:hidden">Archidekt</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowImportDecklist(!showImportDecklist);
+                      setShowImportArchidekt(false);
+                    }}
+                    className={`px-3 sm:px-4 py-2 rounded-lg flex items-center justify-center sm:justify-start gap-2 transition-colors text-white text-sm ${
+                      showImportDecklist
+                        ? 'bg-purple-500 shadow-lg shadow-purple-500/50'
+                        : 'bg-purple-600 hover:bg-purple-700'
+                    }`}
+                  >
+                    <Download className="w-4 h-4 flex-shrink-0" />
+                    <span className="hidden sm:inline">Import Decklist</span>
+                    <span className="sm:hidden">Decklist</span>
+                  </button>
+                </>
+              )}
+              {decks.length > 0 && (
+                <button
+                  onClick={() => {
+                    setShowAnalysis(!showAnalysis);
+                    setShowImportDecklist(false);
+                    setShowImportArchidekt(false);
+                    if (showAnalysis) {
+                      setSelectedDeckIds([]);
+                    }
+                  }}
+                  className={`px-3 sm:px-4 py-2 rounded-lg flex items-center gap-2 transition-colors text-white text-sm font-semibold ${
+                    showAnalysis
+                      ? 'bg-teal-500 shadow-lg shadow-teal-500/50'
+                      : 'bg-teal-600 hover:bg-teal-700'
+                  }`}
+                >
+                  <BarChart3 className="w-4 h-4" />
+                  {showAnalysis ? 'Back to Decks' : 'Analyze Decks'}
+                </button>
+              )}
             </div>
           </div>
 
@@ -191,6 +273,74 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
               <BookOpen className="w-12 h-12 text-slate-600 mx-auto mb-3" />
               <p className="text-slate-400">No decks yet. Create your first deck to get started!</p>
             </div>
+          ) : showAnalysis ? (
+            <>
+              {/* Selection Controls */}
+              <div className="bg-slate-800/50 rounded-lg border border-slate-600 p-4 mb-4">
+                <div className="flex items-center justify-between flex-wrap gap-3">
+                  <button
+                    onClick={toggleSelectAll}
+                    className="flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg transition-colors font-medium"
+                  >
+                    {selectedDeckIds.length === decks.length ? (
+                      <>
+                        <Square className="w-5 h-5" />
+                        Deselect All
+                      </>
+                    ) : (
+                      <>
+                        <CheckSquare className="w-5 h-5" />
+                        Select All
+                      </>
+                    )}
+                  </button>
+                  {selectedDeckIds.length > 0 && (
+                    <span className="text-slate-400">
+                      {selectedDeckIds.length} deck{selectedDeckIds.length !== 1 ? 's' : ''} selected
+                    </span>
+                  )}
+                </div>
+              </div>
+              
+              {/* Deck Selection Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                {decks.map(deck => {
+                  const isSelected = selectedDeckIds.includes(deck.id);
+                  return (
+                    <div
+                      key={deck.id}
+                      onClick={() => toggleDeckSelection(deck.id)}
+                      className={`cursor-pointer rounded-lg border-2 p-4 transition-all ${
+                        isSelected
+                          ? 'border-teal-500 bg-teal-900/20 ring-2 ring-teal-500/30'
+                          : 'border-slate-600 bg-slate-800 hover:border-slate-500'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <h3 className="font-semibold text-slate-100">{deck.name}</h3>
+                        <div className="flex-shrink-0">
+                          {isSelected ? (
+                            <CheckSquare className="w-5 h-5 text-teal-400" />
+                          ) : (
+                            <Square className="w-5 h-5 text-slate-400" />
+                          )}
+                        </div>
+                      </div>
+                      <p className="text-sm text-slate-400">
+                        {(deck.cards && deck.cards.length) || 0} cards • {deck.format}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+              
+              {/* Analysis View */}
+              <DeckAnalysisView
+                decks={decks}
+                selectedDeckIds={selectedDeckIds}
+                inventoryByName={inventoryByName}
+              />
+            </>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {decks.map(deck => (
@@ -202,6 +352,8 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
                   onSelect={setSelectedDeck}
                   onCopy={previewCopyToDeck}
                   onEdit={setEditingDeck}
+                  onEditCards={() => setEditingDeckForModal(deck)}
+                  onArchidektSync={() => setSyncingDeck(deck)}
                   onDelete={deleteDeck}
                   onUpdateName={updateDeckName}
                   onCancelEdit={() => setEditingDeck(null)}
@@ -217,6 +369,8 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
           onBack={() => setSelectedDeck(null)}
           onDelete={deleteDeck}
           onUpdateDescription={updateDeckDescription}
+          onEditCards={setEditingDeckForModal}
+          onArchidektSync={setSyncingDeck}
         />
       )}
 
@@ -228,6 +382,22 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
           isCopying={isCopying}
           onCopy={executeCopyToDeck}
           onCancel={cancelCopyToDeck}
+        />
+      )}
+
+      {editingDeckForModal && (
+        <DeckEditorModal
+          deck={editingDeckForModal}
+          onClose={() => setEditingDeckForModal(null)}
+          onSave={handleSaveDeckEdit}
+        />
+      )}
+
+      {syncingDeck && (
+        <ArchidektSyncModal
+          deck={syncingDeck}
+          onClose={() => setSyncingDeck(null)}
+          onSyncComplete={handleSyncComplete}
         />
       )}
     </div>

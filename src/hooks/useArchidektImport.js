@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { extractArchidektDeckId } from '../utils/decklistParser';
 import { useToast, TOAST_TYPES } from '../context/ToastContext';
+import { fetchWithAuth } from '../utils/apiClient';
 
 const API_BASE = '/api';
 
@@ -33,7 +34,7 @@ export function useArchidektImport({ onSuccess, onInventoryUpdate }) {
       }
 
       // Fetch deck data from Archidekt API (via backend proxy to avoid CORS)
-      const response = await fetch(`${API_BASE}/archidekt/deck/${deckId}`);
+      const response = await fetchWithAuth(`${API_BASE}/archidekt/deck/${deckId}`);
       if (!response.ok) {
         throw new Error('Failed to fetch deck from Archidekt');
       }
@@ -87,7 +88,7 @@ export function useArchidektImport({ onSuccess, onInventoryUpdate }) {
       }
 
       // Create the deck with imported cards
-      const createResponse = await fetch(`${API_BASE}/decks`, {
+      const createResponse = await fetchWithAuth(`${API_BASE}/decks`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -104,7 +105,7 @@ export function useArchidektImport({ onSuccess, onInventoryUpdate }) {
       const newDeck = await createResponse.json();
 
       // Update deck with cards
-      const updateResponse = await fetch(`${API_BASE}/decks/${newDeck.id}`, {
+      const updateResponse = await fetchWithAuth(`${API_BASE}/decks/${newDeck.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ cards })

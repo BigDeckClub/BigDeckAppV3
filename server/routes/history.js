@@ -1,12 +1,14 @@
 import express from 'express';
 import { pool } from '../db/pool.js';
+import { authenticate } from '../middleware/auth.js';
 
 const router = express.Router();
 
 // ========== CHANGE HISTORY ENDPOINTS ==========
 
 // GET /api/history/changes - Fetch change history with filtering
-router.get('/api/history/changes', async (req, res) => {
+router.get('/api/history/changes', authenticate, async (req, res) => {
+  const userId = req.userId;
   try {
     const { field_changed, start_date, end_date, limit = 100, offset = 0 } = req.query;
     
@@ -14,10 +16,10 @@ router.get('/api/history/changes', async (req, res) => {
       SELECT ch.*, i.folder, i.image_url
       FROM change_history ch
       LEFT JOIN inventory i ON ch.card_id = i.id
-      WHERE 1=1
+      WHERE ch.user_id = $1
     `;
-    const values = [];
-    let paramCount = 1;
+    const values = [userId];
+    let paramCount = 2;
     
     if (field_changed && field_changed !== 'all') {
       query += ` AND ch.field_changed = $${paramCount++}`;
@@ -40,9 +42,9 @@ router.get('/api/history/changes', async (req, res) => {
     const result = await pool.query(query, values);
     
     // Get total count for pagination
-    let countQuery = `SELECT COUNT(*) FROM change_history ch WHERE 1=1`;
-    const countValues = [];
-    let countParamCount = 1;
+    let countQuery = `SELECT COUNT(*) FROM change_history ch WHERE ch.user_id = $1`;
+    const countValues = [userId];
+    let countParamCount = 2;
     
     if (field_changed && field_changed !== 'all') {
       countQuery += ` AND ch.field_changed = $${countParamCount++}`;
@@ -72,8 +74,9 @@ router.get('/api/history/changes', async (req, res) => {
 });
 
 // POST /api/history/changes - Record a change (internal use)
-router.post('/api/history/changes', async (req, res) => {
-  const { card_id, card_name, field_changed, old_value, new_value, user_id } = req.body;
+router.post('/api/history/changes', authenticate, async (req, res) => {
+  const userId = req.userId;
+  const { card_id, card_name, field_changed, old_value, new_value } = req.body;
   
   if (!card_name || !field_changed) {
     return res.status(400).json({ error: 'Card name and field changed are required' });
@@ -84,7 +87,7 @@ router.post('/api/history/changes', async (req, res) => {
       `INSERT INTO change_history (card_id, card_name, field_changed, old_value, new_value, user_id)
        VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
-      [card_id || null, card_name, field_changed, old_value?.toString() ?? null, new_value?.toString() ?? null, user_id || null]
+      [card_id || null, card_name, field_changed, old_value?.toString() ?? null, new_value?.toString() ?? null, userId]
     );
     res.status(201).json(result.rows[0]);
   } catch (error) {
@@ -96,13 +99,14 @@ router.post('/api/history/changes', async (req, res) => {
 // ========== AUDIT LOG ENDPOINTS ==========
 
 // GET /api/history/audit - Fetch audit log with filtering
-router.get('/api/history/audit', async (req, res) => {
+router.get('/api/history/audit', authenticate, async (req, res) => {
+  const userId = req.userId;
   try {
     const { action_type, start_date, end_date, limit = 100, offset = 0 } = req.query;
     
-    let query = `SELECT * FROM audit_log WHERE 1=1`;
-    const values = [];
-    let paramCount = 1;
+    let query = `SELECT * FROM audit_log WHERE user_id = $1`;
+    const values = [userId];
+    let paramCount = 2;
     
     if (action_type && action_type !== 'all') {
       query += ` AND action_type = $${paramCount++}`;
@@ -125,9 +129,9 @@ router.get('/api/history/audit', async (req, res) => {
     const result = await pool.query(query, values);
     
     // Get total count
-    let countQuery = `SELECT COUNT(*) FROM audit_log WHERE 1=1`;
-    const countValues = [];
-    let countParamCount = 1;
+    let countQuery = `SELECT COUNT(*) FROM audit_log WHERE user_id = $1`;
+    const countValues = [userId];
+    let countParamCount = 2;
     
     if (action_type && action_type !== 'all') {
       countQuery += ` AND action_type = $${countParamCount++}`;
@@ -157,8 +161,9 @@ router.get('/api/history/audit', async (req, res) => {
 });
 
 // POST /api/history/audit - Record an audit entry
-router.post('/api/history/audit', async (req, res) => {
-  const { action_type, description, entity_type, entity_id, metadata, user_id } = req.body;
+router.post('/api/history/audit', authenticate, async (req, res) => {
+  const userId = req.userId;
+  const { action_type, description, entity_type, entity_id, metadata } = req.body;
   
   if (!action_type) {
     return res.status(400).json({ error: 'Action type is required' });
@@ -169,7 +174,7 @@ router.post('/api/history/audit', async (req, res) => {
       `INSERT INTO audit_log (action_type, description, entity_type, entity_id, metadata, user_id)
        VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
-      [action_type, description || null, entity_type || null, entity_id || null, metadata ? JSON.stringify(metadata) : '{}', user_id || null]
+      [action_type, description || null, entity_type || null, entity_id || null, metadata ? JSON.stringify(metadata) : '{}', userId]
     );
     res.status(201).json(result.rows[0]);
   } catch (error) {
@@ -181,13 +186,14 @@ router.post('/api/history/audit', async (req, res) => {
 // ========== ACTIVITY FEED ENDPOINTS ==========
 
 // GET /api/history/activity - Fetch activity feed
-router.get('/api/history/activity', async (req, res) => {
+router.get('/api/history/activity', authenticate, async (req, res) => {
+  const userId = req.userId;
   try {
     const { activity_type, limit = 50, offset = 0 } = req.query;
     
-    let query = `SELECT * FROM activity_feed WHERE 1=1`;
-    const values = [];
-    let paramCount = 1;
+    let query = `SELECT * FROM activity_feed WHERE user_id = $1`;
+    const values = [userId];
+    let paramCount = 2;
     
     if (activity_type && activity_type !== 'all') {
       query += ` AND activity_type = $${paramCount++}`;
@@ -200,9 +206,9 @@ router.get('/api/history/activity', async (req, res) => {
     const result = await pool.query(query, values);
     
     // Get total count
-    let countQuery = `SELECT COUNT(*) FROM activity_feed WHERE 1=1`;
-    const countValues = [];
-    let countParamCount = 1;
+    let countQuery = `SELECT COUNT(*) FROM activity_feed WHERE user_id = $1`;
+    const countValues = [userId];
+    let countParamCount = 2;
     
     if (activity_type && activity_type !== 'all') {
       countQuery += ` AND activity_type = $${countParamCount++}`;
@@ -224,8 +230,9 @@ router.get('/api/history/activity', async (req, res) => {
 });
 
 // POST /api/history/activity - Record an activity
-router.post('/api/history/activity', async (req, res) => {
-  const { activity_type, title, description, entity_type, entity_id, metadata, user_id } = req.body;
+router.post('/api/history/activity', authenticate, async (req, res) => {
+  const userId = req.userId;
+  const { activity_type, title, description, entity_type, entity_id, metadata } = req.body;
   
   if (!activity_type || !title) {
     return res.status(400).json({ error: 'Activity type and title are required' });
@@ -236,7 +243,7 @@ router.post('/api/history/activity', async (req, res) => {
       `INSERT INTO activity_feed (activity_type, title, description, entity_type, entity_id, metadata, user_id)
        VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING *`,
-      [activity_type, title, description || null, entity_type || null, entity_id || null, metadata ? JSON.stringify(metadata) : '{}', user_id || null]
+      [activity_type, title, description || null, entity_type || null, entity_id || null, metadata ? JSON.stringify(metadata) : '{}', userId]
     );
     res.status(201).json(result.rows[0]);
   } catch (error) {

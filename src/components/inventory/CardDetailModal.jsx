@@ -4,6 +4,7 @@ import { X, Trash2, Edit2, Bell, BellOff, ChevronDown, ChevronUp, Package, Dolla
 import { calculateSmartThreshold } from '../../utils/thresholdCalculator';
 import { EXTERNAL_APIS } from '../../config/api';
 import { Button } from '../ui/Button';
+import { fetchWithAuth } from '../../utils/apiClient';
 
 /**
  * Get card image URL from Scryfall
@@ -446,7 +447,7 @@ export const CardDetailModal = memo(function CardDetailModal({
       }
     }
     
-    fetch('/api/sales')
+    fetchWithAuth('/api/sales')
       .then(res => res.json())
       .then(data => {
         setSalesHistory(data || []);

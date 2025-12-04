@@ -1,6 +1,7 @@
 import express from 'express';
 import { pool } from '../db/pool.js';
 import { validateId } from '../middleware/index.js';
+import { authenticate } from '../middleware/auth.js';
 import { fetchRetry } from '../utils/index.js';
 
 const router = express.Router();
@@ -8,10 +9,12 @@ const router = express.Router();
 // ========== PURCHASE LOTS ENDPOINTS ==========
 
 // GET /api/lots - Fetch all purchase lots
-router.get('/api/lots', async (req, res) => {
+router.get('/api/lots', authenticate, async (req, res) => {
+  const userId = req.userId;
   try {
     const result = await pool.query(
-      `SELECT * FROM purchase_lots ORDER BY created_at DESC`
+      `SELECT * FROM purchase_lots WHERE user_id = $1 ORDER BY created_at DESC`,
+      [userId]
     );
     res.json(result.rows);
   } catch (error) {
@@ -21,7 +24,8 @@ router.get('/api/lots', async (req, res) => {
 });
 
 // POST /api/lots - Create a new purchase lot
-router.post('/api/lots', async (req, res) => {
+router.post('/api/lots', authenticate, async (req, res) => {
+  const userId = req.userId;
   const { name, total_cost, card_count } = req.body;
   
   // Input validation
@@ -46,10 +50,10 @@ router.post('/api/lots', async (req, res) => {
     const perCardCost = (total_cost && card_count) ? (total_cost / card_count) : null;
     
     const result = await pool.query(
-      `INSERT INTO purchase_lots (name, total_cost, card_count, per_card_cost, purchase_date, created_at)
-       VALUES ($1, $2, $3, $4, CURRENT_DATE, NOW())
+      `INSERT INTO purchase_lots (name, total_cost, card_count, per_card_cost, purchase_date, user_id, created_at)
+       VALUES ($1, $2, $3, $4, CURRENT_DATE, $5, NOW())
        RETURNING *`,
-      [name.trim(), total_cost || null, card_count || null, perCardCost]
+      [name.trim(), total_cost || null, card_count || null, perCardCost, userId]
     );
     
     res.status(201).json(result.rows[0]);
@@ -60,7 +64,8 @@ router.post('/api/lots', async (req, res) => {
 });
 
 // POST /api/lots/:id/cards - Bulk add cards to a lot
-router.post('/api/lots/:id/cards', validateId, async (req, res) => {
+router.post('/api/lots/:id/cards', authenticate, validateId, async (req, res) => {
+  const userId = req.userId;
   const lotId = req.validatedId;
   const { cards } = req.body;
   
@@ -76,8 +81,8 @@ router.post('/api/lots/:id/cards', validateId, async (req, res) => {
     
     // Get the lot details to retrieve total_cost
     const lotResult = await client.query(
-      `SELECT name, total_cost FROM purchase_lots WHERE id = $1`,
-      [lotId]
+      `SELECT name, total_cost FROM purchase_lots WHERE id = $1 AND user_id = $2`,
+      [lotId, userId]
     );
     
     if (lotResult.rows.length === 0) {
@@ -155,8 +160,8 @@ router.post('/api/lots/:id/cards', validateId, async (req, res) => {
       }
 
       const result = await client.query(
-        `INSERT INTO inventory (name, set, set_name, quantity, purchase_price, purchase_date, reorder_type, image_url, scryfall_id, folder, foil, quality, lot_id, lot_name, created_at)
-         VALUES ($1, $2, $3, $4, $5, CURRENT_DATE, $6, $7, $8, $9, $10, $11, $12, $13, NOW())
+        `INSERT INTO inventory (name, set, set_name, quantity, purchase_price, purchase_date, reorder_type, image_url, scryfall_id, folder, foil, quality, lot_id, lot_name, user_id, created_at)
+         VALUES ($1, $2, $3, $4, $5, CURRENT_DATE, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW())
          RETURNING *`,
         [
           card.name,
@@ -171,7 +176,8 @@ router.post('/api/lots/:id/cards', validateId, async (req, res) => {
           card.foil || false,
           card.quality || 'NM',
           lotId,
-          lotName || null
+          lotName || null,
+          userId
         ]
       );
       
@@ -180,9 +186,9 @@ router.post('/api/lots/:id/cards', validateId, async (req, res) => {
       // Record PURCHASE transaction for analytics
       if (perCardCost && (card.quantity || 1) > 0) {
         await client.query(
-          `INSERT INTO inventory_transactions (card_name, transaction_type, quantity, purchase_price, transaction_date)
-           VALUES ($1, $2, $3, $4, CURRENT_DATE)`,
-          [card.name, 'PURCHASE', card.quantity || 1, perCardCost]
+          `INSERT INTO inventory_transactions (card_name, transaction_type, quantity, purchase_price, transaction_date, user_id)
+           VALUES ($1, $2, $3, $4, CURRENT_DATE, $5)`,
+          [card.name, 'PURCHASE', card.quantity || 1, perCardCost, userId]
         );
       }
     }
@@ -209,13 +215,14 @@ router.post('/api/lots/:id/cards', validateId, async (req, res) => {
 });
 
 // GET /api/lots/:id - Get a specific lot with its cards
-router.get('/api/lots/:id', validateId, async (req, res) => {
+router.get('/api/lots/:id', authenticate, validateId, async (req, res) => {
+  const userId = req.userId;
   const lotId = req.validatedId;
 
   try {
     const lotResult = await pool.query(
-      `SELECT * FROM purchase_lots WHERE id = $1`,
-      [lotId]
+      `SELECT * FROM purchase_lots WHERE id = $1 AND user_id = $2`,
+      [lotId, userId]
     );
     
     if (lotResult.rows.length === 0) {
@@ -223,8 +230,8 @@ router.get('/api/lots/:id', validateId, async (req, res) => {
     }
     
     const cardsResult = await pool.query(
-      `SELECT * FROM inventory WHERE lot_id = $1 ORDER BY name ASC`,
-      [lotId]
+      `SELECT * FROM inventory WHERE lot_id = $1 AND user_id = $2 ORDER BY name ASC`,
+      [lotId, userId]
     );
     
     res.json({

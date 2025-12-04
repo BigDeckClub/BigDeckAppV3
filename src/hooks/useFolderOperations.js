@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useToast, TOAST_TYPES } from '../context/ToastContext';
+import { fetchWithAuth } from '../utils/apiClient';
 
 // Reserved folder names that cannot be created by users (case-insensitive)
 const RESERVED_FOLDER_NAMES = ['unsorted', 'uncategorized', 'all cards', 'all', 'trash'];
@@ -24,7 +25,7 @@ export function useFolderOperations({ inventory, onLoadInventory }) {
   // Load created folders from server
   const loadFolders = useCallback(async () => {
     try {
-      const response = await fetch('/api/folders');
+      const response = await fetchWithAuth('/api/folders');
       if (response.ok) {
         const data = await response.json();
         setCreatedFolders(data.map(f => f.name));
@@ -57,7 +58,7 @@ export function useFolderOperations({ inventory, onLoadInventory }) {
     }
     
     try {
-      const response = await fetch('/api/folders', {
+      const response = await fetchWithAuth('/api/folders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: trimmedName })
@@ -90,7 +91,7 @@ export function useFolderOperations({ inventory, onLoadInventory }) {
       }
       
       // Update API first
-      const response = await fetch(`/api/inventory/${itemId}`, {
+      const response = await fetchWithAuth(`/api/inventory/${itemId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ folder: targetFolder })
@@ -123,7 +124,7 @@ export function useFolderOperations({ inventory, onLoadInventory }) {
       
       // Update API in the background
       for (const item of cardItems) {
-        const response = await fetch(`/api/inventory/${item.id}`, {
+        const response = await fetchWithAuth(`/api/inventory/${item.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ folder: targetFolder })
@@ -167,7 +168,7 @@ export function useFolderOperations({ inventory, onLoadInventory }) {
   // Delete a folder
   const deleteFolder = useCallback(async (folderName, activeTab, setActiveTab) => {
     try {
-      const response = await fetch(`/api/folders/${encodeURIComponent(folderName)}`, {
+      const response = await fetchWithAuth(`/api/folders/${encodeURIComponent(folderName)}`, {
         method: 'DELETE'
       });
       

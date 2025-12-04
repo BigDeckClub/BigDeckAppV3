@@ -1,13 +1,15 @@
 import express from 'express';
 import { pool } from '../db/pool.js';
 import { mtgjsonService } from '../mtgjsonPriceService.js';
+import { authenticate } from '../middleware/auth.js';
 
 const router = express.Router();
 
 // ========== ANALYTICS ENDPOINTS ==========
-router.get('/api/analytics/market-values', async (req, res) => {
+router.get('/api/analytics/market-values', authenticate, async (req, res) => {
+  const userId = req.userId;
   try {
-    const result = await pool.query('SELECT scryfall_id, quantity FROM inventory WHERE scryfall_id IS NOT NULL');
+    const result = await pool.query('SELECT scryfall_id, quantity FROM inventory WHERE scryfall_id IS NOT NULL AND user_id = $1', [userId]);
     const items = result.rows || [];
     
     let cardkingdomTotal = 0;
@@ -32,10 +34,11 @@ router.get('/api/analytics/market-values', async (req, res) => {
   }
 });
 
-router.get('/api/analytics/card-metrics', async (req, res) => {
+router.get('/api/analytics/card-metrics', authenticate, async (req, res) => {
+  const userId = req.userId;
   try {
     // Current inventory (total cards and unique cards)
-    const totalResult = await pool.query('SELECT COUNT(DISTINCT LOWER(TRIM(name))) as unique_count, SUM(quantity) as total_count FROM inventory');
+    const totalResult = await pool.query('SELECT COUNT(DISTINCT LOWER(TRIM(name))) as unique_count, SUM(quantity) as total_count FROM inventory WHERE user_id = $1', [userId]);
     const totalRow = totalResult.rows[0];
     const totalCards = parseInt(totalRow.total_count) || 0;
     const uniqueCards = parseInt(totalRow.unique_count) || 0;
@@ -50,13 +53,14 @@ router.get('/api/analytics/card-metrics', async (req, res) => {
         ), 0)
       ), 0) as available_count
       FROM inventory i
-    `);
+      WHERE i.user_id = $1
+    `, [userId]);
     const totalAvailable = parseInt(availableResult.rows[0].available_count) || 0;
     
     // Sold in last 60 days (from transaction history)
     const soldResult = await pool.query(
-      'SELECT SUM(quantity) as count FROM inventory_transactions WHERE transaction_type = $1 AND transaction_date >= CURRENT_DATE - INTERVAL \'60 days\'',
-      ['SALE']
+      'SELECT SUM(quantity) as count FROM inventory_transactions WHERE transaction_type = $1 AND transaction_date >= CURRENT_DATE - INTERVAL \'60 days\' AND user_id = $2',
+      ['SALE', userId]
     );
     const totalSoldLast60d = parseInt(soldResult.rows[0].count) || 0;
     
@@ -65,15 +69,15 @@ router.get('/api/analytics/card-metrics', async (req, res) => {
     
     // Lifetime totals = sum all SALE transactions
     const lifetimeSoldResult = await pool.query(
-      'SELECT SUM(quantity) as count FROM inventory_transactions WHERE transaction_type = $1',
-      ['SALE']
+      'SELECT SUM(quantity) as count FROM inventory_transactions WHERE transaction_type = $1 AND user_id = $2',
+      ['SALE', userId]
     );
     const lifetimeTotalCards = parseInt(lifetimeSoldResult.rows[0].count) || 0;
     
     // Lifetime value = sum all PURCHASE transaction values (correct equation)
     const lifetimePurchaseValueResult = await pool.query(
-      'SELECT COALESCE(SUM(quantity * purchase_price), 0) as value FROM inventory_transactions WHERE transaction_type = $1',
-      ['PURCHASE']
+      'SELECT COALESCE(SUM(quantity * purchase_price), 0) as value FROM inventory_transactions WHERE transaction_type = $1 AND user_id = $2',
+      ['PURCHASE', userId]
     );
     const lifetimeTotalValue = parseFloat(lifetimePurchaseValueResult.rows[0].value) || 0;
     

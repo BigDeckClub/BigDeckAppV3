@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { fetchWithAuth } from '../utils/apiClient';
 
 /**
  * useInventoryState - Custom hook for managing inventory state and operations
@@ -44,7 +45,7 @@ export function useInventoryState({
   // Alert handlers
   const toggleAlertHandler = useCallback(async (itemId) => {
     try {
-      const response = await fetch(`/api/inventory/${itemId}/toggle-alert`, { method: 'POST' });
+      const response = await fetchWithAuth(`/api/inventory/${itemId}/toggle-alert`, { method: 'POST' });
       await response.json();
       onLoadInventory?.();
     } catch (error) {
@@ -54,7 +55,7 @@ export function useInventoryState({
 
   const setThresholdHandler = useCallback(async (itemId, threshold) => {
     try {
-      await fetch(`/api/inventory/${itemId}/set-threshold`, {
+      await fetchWithAuth(`/api/inventory/${itemId}/set-threshold`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ threshold })
@@ -84,7 +85,7 @@ export function useInventoryState({
   // Load folders from server
   const loadFolders = useCallback(async () => {
     try {
-      const response = await fetch('/api/folders');
+      const response = await fetchWithAuth('/api/folders');
       if (response.ok) {
         const data = await response.json();
         setCreatedFolders(data.map(f => f.name));
@@ -101,7 +102,7 @@ export function useInventoryState({
   // Fetch deck instances
   const refreshDeckInstances = useCallback(async () => {
     try {
-      const response = await fetch('/api/deck-instances');
+      const response = await fetchWithAuth('/api/deck-instances');
       if (response.ok) {
         const data = await response.json();
         setDeckInstances(data);
@@ -116,7 +117,7 @@ export function useInventoryState({
     if (deckDetailsCache[deckId] && !forceRefresh) return;
     setLoadingDeckDetails(true);
     try {
-      const response = await fetch(`/api/deck-instances/${deckId}/details`);
+      const response = await fetchWithAuth(`/api/deck-instances/${deckId}/details`);
       if (response.ok) {
         const data = await response.json();
         setDeckDetailsCache(prev => ({ ...prev, [deckId]: data }));
@@ -179,7 +180,7 @@ export function useInventoryState({
   // Deck operations
   const releaseDeck = useCallback(async (deckId) => {
     try {
-      const response = await fetch(`/api/deck-instances/${deckId}/release`, { method: 'POST' });
+      const response = await fetchWithAuth(`/api/deck-instances/${deckId}/release`, { method: 'POST' });
       if (response.ok) {
         closeDeckTab(deckId);
         setDeckDetailsCache(prev => {
@@ -200,7 +201,7 @@ export function useInventoryState({
 
   const removeCardFromDeck = useCallback(async (deckId, reservationId, quantity = 1) => {
     try {
-      const response = await fetch(`/api/deck-instances/${deckId}/remove-card`, {
+      const response = await fetchWithAuth(`/api/deck-instances/${deckId}/remove-card`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reservation_id: reservationId, quantity: quantity })
@@ -224,7 +225,7 @@ export function useInventoryState({
         return;
       }
       setSuccessMessage(`Moved ${item.quantity}x ${item.name} to ${targetFolder}`);
-      const response = await fetch(`/api/inventory/${itemId}`, {
+      const response = await fetchWithAuth(`/api/inventory/${itemId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ folder: targetFolder })
@@ -250,7 +251,7 @@ export function useInventoryState({
       }
       setSuccessMessage(`Moved "${cardName}" to ${targetFolder}`);
       for (const item of cardItems) {
-        const response = await fetch(`/api/inventory/${item.id}`, {
+        const response = await fetchWithAuth(`/api/inventory/${item.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ folder: targetFolder })
@@ -274,13 +275,13 @@ export function useInventoryState({
       const reservationId = deckCardData.id;
       const quantity = deckCardData.quantity_reserved;
       setSuccessMessage(`Moved card to ${targetFolder}`);
-      const removeResponse = await fetch(`/api/deck-instances/${deckId}/remove-card`, {
+      const removeResponse = await fetchWithAuth(`/api/deck-instances/${deckId}/remove-card`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reservation_id: reservationId, quantity: quantity })
       });
       if (!removeResponse.ok) throw new Error('Failed to remove card from deck');
-      const moveResponse = await fetch(`/api/inventory/${deckCardData.inventory_item_id}`, {
+      const moveResponse = await fetchWithAuth(`/api/inventory/${deckCardData.inventory_item_id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ folder: targetFolder })
@@ -303,7 +304,7 @@ export function useInventoryState({
       if (!deck) throw new Error('Deck not found');
       const qtyToUse = attemptQty !== null ? attemptQty : (inventoryItem.quantity || 1);
       setSuccessMessage(`Adding ${qtyToUse}x ${inventoryItem.name} to deck...`);
-      const response = await fetch(`/api/deck-instances/${deckId}/add-card`, {
+      const response = await fetchWithAuth(`/api/deck-instances/${deckId}/add-card`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -356,13 +357,13 @@ export function useInventoryState({
       const quantity = deckCardData.quantity_reserved;
       const inventoryItemId = deckCardData.inventory_item_id;
       setSuccessMessage(`Moving card to deck...`);
-      const removeResponse = await fetch(`/api/deck-instances/${sourceDeckId}/remove-card`, {
+      const removeResponse = await fetchWithAuth(`/api/deck-instances/${sourceDeckId}/remove-card`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reservation_id: reservationId, quantity: quantity })
       });
       if (!removeResponse.ok) throw new Error('Failed to remove card from source deck');
-      const addResponse = await fetch(`/api/deck-instances/${targetDeckId}/add-card`, {
+      const addResponse = await fetchWithAuth(`/api/deck-instances/${targetDeckId}/add-card`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ inventory_item_id: inventoryItemId, quantity: quantity })
@@ -474,7 +475,7 @@ export function useInventoryState({
     const trimmedName = folderName.trim();
     if (!createdFolders.includes(trimmedName)) {
       try {
-        const response = await fetch('/api/folders', {
+        const response = await fetchWithAuth('/api/folders', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name: trimmedName, description: '' })
