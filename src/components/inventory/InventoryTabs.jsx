@@ -1,6 +1,6 @@
 import React, { memo } from 'react';
 import PropTypes from 'prop-types';
-import { X, Grid3X3, List, Folder } from 'lucide-react';
+import { X, Grid3X3, List, Folder, Image } from 'lucide-react';
 
 /**
  * InventoryTabs - Tab navigation for inventory views
@@ -170,6 +170,17 @@ export const InventoryTabs = memo(function InventoryTabs({
           title="List View"
         >
           <List className="w-4 h-4" />
+        </button>
+        <button
+          onClick={() => setViewMode('image')}
+          className={`p-2 rounded-lg transition-all duration-300 ${
+            viewMode === 'image'
+              ? 'bg-gradient-to-br from-teal-600 to-teal-700 text-white shadow-lg shadow-teal-500/30'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/30'
+          }`}
+          title="Image View"
+        >
+          <Image className="w-4 h-4" />
         </button>
       </div>
     </div>

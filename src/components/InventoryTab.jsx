@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { X, Menu, Trash2 } from 'lucide-react';
 import { 
+  Breadcrumb,
   CardGrid, 
   InventorySearchBar, 
   InventoryTabs, 
@@ -26,7 +27,8 @@ export const InventoryTab = ({
   expandedCards,
   setExpandedCards,
   deckRefreshTrigger,
-  onSell
+  onSell,
+  searchRef
 }) => {
   const { confirm } = useConfirm();
   const { post } = useApi();
@@ -190,6 +192,38 @@ export const InventoryTab = ({
   const currentDeck = deckOps.deckInstances.find(d => d.id === currentDeckId);
   const currentDeckDetails = deckOps.deckDetailsCache[currentDeckId];
 
+  // Navigation path for breadcrumb
+  const navigationPath = useMemo(() => {
+    if (activeTab === 'all') {
+      return [{ label: 'All Cards', tab: 'all' }];
+    }
+    if (activeTab === 'Trash') {
+      return [
+        { label: 'All Cards', tab: 'all' },
+        { label: 'Trash', tab: 'Trash' }
+      ];
+    }
+    if (activeTab.startsWith('deck-')) {
+      const deckId = activeTab.replace('deck-', '');
+      const deck = deckOps.deckInstances.find(d => String(d.id) === deckId);
+      return [
+        { label: 'All Cards', tab: 'all' },
+        { label: deck?.name || 'Deck', tab: activeTab }
+      ];
+    }
+    // Folder tab
+    return [
+      { label: 'All Cards', tab: 'all' },
+      { label: activeTab === 'Uncategorized' ? 'Unsorted' : activeTab, tab: activeTab }
+    ];
+  }, [activeTab, deckOps.deckInstances]);
+
+  // Handle breadcrumb navigation
+  const handleBreadcrumbNavigate = useCallback((tab) => {
+    setActiveTab(tab);
+    setSidebarOpen(false);
+  }, []);
+
   return (
     <div className="flex gap-6 min-h-screen bg-slate-900 max-w-7xl mx-auto w-full">
       {/* Error Message Toast */}
@@ -249,8 +283,14 @@ export const InventoryTab = ({
       {/* Main Content */}
       <div className="flex-1 pb-24 md:pb-6 px-4 md:px-8 md:ml-0 pt-16">
         <InventorySearchBar
+          ref={searchRef}
           inventorySearch={inventorySearch}
           setInventorySearch={setInventorySearch}
+        />
+
+        <Breadcrumb
+          navigationPath={navigationPath}
+          onNavigate={handleBreadcrumbNavigate}
         />
 
         <InventoryTabs
@@ -422,7 +462,12 @@ InventoryTab.propTypes = {
   expandedCards: PropTypes.object.isRequired,
   setExpandedCards: PropTypes.func.isRequired,
   deckRefreshTrigger: PropTypes.number,
-  onSell: PropTypes.func
+  onSell: PropTypes.func,
+  /** Ref for the search input (used by keyboard shortcuts) */
+  searchRef: PropTypes.oneOfType([
+    PropTypes.func,
+    PropTypes.shape({ current: PropTypes.any })
+  ])
 };
 
 export default InventoryTab;

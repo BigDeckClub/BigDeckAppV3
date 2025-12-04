@@ -1,6 +1,6 @@
-import React, { memo, useState, useCallback } from 'react';
+import React, { memo, useState, useCallback, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { X, Bell, BellOff, ChevronRight, Eye, RotateCcw, CheckSquare, Square } from 'lucide-react';
+import { X, Bell, BellOff, ChevronRight, Eye, RotateCcw, CheckSquare, Square, ImageOff } from 'lucide-react';
 import { CardDetailModal } from './CardDetailModal';
 import { CardPreviewTooltip } from './CardPreviewTooltip';
 import { useConfirm } from '../../context/ConfirmContext';
@@ -47,6 +47,16 @@ export const CardGroup = memo(function CardGroup({
   const { confirm } = useConfirm();
   const [togglingId, setTogglingId] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [imageError, setImageError] = useState(false);
+  const [imageLoading, setImageLoading] = useState(true);
+  
+  // Reset image states when cardName changes or entering image view
+  useEffect(() => {
+    if (viewMode === 'image') {
+      setImageError(false);
+      setImageLoading(true);
+    }
+  }, [cardName, viewMode]);
   
   // Hover preview hook - only for card and list views (not image view)
   const {
@@ -184,7 +194,7 @@ export const CardGroup = memo(function CardGroup({
       )}
 
       {/* Card View */}
-      {viewMode === 'card' ? (
+      {viewMode === 'card' && (
       <div 
         draggable
         onDragStart={(e) => {
@@ -297,9 +307,106 @@ export const CardGroup = memo(function CardGroup({
           </div>
         </div>
       </div>
-      ) : (
+      )}
+
+      {/* Image View */}
+      {viewMode === 'image' && (
+      <div 
+        draggable
+        onDragStart={(e) => {
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('cardName', cardName);
+          if (items.length > 0) {
+            e.dataTransfer.setData('skuData', JSON.stringify(items[0]));
+          }
+        }}
+        className={`relative rounded-xl overflow-hidden border ${hasSelectedItems ? 'border-teal-500 ring-2 ring-teal-500/50' : 'border-slate-600 hover:border-teal-400'} transition-all duration-300 cursor-grab active:cursor-grabbing group hover:shadow-2xl hover:shadow-teal-500/30 hover:-translate-y-1 active:scale-95`}
+        onClick={handleOpenModal}
+      >
+        {/* Card Image */}
+        <div className="aspect-[5/7] bg-slate-800 relative">
+          {/* Loading skeleton */}
+          {imageLoading && !imageError && (
+            <div className="absolute inset-0 bg-slate-700 animate-pulse flex items-center justify-center">
+              <div className="text-slate-500 text-xs">Loading...</div>
+            </div>
+          )}
+          
+          {/* Card image */}
+          {!imageError ? (
+            <img
+              src={getCardImageUrl(cardName, items[0]?.set, 'normal')}
+              alt={cardName}
+              className={`w-full h-full object-cover transition-opacity ${imageLoading ? 'opacity-0' : 'opacity-100'}`}
+              onLoad={() => setImageLoading(false)}
+              onError={() => {
+                setImageError(true);
+                setImageLoading(false);
+              }}
+              loading="lazy"
+            />
+          ) : (
+            <div className="absolute inset-0 bg-slate-800 flex flex-col items-center justify-center text-slate-400 p-4">
+              <ImageOff className="w-10 h-10 mb-2" />
+              <span className="text-xs text-center line-clamp-2">{cardName}</span>
+            </div>
+          )}
+          
+          {/* Hover overlay with card name */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3">
+            <h3 className="text-white text-sm font-semibold line-clamp-2">{cardName}</h3>
+            <div className="flex items-center gap-2 mt-1">
+              <Eye className="w-3 h-3 text-slate-300" />
+              <span className="text-slate-300 text-xs">Click for details</span>
+            </div>
+          </div>
+          
+          {/* Quantity badge */}
+          <div className="absolute bottom-2 right-2 bg-black/70 text-white text-sm font-bold px-2 py-1 rounded-lg backdrop-blur-sm">
+            ×{totalQty}
+          </div>
+          
+          {/* Selection Checkbox (when selection mode enabled) */}
+          {isSelectionMode && (
+            <button
+              type="button"
+              onClick={handleToggleSelection}
+              className={`absolute top-2 left-2 p-1.5 rounded transition-all z-30 ${
+                hasSelectedItems 
+                  ? 'bg-teal-600 text-white' 
+                  : 'bg-black/50 text-slate-300 hover:bg-slate-600'
+              }`}
+              title={hasSelectedItems ? "Deselect" : "Select"}
+            >
+              {hasSelectedItems ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
+            </button>
+          )}
+          
+          {/* Delete button */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              items.forEach(item => deleteInventoryItem(item.id));
+            }}
+            className="absolute top-2 right-2 p-1.5 bg-black/50 hover:bg-red-600/80 text-slate-300 hover:text-white rounded-lg transition-all opacity-0 group-hover:opacity-100 z-20"
+            title="Delete all copies"
+          >
+            <X className="w-4 h-4" />
+          </button>
+          
+          {/* SKU Count Badge */}
+          {items.length > 1 && (
+            <div className="absolute bottom-2 left-2 bg-teal-600/90 text-white text-[10px] font-bold px-1.5 py-0.5 rounded backdrop-blur-sm" title={`${items.length} SKUs`}>
+              {items.length} SKUs
+            </div>
+          )}
+        </div>
+      </div>
+      )}
+
+      {/* List View */}
+      {viewMode === 'list' && (
       <div>
-        {/* List View */}
         <div 
           draggable
           onDragStart={(e) => {

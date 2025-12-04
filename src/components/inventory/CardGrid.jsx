@@ -4,7 +4,7 @@ import { CardGroup } from './CardGroup';
 
 /**
  * CardGrid - Renders a grid or list of CardGroup components
- * Handles both card and list view modes
+ * Handles card, list, and image view modes
  */
 export const CardGrid = memo(function CardGrid({
   cards,
@@ -28,6 +28,38 @@ export const CardGrid = memo(function CardGrid({
 }) {
   if (cards.length === 0) {
     return null;
+  }
+
+  // Image view: larger cards, fewer columns
+  if (viewMode === 'image') {
+    return (
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
+        {cards.map(([cardName, items]) => (
+          <CardGroup
+            key={cardName}
+            cardName={cardName}
+            items={items}
+            viewMode={viewMode}
+            expandedCards={expandedCards}
+            setExpandedCards={setExpandedCards}
+            editingId={editingId}
+            editForm={editForm}
+            setEditForm={setEditForm}
+            startEditingItem={startEditingItem}
+            updateInventoryItem={updateInventoryItem}
+            deleteInventoryItem={deleteInventoryItem}
+            permanentlyDeleteItem={permanentlyDeleteItem}
+            restoreFromTrash={restoreFromTrash}
+            isTrashView={isTrashView}
+            createdFolders={createdFolders}
+            onToggleLowInventory={onToggleLowInventory}
+            onSetThreshold={onSetThreshold}
+            selectedCardIds={selectedCardIds}
+            setSelectedCardIds={setSelectedCardIds}
+          />
+        ))}
+      </div>
+    );
   }
 
   if (viewMode === 'card') {
@@ -61,6 +93,7 @@ export const CardGrid = memo(function CardGrid({
     );
   }
 
+  // List view
   return (
     <div className="space-y-2">
       {cards.map(([cardName, items]) => (
