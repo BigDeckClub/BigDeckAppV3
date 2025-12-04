@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { Bell } from 'lucide-react';
 import { useApi } from '../../hooks/useApi';
@@ -14,10 +14,12 @@ export const AlertSettings = ({ inventory }) => {
   const [deckCardsOnly, setDeckCardsOnly] = useState(false);
   const [deckCardNames, setDeckCardNames] = useState(new Set());
   const [loadingDeckCards, setLoadingDeckCards] = useState(false);
+  const hasFetchedDeckCards = useRef(false);
 
   // Fetch deck template card names when filter is enabled
   useEffect(() => {
-    if (deckCardsOnly && deckCardNames.size === 0) {
+    if (deckCardsOnly && !hasFetchedDeckCards.current) {
+      hasFetchedDeckCards.current = true;
       const fetchDeckCardNames = async () => {
         setLoadingDeckCards(true);
         try {
@@ -27,13 +29,15 @@ export const AlertSettings = ({ inventory }) => {
           }
         } catch (error) {
           console.error('Error fetching deck card names:', error);
+          // Reset flag on error so user can retry
+          hasFetchedDeckCards.current = false;
         } finally {
           setLoadingDeckCards(false);
         }
       };
       fetchDeckCardNames();
     }
-  }, [deckCardsOnly, deckCardNames.size, get]);
+  }, [deckCardsOnly, get]);
 
   // Group inventory with alerts enabled by card name - MEMOIZED to prevent recreating on every render
   const cardsWithAlerts = useMemo(() => {
