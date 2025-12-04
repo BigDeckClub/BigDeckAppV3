@@ -13,7 +13,7 @@ export const getTotalQuantity = (items) => {
 };
 
 /**
- * Get the total/average price from a card's items array
+ * Get the average price from a card's items array
  * @param {Array} items - Array of card SKU items
  * @returns {number} Average purchase price
  */
@@ -52,12 +52,11 @@ export const getSetCode = (items) => {
 };
 
 /**
- * Get the earliest or latest created_at date from a card's items array
+ * Get the latest created_at date from a card's items array
  * @param {Array} items - Array of card SKU items
- * @param {string} direction - 'asc' for earliest, 'desc' for latest
- * @returns {Date} The selected date
+ * @returns {Date} The latest date added, or epoch if none found
  */
-export const getDateAdded = (items, direction = 'desc') => {
+export const getDateAdded = (items) => {
   if (items.length === 0) return new Date(0);
   
   const dates = items
@@ -66,11 +65,8 @@ export const getDateAdded = (items, direction = 'desc') => {
   
   if (dates.length === 0) return new Date(0);
   
-  // For 'desc' (newest first), we want the latest date first in sorting
-  // For 'asc' (oldest first), we want the earliest date first
-  return direction === 'desc' 
-    ? new Date(Math.max(...dates.map(d => d.getTime())))
-    : new Date(Math.min(...dates.map(d => d.getTime())));
+  // Always return the latest date for the card
+  return new Date(Math.max(...dates.map(d => d.getTime())));
 };
 
 /**
@@ -107,9 +103,9 @@ export const sortCards = (cards, sortField = 'name', sortDirection = 'asc') => {
         break;
         
       case 'dateAdded': {
-        // For date comparison, always get the relevant date for comparison
-        const dateA = getDateAdded(itemsA, sortDirection);
-        const dateB = getDateAdded(itemsB, sortDirection);
+        // Compare by latest date added for each card
+        const dateA = getDateAdded(itemsA);
+        const dateB = getDateAdded(itemsB);
         comparison = dateA.getTime() - dateB.getTime();
         break;
       }
@@ -174,14 +170,10 @@ export const sortDeckCards = (entries, sortField = 'name', sortDirection = 'asc'
       }
         
       case 'dateAdded': {
-        // For deck reservations, use created_at or default to 0
-        const getDate = (items) => {
-          const dates = items
-            .map(item => item.created_at ? new Date(item.created_at).getTime() : 0)
-            .filter(d => d > 0);
-          return dates.length > 0 ? Math.max(...dates) : 0;
-        };
-        comparison = getDate(itemsA) - getDate(itemsB);
+        // Reuse getDateAdded for consistent date comparison
+        const dateA = getDateAdded(itemsA);
+        const dateB = getDateAdded(itemsB);
+        comparison = dateA.getTime() - dateB.getTime();
         break;
       }
         

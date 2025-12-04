@@ -72,14 +72,14 @@ describe('sortCards utility', () => {
   });
 
   describe('getDateAdded', () => {
-    it('should return the latest date for desc direction', () => {
-      const date = getDateAdded(testCards[0][1], 'desc');
+    it('should return the latest date from items', () => {
+      const date = getDateAdded(testCards[0][1]);
       expect(date.getTime()).toBe(new Date('2024-02-20T10:00:00Z').getTime());
     });
 
-    it('should return the earliest date for asc direction', () => {
-      const date = getDateAdded(testCards[0][1], 'asc');
-      expect(date.getTime()).toBe(new Date('2024-01-15T10:00:00Z').getTime());
+    it('should return epoch date for empty array', () => {
+      const date = getDateAdded([]);
+      expect(date.getTime()).toBe(0);
     });
   });
 
