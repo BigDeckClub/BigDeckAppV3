@@ -1,9 +1,17 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useContext } from 'react';
 import { useToast, TOAST_TYPES } from '../context/ToastContext';
 import { fetchWithAuth } from '../utils/apiClient';
+import UndoContext, { UNDO_ACTION_TYPES } from '../context/UndoContext';
 
 // Reserved folder names that cannot be created by users (case-insensitive)
 const RESERVED_FOLDER_NAMES = ['unsorted', 'uncategorized', 'all cards', 'all', 'trash'];
+
+/**
+ * Hook to safely get undo context (returns null if not available)
+ */
+function useUndoSafe() {
+  return useContext(UndoContext);
+}
 
 /**
  * useFolderOperations - Custom hook for folder-related operations
@@ -11,6 +19,7 @@ const RESERVED_FOLDER_NAMES = ['unsorted', 'uncategorized', 'all cards', 'all', 
  */
 export function useFolderOperations({ inventory, onLoadInventory }) {
   const { showToast } = useToast();
+  const undoContext = useUndoSafe();
   
   // Folder state
   const [newFolderName, setNewFolderName] = useState('');
@@ -89,6 +98,9 @@ export function useFolderOperations({ inventory, onLoadInventory }) {
         showToast('Item not found', TOAST_TYPES.ERROR);
         return;
       }
+
+      const previousFolder = item.folder || 'Uncategorized';
+      const itemName = item.name;
       
       // Update API first
       const response = await fetchWithAuth(`/api/inventory/${itemId}`, {
@@ -101,17 +113,52 @@ export function useFolderOperations({ inventory, onLoadInventory }) {
         throw new Error(error.error || 'Failed to update folder');
       }
       
-      // Show success toast after API call succeeds
-      showToast(`Moved ${item.quantity}x ${item.name} to ${targetFolder}`, TOAST_TYPES.SUCCESS);
-      
       // Refresh inventory to show changes
       if (onLoadInventory) {
         await onLoadInventory();
       }
+
+      // Register undo action if undo context is available
+      if (undoContext?.registerAction) {
+        undoContext.registerAction({
+          type: UNDO_ACTION_TYPES.MOVE_TO_FOLDER,
+          description: `Moved ${itemName} to ${targetFolder}`,
+          data: { itemId, previousFolder, targetFolder, itemName },
+          undoFn: async () => {
+            const undoResponse = await fetchWithAuth(`/api/inventory/${itemId}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ folder: previousFolder })
+            });
+            if (!undoResponse.ok) {
+              throw new Error('Failed to undo move');
+            }
+            if (onLoadInventory) {
+              await onLoadInventory();
+            }
+          },
+          redoFn: async () => {
+            const redoResponse = await fetchWithAuth(`/api/inventory/${itemId}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ folder: targetFolder })
+            });
+            if (!redoResponse.ok) {
+              throw new Error('Failed to redo move');
+            }
+            if (onLoadInventory) {
+              await onLoadInventory();
+            }
+          },
+        });
+      } else {
+        // Show success toast after API call succeeds (only if no undo context)
+        showToast(`Moved ${item.quantity}x ${itemName} to ${targetFolder}`, TOAST_TYPES.SUCCESS);
+      }
     } catch (error) {
       showToast(`Error moving item: ${error.message}`, TOAST_TYPES.ERROR);
     }
-  }, [inventory, onLoadInventory, showToast]);
+  }, [inventory, onLoadInventory, showToast, undoContext]);
 
   // Move cards to folder via drag-drop
   const moveCardToFolder = useCallback(async (cardName, targetFolder) => {
