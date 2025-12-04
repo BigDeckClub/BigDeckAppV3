@@ -26,7 +26,8 @@ export const InventoryTab = ({
   expandedCards,
   setExpandedCards,
   deckRefreshTrigger,
-  onSell
+  onSell,
+  searchRef
 }) => {
   const { confirm } = useConfirm();
   const { post } = useApi();
@@ -249,6 +250,7 @@ export const InventoryTab = ({
       {/* Main Content */}
       <div className="flex-1 pb-24 md:pb-6 px-4 md:px-8 md:ml-0 pt-16">
         <InventorySearchBar
+          ref={searchRef}
           inventorySearch={inventorySearch}
           setInventorySearch={setInventorySearch}
         />
@@ -422,7 +424,12 @@ InventoryTab.propTypes = {
   expandedCards: PropTypes.object.isRequired,
   setExpandedCards: PropTypes.func.isRequired,
   deckRefreshTrigger: PropTypes.number,
-  onSell: PropTypes.func
+  onSell: PropTypes.func,
+  /** Ref for the search input (used by keyboard shortcuts) */
+  searchRef: PropTypes.oneOfType([
+    PropTypes.func,
+    PropTypes.shape({ current: PropTypes.any })
+  ])
 };
 
 export default InventoryTab;

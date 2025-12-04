@@ -1,4 +1,4 @@
-import React, { useState, useEffect, lazy, useCallback, Suspense } from "react";
+import React, { useState, useEffect, lazy, useCallback, Suspense, useRef, useMemo } from "react";
 import { PriceCacheProvider } from "./context/PriceCacheContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ToastProvider, useToast, TOAST_TYPES } from "./context/ToastContext";
@@ -16,7 +16,8 @@ import { TabLoadingSpinner } from "./components/TabLoadingSpinner";
 import { Navigation } from "./components/Navigation";
 import { useCardSearch } from "./hooks/useCardSearch";
 import { getAllSets } from "./utils/scryfallApi";
-import { FullPageSpinner } from "./components/ui";
+import { FullPageSpinner, KeyboardShortcutsHelp } from "./components/ui";
+import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 
 // Lazy load tab components for code splitting
 const InventoryTab = lazy(() => import("./components/InventoryTab"));
@@ -53,10 +54,54 @@ function MTGInventoryTrackerContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [deckRefreshTrigger, setDeckRefreshTrigger] = useState(0);
   const [showTutorial, setShowTutorial] = useState(false);
+  const [showKeyboardHelp, setShowKeyboardHelp] = useState(false);
 
   const [allSets, setAllSets] = useState([]);
   const [successMessage, setSuccessMessage] = useState("");
   const [expandedCards, setExpandedCards] = useState({});
+
+  // Ref for search input focus
+  const searchInputRef = useRef(null);
+
+  // Keyboard shortcuts handlers
+  const focusSearch = useCallback(() => {
+    if (searchInputRef.current) {
+      searchInputRef.current.focus();
+      searchInputRef.current.select();
+    }
+  }, []);
+
+  const handleEscape = useCallback(() => {
+    // Close keyboard help if open
+    if (showKeyboardHelp) {
+      setShowKeyboardHelp(false);
+      return;
+    }
+    // Close tutorial if open
+    if (showTutorial) {
+      setShowTutorial(false);
+      return;
+    }
+    // Blur active element if in an input
+    if (document.activeElement && document.activeElement.tagName === 'INPUT') {
+      document.activeElement.blur();
+    }
+  }, [showKeyboardHelp, showTutorial]);
+
+  const toggleKeyboardHelp = useCallback(() => {
+    setShowKeyboardHelp(prev => !prev);
+  }, []);
+
+  // Keyboard shortcuts configuration
+  const shortcuts = useMemo(() => [
+    { key: '/', handler: focusSearch, description: 'Focus search' },
+    { key: 'k', ctrlKey: true, handler: focusSearch, description: 'Focus search' },
+    { key: 'Escape', handler: handleEscape, allowInInput: true, description: 'Close modal / Clear' },
+    { key: '?', handler: toggleKeyboardHelp, description: 'Show keyboard shortcuts' },
+  ], [focusSearch, handleEscape, toggleKeyboardHelp]);
+
+  // Register keyboard shortcuts
+  useKeyboardShortcuts(shortcuts, { enabled: !!user });
 
   const loadAllSets = useCallback(async () => {
     try {
@@ -128,6 +173,7 @@ function MTGInventoryTrackerContent() {
                 setExpandedCards={setExpandedCards}
                 deckRefreshTrigger={deckRefreshTrigger}
                 onSell={handleSell}
+                searchRef={searchInputRef}
               />
             </Suspense>
           </ErrorBoundaryWithRetry>
@@ -178,6 +224,7 @@ function MTGInventoryTrackerContent() {
       </main>
 
       <TutorialModal isOpen={showTutorial} onClose={() => setShowTutorial(false)} />
+      <KeyboardShortcutsHelp isOpen={showKeyboardHelp} onClose={() => setShowKeyboardHelp(false)} />
       <ToastContainer />
       <ConfirmDialog />
       <OfflineBanner />

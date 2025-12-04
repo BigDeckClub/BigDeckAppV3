@@ -7,7 +7,7 @@ import { useSearchHistory } from '../../hooks/useSearchHistory';
  * InventorySearchBar - Search input for filtering inventory cards
  * Includes recent searches dropdown with keyboard navigation
  */
-export const InventorySearchBar = memo(function InventorySearchBar({
+export const InventorySearchBar = memo(forwardRef(function InventorySearchBar({
   inventorySearch,
   setInventorySearch
 }) {
@@ -116,7 +116,7 @@ export const InventorySearchBar = memo(function InventorySearchBar({
         <input
           ref={inputRef}
           type="text"
-          placeholder="Search cards..."
+          placeholder="Search cards... (Press / to focus)"
           value={inventorySearch}
           onChange={(e) => setInventorySearch(e.target.value)}
           onFocus={() => setShowDropdown(true)}
@@ -188,7 +188,7 @@ export const InventorySearchBar = memo(function InventorySearchBar({
       </div>
     </div>
   );
-});
+}));
 
 InventorySearchBar.propTypes = {
   inventorySearch: PropTypes.string.isRequired,
