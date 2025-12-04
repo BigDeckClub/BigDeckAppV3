@@ -84,17 +84,6 @@ export function useKeyboardShortcuts(shortcuts, options = {}) {
       
       // Check modifier keys
       // For Ctrl+Key shortcuts, also accept Cmd+Key on Mac
-      const ctrlOrMetaMatch = ctrlKey 
-        ? (event.ctrlKey || event.metaKey) 
-        : (!event.ctrlKey && !event.metaKey);
-      
-      const modifiersMatch = 
-        (ctrlKey ? ctrlOrMetaMatch : (!event.ctrlKey && !event.metaKey || ctrlOrMetaMatch)) &&
-        event.shiftKey === shiftKey &&
-        event.altKey === altKey &&
-        (metaKey ? event.metaKey : true);
-      
-      // Simplified modifier matching
       const matchesModifiers = 
         (ctrlKey ? (event.ctrlKey || event.metaKey) : (!event.ctrlKey && !event.metaKey)) &&
         event.shiftKey === shiftKey &&
@@ -125,6 +114,8 @@ export function useKeyboardShortcuts(shortcuts, options = {}) {
 
 /**
  * Predefined shortcut keys for common actions
+ * Note: The '?' key is pressed by typing Shift+/ on most keyboards,
+ * but the event.key will be '?' directly, so no shiftKey modifier is needed
  */
 export const SHORTCUT_KEYS = {
   FOCUS_SEARCH: [
@@ -132,7 +123,7 @@ export const SHORTCUT_KEYS = {
     { key: 'k', ctrlKey: true, description: 'Focus search (Ctrl+K)' },
   ],
   CLOSE: { key: 'Escape', description: 'Close modal / Clear search' },
-  HELP: { key: '?', shiftKey: true, description: 'Show keyboard shortcuts' },
+  HELP: { key: '?', description: 'Show keyboard shortcuts' },
 };
 
 /**
