@@ -36,3 +36,4 @@ export { EmptyState } from './EmptyState';
 // Display components
 export { Badge } from './Badge';
 export { Skeleton, CardSkeleton, ListItemSkeleton } from './Skeleton';
+export { KeyboardShortcutsHelp } from './KeyboardShortcutsHelp';
