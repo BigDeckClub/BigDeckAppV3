@@ -4,16 +4,18 @@ import { X, Bell, BellOff, ChevronRight, Eye, RotateCcw, CheckSquare, Square, Im
 import { CardDetailModal } from './CardDetailModal';
 import { useConfirm } from '../../context/ConfirmContext';
 import { EXTERNAL_APIS } from '../../config/api';
+import { getSetCode } from '../../utils/cardHelpers';
 
 /**
  * Get card image URL from Scryfall
  * @param {string} cardName - Name of the card
- * @param {string} setCode - Set code (optional)
+ * @param {string|Object} set - Set code (string) or set object with editioncode/editionname properties (optional)
  * @param {string} version - Image version (small, normal, large)
  * @returns {string} - Scryfall image URL
  */
-function getCardImageUrl(cardName, setCode, version = 'normal') {
+function getCardImageUrl(cardName, set, version = 'normal') {
   const encodedName = encodeURIComponent(cardName.split('//')[0].trim());
+  const setCode = getSetCode(set);
   if (setCode) {
     return `${EXTERNAL_APIS.SCRYFALL}/cards/named?exact=${encodedName}&set=${setCode.toLowerCase()}&format=image&version=${version}`;
   }
@@ -66,9 +68,11 @@ export const CardGroup = memo(function CardGroup({
   
   // Reset image states when cardName changes or entering image view
   useEffect(() => {
-    setImageError(false);
-    setImageLoading(true);
-  }, [cardName]);
+    if (viewMode === 'image') {
+      setImageError(false);
+      setImageLoading(true);
+    }
+  }, [cardName, viewMode]);
   
   const totalQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
   const reservedQty = items.reduce((sum, item) => sum + (parseInt(item.reserved_quantity) || 0), 0);
