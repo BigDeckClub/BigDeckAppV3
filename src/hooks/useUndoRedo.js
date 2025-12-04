@@ -104,7 +104,7 @@ export function useUndoRedo() {
 
       return true;
     } catch (error) {
-      console.error('[UNDO] Failed to redo action:', error);
+      console.error('[REDO] Failed to redo action:', error);
       return false;
     }
   }, [future]);

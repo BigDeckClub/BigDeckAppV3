@@ -97,12 +97,13 @@ export function UndoProvider({ children }) {
         action: {
           label: 'Undo',
           onClick: async () => {
-            await undoAction();
+            // Use the wrapped undo() function for consistent feedback and error handling
+            await undo();
           },
         },
       });
     }
-  }, [addAction, showToast, undoAction]);
+  }, [addAction, showToast, undo]);
 
   /**
    * Handle keyboard shortcuts for undo/redo
