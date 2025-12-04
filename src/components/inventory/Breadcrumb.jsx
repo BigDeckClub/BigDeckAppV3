@@ -1,4 +1,4 @@
-import React, { memo, useMemo } from 'react';
+import React, { memo } from 'react';
 import PropTypes from 'prop-types';
 import { Home, ChevronRight, Folder, Layers } from 'lucide-react';
 
@@ -22,7 +22,7 @@ export const Breadcrumb = memo(function Breadcrumb({
   onNavigate
 }) {
   // Determine icon for each segment based on its type
-  const getSegmentIcon = useMemo(() => (segment, isFirst) => {
+  const getSegmentIcon = (segment, isFirst) => {
     if (isFirst || segment.tab === 'all') {
       return <Home className="w-4 h-4" />;
     }
@@ -30,7 +30,7 @@ export const Breadcrumb = memo(function Breadcrumb({
       return <Layers className="w-4 h-4" />;
     }
     return <Folder className="w-4 h-4" />;
-  }, []);
+  };
 
   if (!navigationPath || navigationPath.length === 0) {
     return null;
