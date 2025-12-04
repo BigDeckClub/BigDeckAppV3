@@ -1,4 +1,4 @@
-import React, { memo, useState, useCallback, useRef } from 'react';
+import React, { memo, useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { X, Bell, BellOff, ChevronRight, Eye, RotateCcw, CheckSquare, Square } from 'lucide-react';
 import { CardDetailModal } from './CardDetailModal';
@@ -47,7 +47,6 @@ export const CardGroup = memo(function CardGroup({
   const { confirm } = useConfirm();
   const [togglingId, setTogglingId] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const cardRef = useRef(null);
   
   // Hover preview hook - only for card and list views (not image view)
   const {
@@ -187,7 +186,6 @@ export const CardGroup = memo(function CardGroup({
       {/* Card View */}
       {viewMode === 'card' ? (
       <div 
-        ref={cardRef}
         draggable
         onDragStart={(e) => {
           e.dataTransfer.effectAllowed = 'move';

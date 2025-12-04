@@ -173,12 +173,12 @@ describe('useHoverPreview', () => {
     expect(result.current.targetRect).toEqual(mockRect);
   });
 
-  it('does not show preview on touch devices', () => {
-    // Mock as touch device (no hover capability)
+  it('does not show preview on devices lacking hover capability', () => {
+    // Mock as device lacking hover capability
     Object.defineProperty(window, 'matchMedia', {
       writable: true,
       value: vi.fn().mockImplementation(query => ({
-        matches: false, // Touch device
+        matches: false, // Device lacks hover capability
         media: query,
         onchange: null,
         addListener: vi.fn(),
@@ -199,7 +199,7 @@ describe('useHoverPreview', () => {
       vi.advanceTimersByTime(500);
     });
     
-    // Should remain not visible on touch device
+    // Should remain not visible on device lacking hover capability
     expect(result.current.isVisible).toBe(false);
   });
 

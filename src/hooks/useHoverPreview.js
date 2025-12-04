@@ -15,18 +15,18 @@ export function useHoverPreview(showDelay = 300, hideDelay = 0) {
   
   const showTimeoutRef = useRef(null);
   const hideTimeoutRef = useRef(null);
-  const isTouchDevice = useRef(false);
+  const lacksHoverCapability = useRef(false);
 
-  // Check for touch device on mount
+  // Check for hover capability on mount
   useEffect(() => {
-    // Check if device supports hover
+    // Check if device supports hover (false on touch-only devices)
     const mediaQuery = window.matchMedia('(hover: hover)');
-    isTouchDevice.current = !mediaQuery.matches;
+    lacksHoverCapability.current = !mediaQuery.matches;
     
     const handleMediaChange = (e) => {
-      isTouchDevice.current = !e.matches;
-      // Hide preview if switching to touch device
-      if (isTouchDevice.current && isVisible) {
+      lacksHoverCapability.current = !e.matches;
+      // Hide preview if device no longer supports hover
+      if (lacksHoverCapability.current && isVisible) {
         setIsVisible(false);
       }
     };
@@ -49,8 +49,8 @@ export function useHoverPreview(showDelay = 300, hideDelay = 0) {
    * @param {DOMRect} rect - Target element's bounding rectangle
    */
   const showPreview = useCallback((event, rect) => {
-    // Don't show on touch devices
-    if (isTouchDevice.current) return;
+    // Don't show on devices that lack hover capability
+    if (lacksHoverCapability.current) return;
     
     // Cancel any pending hide
     if (hideTimeoutRef.current) {
@@ -119,7 +119,7 @@ export function useHoverPreview(showDelay = 300, hideDelay = 0) {
     hidePreview,
     updatePosition,
     cancelPendingShow,
-    isTouchDevice: isTouchDevice.current
+    lacksHoverCapability: lacksHoverCapability.current
   };
 }
 

@@ -3,6 +3,11 @@ import { createPortal } from 'react-dom';
 import PropTypes from 'prop-types';
 import { EXTERNAL_APIS } from '../../config/api';
 
+// MTG card aspect ratio constants (standard card dimensions)
+const CARD_ASPECT_WIDTH = 488;
+const CARD_ASPECT_HEIGHT = 680;
+const CARD_ASPECT_RATIO = `${CARD_ASPECT_WIDTH}/${CARD_ASPECT_HEIGHT}`;
+
 /**
  * Get card image URL from Scryfall
  * @param {string} cardName - Name of the card
@@ -80,9 +85,9 @@ export const CardPreviewTooltip = memo(function CardPreviewTooltip({
   const [position, setPosition] = useState({ top: 0, left: 0 });
   const tooltipRef = useRef(null);
   
-  // Tooltip dimensions (maintain card aspect ratio 488:680)
+  // Tooltip dimensions (maintain card aspect ratio)
   const tooltipWidth = 250;
-  const tooltipHeight = Math.round(tooltipWidth * (680 / 488));
+  const tooltipHeight = Math.round(tooltipWidth * (CARD_ASPECT_HEIGHT / CARD_ASPECT_WIDTH));
   
   // Reset image state when card changes
   useEffect(() => {
@@ -120,16 +125,12 @@ export const CardPreviewTooltip = memo(function CardPreviewTooltip({
       <div 
         className="bg-slate-800/95 border border-slate-600 rounded-lg shadow-2xl overflow-hidden"
         style={{
-          aspectRatio: '488/680'
+          aspectRatio: CARD_ASPECT_RATIO
         }}
       >
         {/* Loading skeleton */}
         {!imageLoaded && !imageError && (
-          <div className="absolute inset-0 flex items-center justify-center bg-slate-700/80">
-            <div className="animate-pulse flex flex-col items-center gap-2">
-              <div className="w-full h-full bg-slate-600 rounded-lg" style={{ aspectRatio: '488/680' }} />
-            </div>
-          </div>
+          <div className="absolute inset-0 bg-slate-700/80 animate-pulse" />
         )}
         
         {/* Error state */}
