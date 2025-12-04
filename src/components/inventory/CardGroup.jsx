@@ -1,4 +1,4 @@
-import React, { memo, useState, useCallback } from 'react';
+import React, { memo, useState, useCallback, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { X, Bell, BellOff, ChevronRight, Eye, RotateCcw, CheckSquare, Square, ImageOff } from 'lucide-react';
 import { CardDetailModal } from './CardDetailModal';
@@ -63,6 +63,12 @@ export const CardGroup = memo(function CardGroup({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
+  
+  // Reset image states when cardName changes or entering image view
+  useEffect(() => {
+    setImageError(false);
+    setImageLoading(true);
+  }, [cardName]);
   
   const totalQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
   const reservedQty = items.reduce((sum, item) => sum + (parseInt(item.reserved_quantity) || 0), 0);
