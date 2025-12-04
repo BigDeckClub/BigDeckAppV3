@@ -5,7 +5,7 @@
 
 import React, { memo } from 'react';
 import PropTypes from 'prop-types';
-import { Keyboard, X } from 'lucide-react';
+import { Keyboard } from 'lucide-react';
 import { Modal } from './Modal';
 import { formatShortcut } from '../../hooks/useKeyboardShortcuts';
 
@@ -32,12 +32,17 @@ const ShortcutRow = memo(function ShortcutRow({ shortcut, description }) {
     ? shortcut 
     : formatShortcut(shortcut);
   
+  // Split by '+' for Windows format, but handle Mac format (no '+' separator)
+  const parts = formatted.includes('+') 
+    ? formatted.split('+') 
+    : [formatted];
+  
   return (
     <div className="flex items-center justify-between py-2 border-b border-slate-700/50 last:border-b-0">
       <span className="text-slate-300">{description}</span>
       <div className="flex items-center gap-1">
-        {formatted.split('+').map((key, index) => (
-          <React.Fragment key={key}>
+        {parts.map((key, index) => (
+          <React.Fragment key={`${key}-${index}`}>
             {index > 0 && <span className="text-slate-500 mx-0.5">+</span>}
             <ShortcutKey>{key}</ShortcutKey>
           </React.Fragment>

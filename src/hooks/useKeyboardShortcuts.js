@@ -8,10 +8,9 @@ import { useEffect, useCallback, useRef } from 'react';
 /**
  * @typedef {Object} ShortcutConfig
  * @property {string} key - The key to listen for (e.g., '/', 'Escape', 'k')
- * @property {boolean} [ctrlKey=false] - Whether Ctrl/Cmd key is required
+ * @property {boolean} [ctrlKey=false] - Whether Ctrl/Cmd key is required (accepts both Ctrl and Meta for cross-platform)
  * @property {boolean} [shiftKey=false] - Whether Shift key is required
  * @property {boolean} [altKey=false] - Whether Alt key is required
- * @property {boolean} [metaKey=false] - Whether Meta (Cmd on Mac) key is required
  * @property {Function} handler - The function to call when shortcut is triggered
  * @property {boolean} [allowInInput=false] - Whether to allow shortcut when focused on input
  * @property {string} [description] - Human-readable description of the shortcut
@@ -71,7 +70,6 @@ export function useKeyboardShortcuts(shortcuts, options = {}) {
         ctrlKey = false,
         shiftKey = false,
         altKey = false,
-        metaKey = false,
         handler,
         allowInInput = false,
       } = shortcut;
@@ -83,7 +81,7 @@ export function useKeyboardShortcuts(shortcuts, options = {}) {
       }
       
       // Check modifier keys
-      // For Ctrl+Key shortcuts, also accept Cmd+Key on Mac
+      // For Ctrl+Key shortcuts, we also accept Cmd+Key (Meta) on Mac for cross-platform compatibility
       const matchesModifiers = 
         (ctrlKey ? (event.ctrlKey || event.metaKey) : (!event.ctrlKey && !event.metaKey)) &&
         event.shiftKey === shiftKey &&
@@ -145,9 +143,6 @@ export function formatShortcut(shortcut) {
   }
   if (shortcut.shiftKey) {
     parts.push(isMac ? '⇧' : 'Shift');
-  }
-  if (shortcut.metaKey && !shortcut.ctrlKey) {
-    parts.push(isMac ? '⌘' : 'Win');
   }
   
   // Format the key
