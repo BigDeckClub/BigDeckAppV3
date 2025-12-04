@@ -5,6 +5,24 @@ import { CardDetailModal } from './CardDetailModal';
 import { CardPreviewTooltip } from './CardPreviewTooltip';
 import { useConfirm } from '../../context/ConfirmContext';
 import { useHoverPreview } from '../../hooks/useHoverPreview';
+import { EXTERNAL_APIS } from '../../config/api';
+import { getSetCode } from '../../utils/cardHelpers';
+
+/**
+ * Get card image URL from Scryfall
+ * @param {string} cardName - Name of the card
+ * @param {string|Object} set - Set code (string) or set object with editioncode/editionname properties (optional)
+ * @param {string} version - Image version (small, normal, large)
+ * @returns {string} - Scryfall image URL
+ */
+function getCardImageUrl(cardName, set, version = 'normal') {
+  const encodedName = encodeURIComponent(cardName.split('//')[0].trim());
+  const setCode = getSetCode(set);
+  if (setCode) {
+    return `${EXTERNAL_APIS.SCRYFALL}/cards/named?exact=${encodedName}&set=${setCode.toLowerCase()}&format=image&version=${version}`;
+  }
+  return `${EXTERNAL_APIS.SCRYFALL}/cards/named?exact=${encodedName}&format=image&version=${version}`;
+}
 
 /**
  * Get dynamic font size based on value length

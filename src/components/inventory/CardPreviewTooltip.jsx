@@ -9,9 +9,20 @@ const CARD_ASPECT_HEIGHT = 680;
 const CARD_ASPECT_RATIO = `${CARD_ASPECT_WIDTH}/${CARD_ASPECT_HEIGHT}`;
 
 /**
+ * Safely extract set code from string or object format
+ * @param {string|Object} set - Set code string or set object with editioncode/mtgoCode
+ * @returns {string|null} - Lowercase set code or null
+ */
+function getSetCode(set) {
+  if (!set) return null;
+  if (typeof set === 'string') return set.toLowerCase();
+  return (set.editioncode || set.mtgoCode || '').toLowerCase() || null;
+}
+
+/**
  * Get card image URL from Scryfall
  * @param {string} cardName - Name of the card
- * @param {string} setCode - Set code (optional)
+ * @param {string|Object} setCode - Set code string or object (optional)
  * @param {string} imageUri - Direct image URI if available
  * @returns {string} - Scryfall image URL
  */
@@ -24,8 +35,9 @@ function getCardImageUrl(cardName, setCode, imageUri) {
   // Use Scryfall's named lookup for reliability
   const encodedName = encodeURIComponent(cardName.split('//')[0].trim());
   // If we have a set code, include it for more accurate results
-  if (setCode) {
-    return `${EXTERNAL_APIS.SCRYFALL}/cards/named?exact=${encodedName}&set=${setCode.toLowerCase()}&format=image&version=normal`;
+  const normalizedSetCode = getSetCode(setCode);
+  if (normalizedSetCode) {
+    return `${EXTERNAL_APIS.SCRYFALL}/cards/named?exact=${encodedName}&set=${normalizedSetCode}&format=image&version=normal`;
   }
   return `${EXTERNAL_APIS.SCRYFALL}/cards/named?exact=${encodedName}&format=image&version=normal`;
 }
@@ -112,7 +124,7 @@ export const CardPreviewTooltip = memo(function CardPreviewTooltip({
   const tooltip = (
     <div
       ref={tooltipRef}
-      className="fixed z-[9999] pointer-events-none animate-fadeIn"
+      className="fixed z-[9999] pointer-events-none"
       style={{
         top: `${position.top}px`,
         left: `${position.left}px`,
@@ -164,7 +176,16 @@ export const CardPreviewTooltip = memo(function CardPreviewTooltip({
 CardPreviewTooltip.propTypes = {
   isVisible: PropTypes.bool.isRequired,
   cardName: PropTypes.string,
-  setCode: PropTypes.string,
+  setCode: PropTypes.oneOfType([
+    PropTypes.string,
+    PropTypes.shape({
+      mtgoCode: PropTypes.string,
+      editioncode: PropTypes.string,
+      editiondate: PropTypes.string,
+      editionname: PropTypes.string,
+      editiontype: PropTypes.string
+    })
+  ]),
   imageUri: PropTypes.string,
   targetRect: PropTypes.shape({
     top: PropTypes.number,
