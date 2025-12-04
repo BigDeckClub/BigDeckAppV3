@@ -124,7 +124,8 @@ export const BuyCardsModal = memo(function BuyCardsModal({
     try {
       await navigator.clipboard.writeText(text);
       showToast(`📋 ${totalQuantity} cards copied to clipboard!`, TOAST_TYPES.SUCCESS);
-    } catch {
+    } catch (error) {
+      console.error('Failed to copy to clipboard:', error);
       showToast('Failed to copy to clipboard', TOAST_TYPES.ERROR);
     }
   };

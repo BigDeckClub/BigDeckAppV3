@@ -45,7 +45,8 @@ export const BuyButton = memo(function BuyButton({
       await navigator.clipboard.writeText(text);
       showToast(`📋 Copied ${quantity}x ${card.name || card}`, TOAST_TYPES.SUCCESS);
       setIsOpen(false);
-    } catch {
+    } catch (error) {
+      console.error('Failed to copy to clipboard:', error);
       showToast('Failed to copy to clipboard', TOAST_TYPES.ERROR);
     }
   };

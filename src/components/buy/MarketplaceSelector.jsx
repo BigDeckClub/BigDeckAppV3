@@ -43,6 +43,7 @@ export const MarketplaceSelector = memo(function MarketplaceSelector({
             <button
               key={key}
               type="button"
+              aria-pressed={isSelected}
               onClick={() => onSelect(key)}
               className={`
                 flex items-center gap-2 px-4 py-2 rounded-lg border transition-all duration-200

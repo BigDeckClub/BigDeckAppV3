@@ -23,6 +23,8 @@ export function useMarketplacePreferences() {
     setRememberPreference(remember);
     if (remember) {
       savePreference(preferredMarketplace);
+    } else {
+      localStorage.removeItem('preferredMarketplace');
     }
   }, [preferredMarketplace]);
 
