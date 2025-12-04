@@ -59,6 +59,18 @@ const COLUMN_MAPPINGS = {
     price: ['purchase price', 'price'],
     collector_number: ['collector number'],
   },
+  manabox: {
+    quantity: ['quantity'],
+    name: ['name'],
+    set: ['set code'],
+    set_name: ['set name'],
+    condition: ['condition'],
+    foil: ['foil'],
+    price: ['purchase price'],
+    collector_number: ['collector number'],
+    language: ['language'],
+    scryfall_id: ['scryfall id'],
+  },
 };
 
 /**
@@ -66,12 +78,16 @@ const COLUMN_MAPPINGS = {
  */
 const CONDITION_MAP = {
   'near mint': 'NM',
+  'near_mint': 'NM',
   'nm': 'NM',
   'lightly played': 'LP',
+  'lightly_played': 'LP',
   'lp': 'LP',
   'moderately played': 'MP',
+  'moderately_played': 'MP',
   'mp': 'MP',
   'heavily played': 'HP',
+  'heavily_played': 'HP',
   'hp': 'HP',
   'damaged': 'DMG',
   'dmg': 'DMG',
@@ -96,7 +112,9 @@ const normalizeCondition = (condition) => {
 const parseFoil = (value) => {
   if (!value) return false;
   const lower = value.toLowerCase().trim();
-  return ['yes', 'true', 'foil', '1'].includes(lower);
+  // Handle Manabox format: "foil" vs "normal"
+  // Handle other formats: "yes", "true", "1"
+  return ['yes', 'true', 'foil', '1', 'etched'].includes(lower);
 };
 
 /**
@@ -196,14 +214,20 @@ export const parseSimpleText = (text) => {
 export const detectFormat = (headers) => {
   const lowerHeaders = headers.map(h => h.toLowerCase().trim());
   
+  // Check for Manabox specific headers (has "set code" and "manabox id" or "scryfall id")
+  if (lowerHeaders.includes('set code') && 
+      (lowerHeaders.includes('manabox id') || lowerHeaders.includes('scryfall id'))) {
+    return 'manabox';
+  }
+  
   // Check for TCGPlayer specific headers
   if (lowerHeaders.includes('tcg marketplace price') || 
-      lowerHeaders.includes('set name')) {
+      (lowerHeaders.includes('set name') && lowerHeaders.includes('card name'))) {
     return 'tcgplayer';
   }
   
-  // Check for Deckbox (has Language column)
-  if (lowerHeaders.includes('language')) {
+  // Check for Deckbox (has Language column but not manabox-style)
+  if (lowerHeaders.includes('language') && !lowerHeaders.includes('set code')) {
     return 'deckbox';
   }
   

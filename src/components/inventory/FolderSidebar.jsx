@@ -158,8 +158,12 @@ export const FolderSidebar = memo(function FolderSidebar({
                   const inventoryItemId = e.dataTransfer.getData('inventoryItemId');
                   const cardName = e.dataTransfer.getData('cardName');
                   const deckCardDataStr = e.dataTransfer.getData('deckCardData');
+                  const skuDataStr = e.dataTransfer.getData('skuData');
                   if (inventoryItemId) {
                     moveInventoryItemToFolder(parseInt(inventoryItemId), 'Uncategorized');
+                  } else if (skuDataStr) {
+                    const skuData = JSON.parse(skuDataStr);
+                    moveInventoryItemToFolder(skuData.id, 'Uncategorized');
                   } else if (deckCardDataStr) {
                     const deckCardData = JSON.parse(deckCardDataStr);
                     moveCardFromDeckToFolder(deckCardData, 'Uncategorized');
@@ -224,8 +228,12 @@ export const FolderSidebar = memo(function FolderSidebar({
                   const inventoryItemId = e.dataTransfer.getData('inventoryItemId');
                   const cardName = e.dataTransfer.getData('cardName');
                   const deckCardDataStr = e.dataTransfer.getData('deckCardData');
+                  const skuDataStr = e.dataTransfer.getData('skuData');
                   if (inventoryItemId) {
                     moveInventoryItemToFolder(parseInt(inventoryItemId), folderName);
+                  } else if (skuDataStr) {
+                    const skuData = JSON.parse(skuDataStr);
+                    moveInventoryItemToFolder(skuData.id, folderName);
                   } else if (deckCardDataStr) {
                     const deckCardData = JSON.parse(deckCardDataStr);
                     moveCardFromDeckToFolder(deckCardData, folderName);
@@ -282,8 +290,12 @@ export const FolderSidebar = memo(function FolderSidebar({
                     const inventoryItemId = e.dataTransfer.getData('inventoryItemId');
                     const cardName = e.dataTransfer.getData('cardName');
                     const deckCardDataStr = e.dataTransfer.getData('deckCardData');
+                    const skuDataStr = e.dataTransfer.getData('skuData');
                     if (inventoryItemId) {
                       moveInventoryItemToFolder(parseInt(inventoryItemId), folder);
+                    } else if (skuDataStr) {
+                      const skuData = JSON.parse(skuDataStr);
+                      moveInventoryItemToFolder(skuData.id, folder);
                     } else if (deckCardDataStr) {
                       const deckCardData = JSON.parse(deckCardDataStr);
                       moveCardFromDeckToFolder(deckCardData, folder);
@@ -361,8 +373,12 @@ export const FolderSidebar = memo(function FolderSidebar({
                   const inventoryItemId = e.dataTransfer.getData('inventoryItemId');
                   const cardName = e.dataTransfer.getData('cardName');
                   const deckCardDataStr = e.dataTransfer.getData('deckCardData');
+                  const skuDataStr = e.dataTransfer.getData('skuData');
                   if (inventoryItemId) {
                     moveInventoryItemToFolder(parseInt(inventoryItemId), 'Trash');
+                  } else if (skuDataStr) {
+                    const skuData = JSON.parse(skuDataStr);
+                    moveInventoryItemToFolder(skuData.id, 'Trash');
                   } else if (deckCardDataStr) {
                     const deckCardData = JSON.parse(deckCardDataStr);
                     moveCardFromDeckToFolder(deckCardData, 'Trash');

@@ -64,7 +64,7 @@ export const ImportTab = ({
           <h2 className="text-lg sm:text-xl font-bold">Bulk Import from File</h2>
         </div>
         <p className="text-sm text-slate-400 mb-4">
-          Import cards from CSV or text files. Supports Moxfield, Deckbox, TCGPlayer, Archidekt, and simple text formats.
+          Import cards from CSV or text files. Supports Moxfield, Deckbox, TCGPlayer, Archidekt, Manabox, and simple text formats.
         </p>
         <FileImportSection
           addInventoryItem={addInventoryItem}

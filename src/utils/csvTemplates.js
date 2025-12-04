@@ -44,6 +44,15 @@ export const ARCHIDEKT_TEMPLATE = `Count,Name,Edition,Condition,Foil,Purchase Pr
 2,Sol Ring,c21,NM,true,15.00,251`;
 
 /**
+ * Manabox CSV template
+ * Based on https://www.manabox.app/guides/collection/import-export/
+ */
+export const MANABOX_TEMPLATE = `Name,Set code,Set name,Collector number,Foil,Rarity,Quantity,ManaBox ID,Scryfall ID,Purchase price,Misprint,Altered,Condition,Language,Purchase price currency
+Lightning Bolt,2xm,Double Masters,117,normal,uncommon,1,,,,false,false,near_mint,en,USD
+Counterspell,cmr,Commander Legends,60,normal,common,4,,,,false,false,lightly_played,en,USD
+Sol Ring,c21,Commander 2021,251,foil,uncommon,2,,,,false,false,near_mint,en,USD`;
+
+/**
  * Get template content by format name
  * @param {string} format - The format name
  * @returns {string} The template content
@@ -55,6 +64,7 @@ export const getTemplate = (format) => {
     tcgplayer: TCGPLAYER_TEMPLATE,
     simple: SIMPLE_TEXT_TEMPLATE,
     archidekt: ARCHIDEKT_TEMPLATE,
+    manabox: MANABOX_TEMPLATE,
   };
   return templates[format.toLowerCase()] || SIMPLE_TEXT_TEMPLATE;
 };
@@ -101,5 +111,6 @@ export const SUPPORTED_FORMATS = [
   { value: 'deckbox', label: 'Deckbox' },
   { value: 'tcgplayer', label: 'TCGPlayer' },
   { value: 'archidekt', label: 'Archidekt' },
+  { value: 'manabox', label: 'Manabox' },
   { value: 'simple', label: 'Simple Text' },
 ];
