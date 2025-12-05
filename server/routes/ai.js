@@ -1,243 +1,101 @@
 import express from 'express';
-import { z } from 'zod';
-import { pool } from '../db/pool.js';
-import { authenticateApiKey, aiApiLimiter } from '../middleware/index.js';
-import { mtgjsonService } from '../mtgjsonPriceService.js';
-import { validateBody } from '../utils/validation.js';
+import { authenticate } from '../middleware/index.js';
 
 const router = express.Router();
 
-// ========== VALIDATION SCHEMAS ==========
+// Constants for input validation
+const MAX_MESSAGE_LENGTH = 4000;
+const MAX_CONVERSATION_HISTORY_LENGTH = 50;
+const MAX_HISTORY_ITEM_CONTENT_LENGTH = 4000;
 
 /**
- * Schema for creating a deck via AI agent
+ * Validate conversation history array
+ * @param {Array} history - The conversation history to validate
+ * @returns {boolean} - Whether the history is valid
  */
-const createAIDeckSchema = z.object({
-  userId: z.string().uuid('Invalid user ID format'),
-  name: z.string().min(1, 'Deck name is required').max(255),
-  format: z.string().max(50).optional().default('Commander'),
-  description: z.string().max(2000).optional().default(''),
-  cards: z.array(
-    z.object({
-      name: z.string().min(1, 'Card name is required'),
-      quantity: z.number().int().positive().max(1000, 'Maximum 1000 copies per card').optional().default(1),
-      set: z.string().max(10).optional().nullable(),
-      collector_number: z.string().max(20).optional().nullable(),
-      scryfall_id: z.string().uuid().optional().nullable(),
-    }).refine(
-      (card) =>
-        !!card.scryfall_id ||
-        (!!card.set && !!card.collector_number),
-      {
-        message:
-          'Each card must have either a scryfall_id or both set and collector_number',
-        path: ['scryfall_id', 'set', 'collector_number'],
-      }
-    )
-  )
-    .min(1, 'At least one card is required')
-    .max(250, 'Maximum 250 cards allowed'),
-});
-
-/**
- * Schema for batch price lookup
- */
-const batchPricesSchema = z.object({
-  scryfallIds: z.array(z.string().uuid()).min(1, 'At least one Scryfall ID is required').max(500, 'Maximum 500 cards per request'),
-});
-
-// ========== AI INTEGRATION ENDPOINTS ==========
-// All endpoints require API key authentication via X-API-Key header
-
-/**
- * GET /api/ai/inventory/:userId
- * Fetch a user's complete card inventory for AI deck building
- * Returns inventory items with available quantities (accounting for deck reservations)
- */
-router.get('/ai/inventory/:userId', authenticateApiKey, aiApiLimiter, async (req, res) => {
-  const { userId } = req.params;
-  
-  // Validate userId is a valid UUID
-  const uuidResult = z.string().uuid().safeParse(userId);
-  if (!uuidResult.success) {
-    return res.status(400).json({ error: 'Invalid user ID format' });
+function isValidConversationHistory(history) {
+  if (!Array.isArray(history)) {
+    return false;
   }
   
+  if (history.length > MAX_CONVERSATION_HISTORY_LENGTH) {
+    return false;
+  }
+  
+  for (const item of history) {
+    if (typeof item !== 'object' || item === null) {
+      return false;
+    }
+    if (!item.role || typeof item.role !== 'string') {
+      return false;
+    }
+    if (!['user', 'assistant'].includes(item.role)) {
+      return false;
+    }
+    if (!item.content || typeof item.content !== 'string') {
+      return false;
+    }
+    if (item.content.length > MAX_HISTORY_ITEM_CONTENT_LENGTH) {
+      return false;
+    }
+  }
+  
+  return true;
+}
+
+/**
+ * POST /api/ai/chat
+ * Handle AI chat requests for deck building and card analysis
+ * 
+ * Request body:
+ * - message: string - The user's message/prompt
+ * - conversationHistory: array - Previous messages in the conversation (optional)
+ * 
+ * Response:
+ * - response: string - The AI assistant's response
+ * - suggestions: array - Optional card suggestions or actions
+ */
+router.post('/ai/chat', authenticate, async (req, res) => {
   try {
-    // Check if user exists
-    const userCheck = await pool.query('SELECT id FROM users WHERE id = $1', [userId]);
-    if (userCheck.rows.length === 0) {
-      return res.status(404).json({ error: 'User not found' });
+    const { message, conversationHistory = [] } = req.body;
+    
+    if (!message || typeof message !== 'string' || message.trim().length === 0) {
+      return res.status(400).json({ error: 'Message is required' });
     }
     
-    // Fetch complete inventory with available quantities using LEFT JOIN for better performance
-    const result = await pool.query(
-      `SELECT 
-        i.id,
-        i.name,
-        i.set,
-        i.set_name,
-        i.quantity,
-        i.scryfall_id,
-        i.foil,
-        i.quality,
-        i.folder,
-        COALESCE(i.quantity, 0) - COALESCE(SUM(dr.quantity_reserved), 0) as available_quantity
-       FROM inventory i
-       LEFT JOIN deck_reservations dr ON dr.inventory_item_id = i.id
-       WHERE i.user_id = $1
-       GROUP BY i.id
-       ORDER BY i.name ASC`,
-      [userId]
-    );
+    if (message.length > MAX_MESSAGE_LENGTH) {
+      return res.status(400).json({ error: `Message exceeds maximum length of ${MAX_MESSAGE_LENGTH} characters` });
+    }
     
-    res.json({
-      userId,
-      totalItems: result.rows.length,
-      inventory: result.rows
-    });
+    if (!isValidConversationHistory(conversationHistory)) {
+      return res.status(400).json({ error: 'Invalid conversation history format' });
+    }
+
+    // For now, return a placeholder response indicating the feature is being developed
+    // This endpoint will be connected to the BigDeckAI module when it's exported
+    const response = {
+      response: `I'm BigDeckAI, your MTG deck building assistant. This feature is currently being integrated. You said: "${message.trim()}"`,
+      suggestions: [],
+      timestamp: new Date().toISOString()
+    };
+
+    res.json(response);
   } catch (error) {
-    console.error('[AI-API] Error fetching inventory:', error.message);
-    res.status(500).json({ error: 'Failed to fetch inventory' });
+    console.error('[AI] Chat error:', error.message);
+    res.status(500).json({ error: 'Failed to process chat request' });
   }
 });
 
 /**
- * POST /api/ai/deck
- * Save a new deck generated by the AI agent
- * Creates a deck template (not a deck instance)
+ * GET /api/ai/status
+ * Check the status of the AI service
  */
-router.post('/ai/deck', authenticateApiKey, aiApiLimiter, validateBody(createAIDeckSchema), async (req, res) => {
-  const { userId, name, format, description, cards } = req.body;
-  
-  try {
-    // Verify user exists
-    const userCheck = await pool.query('SELECT id FROM users WHERE id = $1', [userId]);
-    if (userCheck.rows.length === 0) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-    
-    // Create the deck
-    const result = await pool.query(
-      `INSERT INTO decks (user_id, name, format, description, cards, is_deck_instance, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, FALSE, NOW(), NOW())
-       RETURNING *`,
-      [userId, name, format, description, JSON.stringify(cards)]
-    );
-    
-    const deck = result.rows[0];
-    
-    console.log(`[AI-API] Created deck "${name}" for user ${userId} with ${cards.length} unique cards`);
-    
-    res.status(201).json({
-      message: 'Deck created successfully',
-      deck: {
-        id: deck.id,
-        name: deck.name,
-        format: deck.format,
-        description: deck.description,
-        cardCount: cards.reduce((sum, c) => sum + (c.quantity ?? 1), 0),
-        uniqueCards: cards.length,
-        createdAt: deck.created_at
-      }
-    });
-  } catch (error) {
-    console.error('[AI-API] Error creating deck:', error.message);
-    res.status(500).json({ error: 'Failed to create deck' });
-  }
-});
-
-/**
- * POST /api/ai/prices
- * Batch card price lookup by Scryfall IDs
- * Returns Card Kingdom prices from MTGJSON data
- */
-router.post('/ai/prices', authenticateApiKey, aiApiLimiter, validateBody(batchPricesSchema), async (req, res) => {
-  const { scryfallIds } = req.body;
-  
-  try {
-    const prices = {};
-    
-    for (const scryfallId of scryfallIds) {
-      try {
-        const ckPrice = mtgjsonService.getCardKingdomPriceByScryfallId(scryfallId);
-        prices[scryfallId] = {
-          cardKingdom: ckPrice || null,
-        };
-      } catch (err) {
-        console.debug(`[AI-API] Failed to get price for Scryfall ID ${scryfallId}:`, err.message);
-        prices[scryfallId] = { cardKingdom: null };
-      }
-    }
-    
-    res.json({
-      requestedCount: scryfallIds.length,
-      prices
-    });
-  } catch (error) {
-    console.error('[AI-API] Error fetching prices:', error.message);
-    res.status(500).json({ error: 'Failed to fetch prices' });
-  }
-});
-
-/**
- * GET /api/ai/user/:userId
- * Convenience endpoint for fetching user data
- * Returns basic user info and summary statistics
- */
-router.get('/ai/user/:userId', authenticateApiKey, aiApiLimiter, async (req, res) => {
-  const { userId } = req.params;
-  
-  // Validate userId is a valid UUID
-  const uuidResult = z.string().uuid().safeParse(userId);
-  if (!uuidResult.success) {
-    return res.status(400).json({ error: 'Invalid user ID format' });
-  }
-  
-  try {
-    // Get user info
-    const userResult = await pool.query('SELECT id, email, created_at FROM users WHERE id = $1', [userId]);
-    if (userResult.rows.length === 0) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-    const user = userResult.rows[0];
-    
-    // Get inventory statistics
-    const inventoryStats = await pool.query(
-      `SELECT 
-        COUNT(*) as total_items,
-        COALESCE(SUM(quantity), 0) as total_cards,
-        COUNT(DISTINCT COALESCE(folder, 'Uncategorized')) as folder_count
-       FROM inventory 
-       WHERE user_id = $1`,
-      [userId]
-    );
-    
-    // Get deck count
-    const deckStats = await pool.query(
-      `SELECT COUNT(*) as deck_count 
-       FROM decks 
-       WHERE user_id = $1 AND (is_deck_instance = FALSE OR is_deck_instance IS NULL)`,
-      [userId]
-    );
-    
-    res.json({
-      user: {
-        id: user.id,
-        email: user.email,
-        createdAt: user.created_at
-      },
-      stats: {
-        inventoryItems: Number(inventoryStats.rows[0].total_items),
-        totalCards: Number(inventoryStats.rows[0].total_cards),
-        folders: Number(inventoryStats.rows[0].folder_count),
-        decks: Number(deckStats.rows[0].deck_count)
-      }
-    });
-  } catch (error) {
-    console.error('[AI-API] Error fetching user:', error.message);
-    res.status(500).json({ error: 'Failed to fetch user data' });
-  }
+router.get('/ai/status', async (_req, res) => {
+  res.json({
+    available: true,
+    version: '1.0.0',
+    features: ['deck-building', 'card-analysis', 'format-help']
+  });
 });
 
 export default router;
