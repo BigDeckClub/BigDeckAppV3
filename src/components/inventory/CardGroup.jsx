@@ -13,12 +13,13 @@ import { getSetCode } from '../../utils/cardHelpers';
  * @param {string} cardName - Name of the card
  * @param {string|Object} set - Set code (string) or set object with editioncode/editionname properties (optional)
  * @param {string} version - Image version (small, normal, large)
+ * @param {boolean} skipSetCode - If true, don't include set code (fallback for mismatched set codes)
  * @returns {string} - Scryfall image URL
  */
-function getCardImageUrl(cardName, set, version = 'normal') {
+function getCardImageUrl(cardName, set, version = 'normal', skipSetCode = false) {
   const encodedName = encodeURIComponent(cardName.split('//')[0].trim());
   const setCode = getSetCode(set);
-  if (setCode) {
+  if (setCode && !skipSetCode) {
     return `${EXTERNAL_APIS.SCRYFALL}/cards/named?exact=${encodedName}&set=${setCode.toLowerCase()}&format=image&version=${version}`;
   }
   return `${EXTERNAL_APIS.SCRYFALL}/cards/named?exact=${encodedName}&format=image&version=${version}`;
@@ -67,12 +68,14 @@ export const CardGroup = memo(function CardGroup({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
+  const [skipSetCode, setSkipSetCode] = useState(false);
   
   // Reset image states when cardName changes or entering image view
   useEffect(() => {
     if (viewMode === 'image') {
       setImageError(false);
       setImageLoading(true);
+      setSkipSetCode(false);
     }
   }, [cardName, viewMode]);
   
@@ -353,13 +356,19 @@ export const CardGroup = memo(function CardGroup({
           {/* Card image */}
           {!imageError ? (
             <img
-              src={getCardImageUrl(cardName, items[0]?.set, 'normal')}
+              src={getCardImageUrl(cardName, items[0]?.set, 'normal', skipSetCode)}
               alt={cardName}
               className={`w-full h-full object-cover transition-opacity ${imageLoading ? 'opacity-0' : 'opacity-100'}`}
               onLoad={() => setImageLoading(false)}
               onError={() => {
-                setImageError(true);
-                setImageLoading(false);
+                // If we haven't tried without set code yet, retry without it
+                if (!skipSetCode && getSetCode(items[0]?.set)) {
+                  setSkipSetCode(true);
+                  setImageLoading(true);
+                } else {
+                  setImageError(true);
+                  setImageLoading(false);
+                }
               }}
               loading="lazy"
             />

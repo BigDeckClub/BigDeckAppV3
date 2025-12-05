@@ -19,6 +19,7 @@ import { useCardSearch } from "./hooks/useCardSearch";
 import { getAllSets } from "./utils/scryfallApi";
 import { FullPageSpinner, KeyboardShortcutsHelp } from "./components/ui";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
+import { AIChatWidget } from "./components/AIChatWidget";
 
 // Lazy load tab components for code splitting
 const InventoryTab = lazy(() => import("./components/InventoryTab"));
@@ -236,6 +237,7 @@ function MTGInventoryTrackerContent() {
       <ToastContainer />
       <ConfirmDialog />
       <OfflineBanner />
+      <AIChatWidget isAuthenticated={!!user} />
     </div>
   );
 }

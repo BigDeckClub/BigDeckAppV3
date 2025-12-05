@@ -24,9 +24,10 @@ function getSetCode(set) {
  * @param {string} cardName - Name of the card
  * @param {string|Object} setCode - Set code string or object (optional)
  * @param {string} imageUri - Direct image URI if available
+ * @param {boolean} skipSetCode - If true, don't include set code (fallback for mismatched set codes)
  * @returns {string} - Scryfall image URL
  */
-function getCardImageUrl(cardName, setCode, imageUri) {
+function getCardImageUrl(cardName, setCode, imageUri, skipSetCode = false) {
   // If we have a direct image URI, use it
   if (imageUri) {
     return imageUri;
@@ -34,9 +35,9 @@ function getCardImageUrl(cardName, setCode, imageUri) {
   
   // Use Scryfall's named lookup for reliability
   const encodedName = encodeURIComponent(cardName.split('//')[0].trim());
-  // If we have a set code, include it for more accurate results
+  // If we have a set code and skipSetCode is false, include it for more accurate results
   const normalizedSetCode = getSetCode(setCode);
-  if (normalizedSetCode) {
+  if (normalizedSetCode && !skipSetCode) {
     return `${EXTERNAL_APIS.SCRYFALL}/cards/named?exact=${encodedName}&set=${normalizedSetCode}&format=image&version=normal`;
   }
   return `${EXTERNAL_APIS.SCRYFALL}/cards/named?exact=${encodedName}&format=image&version=normal`;
@@ -94,6 +95,7 @@ export const CardPreviewTooltip = memo(function CardPreviewTooltip({
 }) {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [skipSetCode, setSkipSetCode] = useState(false);
   const [position, setPosition] = useState({ top: 0, left: 0 });
   const tooltipRef = useRef(null);
   
@@ -105,6 +107,7 @@ export const CardPreviewTooltip = memo(function CardPreviewTooltip({
   useEffect(() => {
     setImageLoaded(false);
     setImageError(false);
+    setSkipSetCode(false);
   }, [cardName, setCode, imageUri]);
   
   // Calculate position when visible or targetRect changes
@@ -119,7 +122,7 @@ export const CardPreviewTooltip = memo(function CardPreviewTooltip({
     return null;
   }
   
-  const imageUrl = getCardImageUrl(cardName, setCode, imageUri);
+  const imageUrl = getCardImageUrl(cardName, setCode, imageUri, skipSetCode);
   
   const tooltip = (
     <div
@@ -161,7 +164,15 @@ export const CardPreviewTooltip = memo(function CardPreviewTooltip({
               imageLoaded ? 'opacity-100' : 'opacity-0'
             }`}
             onLoad={() => setImageLoaded(true)}
-            onError={() => setImageError(true)}
+            onError={() => {
+              // If we haven't tried without set code yet, retry without it
+              if (!skipSetCode && getSetCode(setCode)) {
+                setSkipSetCode(true);
+                setImageLoaded(false);
+              } else {
+                setImageError(true);
+              }
+            }}
             loading="eager"
           />
         )}
