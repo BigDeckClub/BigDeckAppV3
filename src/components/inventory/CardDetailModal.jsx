@@ -455,7 +455,8 @@ export const CardDetailModal = memo(function CardDetailModal({
         setSalesHistory(data || []);
       })
       .catch(err => console.error('[CardDetailModal] Error loading sales:', err));
-  }, [authFetch]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount, authFetch is stable
 
   // Reset image state when card changes
   useEffect(() => {
