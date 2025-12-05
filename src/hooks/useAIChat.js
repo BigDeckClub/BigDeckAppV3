@@ -2,6 +2,15 @@ import { useState, useCallback, useRef } from 'react';
 import { useApi } from './useApi';
 
 /**
+ * Generate a unique ID for messages
+ * @returns {string} A unique identifier
+ */
+function generateMessageId() {
+  // Use a combination of timestamp and random string for uniqueness
+  return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+}
+
+/**
  * Custom hook for managing AI chat interactions
  * @returns {Object} Chat state and methods
  */
@@ -29,7 +38,7 @@ export function useAIChat() {
 
     // Add user message to the conversation
     const userMessage = {
-      id: Date.now(),
+      id: generateMessageId(),
       role: 'user',
       content: message.trim(),
       timestamp: new Date().toISOString()
@@ -51,7 +60,7 @@ export function useAIChat() {
 
       // Add AI response to the conversation
       const aiMessage = {
-        id: Date.now() + 1,
+        id: generateMessageId(),
         role: 'assistant',
         content: response.response,
         suggestions: response.suggestions || [],

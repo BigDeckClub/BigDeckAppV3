@@ -3,6 +3,46 @@ import { authenticate } from '../middleware/index.js';
 
 const router = express.Router();
 
+// Constants for input validation
+const MAX_MESSAGE_LENGTH = 4000;
+const MAX_CONVERSATION_HISTORY_LENGTH = 50;
+const MAX_HISTORY_ITEM_CONTENT_LENGTH = 4000;
+
+/**
+ * Validate conversation history array
+ * @param {Array} history - The conversation history to validate
+ * @returns {boolean} - Whether the history is valid
+ */
+function isValidConversationHistory(history) {
+  if (!Array.isArray(history)) {
+    return false;
+  }
+  
+  if (history.length > MAX_CONVERSATION_HISTORY_LENGTH) {
+    return false;
+  }
+  
+  for (const item of history) {
+    if (typeof item !== 'object' || item === null) {
+      return false;
+    }
+    if (!item.role || typeof item.role !== 'string') {
+      return false;
+    }
+    if (!['user', 'assistant'].includes(item.role)) {
+      return false;
+    }
+    if (!item.content || typeof item.content !== 'string') {
+      return false;
+    }
+    if (item.content.length > MAX_HISTORY_ITEM_CONTENT_LENGTH) {
+      return false;
+    }
+  }
+  
+  return true;
+}
+
 /**
  * POST /api/ai/chat
  * Handle AI chat requests for deck building and card analysis
@@ -21,6 +61,14 @@ router.post('/ai/chat', authenticate, async (req, res) => {
     
     if (!message || typeof message !== 'string' || message.trim().length === 0) {
       return res.status(400).json({ error: 'Message is required' });
+    }
+    
+    if (message.length > MAX_MESSAGE_LENGTH) {
+      return res.status(400).json({ error: `Message exceeds maximum length of ${MAX_MESSAGE_LENGTH} characters` });
+    }
+    
+    if (!isValidConversationHistory(conversationHistory)) {
+      return res.status(400).json({ error: 'Invalid conversation history format' });
     }
 
     // For now, return a placeholder response indicating the feature is being developed
@@ -42,7 +90,7 @@ router.post('/ai/chat', authenticate, async (req, res) => {
  * GET /api/ai/status
  * Check the status of the AI service
  */
-router.get('/ai/status', async (req, res) => {
+router.get('/ai/status', async (_req, res) => {
   res.json({
     available: true,
     version: '1.0.0',

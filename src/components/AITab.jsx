@@ -88,7 +88,14 @@ const TypingIndicator = memo(function TypingIndicator() {
 /**
  * Welcome message component shown when chat is empty
  */
-const WelcomeMessage = memo(function WelcomeMessage() {
+const WelcomeMessage = memo(function WelcomeMessage({ onSuggestionClick }) {
+  const suggestions = [
+    'Help me build a Commander deck',
+    'What are good cards for a burn deck?',
+    'Analyze my deck for weaknesses',
+    'Suggest budget alternatives'
+  ];
+
   return (
     <div className="flex flex-col items-center justify-center h-full text-center px-4">
       <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-600 to-teal-600 flex items-center justify-center mb-4">
@@ -97,17 +104,13 @@ const WelcomeMessage = memo(function WelcomeMessage() {
       <h2 className="text-xl font-semibold text-white mb-2">Welcome to BigDeckAI</h2>
       <p className="text-slate-400 max-w-md mb-6">
         Your AI-powered deck building assistant. Ask me about deck building strategies, 
-        card recommendations, format legality, or get help analyzing your deck lists.
+        card recommendations, format legality, or get help analyzing your decklists.
       </p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-lg">
-        {[
-          'Help me build a Commander deck',
-          'What are good cards for a burn deck?',
-          'Analyze my deck for weaknesses',
-          'Suggest budget alternatives'
-        ].map((suggestion, index) => (
+        {suggestions.map((suggestion, index) => (
           <button
             key={index}
+            onClick={() => onSuggestionClick(suggestion)}
             className="text-left text-sm bg-slate-800/50 hover:bg-slate-700/50 border border-slate-700 hover:border-teal-500/50 rounded-lg px-4 py-3 text-slate-300 hover:text-white transition-all"
           >
             {suggestion}
@@ -117,6 +120,10 @@ const WelcomeMessage = memo(function WelcomeMessage() {
     </div>
   );
 });
+
+WelcomeMessage.propTypes = {
+  onSuggestionClick: PropTypes.func.isRequired
+};
 
 /**
  * Main AI Tab component
@@ -182,6 +189,18 @@ export function AITab() {
     }
   };
 
+  const handleSuggestionClick = async (suggestion) => {
+    if (isLoading || isTyping) {
+      return;
+    }
+
+    try {
+      await sendMessage(suggestion);
+    } catch (err) {
+      console.error('[AITab] Suggestion click error:', err);
+    }
+  };
+
   return (
     <div className="flex flex-col h-[calc(100vh-12rem)] bg-slate-900/50 rounded-xl border border-slate-700 overflow-hidden">
       {/* Header */}
@@ -210,7 +229,7 @@ export function AITab() {
       {/* Messages area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.length === 0 && !isTyping ? (
-          <WelcomeMessage />
+          <WelcomeMessage onSuggestionClick={handleSuggestionClick} />
         ) : (
           <>
             {messages.map((message) => (
