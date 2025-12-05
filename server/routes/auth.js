@@ -93,7 +93,9 @@ router.post('/auth/signup', async (req, res) => {
       return res.status(500).json({ error: 'Supabase not configured' });
     }
 
-    console.log('[AUTH] Signup attempt for:', email);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[AUTH] Signup attempt for:', email);
+    }
     const { data, error } = await supabaseServer.auth.signUp({ email, password });
     
     if (error) {
@@ -106,7 +108,9 @@ router.post('/auth/signup', async (req, res) => {
       await ensureUserInDatabase(data.user);
     }
 
-    console.log('[AUTH] Signup successful for:', email);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[AUTH] Signup successful for:', email);
+    }
     res.json(data);
   } catch (error) {
     console.error('[AUTH] Signup exception:', error.message);
