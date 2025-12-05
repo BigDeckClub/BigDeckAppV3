@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
-import { CheckSquare, Square, FolderInput } from 'lucide-react';
+import { CheckSquare, Square, FolderInput, ListFilter } from 'lucide-react';
 import { CardGrid } from './CardGrid';
 import { FolderHeader } from './FolderHeader';
 import { useToast, TOAST_TYPES } from '../../context/ToastContext';
@@ -20,6 +20,9 @@ export function FolderView({
   onDeleteFolder,
   sortField = 'name',
   sortDirection = 'asc',
+  decklistFilter = 'all',
+  setDecklistFilter,
+  decklistCardNames = new Set(),
 }) {
   const { showToast } = useToast();
   const [selectedCardIds, setSelectedCardIds] = useState(new Set());
@@ -33,7 +36,13 @@ export function FolderView({
       const matchesSearch = inventorySearch === '' || cardName.toLowerCase().includes(inventorySearch.toLowerCase());
       const totalQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
       const reservedQty = items.reduce((sum, item) => sum + (parseInt(item.reserved_quantity) || 0), 0);
-      return matchesSearch && (totalQty - reservedQty) > 0;
+      // Apply decklist filter
+      const inDecklist = decklistCardNames.has(cardName.toLowerCase());
+      const matchesDecklistFilter = 
+        decklistFilter === 'all' ||
+        (decklistFilter === 'in-decklist' && inDecklist) ||
+        (decklistFilter === 'not-in-decklist' && !inDecklist);
+      return matchesSearch && matchesDecklistFilter && (totalQty - reservedQty) > 0;
     });
     
     const stats = Object.entries(folderData).reduce((acc, [, items]) => {
@@ -54,7 +63,7 @@ export function FolderView({
     const sortedCards = sortCards(cards, sortField, sortDirection);
     
     return { folderCards: sortedCards, availableCardsStats: stats, folderDesc: desc };
-  }, [folderName, groupedByFolder, inventorySearch, folderOps.folderMetadata, sortField, sortDirection]);
+  }, [folderName, groupedByFolder, inventorySearch, folderOps.folderMetadata, sortField, sortDirection, decklistFilter, decklistCardNames]);
 
   // Get all card IDs for select all
   const allCardIds = useMemo(() => {
@@ -148,6 +157,27 @@ export function FolderView({
             )}
           </div>
           
+          {/* Decklist Filter */}
+          {setDecklistFilter && (
+            <div className="flex items-center gap-2 ml-auto">
+              <ListFilter className="w-4 h-4 text-slate-400" />
+              <select
+                value={decklistFilter}
+                onChange={(e) => setDecklistFilter(e.target.value)}
+                className="px-3 py-1.5 bg-slate-700 border border-slate-600 text-slate-200 rounded-md text-sm focus:outline-none focus:border-teal-400"
+              >
+                <option value="all">All Cards</option>
+                <option value="in-decklist">In Decklists</option>
+                <option value="not-in-decklist">Not in Decklists</option>
+              </select>
+              {decklistFilter !== 'all' && (
+                <span className="text-xs text-teal-400">
+                  {folderCards.length} cards
+                </span>
+              )}
+            </div>
+          )}
+          
           {selectedCardIds.size > 0 && (
             <div className="flex items-center gap-2">
               {!showBulkMove ? (
@@ -227,6 +257,9 @@ FolderView.propTypes = {
   onDeleteFolder: PropTypes.func.isRequired,
   sortField: PropTypes.oneOf(['name', 'price', 'quantity', 'set', 'dateAdded']),
   sortDirection: PropTypes.oneOf(['asc', 'desc']),
+  decklistFilter: PropTypes.oneOf(['all', 'in-decklist', 'not-in-decklist']),
+  setDecklistFilter: PropTypes.func,
+  decklistCardNames: PropTypes.instanceOf(Set),
 };
 
 export default FolderView;
