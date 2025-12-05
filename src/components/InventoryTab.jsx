@@ -18,6 +18,7 @@ import { useApi } from '../hooks/useApi';
 import { useInventory } from '../context/InventoryContext';
 import { sortCards } from '../utils/sortCards';
 import { useToast, TOAST_TYPES } from '../context/ToastContext';
+import { fetchWithAuth } from '../utils/apiClient';
 
 /**
  * InventoryTab - Main inventory management component
@@ -68,12 +69,20 @@ export const InventoryTab = ({
   const [selectedCardIds, setSelectedCardIds] = useState(new Set());
   const [showBulkMove, setShowBulkMove] = useState(false);
   const [targetFolder, setTargetFolder] = useState('');
+  const [isMoving, setIsMoving] = useState(false);
   
   // Sort change handler
   const handleSortChange = useCallback((field, direction) => {
     setSortField(field);
     setSortDirection(direction);
   }, []);
+
+  // Clear selections when switching tabs
+  useEffect(() => {
+    setSelectedCardIds(new Set());
+    setShowBulkMove(false);
+    setTargetFolder('');
+  }, [activeTab]);
 
   // Folder operations hook
   const folderOps = useFolderOperations({ inventory, onLoadInventory: loadInventory });
@@ -211,30 +220,95 @@ export const InventoryTab = ({
   }, []);
 
   const handleBulkMove = useCallback(async () => {
-    if (!targetFolder || selectedCardIds.size === 0) return;
+    if (!targetFolder || selectedCardIds.size === 0 || isMoving) return;
+    
+    const totalCards = selectedCardIds.size;
+    setIsMoving(true);
     
     try {
-      let successCount = 0;
-      for (const cardId of selectedCardIds) {
-        await folderOps.moveInventoryItemToFolder(cardId, targetFolder);
-        successCount++;
+      // Show loading toast
+      showToast(
+        `Moving ${totalCards} card${totalCards === 1 ? '' : 's'} to ${targetFolder}...`,
+        TOAST_TYPES.INFO
+      );
+      
+      // Disable the move button during operation
+      setShowBulkMove(false);
+      
+      // Prepare all API calls
+      const movePromises = Array.from(selectedCardIds).map(cardId => 
+        fetchWithAuth(`/api/inventory/${cardId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ folder: targetFolder })
+        }).then(response => {
+          if (!response.ok) throw new Error(`Failed to move card ${cardId}`);
+          return cardId;
+        })
+      );
+      
+      // Execute all moves in parallel
+      const results = await Promise.allSettled(movePromises);
+      
+      // Count successes and failures
+      const successCount = results.filter(r => r.status === 'fulfilled').length;
+      const failureCount = results.filter(r => r.status === 'rejected').length;
+      
+      // Refresh inventory once after all moves
+      if (loadInventory) {
+        await loadInventory();
       }
       
-      showToast(
-        `Moved ${successCount} card${successCount === 1 ? '' : 's'} to ${targetFolder}`,
-        TOAST_TYPES.SUCCESS
-      );
+      // Show final result
+      if (failureCount === 0) {
+        showToast(
+          `Successfully moved ${successCount} card${successCount === 1 ? '' : 's'} to ${targetFolder}`,
+          TOAST_TYPES.SUCCESS
+        );
+      } else {
+        showToast(
+          `Moved ${successCount} card${successCount === 1 ? '' : 's'}, ${failureCount} failed`,
+          TOAST_TYPES.WARNING
+        );
+      }
       
       // Reset selection
       setSelectedCardIds(new Set());
-      setShowBulkMove(false);
       setTargetFolder('');
     } catch (error) {
       showToast(`Failed to move cards: ${error.message}`, TOAST_TYPES.ERROR);
+      setShowBulkMove(true); // Re-enable on error
+    } finally {
+      setIsMoving(false);
     }
-  }, [targetFolder, selectedCardIds, folderOps, showToast]);
+  }, [targetFolder, selectedCardIds, isMoving, showToast, loadInventory]);
 
-  const isAllSelected = allCardIds.length > 0 && selectedCardIds.size === allCardIds.length;
+  // Calculate selection stats
+  const { isAllSelected, uniqueCardsSelected, totalCardsSelected } = useMemo(() => {
+    if (activeTab !== 'all' || selectedCardIds.size === 0) {
+      return { isAllSelected: false, uniqueCardsSelected: 0, totalCardsSelected: 0 };
+    }
+    
+    let uniqueCount = 0;
+    let totalCount = 0;
+    
+    Object.values(groupedInventory).forEach(items => {
+      const hasSelectedItem = items.some(item => selectedCardIds.has(item.id));
+      if (hasSelectedItem) {
+        uniqueCount++;
+        // Count total quantity of selected items for this card
+        items.forEach(item => {
+          if (selectedCardIds.has(item.id)) {
+            totalCount += item.quantity || 0;
+          }
+        });
+      }
+    });
+    
+    const allSelected = allCardIds.length > 0 && selectedCardIds.size === allCardIds.length;
+    return { isAllSelected: allSelected, uniqueCardsSelected: uniqueCount, totalCardsSelected: totalCount };
+  }, [activeTab, selectedCardIds, groupedInventory, allCardIds.length]);
+  
   const availableFolders = folderOps.createdFolders.filter(f => f !== 'Trash');
 
   // Navigation path for breadcrumb - MUST be before any non-hook logic
@@ -432,7 +506,7 @@ export const InventoryTab = ({
                       </button>
                       {selectedCardIds.size > 0 && (
                         <span className="text-sm text-slate-400">
-                          {selectedCardIds.size} card{selectedCardIds.size === 1 ? '' : 's'} selected
+                          {uniqueCardsSelected} unique card{uniqueCardsSelected === 1 ? '' : 's'} • {totalCardsSelected} total card{totalCardsSelected === 1 ? '' : 's'} selected
                         </span>
                       )}
                     </div>
@@ -461,17 +535,18 @@ export const InventoryTab = ({
                             </select>
                             <button
                               onClick={handleBulkMove}
-                              disabled={!targetFolder}
+                              disabled={!targetFolder || isMoving}
                               className="px-3 py-1.5 bg-teal-600 hover:bg-teal-500 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded-md transition-colors text-sm font-medium"
                             >
-                              Move
+                              {isMoving ? 'Moving...' : 'Move'}
                             </button>
                             <button
                               onClick={() => {
                                 setShowBulkMove(false);
                                 setTargetFolder('');
                               }}
-                              className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-md transition-colors text-sm"
+                              disabled={isMoving}
+                              className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-slate-300 rounded-md transition-colors text-sm"
                             >
                               Cancel
                             </button>

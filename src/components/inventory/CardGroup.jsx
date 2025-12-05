@@ -106,8 +106,8 @@ export const CardGroup = memo(function CardGroup({
   // Check if selection mode is enabled
   const isSelectionMode = selectedCardIds && setSelectedCardIds;
   
-  // Check if any items from this card are selected
-  const hasSelectedItems = isSelectionMode && items.some(item => selectedCardIds.has(item.id));
+  // Check if all items from this card are selected
+  const allItemsSelected = isSelectionMode && items.every(item => selectedCardIds.has(item.id));
   
   // Toggle selection for all items in this card group
   const handleToggleSelection = useCallback((e) => {
@@ -227,7 +227,7 @@ export const CardGroup = memo(function CardGroup({
         }}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        className={`relative bg-gradient-to-br from-slate-800 to-slate-900 border ${hasSelectedItems ? 'border-teal-500 ring-2 ring-teal-500/50' : 'border-slate-600 hover:border-teal-400'} rounded-lg p-3 md:p-4 transition-all duration-300 flex flex-col h-32 sm:h-36 md:h-40 hover:shadow-2xl hover:shadow-teal-500/30 hover:-translate-y-1 cursor-grab active:cursor-grabbing group active:scale-95`}
+        className={`relative bg-gradient-to-br from-slate-800 to-slate-900 border ${allItemsSelected ? 'border-teal-500 ring-2 ring-teal-500/50' : 'border-slate-600 hover:border-teal-400'} rounded-lg p-3 md:p-4 transition-all duration-300 flex flex-col h-32 sm:h-36 md:h-40 hover:shadow-2xl hover:shadow-teal-500/30 hover:-translate-y-1 cursor-grab active:cursor-grabbing group active:scale-95`}
         onClick={handleOpenModal}
       >
         {/* Selection Checkbox (when selection mode enabled) */}
@@ -236,13 +236,13 @@ export const CardGroup = memo(function CardGroup({
             type="button"
             onClick={handleToggleSelection}
             className={`absolute top-1 right-1 p-1 rounded transition-all z-30 ${
-              hasSelectedItems 
+              allItemsSelected 
                 ? 'bg-teal-600 text-white' 
                 : 'bg-slate-700/80 text-slate-300 hover:bg-slate-600'
             }`}
-            title={hasSelectedItems ? "Deselect" : "Select"}
+            title={allItemsSelected ? "Deselect" : "Select"}
           >
-            {hasSelectedItems ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
+            {allItemsSelected ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
           </button>
         )}
         
@@ -338,7 +338,7 @@ export const CardGroup = memo(function CardGroup({
             e.dataTransfer.setData('skuData', JSON.stringify(items[0]));
           }
         }}
-        className={`relative rounded-xl overflow-hidden border ${hasSelectedItems ? 'border-teal-500 ring-2 ring-teal-500/50' : 'border-slate-600 hover:border-teal-400'} transition-all duration-300 cursor-grab active:cursor-grabbing group hover:shadow-2xl hover:shadow-teal-500/30 hover:-translate-y-1 active:scale-95`}
+        className={`relative rounded-xl overflow-hidden border ${allItemsSelected ? 'border-teal-500 ring-2 ring-teal-500/50' : 'border-slate-600 hover:border-teal-400'} transition-all duration-300 cursor-grab active:cursor-grabbing group hover:shadow-2xl hover:shadow-teal-500/30 hover:-translate-y-1 active:scale-95`}
         onClick={handleOpenModal}
       >
         {/* Card Image */}
@@ -390,13 +390,13 @@ export const CardGroup = memo(function CardGroup({
               type="button"
               onClick={handleToggleSelection}
               className={`absolute top-2 left-2 p-1.5 rounded transition-all z-30 ${
-                hasSelectedItems 
+                allItemsSelected 
                   ? 'bg-teal-600 text-white' 
                   : 'bg-black/50 text-slate-300 hover:bg-slate-600'
               }`}
-              title={hasSelectedItems ? "Deselect" : "Select"}
+              title={allItemsSelected ? "Deselect" : "Select"}
             >
-              {hasSelectedItems ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
+              {allItemsSelected ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
             </button>
           )}
           
