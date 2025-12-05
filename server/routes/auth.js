@@ -29,7 +29,9 @@ async function ensureUserInDatabase(user) {
         email = EXCLUDED.email,
         updated_at = NOW()
     `, [user.id, user.email || null]);
-    console.log('[AUTH] User synced to database:', user.id);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[AUTH] User synced to database:', user.id);
+    }
   } catch (err) {
     console.error('[AUTH] Failed to sync user to database:', err.message);
     // Don't throw - auth should still succeed even if local sync fails
@@ -49,7 +51,9 @@ router.post('/auth/login', async (req, res) => {
       return res.status(500).json({ error: 'Supabase not configured' });
     }
 
-    console.log('[AUTH] Login attempt for:', email);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[AUTH] Login attempt for:', email);
+    }
     const { data, error } = await supabaseServer.auth.signInWithPassword({ email, password });
     
     if (error) {
@@ -62,7 +66,9 @@ router.post('/auth/login', async (req, res) => {
       await ensureUserInDatabase(data.user);
     }
 
-    console.log('[AUTH] Login successful for:', email);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[AUTH] Login successful for:', email);
+    }
     res.json(data);
   } catch (error) {
     console.error('[AUTH] Login exception:', error.message);
@@ -87,7 +93,9 @@ router.post('/auth/signup', async (req, res) => {
       return res.status(500).json({ error: 'Supabase not configured' });
     }
 
-    console.log('[AUTH] Signup attempt for:', email);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[AUTH] Signup attempt for:', email);
+    }
     const { data, error } = await supabaseServer.auth.signUp({ email, password });
     
     if (error) {
@@ -100,7 +108,9 @@ router.post('/auth/signup', async (req, res) => {
       await ensureUserInDatabase(data.user);
     }
 
-    console.log('[AUTH] Signup successful for:', email);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[AUTH] Signup successful for:', email);
+    }
     res.json(data);
   } catch (error) {
     console.error('[AUTH] Signup exception:', error.message);

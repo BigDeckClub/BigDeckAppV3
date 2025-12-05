@@ -3,10 +3,12 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-console.log('[AUTH] Supabase config check:', {
-  hasUrl: !!supabaseUrl,
-  hasKey: !!supabaseServiceRoleKey
-});
+if (process.env.NODE_ENV !== 'production') {
+  console.log('[AUTH] Supabase config check:', {
+    hasUrl: !!supabaseUrl,
+    hasKey: !!supabaseServiceRoleKey
+  });
+}
 
 const supabase = supabaseUrl && supabaseServiceRoleKey 
   ? createClient(supabaseUrl, supabaseServiceRoleKey)
@@ -14,7 +16,7 @@ const supabase = supabaseUrl && supabaseServiceRoleKey
 
 if (!supabase) {
   console.error('[AUTH] ✗ WARNING: Supabase client not initialized - authentication will fail');
-} else {
+} else if (process.env.NODE_ENV !== 'production') {
   console.log('[AUTH] ✓ Supabase client initialized successfully');
 }
 

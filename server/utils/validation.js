@@ -82,11 +82,19 @@ export const validateBody = (schema) => {
         message: err.message,
       }));
       
-      console.error('[VALIDATION] Request body validation failed:', {
-        endpoint: req.path,
-        body: req.body,
-        errors
-      });
+      // Log validation errors (without sensitive body data in production)
+      if (process.env.NODE_ENV === 'production') {
+        console.error('[VALIDATION] Request body validation failed:', {
+          endpoint: req.path,
+          errorCount: errors.length
+        });
+      } else {
+        console.error('[VALIDATION] Request body validation failed:', {
+          endpoint: req.path,
+          body: req.body,
+          errors
+        });
+      }
       
       return res.status(400).json({
         error: 'Validation failed',
