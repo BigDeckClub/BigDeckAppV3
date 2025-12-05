@@ -13,4 +13,8 @@ export const aiApiLimiter = rateLimit({
   message: { error: 'Too many requests, please try again later' },
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: (req) => {
+    // Use x-forwarded-for header in cloud environments, fallback to req.ip
+    return req.headers['x-forwarded-for'] || req.ip;
+  },
 });
