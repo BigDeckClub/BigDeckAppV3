@@ -25,6 +25,7 @@ const InventoryTab = lazy(() => import("./components/InventoryTab"));
 const ImportTab = lazy(() => import("./components/ImportTab"));
 const AnalyticsTab = lazy(() => import("./components/AnalyticsTab"));
 const DeckTab = lazy(() => import("./components/DeckTab"));
+const AITab = lazy(() => import("./components/AITab"));
 const SalesHistoryTab = lazy(() => import("./components/SalesHistoryTab"));
 const SettingsTab = lazy(() => import("./components/SettingsTab"));
 
@@ -208,6 +209,12 @@ function MTGInventoryTrackerContent() {
               onDeckCreatedOrDeleted={() => setDeckRefreshTrigger(prev => prev + 1)}
               onInventoryUpdate={loadInventory}
             />
+          </Suspense>
+        )}
+
+        {activeTab === "ai" && !isLoading && (
+          <Suspense fallback={<TabLoadingSpinner />}> 
+            <AITab />
           </Suspense>
         )}
 

@@ -12,6 +12,7 @@ import {
   BookOpen,
   TrendingUp,
   Settings,
+  Bot,
 } from 'lucide-react';
 import { UserDropdown } from './UserDropdown';
 
@@ -23,6 +24,7 @@ const NAV_ITEMS = [
   { id: 'imports', icon: Download, label: 'Imports' },
   { id: 'analytics', icon: BarChart3, label: 'Analytics' },
   { id: 'decks', icon: BookOpen, label: 'Decks' },
+  { id: 'ai', icon: Bot, label: 'AI' },
   { id: 'sales', icon: TrendingUp, label: 'Sales' },
   { id: 'settings', icon: Settings, label: 'Settings' },
 ];

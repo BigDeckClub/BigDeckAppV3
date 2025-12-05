@@ -11,6 +11,7 @@ import settingsRouter from './settings.js';
 import authRouter from './auth.js';
 import lotsRouter from './lots.js';
 import historyRouter from './history.js';
+import aiRouter from './ai.js';
 
 export function registerRoutes(app) {
   // Health check (no /api prefix)
@@ -28,6 +29,7 @@ export function registerRoutes(app) {
   app.use('/api', authRouter);
   app.use('/api', lotsRouter);
   app.use('/api', historyRouter);
+  app.use('/api', aiRouter);
 }
 
 export {
@@ -42,5 +44,6 @@ export {
   settingsRouter,
   authRouter,
   lotsRouter,
-  historyRouter
+  historyRouter,
+  aiRouter
 };
