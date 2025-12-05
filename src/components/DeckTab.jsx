@@ -99,6 +99,13 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
     refreshInventoryMap();
   }, [refreshInventoryMap]);
 
+  // Refresh inventory when entering analysis mode
+  useEffect(() => {
+    if (showAnalysis) {
+      refreshInventoryMap();
+    }
+  }, [showAnalysis, refreshInventoryMap]);
+
   // Handle text deck import
   const handleImportFromText = async () => {
     const success = await importFromTextDeck(newDeckName, newDeckFormat, deckListText);
