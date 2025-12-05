@@ -32,12 +32,23 @@ export function FolderView({
   const { folderCards, availableCardsStats, folderDesc } = useMemo(() => {
     const folderData = groupedByFolder[folderName] || {};
     
+    // Helper to check if card is in decklist (handles double-faced cards like "Avatar Aang // Aang, Master of Elements")
+    const isInDecklist = (name) => {
+      const lowerName = name.toLowerCase();
+      if (decklistCardNames.has(lowerName)) return true;
+      if (lowerName.includes(' // ')) {
+        const frontFace = lowerName.split(' // ')[0].trim();
+        if (decklistCardNames.has(frontFace)) return true;
+      }
+      return false;
+    };
+    
     const cards = Object.entries(folderData).filter(([cardName, items]) => {
       const matchesSearch = inventorySearch === '' || cardName.toLowerCase().includes(inventorySearch.toLowerCase());
       const totalQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
       const reservedQty = items.reduce((sum, item) => sum + (parseInt(item.reserved_quantity) || 0), 0);
-      // Apply decklist filter
-      const inDecklist = decklistCardNames.has(cardName.toLowerCase());
+      // Apply decklist filter (handles double-faced cards)
+      const inDecklist = isInDecklist(cardName);
       const matchesDecklistFilter = 
         decklistFilter === 'all' ||
         (decklistFilter === 'in-decklist' && inDecklist) ||

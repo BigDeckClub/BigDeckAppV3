@@ -211,13 +211,28 @@ export const InventoryTab = ({
       }, {});
   }, [filteredInventory]);
 
+  // Helper to check if a card is in a decklist (handles double-faced cards)
+  const isCardInDecklist = useCallback((cardName) => {
+    const lowerName = cardName.toLowerCase();
+    // Direct match
+    if (decklistCardNames.has(lowerName)) return true;
+    // For double-faced cards like "Avatar Aang // Aang, Master of Elements"
+    // Check if the front face matches
+    if (lowerName.includes(' // ')) {
+      const frontFace = lowerName.split(' // ')[0].trim();
+      if (decklistCardNames.has(frontFace)) return true;
+    }
+    return false;
+  }, [decklistCardNames]);
+
   const { inStockCards, outOfStockCards } = useMemo(() => {
     const entries = Object.entries(groupedInventory);
+    
     const inStock = entries.filter(([cardName, items]) => {
       const matchesSearch = inventorySearch === '' || cardName.toLowerCase().includes(inventorySearch.toLowerCase());
       const totalQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
-      // Apply decklist filter
-      const inDecklist = decklistCardNames.has(cardName.toLowerCase());
+      // Apply decklist filter (handles double-faced cards)
+      const inDecklist = isCardInDecklist(cardName);
       const matchesDecklistFilter = 
         decklistFilter === 'all' ||
         (decklistFilter === 'in-decklist' && inDecklist) ||
@@ -227,8 +242,8 @@ export const InventoryTab = ({
     const outOfStock = entries.filter(([cardName, items]) => {
       const matchesSearch = inventorySearch === '' || cardName.toLowerCase().includes(inventorySearch.toLowerCase());
       const totalQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
-      // Apply decklist filter
-      const inDecklist = decklistCardNames.has(cardName.toLowerCase());
+      // Apply decklist filter (handles double-faced cards)
+      const inDecklist = isCardInDecklist(cardName);
       const matchesDecklistFilter = 
         decklistFilter === 'all' ||
         (decklistFilter === 'in-decklist' && inDecklist) ||
@@ -240,7 +255,7 @@ export const InventoryTab = ({
       inStockCards: sortCards(inStock, sortField, sortDirection), 
       outOfStockCards: sortCards(outOfStock, sortField, sortDirection)
     };
-  }, [groupedInventory, inventorySearch, sortField, sortDirection, decklistFilter, decklistCardNames]);
+  }, [groupedInventory, inventorySearch, sortField, sortDirection, decklistFilter, isCardInDecklist]);
 
   // Get all card IDs for All Cards tab
   const allCardIds = useMemo(() => {
