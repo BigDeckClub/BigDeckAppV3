@@ -68,7 +68,7 @@ export function RapidEntryTable({
   } = rapidEntry;
 
   // All available folders
-  const allFolders = ['Unsorted', ...createdFolders];
+  const allFolders = ['Uncategorized', ...createdFolders];
 
   // Keyboard navigation handler
   const handleKeyDown = useCallback((e, rowIndex, fieldType) => {

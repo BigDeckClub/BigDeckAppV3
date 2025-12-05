@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Layers, Upload } from 'lucide-react';
 import { RapidEntryTable } from './rapid-entry/RapidEntryTable';
 import { FileImportSection } from './FileImportSection';
+import { fetchWithAuth } from '../utils/apiClient';
 
 export const ImportTab = ({ 
   allSets,
@@ -14,10 +15,20 @@ export const ImportTab = ({
 }) => {
   const [createdFolders, setCreatedFolders] = useState([]);
 
-  // Load folders from localStorage
-  React.useEffect(() => {
-    const savedFolders = localStorage.getItem('createdFolders');
-    if (savedFolders) setCreatedFolders(JSON.parse(savedFolders));
+  // Load folders from API
+  useEffect(() => {
+    const loadFolders = async () => {
+      try {
+        const response = await fetchWithAuth('/api/folders');
+        if (response.ok) {
+          const data = await response.json();
+          setCreatedFolders(data.map(f => f.name));
+        }
+      } catch (error) {
+        console.error('Error loading folders:', error);
+      }
+    };
+    loadFolders();
   }, []);
 
   // Handler for adding card from rapid entry
@@ -28,7 +39,7 @@ export const ImportTab = ({
       set_name: cardData.set_name,
       quantity: cardData.quantity,
       purchase_price: cardData.purchase_price,
-      folder: cardData.folder || 'Unsorted',
+      folder: cardData.folder || 'Uncategorized',
       image_url: cardData.image_url,
       foil: cardData.foil || false,
       quality: cardData.quality || 'NM',
