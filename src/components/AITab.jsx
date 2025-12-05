@@ -57,7 +57,7 @@ const ChatMessage = memo(function ChatMessage({ message }) {
 
 ChatMessage.propTypes = {
   message: PropTypes.shape({
-    id: PropTypes.number.isRequired,
+    id: PropTypes.string.isRequired,
     role: PropTypes.oneOf(['user', 'assistant']).isRequired,
     content: PropTypes.string.isRequired,
     suggestions: PropTypes.arrayOf(PropTypes.string),
