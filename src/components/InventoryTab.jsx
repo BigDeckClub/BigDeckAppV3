@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
-import { X, Menu, Trash2 } from 'lucide-react';
+import { X, Menu, Trash2, CheckSquare, Square, FolderInput } from 'lucide-react';
 import { 
   Breadcrumb,
   CardGrid, 
@@ -17,6 +17,7 @@ import { useConfirm } from '../context/ConfirmContext';
 import { useApi } from '../hooks/useApi';
 import { useInventory } from '../context/InventoryContext';
 import { sortCards } from '../utils/sortCards';
+import { useToast, TOAST_TYPES } from '../context/ToastContext';
 
 /**
  * InventoryTab - Main inventory management component
@@ -33,6 +34,7 @@ export const InventoryTab = ({
 }) => {
   const { confirm } = useConfirm();
   const { post } = useApi();
+  const { showToast } = useToast();
   
   // Get inventory state and operations from context
   const {
@@ -57,6 +59,11 @@ export const InventoryTab = ({
   const [inventorySearch, setInventorySearch] = useState('');
   const [showSellModal, setShowSellModal] = useState(false);
   const [sellModalData, setSellModalData] = useState(null);
+  
+  // Selection State for bulk operations in "All Cards" view
+  const [selectedCardIds, setSelectedCardIds] = useState(new Set());
+  const [showBulkMove, setShowBulkMove] = useState(false);
+  const [targetFolder, setTargetFolder] = useState('');
   
   // Sort State
   const [sortField, setSortField] = useState('name');
@@ -210,6 +217,63 @@ export const InventoryTab = ({
     ];
   }, [activeTab, deckOps.deckInstances]);
 
+  // Get all card IDs for select all in "All Cards" view (excluding Trash items)
+  const allCardIds = useMemo(() => {
+    const ids = [];
+    filteredInventory
+      .filter(item => item.folder !== 'Trash')
+      .forEach(item => ids.push(item.id));
+    return ids;
+  }, [filteredInventory]);
+
+  // Handlers for bulk selection in "All Cards" view
+  const handleSelectAll = useCallback(() => {
+    setSelectedCardIds(new Set(allCardIds));
+  }, [allCardIds]);
+
+  const handleDeselectAll = useCallback(() => {
+    setSelectedCardIds(new Set());
+  }, []);
+
+  const handleBulkMove = useCallback(async () => {
+    if (!targetFolder || selectedCardIds.size === 0) return;
+    
+    try {
+      // Process moves concurrently for better performance
+      const movePromises = Array.from(selectedCardIds).map(cardId =>
+        folderOps.moveInventoryItemToFolder(cardId, targetFolder)
+          .then(() => ({ success: true, cardId }))
+          .catch(error => ({ success: false, cardId, error }))
+      );
+      
+      const results = await Promise.allSettled(movePromises);
+      const successCount = results.filter(r => r.status === 'fulfilled' && r.value.success).length;
+      const failCount = results.filter(r => r.status === 'rejected' || (r.status === 'fulfilled' && !r.value.success)).length;
+      
+      if (failCount > 0) {
+        showToast(
+          `Moved ${successCount} card${successCount === 1 ? '' : 's'} to ${targetFolder}. ${failCount} failed.`,
+          TOAST_TYPES.WARNING
+        );
+      } else {
+        showToast(
+          `Moved ${successCount} card${successCount === 1 ? '' : 's'} to ${targetFolder}`,
+          TOAST_TYPES.SUCCESS
+        );
+      }
+      
+      // Reset selection
+      setSelectedCardIds(new Set());
+      setShowBulkMove(false);
+      setTargetFolder('');
+    } catch (error) {
+      showToast(`Failed to move cards: ${error.message}`, TOAST_TYPES.ERROR);
+    }
+  }, [targetFolder, selectedCardIds, folderOps, showToast]);
+
+  const isAllSelected = allCardIds.length > 0 && selectedCardIds.size === allCardIds.length;
+  const availableFolders = folderOps.createdFolders.filter(f => f !== 'Trash');
+
   // Common CardGrid props (non-hook logic after all hooks)
   const cardGridProps = {
     viewMode,
@@ -358,15 +422,85 @@ export const InventoryTab = ({
             {activeTab === 'all' ? (
               Object.keys(groupedInventory).length > 0 ? (
                 <>
-                  <CardGrid cards={inStockCards} {...cardGridProps} />
+                  {/* Bulk Selection Controls for All Cards view */}
+                  <div className="bg-slate-800/50 rounded-lg border border-slate-600 p-3 mb-4 flex flex-wrap items-center gap-3">
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={isAllSelected ? handleDeselectAll : handleSelectAll}
+                        className="flex items-center gap-2 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-md transition-colors text-sm font-medium"
+                      >
+                        {isAllSelected ? (
+                          <>
+                            <Square className="w-4 h-4" />
+                            Deselect All
+                          </>
+                        ) : (
+                          <>
+                            <CheckSquare className="w-4 h-4" />
+                            Select All
+                          </>
+                        )}
+                      </button>
+                      {selectedCardIds.size > 0 && (
+                        <span className="text-sm text-slate-400">
+                          {selectedCardIds.size} card{selectedCardIds.size === 1 ? '' : 's'} selected
+                        </span>
+                      )}
+                    </div>
+                    
+                    {selectedCardIds.size > 0 && (
+                      <div className="flex items-center gap-2">
+                        {!showBulkMove ? (
+                          <button
+                            onClick={() => setShowBulkMove(true)}
+                            className="flex items-center gap-2 px-3 py-1.5 bg-teal-600 hover:bg-teal-500 text-white rounded-md transition-colors text-sm font-medium"
+                          >
+                            <FolderInput className="w-4 h-4" />
+                            Move to Folder
+                          </button>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <select
+                              value={targetFolder}
+                              onChange={(e) => setTargetFolder(e.target.value)}
+                              className="px-3 py-1.5 bg-slate-700 border border-slate-600 text-slate-200 rounded-md text-sm focus:outline-none focus:border-teal-400"
+                            >
+                              <option value="">Select folder...</option>
+                              {availableFolders.map(folder => (
+                                <option key={folder} value={folder}>{folder}</option>
+                              ))}
+                            </select>
+                            <button
+                              onClick={handleBulkMove}
+                              disabled={!targetFolder}
+                              className="px-3 py-1.5 bg-teal-600 hover:bg-teal-500 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded-md transition-colors text-sm font-medium"
+                            >
+                              Move
+                            </button>
+                            <button
+                              onClick={() => {
+                                setShowBulkMove(false);
+                                setTargetFolder('');
+                              }}
+                              className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-md transition-colors text-sm"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  
+                  <CardGrid cards={inStockCards} {...cardGridProps} selectedCardIds={selectedCardIds} setSelectedCardIds={setSelectedCardIds} />
                   {inStockCards.length > 0 && outOfStockCards.length > 0 && (
                     <div className="border-t border-slate-700 pt-4">
                       <h3 className="text-sm font-semibold text-slate-400 mb-3">Out of Stock</h3>
-                      <CardGrid cards={outOfStockCards} {...cardGridProps} />
+                      <CardGrid cards={outOfStockCards} {...cardGridProps} selectedCardIds={selectedCardIds} setSelectedCardIds={setSelectedCardIds} />
                     </div>
                   )}
                   {outOfStockCards.length > 0 && inStockCards.length === 0 && (
-                    <CardGrid cards={outOfStockCards} {...cardGridProps} />
+                    <CardGrid cards={outOfStockCards} {...cardGridProps} selectedCardIds={selectedCardIds} setSelectedCardIds={setSelectedCardIds} />
                   )}
                 </>
               ) : (
