@@ -641,77 +641,138 @@ export function DeckAnalysisView({ decks, selectedDeckIds, inventoryByName }) {
           </div>
 
           {/* Missing Cards List/Grid */}
-          {viewMode === 'list' ? (
-            <div className="bg-slate-800 rounded-lg border border-slate-600 overflow-hidden">
-              <div className="max-h-[600px] overflow-y-auto">
-                {analysis.missingCards
-                  .filter(card => !searchQuery || card.name.toLowerCase().includes(searchQuery.toLowerCase()))
-                  .map((card, idx) => (
-                    <div
-                      key={idx}
-                      className="flex items-center justify-between p-4 border-b border-slate-700 last:border-0 hover:bg-slate-700/50 transition-colors"
-                      onMouseEnter={(e) => setHoveredCard({ name: card.name, x: e.clientX, y: e.clientY })}
-                      onMouseLeave={() => setHoveredCard(null)}
-                    >
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <Eye className="w-4 h-4 text-slate-500" />
-                          <span className="text-slate-200 font-medium">{card.name}</span>
-                        </div>
-                        <div className="text-xs text-slate-400 mt-1">
-                          Used in {card.decks.map(d => d.deckName).join(', ')}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <div className="text-sm text-right">
-                          <div className="text-slate-400">
-                            Need <span className="text-blue-300 font-semibold">{card.totalRequired}</span>
-                            {' / '}
-                            Have <span className="text-green-300 font-semibold">{card.available}</span>
-                          </div>
-                        </div>
-                        <div className="text-2xl font-bold text-red-400 w-16 text-right">
-                          -{card.missing}
-                        </div>
-                      </div>
+          {(() => {
+            const filteredCards = analysis.missingCards
+              .filter(card => !searchQuery || card.name.toLowerCase().includes(searchQuery.toLowerCase()))
+              .sort((a, b) => {
+                let comparison = 0;
+                switch (sortBy) {
+                  case 'name':
+                    comparison = a.name.localeCompare(b.name);
+                    break;
+                  case 'quantity':
+                    comparison = b.totalRequired - a.totalRequired;
+                    break;
+                  case 'decks':
+                    comparison = b.decks.length - a.decks.length;
+                    break;
+                  case 'missing':
+                  default:
+                    comparison = b.missing - a.missing;
+                }
+                return sortOrder === 'asc' ? -comparison : comparison;
+              });
+            
+            const totalMissingCount = filteredCards.reduce((sum, card) => sum + card.missing, 0);
+            
+            return (
+              <div className="bg-slate-800 rounded-lg border border-slate-600">
+                {/* Header with count */}
+                <div className="bg-slate-900/50 px-4 py-3 border-b border-slate-700">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-sm text-slate-400">
+                      Showing <span className="text-red-300 font-semibold">{filteredCards.length}</span> unique cards
+                      {searchQuery && ` matching "${searchQuery}"`}
                     </div>
-                  ))}
-              </div>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-              {analysis.missingCards
-                .filter(card => !searchQuery || card.name.toLowerCase().includes(searchQuery.toLowerCase()))
-                .map((card, idx) => (
-                  <div
-                    key={idx}
-                    className="bg-slate-800 rounded-lg border border-slate-600 overflow-hidden hover:border-red-500/50 transition-colors"
-                  >
-                    <div className="aspect-[3/4] bg-slate-900 relative">
-                      <img
-                        src={getCardImageUrl(card.name)}
-                        alt={card.name}
-                        className="w-full h-full object-cover"
-                        onError={(e) => { 
-                          e.target.style.display = 'none';
-                          e.target.nextSibling.style.display = 'flex';
-                        }}
-                      />
-                      <div className="absolute inset-0 hidden items-center justify-center bg-slate-900 text-slate-500 text-sm p-2 text-center">
-                        {card.name}
-                      </div>
-                      <div className="absolute top-2 right-2 bg-red-600 text-white font-bold px-2 py-1 rounded text-sm">
-                        -{card.missing}
-                      </div>
-                    </div>
-                    <div className="p-2">
-                      <div className="text-xs text-slate-400 truncate">{card.name}</div>
-                      <div className="text-xs text-slate-500">{card.decks.length} deck(s)</div>
+                    <div className="text-sm text-slate-400">
+                      Total missing: <span className="text-red-300 font-bold">{totalMissingCount}</span> cards
                     </div>
                   </div>
-                ))}
-            </div>
-          )}
+                  {filteredCards.length > 6 && (
+                    <div className="text-xs text-amber-400 bg-amber-900/30 px-3 py-1.5 rounded border border-amber-600/30 text-center">
+                      ⬇️ Scroll down to see all {filteredCards.length} cards ⬇️
+                    </div>
+                  )}
+                </div>
+                
+                {/* Scrollable container - simple overflow with border indicator */}
+                <div 
+                  className="overflow-auto border-l-4 border-red-500"
+                  style={{ maxHeight: '60vh' }}
+                >
+                  {viewMode === 'list' ? (
+                    <div>
+                      {filteredCards.map((card, idx) => (
+                        <div
+                          key={idx}
+                          className={`flex items-center justify-between p-4 hover:bg-slate-700/50 transition-colors ${idx !== filteredCards.length - 1 ? 'border-b border-slate-700' : ''}`}
+                          onMouseEnter={(e) => setHoveredCard({ name: card.name, x: e.clientX, y: e.clientY })}
+                          onMouseLeave={() => setHoveredCard(null)}
+                        >
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-red-400 font-bold text-lg">#{idx + 1}</span>
+                              <span className="text-slate-200 font-medium">{card.name}</span>
+                            </div>
+                            <div className="text-xs text-slate-400 mt-1 ml-8">
+                              Used in {card.decks.map(d => d.deckName).join(', ')}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <div className="text-sm text-right">
+                              <div className="text-slate-400">
+                                Need <span className="text-blue-300 font-semibold">{card.totalRequired}</span>
+                                {' / '}
+                                Have <span className="text-green-300 font-semibold">{card.available}</span>
+                              </div>
+                            </div>
+                            <div className="text-2xl font-bold text-red-400 w-16 text-right">
+                              -{card.missing}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 p-4">
+                      {filteredCards.map((card, idx) => (
+                        <div
+                          key={idx}
+                          className="bg-slate-900 rounded-lg border border-slate-700 overflow-hidden hover:border-red-500/50 transition-colors"
+                          onMouseEnter={(e) => setHoveredCard({ name: card.name, x: e.clientX, y: e.clientY })}
+                          onMouseLeave={() => setHoveredCard(null)}
+                        >
+                          <div className="aspect-[3/4] bg-slate-900 relative">
+                            <img
+                              src={getCardImageUrl(card.name)}
+                              alt={card.name}
+                              className="w-full h-full object-cover"
+                              onError={(e) => { 
+                                e.target.style.display = 'none';
+                                e.target.nextSibling.style.display = 'flex';
+                              }}
+                            />
+                            <div className="absolute inset-0 hidden items-center justify-center bg-slate-900 text-slate-500 text-sm p-2 text-center">
+                              {card.name}
+                            </div>
+                            <div className="absolute top-2 right-2 bg-red-600 text-white font-bold px-2 py-1 rounded text-sm">
+                              -{card.missing}
+                            </div>
+                          </div>
+                          <div className="p-2">
+                            <div className="text-xs text-slate-200 truncate font-medium">{card.name}</div>
+                            <div className="text-xs text-slate-500">{card.decks.length} deck(s)</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {/* Empty state */}
+                  {filteredCards.length === 0 && (
+                    <div className="flex flex-col items-center justify-center py-12 text-slate-400">
+                      <AlertCircle className="w-12 h-12 mb-3 opacity-50" />
+                      {searchQuery ? (
+                        <p>No missing cards match "{searchQuery}"</p>
+                      ) : (
+                        <p>No missing cards found - your decks are complete!</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
         </div>
       )}
 

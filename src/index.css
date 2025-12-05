@@ -262,6 +262,31 @@ select {
   scrollbar-color: #0d9488 transparent;
 }
 
+/* Missing cards list scrollbar - more visible */
+.missing-cards-scroll {
+  scrollbar-width: auto;
+  scrollbar-color: #ef4444 #334155;
+}
+
+.missing-cards-scroll::-webkit-scrollbar {
+  width: 14px;
+}
+
+.missing-cards-scroll::-webkit-scrollbar-track {
+  background: #334155;
+  border-radius: 8px;
+}
+
+.missing-cards-scroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, #ef4444, #dc2626);
+  border-radius: 8px;
+  border: 2px solid #334155;
+}
+
+.missing-cards-scroll::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(to bottom, #f87171, #ef4444);
+}
+
 /* Utility classes */
 .glass-morphism {
   @apply backdrop-blur-xl bg-white/10 border border-white/20;
