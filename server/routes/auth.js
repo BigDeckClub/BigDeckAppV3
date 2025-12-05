@@ -72,6 +72,10 @@ router.post('/auth/login', async (req, res) => {
     res.json(data);
   } catch (error) {
     console.error('[AUTH] Login exception:', error.message);
+    // Check if error is due to Supabase service being unavailable
+    if (error.message?.includes('Unexpected token') || error.message?.includes('<html>')) {
+      return res.status(503).json({ error: 'Authentication service temporarily unavailable. Please try again later.' });
+    }
     res.status(500).json({ error: error.message || 'Login failed' });
   }
 });
@@ -114,6 +118,10 @@ router.post('/auth/signup', async (req, res) => {
     res.json(data);
   } catch (error) {
     console.error('[AUTH] Signup exception:', error.message);
+    // Check if error is due to Supabase service being unavailable
+    if (error.message?.includes('Unexpected token') || error.message?.includes('<html>')) {
+      return res.status(503).json({ error: 'Authentication service temporarily unavailable. Please try again later.' });
+    }
     res.status(500).json({ error: error.message || 'Signup failed' });
   }
 });
