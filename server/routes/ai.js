@@ -2,6 +2,7 @@ import express from 'express';
 import { authenticate } from '../middleware/index.js';
 import OpenAI from 'openai';
 import { systemPrompt, scryfall, isCardBanned } from 'bigdeck-ai';
+import { allToolSchemas } from 'bigdeck-ai/tools/schemas';
 import { pool } from '../db/pool.js';
 
 const router = express.Router();
@@ -15,9 +16,6 @@ const MAX_TOOL_ITERATIONS = 5;
 // OpenAI client (lazy-loaded)
 let openaiClient = null;
 let clientError = null;
-
-// BigDeck-AI learning modules (lazy-loaded to reduce startup time and memory usage)
-// These modules import additional dependencies like moxfield, mtggoldfish, youtube integrations
 
 /**
  * Get or create OpenAI client
@@ -44,12 +42,10 @@ function getOpenAIClient() {
 }
 
 /**
- * Lazy load learning modules (cached to avoid redundant imports)
- * Uses generic lazy loader to reduce code duplication
+ * Lazy load learning modules from bigdeck-ai
  */
 function createLazyLoader(modulePath, exportName) {
   return async function() {
-    // Use a map to cache modules
     if (!createLazyLoader.cache) {
       createLazyLoader.cache = new Map();
     }
@@ -63,94 +59,18 @@ function createLazyLoader(modulePath, exportName) {
   };
 }
 
-const getProfileAnalyzer = createLazyLoader('bigdeck-ai/src/learning/profileAnalyzer.js', 'profileAnalyzer');
-const getYoutubeLearner = createLazyLoader('bigdeck-ai/src/learning/youtubeLearner.js', 'youtubeLearner');
-const getMetaAnalyzer = createLazyLoader('bigdeck-ai/src/learning/metaAnalyzer.js', 'metaAnalyzer');
+const getProfileAnalyzer = createLazyLoader('bigdeck-ai/learning/profileAnalyzer', 'profileAnalyzer');
+const getYoutubeLearner = createLazyLoader('bigdeck-ai/learning/youtubeLearner', 'youtubeLearner');
+const getMetaAnalyzer = createLazyLoader('bigdeck-ai/learning/metaAnalyzer', 'metaAnalyzer');
 
 /**
- * Tool definitions for OpenAI function calling
+ * Tool definitions - imported from bigdeck-ai package
+ * Plus app-specific tools that need database access
  */
 const tools = [
-  {
-    type: 'function',
-    function: {
-      name: 'search_scryfall',
-      description: 'Search for Magic: The Gathering cards using the Scryfall API. Use this to look up card information, find cards by name, or search for cards matching specific criteria.',
-      parameters: {
-        type: 'object',
-        properties: {
-          query: {
-            type: 'string',
-            description: 'The search query. Can be a card name or Scryfall search syntax (e.g., "c:green type:creature cmc<=3")'
-          },
-          exact: {
-            type: 'boolean',
-            description: 'If true, search for exact card name match. If false, do a fuzzy/full-text search.'
-          }
-        },
-        required: ['query']
-      }
-    }
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'get_user_inventory',
-      description: 'Get the current user\'s MTG card inventory from BigDeck.app. Returns cards they own with quantities, conditions, and folders.',
-      parameters: {
-        type: 'object',
-        properties: {
-          folder: {
-            type: 'string',
-            description: 'Optional folder name to filter inventory by'
-          },
-          search: {
-            type: 'string', 
-            description: 'Optional search term to filter cards by name'
-          }
-        },
-        required: []
-      }
-    }
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'get_card_price',
-      description: 'Get current market prices for a specific MTG card',
-      parameters: {
-        type: 'object',
-        properties: {
-          cardName: {
-            type: 'string',
-            description: 'The name of the card to get prices for'
-          },
-          setCode: {
-            type: 'string',
-            description: 'Optional 3-letter set code (e.g., "MH3", "ONE")'
-          }
-        },
-        required: ['cardName']
-      }
-    }
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'get_user_decks',
-      description: 'Get the user\'s deck lists and deck instances from BigDeck.app. Returns deck names, commanders, card counts, and completion status.',
-      parameters: {
-        type: 'object',
-        properties: {
-          deckId: {
-            type: 'number',
-            description: 'Optional specific deck ID to get details for'
-          }
-        },
-        required: []
-      }
-    }
-  },
+  // Import all tool schemas from bigdeck-ai
+  ...allToolSchemas,
+  // App-specific tools that need local database access
   {
     type: 'function',
     function: {
@@ -162,161 +82,34 @@ const tools = [
         required: []
       }
     }
-  },
-  // Tools from bigdeck-ai package
-  {
-    type: 'function',
-    function: {
-      name: 'validate_deck',
-      description: 'Validate a Commander deck for legality and format rules. Checks deck size (must be 100 cards), color identity restrictions, singleton rule, ban list compliance, and provides structural recommendations.',
-      parameters: {
-        type: 'object',
-        properties: {
-          deck: {
-            type: 'array',
-            description: 'Array of card names in the deck (99 cards + commander)',
-            items: { type: 'string' }
-          },
-          commander: {
-            type: 'string',
-            description: 'Commander card name'
-          }
-        },
-        required: ['deck', 'commander']
-      }
-    }
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'analyze_moxfield_profile',
-      description: 'Analyze a Moxfield user profile to understand their deck building patterns, favorite commanders, color preferences, and brewing style.',
-      parameters: {
-        type: 'object',
-        properties: {
-          username: {
-            type: 'string',
-            description: 'Moxfield username to analyze'
-          }
-        },
-        required: ['username']
-      }
-    }
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'analyze_mtggoldfish_profile',
-      description: 'Analyze a MTGGoldfish user profile to understand their deck building patterns and favorite commanders.',
-      parameters: {
-        type: 'object',
-        properties: {
-          username: {
-            type: 'string',
-            description: 'MTGGoldfish username to analyze'
-          }
-        },
-        required: ['username']
-      }
-    }
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'learn_from_youtube',
-      description: 'Extract deck information and strategy from a Magic: The Gathering YouTube video (deck tech, gameplay, etc.). Use this when asked to learn from or analyze a YouTube video.',
-      parameters: {
-        type: 'object',
-        properties: {
-          url: {
-            type: 'string',
-            description: 'YouTube video URL (supports youtube.com/watch?v= or youtu.be/ formats)'
-          }
-        },
-        required: ['url']
-      }
-    }
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'suggest_deck_techs',
-      description: 'Get suggestions for YouTube deck tech videos to learn from for a specific commander. Use this when users want to find educational content about a commander.',
-      parameters: {
-        type: 'object',
-        properties: {
-          commander: {
-            type: 'string',
-            description: 'Commander name to search deck techs for'
-          }
-        },
-        required: ['commander']
-      }
-    }
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'analyze_format_meta',
-      description: 'Analyze the current metagame for a Magic format (Commander, Modern, etc.). Returns popular decks, meta share, and trends.',
-      parameters: {
-        type: 'object',
-        properties: {
-          format: {
-            type: 'string',
-            description: 'Format to analyze (e.g., commander, modern, standard). Defaults to commander.'
-          }
-        },
-        required: []
-      }
-    }
   }
 ];
 
+// ============================================================================
+// READ TOOL EXECUTORS
+// ============================================================================
+
 /**
- * Execute Scryfall search (uses bigdeck-ai library)
+ * Execute Scryfall search
  */
-async function searchScryfall(query, exact = false) {
+async function searchScryfall(query, limit = 10) {
   try {
-    if (exact) {
-      // Get exact card by name
-      const card = await scryfall.getCard(query);
-      
-      if (!card || card.object === 'error') {
-        return { error: card?.details || 'Card not found' };
-      }
-      
-      return {
-        name: card.name,
-        mana_cost: card.mana_cost,
-        type_line: card.type_line,
-        oracle_text: card.oracle_text,
-        colors: card.colors,
-        color_identity: card.color_identity,
-        cmc: card.cmc,
-        power: card.power,
-        toughness: card.toughness,
-        set_name: card.set_name,
-        rarity: card.rarity,
-        prices: card.prices,
-        legalities: card.legalities?.commander === 'legal' ? 'Legal in Commander' : card.legalities?.commander
-      };
-    }
-    
-    // Fuzzy/full-text search
     const results = await scryfall.searchCards(query);
     
     if (!results || results.object === 'error') {
       return { error: results?.details || 'Search failed' };
     }
     
-    // Return top 10 results
-    const cards = (results.data || []).slice(0, 10).map(card => ({
+    const cards = (results.data || []).slice(0, limit).map(card => ({
       name: card.name,
       mana_cost: card.mana_cost,
       type_line: card.type_line,
+      oracle_text: card.oracle_text,
       set_name: card.set_name,
-      cmc: card.cmc
+      cmc: card.cmc,
+      colors: card.colors,
+      color_identity: card.color_identity,
+      prices: card.prices
     }));
     
     return { 
@@ -330,76 +123,11 @@ async function searchScryfall(query, exact = false) {
 }
 
 /**
- * Get user inventory from database
+ * Get card price
  */
-async function getUserInventory(userId, folder, search) {
+async function getCardPrice(cardName) {
   try {
-    let query = `
-      SELECT 
-        i.id, i.name, i.set AS set_name, i.quantity, i.quality, i.foil, i.folder,
-        i.purchase_price, i.scryfall_id
-      FROM inventory i
-      WHERE i.user_id = $1
-    `;
-    const params = [userId];
-    let paramIndex = 2;
-    
-    if (folder) {
-      query += ` AND i.folder = $${paramIndex}`;
-      params.push(folder);
-      paramIndex++;
-    }
-    
-    if (search) {
-      query += ` AND i.name ILIKE $${paramIndex}`;
-      params.push(`%${search}%`);
-      paramIndex++;
-    }
-    
-    query += ' ORDER BY i.name LIMIT 50';
-    
-    const result = await pool.query(query, params);
-    
-    const summary = {
-      total_cards: result.rows.length,
-      total_quantity: result.rows.reduce((sum, r) => sum + (r.quantity || 1), 0),
-      cards: result.rows.map(row => ({
-        name: row.name,
-        set: row.set_name,
-        quantity: row.quantity || 1,
-        quality: row.quality,
-        foil: row.foil,
-        folder: row.folder
-      }))
-    };
-    
-    return summary;
-  } catch (error) {
-    console.error('[AI] Inventory query error:', error.message);
-    return { error: 'Failed to fetch inventory' };
-  }
-}
-
-/**
- * Get card prices (uses bigdeck-ai scryfall library)
- */
-async function getCardPrice(cardName, setCode) {
-  try {
-    let card;
-    
-    if (setCode) {
-      // When set code is specified, use direct API call
-      // TODO: Consider adding set parameter support to bigdeck-ai library's scryfall.getCard()
-      // For now, library doesn't support set parameter in getCard()
-      // Apply same rate limiting as library
-      await scryfall.waitForRateLimit();
-      const url = `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(cardName)}&set=${setCode.toLowerCase()}`;
-      const response = await fetch(url);
-      card = await response.json();
-    } else {
-      // Use library's scryfall singleton for default card lookup
-      card = await scryfall.getCard(cardName);
-    }
+    const card = await scryfall.getCard(cardName);
     
     if (!card || card.object === 'error') {
       return { error: card?.details || 'Card not found' };
@@ -423,150 +151,38 @@ async function getCardPrice(cardName, setCode) {
 }
 
 /**
- * Get user's decks
+ * Validate Commander deck
  */
-async function getUserDecks(userId, deckId) {
-  try {
-    if (deckId) {
-      // Get specific deck with cards
-      const deckResult = await pool.query(
-        'SELECT id, name, commander, cards, is_deck_instance, decklist_id FROM decks WHERE id = $1 AND user_id = $2',
-        [deckId, userId]
-      );
-      if (deckResult.rows.length === 0) {
-        return { error: 'Deck not found' };
-      }
-      const deck = deckResult.rows[0];
-      const cards = deck.cards || [];
-      return {
-        id: deck.id,
-        name: deck.name,
-        commander: deck.commander,
-        is_instance: deck.is_deck_instance,
-        card_count: cards.length,
-        cards: cards.slice(0, 20).map(c => typeof c === 'string' ? c : c.name || c)
-      };
-    }
-    
-    // Get all decks summary
-    const result = await pool.query(`
-      SELECT 
-        d.id, d.name, d.commander, d.is_deck_instance,
-        COALESCE(json_array_length(d.cards::json), 0) as card_count,
-        (SELECT COALESCE(SUM(dr.quantity_reserved), 0) FROM deck_reservations dr WHERE dr.deck_id = d.id) as reserved_count
-      FROM decks d
-      WHERE d.user_id = $1
-      ORDER BY d.name
-    `, [userId]);
-    
-    return {
-      total_decks: result.rows.length,
-      decks: result.rows.map(d => ({
-        id: d.id,
-        name: d.name,
-        commander: d.commander,
-        is_instance: d.is_deck_instance,
-        card_count: d.card_count,
-        reserved_cards: d.reserved_count
-      }))
-    };
-  } catch (error) {
-    console.error('[AI] Decks query error:', error.message);
-    return { error: 'Failed to fetch decks' };
-  }
-}
-
-/**
- * Get collection analytics
- */
-async function getCollectionAnalytics(userId) {
-  try {
-    // Get card counts
-    const countsResult = await pool.query(
-      'SELECT COUNT(DISTINCT LOWER(TRIM(name))) as unique_cards, SUM(quantity) as total_cards FROM inventory WHERE user_id = $1',
-      [userId]
-    );
-    
-    // Get folder breakdown
-    const foldersResult = await pool.query(
-      'SELECT folder, COUNT(*) as count, SUM(quantity) as total FROM inventory WHERE user_id = $1 GROUP BY folder ORDER BY total DESC',
-      [userId]
-    );
-    
-    // Get recent additions (last 30 days)
-    const recentResult = await pool.query(
-      `SELECT SUM(quantity) as added FROM inventory_transactions 
-       WHERE transaction_type = 'add' AND transaction_date >= CURRENT_DATE - INTERVAL '30 days' AND user_id = $1`,
-      [userId]
-    );
-    
-    // Get total purchase value
-    const valueResult = await pool.query(
-      `SELECT COALESCE(SUM(quantity * purchase_price), 0) as total_cost FROM inventory WHERE user_id = $1`,
-      [userId]
-    );
-    
-    // Get deck count
-    const decksResult = await pool.query(
-      'SELECT COUNT(*) as count FROM decks WHERE user_id = $1',
-      [userId]
-    );
-    
-    return {
-      unique_cards: parseInt(countsResult.rows[0]?.unique_cards) || 0,
-      total_cards: parseInt(countsResult.rows[0]?.total_cards) || 0,
-      total_decks: parseInt(decksResult.rows[0]?.count) || 0,
-      total_purchase_cost: parseFloat(valueResult.rows[0]?.total_cost) || 0,
-      cards_added_last_30_days: parseInt(recentResult.rows[0]?.added) || 0,
-      folders: foldersResult.rows.map(f => ({
-        name: f.folder || 'Uncategorized',
-        cards: parseInt(f.count),
-        quantity: parseInt(f.total)
-      }))
-    };
-  } catch (error) {
-    console.error('[AI] Analytics query error:', error.message);
-    return { error: 'Failed to fetch analytics' };
-  }
-}
-
-// ============================================================================
-// BigDeck-AI Tool Functions (imported tool schemas with local execution)
-// ============================================================================
-
-/**
- * Validate a Commander deck (uses bigdeck-ai library)
- */
-async function validateDeck(deck, commander) {
+async function validateDeck(commander, decklist) {
   try {
     const errors = [];
     const warnings = [];
     const info = [];
     
-    // Fetch commander info from Scryfall (using library function)
-    const commanderData = await searchScryfall(commander, true);
-    if (commanderData.error) {
+    // Fetch commander info
+    const commanderData = await scryfall.getCard(commander);
+    if (!commanderData || commanderData.object === 'error') {
       return { valid: false, errors: [`Could not find commander: ${commander}`], warnings: [], info: [] };
     }
     
     const commanderColorIdentity = commanderData.color_identity || [];
     
-    // Check deck size (99 + commander = 100)
-    const totalCards = deck.length + 1;
+    // Check deck size
+    const totalCards = decklist.length + 1;
     if (totalCards !== 100) {
-      errors.push(`Deck must be exactly 100 cards (including commander). Current: ${totalCards}`);
+      errors.push(`Deck must be exactly 100 cards. Current: ${totalCards}`);
     }
     
-    // Check for banned cards (using library function)
-    const bannedCards = deck.filter(cardName => isCardBanned(cardName));
+    // Check banned cards
+    const bannedCards = decklist.filter(cardName => isCardBanned(cardName));
     if (bannedCards.length > 0) {
-      errors.push(`Banned cards detected: ${bannedCards.join(', ')}`);
+      errors.push(`Banned cards: ${bannedCards.join(', ')}`);
     }
     
-    // Check singleton rule (except basic lands)
+    // Check singleton rule
     const basicLands = ['Plains', 'Island', 'Swamp', 'Mountain', 'Forest'];
     const cardCounts = {};
-    deck.forEach(cardName => {
+    decklist.forEach(cardName => {
       if (!basicLands.includes(cardName)) {
         cardCounts[cardName] = (cardCounts[cardName] || 0) + 1;
       }
@@ -577,20 +193,13 @@ async function validateDeck(deck, commander) {
       .map(([name, count]) => `${name} (${count}x)`);
     
     if (duplicates.length > 0) {
-      errors.push(`Singleton violation - duplicate cards: ${duplicates.join(', ')}`);
+      errors.push(`Duplicate cards: ${duplicates.join(', ')}`);
     }
     
-    // Provide statistics
+    info.push(`Commander: ${commander} (${commanderColorIdentity.join('') || 'Colorless'})`);
     info.push(`Total cards: ${totalCards}`);
-    info.push(`Commander: ${commander}`);
-    info.push(`Commander colors: ${commanderColorIdentity.length > 0 ? commanderColorIdentity.join('') : 'Colorless'}`);
     
-    return {
-      valid: errors.length === 0,
-      errors,
-      warnings,
-      info
-    };
+    return { valid: errors.length === 0, errors, warnings, info };
   } catch (error) {
     console.error('[AI] Deck validation error:', error.message);
     return { valid: false, errors: [`Validation error: ${error.message}`], warnings: [], info: [] };
@@ -598,55 +207,51 @@ async function validateDeck(deck, commander) {
 }
 
 /**
- * Analyze Moxfield profile (uses bigdeck-ai library)
+ * Analyze Moxfield profile
  */
 async function analyzeMoxfieldProfile(username) {
   try {
     const profileAnalyzer = await getProfileAnalyzer();
-    const analysis = await profileAnalyzer.analyzeMoxfieldProfile(username);
-    return analysis;
+    return await profileAnalyzer.analyzeMoxfieldProfile(username);
   } catch (error) {
     console.error('[AI] Moxfield analysis error:', error.message);
-    return { error: `Failed to analyze Moxfield profile: ${error.message}` };
+    return { error: `Failed to analyze profile: ${error.message}` };
   }
 }
 
 /**
- * Analyze MTGGoldfish profile (uses bigdeck-ai library)
+ * Analyze MTGGoldfish profile
  */
 async function analyzeMTGGoldfishProfile(username) {
   try {
     const profileAnalyzer = await getProfileAnalyzer();
-    const analysis = await profileAnalyzer.analyzeMTGGoldfishProfile(username);
-    return analysis;
+    return await profileAnalyzer.analyzeMTGGoldfishProfile(username);
   } catch (error) {
     console.error('[AI] MTGGoldfish analysis error:', error.message);
-    return { error: `Failed to analyze MTGGoldfish profile: ${error.message}` };
+    return { error: `Failed to analyze profile: ${error.message}` };
   }
 }
 
 /**
- * Learn from YouTube video (uses bigdeck-ai library)
+ * Learn from YouTube
  */
 async function learnFromYouTube(url) {
   try {
     const youtubeLearner = await getYoutubeLearner();
-    const result = await youtubeLearner.learnFromVideo(url);
-    return result;
+    return await youtubeLearner.learnFromVideo(url);
   } catch (error) {
     console.error('[AI] YouTube learning error:', error.message);
-    return { success: false, error: `Failed to learn from YouTube: ${error.message}` };
+    return { error: `Failed to learn from video: ${error.message}` };
   }
 }
 
 /**
- * Suggest deck tech videos (uses bigdeck-ai library)
+ * Suggest deck techs
  */
 async function suggestDeckTechs(commander) {
   try {
     const youtubeLearner = await getYoutubeLearner();
-    const suggestions = await youtubeLearner.suggestDeckTechs(commander);
-    return suggestions;
+    return await youtubeLearner.suggestDeckTechs(commander);
   } catch (error) {
     console.error('[AI] Deck tech suggestion error:', error.message);
     return { error: `Failed to suggest deck techs: ${error.message}` };
@@ -654,18 +259,490 @@ async function suggestDeckTechs(commander) {
 }
 
 /**
- * Analyze format meta (uses bigdeck-ai library)
+ * Analyze format meta
  */
 async function analyzeFormatMeta(format = 'commander') {
   try {
     const metaAnalyzer = await getMetaAnalyzer();
-    const analysis = await metaAnalyzer.analyzeFormat(format);
-    return analysis;
+    return await metaAnalyzer.analyzeFormat(format);
   } catch (error) {
     console.error('[AI] Meta analysis error:', error.message);
     return { error: `Failed to analyze meta: ${error.message}` };
   }
 }
+
+/**
+ * Search user inventory
+ */
+async function searchInventory(userId, query) {
+  try {
+    let sql = `
+      SELECT id, name, set AS set_name, quantity, quality, foil, folder, purchase_price
+      FROM inventory WHERE user_id = $1
+    `;
+    const params = [userId];
+    
+    if (query && query.toLowerCase() !== 'all') {
+      sql += ` AND (name ILIKE $2 OR folder ILIKE $2)`;
+      params.push(`%${query}%`);
+    }
+    
+    sql += ' ORDER BY name LIMIT 50';
+    
+    const result = await pool.query(sql, params);
+    
+    return {
+      total_cards: result.rows.length,
+      total_quantity: result.rows.reduce((sum, r) => sum + (r.quantity || 1), 0),
+      cards: result.rows.map(row => ({
+        id: row.id,
+        name: row.name,
+        set: row.set_name,
+        quantity: row.quantity || 1,
+        quality: row.quality,
+        foil: row.foil,
+        folder: row.folder,
+        purchase_price: row.purchase_price
+      }))
+    };
+  } catch (error) {
+    console.error('[AI] Inventory search error:', error.message);
+    return { error: 'Failed to search inventory' };
+  }
+}
+
+/**
+ * Get user decks
+ */
+async function getDecks(userId, deckName) {
+  try {
+    if (deckName && deckName.toLowerCase() !== 'all') {
+      // Get specific deck
+      const result = await pool.query(
+        `SELECT id, name, commander, cards FROM decks 
+         WHERE user_id = $1 AND name ILIKE $2`,
+        [userId, `%${deckName}%`]
+      );
+      
+      if (result.rows.length === 0) {
+        return { error: 'Deck not found' };
+      }
+      
+      const deck = result.rows[0];
+      const cards = deck.cards || [];
+      return {
+        id: deck.id,
+        name: deck.name,
+        commander: deck.commander,
+        card_count: cards.length,
+        cards: cards.slice(0, 30).map(c => typeof c === 'string' ? c : c.name || c)
+      };
+    }
+    
+    // Get all decks
+    const result = await pool.query(`
+      SELECT id, name, commander, 
+        COALESCE(json_array_length(cards::json), 0) as card_count
+      FROM decks WHERE user_id = $1 ORDER BY name
+    `, [userId]);
+    
+    return {
+      total_decks: result.rows.length,
+      decks: result.rows.map(d => ({
+        id: d.id,
+        name: d.name,
+        commander: d.commander,
+        card_count: d.card_count
+      }))
+    };
+  } catch (error) {
+    console.error('[AI] Get decks error:', error.message);
+    return { error: 'Failed to get decks' };
+  }
+}
+
+/**
+ * Get sales history
+ */
+async function getSales(userId) {
+  try {
+    const result = await pool.query(`
+      SELECT id, card_name, quantity, sale_price, sale_date, platform
+      FROM sales WHERE user_id = $1 
+      ORDER BY sale_date DESC LIMIT 50
+    `, [userId]);
+    
+    const totalValue = result.rows.reduce((sum, s) => sum + (s.sale_price * s.quantity), 0);
+    
+    return {
+      total_sales: result.rows.length,
+      total_value: totalValue,
+      sales: result.rows.map(s => ({
+        id: s.id,
+        card: s.card_name,
+        quantity: s.quantity,
+        price: s.sale_price,
+        date: s.sale_date,
+        platform: s.platform
+      }))
+    };
+  } catch (error) {
+    console.error('[AI] Get sales error:', error.message);
+    return { error: 'Failed to get sales' };
+  }
+}
+
+/**
+ * Get collection analytics
+ */
+async function getCollectionAnalytics(userId) {
+  try {
+    const countsResult = await pool.query(
+      'SELECT COUNT(DISTINCT LOWER(TRIM(name))) as unique_cards, SUM(quantity) as total_cards FROM inventory WHERE user_id = $1',
+      [userId]
+    );
+    
+    const foldersResult = await pool.query(
+      'SELECT folder, COUNT(*) as count, SUM(quantity) as total FROM inventory WHERE user_id = $1 GROUP BY folder ORDER BY total DESC',
+      [userId]
+    );
+    
+    const valueResult = await pool.query(
+      `SELECT COALESCE(SUM(quantity * purchase_price), 0) as total_cost FROM inventory WHERE user_id = $1`,
+      [userId]
+    );
+    
+    const decksResult = await pool.query(
+      'SELECT COUNT(*) as count FROM decks WHERE user_id = $1',
+      [userId]
+    );
+    
+    return {
+      unique_cards: parseInt(countsResult.rows[0]?.unique_cards) || 0,
+      total_cards: parseInt(countsResult.rows[0]?.total_cards) || 0,
+      total_decks: parseInt(decksResult.rows[0]?.count) || 0,
+      total_purchase_cost: parseFloat(valueResult.rows[0]?.total_cost) || 0,
+      folders: foldersResult.rows.map(f => ({
+        name: f.folder || 'Uncategorized',
+        cards: parseInt(f.count),
+        quantity: parseInt(f.total)
+      }))
+    };
+  } catch (error) {
+    console.error('[AI] Analytics error:', error.message);
+    return { error: 'Failed to fetch analytics' };
+  }
+}
+
+// ============================================================================
+// WRITE TOOL EXECUTORS
+// ============================================================================
+
+/**
+ * Add card to inventory
+ */
+async function addCardToInventory(userId, cardName, quantity = 1, folder = 'Unsorted') {
+  try {
+    // Look up card on Scryfall
+    const card = await scryfall.getCard(cardName);
+    if (!card || card.object === 'error') {
+      return { error: `Card not found: ${cardName}` };
+    }
+    
+    // Insert into inventory
+    const result = await pool.query(`
+      INSERT INTO inventory (user_id, name, set, quantity, folder, scryfall_id, added_date)
+      VALUES ($1, $2, $3, $4, $5, $6, NOW())
+      RETURNING id, name, quantity, folder
+    `, [userId, card.name, card.set_name, quantity, folder, card.id]);
+    
+    // Log transaction
+    await pool.query(`
+      INSERT INTO inventory_transactions (user_id, card_name, quantity, transaction_type, transaction_date)
+      VALUES ($1, $2, $3, 'add', NOW())
+    `, [userId, card.name, quantity]);
+    
+    return {
+      success: true,
+      message: `Added ${quantity}x ${card.name} to ${folder}`,
+      card: result.rows[0]
+    };
+  } catch (error) {
+    console.error('[AI] Add card error:', error.message);
+    return { error: `Failed to add card: ${error.message}` };
+  }
+}
+
+/**
+ * Remove card from inventory
+ */
+async function removeCardFromInventory(userId, cardName, quantity = 1) {
+  try {
+    // Find the card
+    const findResult = await pool.query(
+      'SELECT id, name, quantity FROM inventory WHERE user_id = $1 AND name ILIKE $2 LIMIT 1',
+      [userId, `%${cardName}%`]
+    );
+    
+    if (findResult.rows.length === 0) {
+      return { error: `Card not found in inventory: ${cardName}` };
+    }
+    
+    const card = findResult.rows[0];
+    const currentQty = card.quantity || 1;
+    
+    if (quantity >= currentQty) {
+      // Remove entirely
+      await pool.query('DELETE FROM inventory WHERE id = $1', [card.id]);
+    } else {
+      // Reduce quantity
+      await pool.query('UPDATE inventory SET quantity = quantity - $1 WHERE id = $2', [quantity, card.id]);
+    }
+    
+    // Log transaction
+    await pool.query(`
+      INSERT INTO inventory_transactions (user_id, card_name, quantity, transaction_type, transaction_date)
+      VALUES ($1, $2, $3, 'remove', NOW())
+    `, [userId, card.name, quantity]);
+    
+    return {
+      success: true,
+      message: `Removed ${quantity}x ${card.name} from inventory`
+    };
+  } catch (error) {
+    console.error('[AI] Remove card error:', error.message);
+    return { error: `Failed to remove card: ${error.message}` };
+  }
+}
+
+/**
+ * Move card to folder
+ */
+async function moveCard(userId, cardName, targetFolder, quantity) {
+  try {
+    let sql = 'UPDATE inventory SET folder = $1 WHERE user_id = $2 AND name ILIKE $3';
+    const params = [targetFolder, userId, `%${cardName}%`];
+    
+    const result = await pool.query(sql + ' RETURNING id, name, folder', params);
+    
+    if (result.rows.length === 0) {
+      return { error: `No cards found matching: ${cardName}` };
+    }
+    
+    return {
+      success: true,
+      message: `Moved ${result.rows.length} card(s) to ${targetFolder}`,
+      moved: result.rows.map(r => r.name)
+    };
+  } catch (error) {
+    console.error('[AI] Move card error:', error.message);
+    return { error: `Failed to move card: ${error.message}` };
+  }
+}
+
+/**
+ * Create deck
+ */
+async function createDeck(userId, name, commander, format = 'commander') {
+  try {
+    // If commander specified, look it up
+    let commanderName = commander;
+    if (commander) {
+      const card = await scryfall.getCard(commander);
+      if (card && card.object !== 'error') {
+        commanderName = card.name;
+      }
+    }
+    
+    const result = await pool.query(`
+      INSERT INTO decks (user_id, name, commander, cards, created_at)
+      VALUES ($1, $2, $3, '[]'::json, NOW())
+      RETURNING id, name, commander
+    `, [userId, name, commanderName]);
+    
+    return {
+      success: true,
+      message: `Created deck "${name}"${commanderName ? ` with commander ${commanderName}` : ''}`,
+      deck: result.rows[0]
+    };
+  } catch (error) {
+    console.error('[AI] Create deck error:', error.message);
+    return { error: `Failed to create deck: ${error.message}` };
+  }
+}
+
+/**
+ * Add card to deck
+ */
+async function addCardToDeck(userId, deckName, cardName, quantity = 1) {
+  try {
+    // Find deck
+    const deckResult = await pool.query(
+      'SELECT id, name, cards FROM decks WHERE user_id = $1 AND name ILIKE $2 LIMIT 1',
+      [userId, `%${deckName}%`]
+    );
+    
+    if (deckResult.rows.length === 0) {
+      return { error: `Deck not found: ${deckName}` };
+    }
+    
+    const deck = deckResult.rows[0];
+    const cards = deck.cards || [];
+    
+    // Look up card
+    const card = await scryfall.getCard(cardName);
+    if (!card || card.object === 'error') {
+      return { error: `Card not found: ${cardName}` };
+    }
+    
+    // Add card to deck
+    for (let i = 0; i < quantity; i++) {
+      cards.push(card.name);
+    }
+    
+    await pool.query(
+      'UPDATE decks SET cards = $1::json WHERE id = $2',
+      [JSON.stringify(cards), deck.id]
+    );
+    
+    return {
+      success: true,
+      message: `Added ${quantity}x ${card.name} to ${deck.name}`,
+      deck_card_count: cards.length
+    };
+  } catch (error) {
+    console.error('[AI] Add to deck error:', error.message);
+    return { error: `Failed to add card to deck: ${error.message}` };
+  }
+}
+
+/**
+ * Remove card from deck
+ */
+async function removeCardFromDeck(userId, deckName, cardName, quantity = 1) {
+  try {
+    // Find deck
+    const deckResult = await pool.query(
+      'SELECT id, name, cards FROM decks WHERE user_id = $1 AND name ILIKE $2 LIMIT 1',
+      [userId, `%${deckName}%`]
+    );
+    
+    if (deckResult.rows.length === 0) {
+      return { error: `Deck not found: ${deckName}` };
+    }
+    
+    const deck = deckResult.rows[0];
+    let cards = deck.cards || [];
+    
+    // Remove cards
+    let removed = 0;
+    for (let i = 0; i < quantity && cards.length > 0; i++) {
+      const idx = cards.findIndex(c => 
+        (typeof c === 'string' ? c : c.name || '').toLowerCase().includes(cardName.toLowerCase())
+      );
+      if (idx !== -1) {
+        cards.splice(idx, 1);
+        removed++;
+      }
+    }
+    
+    if (removed === 0) {
+      return { error: `Card not found in deck: ${cardName}` };
+    }
+    
+    await pool.query(
+      'UPDATE decks SET cards = $1::json WHERE id = $2',
+      [JSON.stringify(cards), deck.id]
+    );
+    
+    return {
+      success: true,
+      message: `Removed ${removed}x ${cardName} from ${deck.name}`,
+      deck_card_count: cards.length
+    };
+  } catch (error) {
+    console.error('[AI] Remove from deck error:', error.message);
+    return { error: `Failed to remove card from deck: ${error.message}` };
+  }
+}
+
+/**
+ * Delete deck
+ */
+async function deleteDeck(userId, deckName) {
+  try {
+    const result = await pool.query(
+      'DELETE FROM decks WHERE user_id = $1 AND name ILIKE $2 RETURNING id, name',
+      [userId, `%${deckName}%`]
+    );
+    
+    if (result.rows.length === 0) {
+      return { error: `Deck not found: ${deckName}` };
+    }
+    
+    return {
+      success: true,
+      message: `Deleted deck "${result.rows[0].name}"`
+    };
+  } catch (error) {
+    console.error('[AI] Delete deck error:', error.message);
+    return { error: `Failed to delete deck: ${error.message}` };
+  }
+}
+
+/**
+ * Record sale
+ */
+async function recordSale(userId, cardName, price, quantity = 1) {
+  try {
+    // Find card in inventory
+    const findResult = await pool.query(
+      'SELECT id, name, quantity, purchase_price FROM inventory WHERE user_id = $1 AND name ILIKE $2 LIMIT 1',
+      [userId, `%${cardName}%`]
+    );
+    
+    if (findResult.rows.length === 0) {
+      return { error: `Card not found in inventory: ${cardName}` };
+    }
+    
+    const card = findResult.rows[0];
+    
+    // Record the sale
+    await pool.query(`
+      INSERT INTO sales (user_id, card_name, quantity, sale_price, cost_basis, sale_date)
+      VALUES ($1, $2, $3, $4, $5, NOW())
+    `, [userId, card.name, quantity, price, card.purchase_price || 0]);
+    
+    // Remove from inventory
+    const currentQty = card.quantity || 1;
+    if (quantity >= currentQty) {
+      await pool.query('DELETE FROM inventory WHERE id = $1', [card.id]);
+    } else {
+      await pool.query('UPDATE inventory SET quantity = quantity - $1 WHERE id = $2', [quantity, card.id]);
+    }
+    
+    // Log transaction
+    await pool.query(`
+      INSERT INTO inventory_transactions (user_id, card_name, quantity, transaction_type, transaction_date)
+      VALUES ($1, $2, $3, 'sell', NOW())
+    `, [userId, card.name, quantity]);
+    
+    const profit = price - (card.purchase_price || 0) * quantity;
+    
+    return {
+      success: true,
+      message: `Sold ${quantity}x ${card.name} for $${price}`,
+      profit: profit
+    };
+  } catch (error) {
+    console.error('[AI] Record sale error:', error.message);
+    return { error: `Failed to record sale: ${error.message}` };
+  }
+}
+
+// ============================================================================
+// TOOL EXECUTOR
+// ============================================================================
 
 /**
  * Execute a tool call
@@ -674,21 +751,13 @@ async function executeTool(toolName, args, userId) {
   console.log(`[AI] Executing tool: ${toolName}`, args);
   
   switch (toolName) {
-    // Core BigDeck.app tools
+    // READ TOOLS
     case 'search_scryfall':
-      return await searchScryfall(args.query, args.exact);
-    case 'get_user_inventory':
-      return await getUserInventory(userId, args.folder, args.search);
+      return await searchScryfall(args.query, args.limit);
     case 'get_card_price':
-      return await getCardPrice(args.cardName, args.setCode);
-    case 'get_user_decks':
-      return await getUserDecks(userId, args.deckId);
-    case 'get_collection_analytics':
-      return await getCollectionAnalytics(userId);
-    
-    // BigDeck-AI tools
+      return await getCardPrice(args.cardName);
     case 'validate_deck':
-      return await validateDeck(args.deck, args.commander);
+      return await validateDeck(args.commander, args.decklist);
     case 'analyze_moxfield_profile':
       return await analyzeMoxfieldProfile(args.username);
     case 'analyze_mtggoldfish_profile':
@@ -699,11 +768,41 @@ async function executeTool(toolName, args, userId) {
       return await suggestDeckTechs(args.commander);
     case 'analyze_format_meta':
       return await analyzeFormatMeta(args.format);
+    case 'search_inventory':
+      return await searchInventory(userId, args.query);
+    case 'get_decks':
+      return await getDecks(userId, args.deckName);
+    case 'get_sales':
+      return await getSales(userId);
+    case 'get_collection_analytics':
+      return await getCollectionAnalytics(userId);
+    
+    // WRITE TOOLS
+    case 'add_card_to_inventory':
+      return await addCardToInventory(userId, args.cardName, args.quantity, args.folder);
+    case 'remove_card_from_inventory':
+      return await removeCardFromInventory(userId, args.cardName, args.quantity);
+    case 'move_card':
+      return await moveCard(userId, args.cardName, args.targetFolder, args.quantity);
+    case 'create_deck':
+      return await createDeck(userId, args.name, args.commander, args.format);
+    case 'add_card_to_deck':
+      return await addCardToDeck(userId, args.deckName, args.cardName, args.quantity);
+    case 'remove_card_from_deck':
+      return await removeCardFromDeck(userId, args.deckName, args.cardName, args.quantity);
+    case 'delete_deck':
+      return await deleteDeck(userId, args.deckName);
+    case 'record_sale':
+      return await recordSale(userId, args.cardName, args.price, args.quantity);
     
     default:
       return { error: `Unknown tool: ${toolName}` };
   }
 }
+
+// ============================================================================
+// ROUTES
+// ============================================================================
 
 /**
  * Validate conversation history
@@ -723,14 +822,12 @@ function isValidConversationHistory(history) {
 
 /**
  * POST /api/ai/chat
- * AI chat with tool calling capabilities
  */
 router.post('/ai/chat', authenticate, async (req, res) => {
   try {
     const { message, conversationHistory = [] } = req.body;
     const userId = req.userId;
     
-    // Validation
     if (!message || typeof message !== 'string' || !message.trim()) {
       return res.status(400).json({ error: 'Message is required' });
     }
@@ -743,11 +840,10 @@ router.post('/ai/chat', authenticate, async (req, res) => {
 
     const client = getOpenAIClient();
     
-    // Build messages with system prompt
     const messages = [
       { 
         role: 'system', 
-        content: `${systemPrompt}\n\nYou have access to tools to look up cards via Scryfall and access the user's inventory. Use them when helpful to provide accurate, specific information.`
+        content: `${systemPrompt}\n\nYou have access to tools to search cards, manage the user's inventory, decks, and sales. Use them to help the user manage their MTG collection.`
       },
       ...conversationHistory.map(item => ({
         role: item.role,
@@ -758,7 +854,6 @@ router.post('/ai/chat', authenticate, async (req, res) => {
 
     console.log(`[AI] Processing: ${message.substring(0, 50)}...`);
     
-    // Initial completion with tools
     let completion = await client.chat.completions.create({
       model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
       messages,
@@ -770,21 +865,18 @@ router.post('/ai/chat', authenticate, async (req, res) => {
 
     let assistantMessage = completion.choices[0].message;
     
-    // Handle tool calls (up to MAX_TOOL_ITERATIONS)
+    // Handle tool calls
     let iterations = 0;
     while (assistantMessage.tool_calls && iterations < MAX_TOOL_ITERATIONS) {
       iterations++;
       console.log(`[AI] Tool iteration ${iterations}: ${assistantMessage.tool_calls.length} calls`);
       
-      // Add assistant's message with tool calls
       messages.push(assistantMessage);
       
-      // Execute each tool call
       for (const toolCall of assistantMessage.tool_calls) {
         const args = JSON.parse(toolCall.function.arguments);
         const result = await executeTool(toolCall.function.name, args, userId);
         
-        // Add tool result
         messages.push({
           role: 'tool',
           tool_call_id: toolCall.id,
@@ -792,7 +884,6 @@ router.post('/ai/chat', authenticate, async (req, res) => {
         });
       }
       
-      // Get next completion
       completion = await client.chat.completions.create({
         model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
         messages,
@@ -823,25 +914,6 @@ router.post('/ai/chat', authenticate, async (req, res) => {
 });
 
 /**
- * GET /api/ai/inventory/:userId
- * Get user inventory for AI context (internal endpoint)
- */
-router.get('/ai/inventory/:userId', authenticate, async (req, res) => {
-  try {
-    // Only allow users to access their own inventory
-    if (req.userId !== req.params.userId) {
-      return res.status(403).json({ error: 'Access denied' });
-    }
-    
-    const inventory = await getUserInventory(req.params.userId);
-    res.json(inventory);
-  } catch (error) {
-    console.error('[AI] Inventory endpoint error:', error.message);
-    res.status(500).json({ error: 'Failed to fetch inventory' });
-  }
-});
-
-/**
  * GET /api/ai/status
  */
 router.get('/ai/status', async (_req, res) => {
@@ -853,10 +925,10 @@ router.get('/ai/status', async (_req, res) => {
     available: hasApiKey && !hasError,
     initialized: isInitialized,
     version: '1.0.0',
-    features: ['deck-building', 'card-analysis', 'scryfall-lookup', 'inventory-access'],
+    features: ['deck-building', 'card-analysis', 'scryfall-lookup', 'inventory-management', 'deck-management', 'sales-tracking'],
     provider: 'openai',
     model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
-    tools: ['search_scryfall', 'get_user_inventory', 'get_card_price'],
+    tools: tools.map(t => t.function.name),
     error: hasError && process.env.NODE_ENV === 'development' ? clientError.message : undefined
   });
 });

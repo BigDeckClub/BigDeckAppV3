@@ -158,17 +158,14 @@ export const FolderSidebar = memo(function FolderSidebar({
                   const inventoryItemId = e.dataTransfer.getData('inventoryItemId');
                   const cardName = e.dataTransfer.getData('cardName');
                   const deckCardDataStr = e.dataTransfer.getData('deckCardData');
-                  const skuDataStr = e.dataTransfer.getData('skuData');
                   if (inventoryItemId) {
                     moveInventoryItemToFolder(parseInt(inventoryItemId), 'Uncategorized');
-                  } else if (skuDataStr) {
-                    const skuData = JSON.parse(skuDataStr);
-                    moveInventoryItemToFolder(skuData.id, 'Uncategorized');
+                  } else if (cardName) {
+                    // Move ALL cards with this name to the folder
+                    moveCardToFolder(cardName, 'Uncategorized');
                   } else if (deckCardDataStr) {
                     const deckCardData = JSON.parse(deckCardDataStr);
                     moveCardFromDeckToFolder(deckCardData, 'Uncategorized');
-                  } else if (cardName) {
-                    moveCardToFolder(cardName, 'Uncategorized');
                   }
                 }}
                 className={`w-full text-left p-3 rounded-t-lg transition-colors flex-1 ${
@@ -228,17 +225,14 @@ export const FolderSidebar = memo(function FolderSidebar({
                   const inventoryItemId = e.dataTransfer.getData('inventoryItemId');
                   const cardName = e.dataTransfer.getData('cardName');
                   const deckCardDataStr = e.dataTransfer.getData('deckCardData');
-                  const skuDataStr = e.dataTransfer.getData('skuData');
                   if (inventoryItemId) {
                     moveInventoryItemToFolder(parseInt(inventoryItemId), folderName);
-                  } else if (skuDataStr) {
-                    const skuData = JSON.parse(skuDataStr);
-                    moveInventoryItemToFolder(skuData.id, folderName);
+                  } else if (cardName) {
+                    // Move ALL cards with this name to the folder
+                    moveCardToFolder(cardName, folderName);
                   } else if (deckCardDataStr) {
                     const deckCardData = JSON.parse(deckCardDataStr);
                     moveCardFromDeckToFolder(deckCardData, folderName);
-                  } else if (cardName) {
-                    moveCardToFolder(cardName, folderName);
                   }
                 }}
                 className={`w-full text-left p-3 rounded-t-lg transition-colors flex-1 ${
@@ -290,17 +284,14 @@ export const FolderSidebar = memo(function FolderSidebar({
                     const inventoryItemId = e.dataTransfer.getData('inventoryItemId');
                     const cardName = e.dataTransfer.getData('cardName');
                     const deckCardDataStr = e.dataTransfer.getData('deckCardData');
-                    const skuDataStr = e.dataTransfer.getData('skuData');
                     if (inventoryItemId) {
                       moveInventoryItemToFolder(parseInt(inventoryItemId), folder);
-                    } else if (skuDataStr) {
-                      const skuData = JSON.parse(skuDataStr);
-                      moveInventoryItemToFolder(skuData.id, folder);
+                    } else if (cardName) {
+                      // Move ALL cards with this name to the folder
+                      moveCardToFolder(cardName, folder);
                     } else if (deckCardDataStr) {
                       const deckCardData = JSON.parse(deckCardDataStr);
                       moveCardFromDeckToFolder(deckCardData, folder);
-                    } else if (cardName) {
-                      moveCardToFolder(cardName, folder);
                     }
                   }}
                   className={`w-full text-left p-3 rounded-lg transition-all duration-300 border-l-4 ${
@@ -373,17 +364,14 @@ export const FolderSidebar = memo(function FolderSidebar({
                   const inventoryItemId = e.dataTransfer.getData('inventoryItemId');
                   const cardName = e.dataTransfer.getData('cardName');
                   const deckCardDataStr = e.dataTransfer.getData('deckCardData');
-                  const skuDataStr = e.dataTransfer.getData('skuData');
                   if (inventoryItemId) {
                     moveInventoryItemToFolder(parseInt(inventoryItemId), 'Trash');
-                  } else if (skuDataStr) {
-                    const skuData = JSON.parse(skuDataStr);
-                    moveInventoryItemToFolder(skuData.id, 'Trash');
+                  } else if (cardName) {
+                    // Move ALL cards with this name to the folder
+                    moveCardToFolder(cardName, 'Trash');
                   } else if (deckCardDataStr) {
                     const deckCardData = JSON.parse(deckCardDataStr);
                     moveCardFromDeckToFolder(deckCardData, 'Trash');
-                  } else if (cardName) {
-                    moveCardToFolder(cardName, 'Trash');
                   }
                 }}
                 className={`w-full text-left p-3 rounded-lg transition-colors flex-1 ${
