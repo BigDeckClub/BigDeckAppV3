@@ -36,7 +36,7 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.86.0",
-    "bigdeck-ai": "github:BigDeckClub/BigDeckApp",
+    "bigdeck-ai": "github:BigDeckClub/BigDeckAI",
     "body-parser": "^2.2.0",
     "compression": "^1.8.1",
     "cors": "^2.8.5",
