@@ -111,7 +111,7 @@ export function AIChatWidget({ isAuthenticated }) {
         <button
           onClick={toggleOpen}
           className="fixed bottom-4 right-4 z-50 w-14 h-14 sm:w-14 sm:h-14 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-400 hover:to-teal-500 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group"
-          title="Chat with BigDeckAI"
+          title="Chat with Big Deck Daddy"
         >
           <Bot className="w-7 h-7 group-hover:scale-110 transition-transform" />
           {messages.length > 0 && (
@@ -135,7 +135,7 @@ export function AIChatWidget({ isAuthenticated }) {
           <div className="flex items-center justify-between px-4 py-3 sm:py-3 bg-gradient-to-r from-slate-700 to-slate-800 sm:rounded-t-xl border-b border-slate-600 safe-area-top">
             <div className="flex items-center gap-2">
               <Bot className="w-5 h-5 text-teal-400" />
-              <span className="font-semibold text-white">BigDeckAI</span>
+              <span className="font-semibold text-white">Big Deck Daddy</span>
               <span className="text-xs text-slate-400 hidden sm:inline">MTG Assistant</span>
             </div>
             <div className="flex items-center gap-1">
