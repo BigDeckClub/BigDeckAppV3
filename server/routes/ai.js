@@ -16,6 +16,11 @@ const MAX_TOOL_ITERATIONS = 5;
 let openaiClient = null;
 let clientError = null;
 
+// BigDeck-AI learning modules (lazy-loaded to avoid circular dependencies)
+let profileAnalyzerModule = null;
+let youtubeLearnerModule = null;
+let metaAnalyzerModule = null;
+
 /**
  * Get or create OpenAI client
  */
@@ -38,6 +43,33 @@ function getOpenAIClient() {
     clientError = error;
     throw error;
   }
+}
+
+/**
+ * Lazy load learning modules (cached to avoid redundant imports)
+ */
+async function getProfileAnalyzer() {
+  if (!profileAnalyzerModule) {
+    const module = await import('bigdeck-ai/src/learning/profileAnalyzer.js');
+    profileAnalyzerModule = module.profileAnalyzer;
+  }
+  return profileAnalyzerModule;
+}
+
+async function getYoutubeLearner() {
+  if (!youtubeLearnerModule) {
+    const module = await import('bigdeck-ai/src/learning/youtubeLearner.js');
+    youtubeLearnerModule = module.youtubeLearner;
+  }
+  return youtubeLearnerModule;
+}
+
+async function getMetaAnalyzer() {
+  if (!metaAnalyzerModule) {
+    const module = await import('bigdeck-ai/src/learning/metaAnalyzer.js');
+    metaAnalyzerModule = module.metaAnalyzer;
+  }
+  return metaAnalyzerModule;
 }
 
 /**
@@ -358,8 +390,18 @@ async function getUserInventory(userId, folder, search) {
  */
 async function getCardPrice(cardName, setCode) {
   try {
-    // Use the library's scryfall singleton to get card
-    const card = await scryfall.getCard(cardName);
+    let card;
+    
+    if (setCode) {
+      // When set code is specified, use direct API call
+      // Library doesn't support set parameter in getCard()
+      const url = `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(cardName)}&set=${setCode.toLowerCase()}`;
+      const response = await fetch(url);
+      card = await response.json();
+    } else {
+      // Use library's scryfall singleton for default card lookup
+      card = await scryfall.getCard(cardName);
+    }
     
     if (!card || card.object === 'error') {
       return { error: card?.details || 'Card not found' };
@@ -562,7 +604,7 @@ async function validateDeck(deck, commander) {
  */
 async function analyzeMoxfieldProfile(username) {
   try {
-    const { profileAnalyzer } = await import('bigdeck-ai/src/learning/profileAnalyzer.js');
+    const profileAnalyzer = await getProfileAnalyzer();
     const analysis = await profileAnalyzer.analyzeMoxfieldProfile(username);
     return analysis;
   } catch (error) {
@@ -576,7 +618,7 @@ async function analyzeMoxfieldProfile(username) {
  */
 async function analyzeMTGGoldfishProfile(username) {
   try {
-    const { profileAnalyzer } = await import('bigdeck-ai/src/learning/profileAnalyzer.js');
+    const profileAnalyzer = await getProfileAnalyzer();
     const analysis = await profileAnalyzer.analyzeMTGGoldfishProfile(username);
     return analysis;
   } catch (error) {
@@ -590,7 +632,7 @@ async function analyzeMTGGoldfishProfile(username) {
  */
 async function learnFromYouTube(url) {
   try {
-    const { youtubeLearner } = await import('bigdeck-ai/src/learning/youtubeLearner.js');
+    const youtubeLearner = await getYoutubeLearner();
     const result = await youtubeLearner.learnFromVideo(url);
     return result;
   } catch (error) {
@@ -604,7 +646,7 @@ async function learnFromYouTube(url) {
  */
 async function suggestDeckTechs(commander) {
   try {
-    const { youtubeLearner } = await import('bigdeck-ai/src/learning/youtubeLearner.js');
+    const youtubeLearner = await getYoutubeLearner();
     const suggestions = await youtubeLearner.suggestDeckTechs(commander);
     return suggestions;
   } catch (error) {
@@ -618,7 +660,7 @@ async function suggestDeckTechs(commander) {
  */
 async function analyzeFormatMeta(format = 'commander') {
   try {
-    const { metaAnalyzer } = await import('bigdeck-ai/src/learning/metaAnalyzer.js');
+    const metaAnalyzer = await getMetaAnalyzer();
     const analysis = await metaAnalyzer.analyzeFormat(format);
     return analysis;
   } catch (error) {
