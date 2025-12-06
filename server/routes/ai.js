@@ -3,6 +3,12 @@ import { authenticate } from '../middleware/index.js';
 import OpenAI from 'openai';
 import { systemPrompt, scryfall, isCardBanned } from 'bigdeck-ai';
 import { allToolSchemas } from 'bigdeck-ai/tools/schemas';
+import { assessPowerLevel } from 'bigdeck-ai/utils/powerLevel';
+import { analyzeDeckBalance } from 'bigdeck-ai/utils/deckAnalysis';
+import { detectWinConditions } from 'bigdeck-ai/utils/winConditions';
+import { analyzeInteraction } from 'bigdeck-ai/utils/interactionAnalysis';
+import { suggestWithBudget } from 'bigdeck-ai/utils/budgetOptimizer';
+import { suggestSynergyCards, calculateSynergyScore } from 'bigdeck-ai/knowledge/synergies';
 import { pool } from '../db/pool.js';
 
 const router = express.Router();
@@ -796,6 +802,25 @@ async function executeTool(toolName, args, userId) {
       return await deleteDeck(userId, args.deckName);
     case 'record_sale':
       return await recordSale(userId, args.cardName, args.price, args.quantity);
+    
+    // ANALYSIS TOOLS (from bigdeck-ai)
+    case 'assess_power_level':
+      return assessPowerLevel(args.decklist);
+    case 'find_synergies':
+      return { synergies: suggestSynergyCards(args.decklist || [], args.count || 10), score: calculateSynergyScore(args.decklist || []) };
+    case 'suggest_with_budget':
+      return suggestWithBudget(args.decklist, args.budget, args.maxReplacements);
+    case 'analyze_deck_ratios':
+      return analyzeDeckBalance(args.decklist, args.archetype || 'midrange');
+    case 'detect_win_conditions':
+      return detectWinConditions(args.decklist);
+    case 'get_edhrec_data':
+      // EDHREC scraping requires additional setup, return helpful message
+      return { message: 'EDHREC data not available. Use search_scryfall for card lookups.' };
+    case 'adapt_to_playgroup':
+      return { message: 'Provide playgroup power level and preferences for personalized suggestions.' };
+    case 'analyze_interaction':
+      return analyzeInteraction(args.decklist);
     
     default:
       return { error: `Unknown tool: ${toolName}` };
