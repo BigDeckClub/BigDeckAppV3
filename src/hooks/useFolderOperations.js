@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useToast, TOAST_TYPES } from '../context/ToastContext';
+import { useConfirm } from '../context/ConfirmContext';
 import { fetchWithAuth } from '../utils/apiClient';
 import { useUndoSafe, UNDO_ACTION_TYPES } from '../context/UndoContext';
 
@@ -12,12 +13,14 @@ const RESERVED_FOLDER_NAMES = ['unsorted', 'uncategorized', 'all cards', 'all', 
  */
 export function useFolderOperations({ inventory, onLoadInventory }) {
   const { showToast } = useToast();
+  const { confirm } = useConfirm();
   const undoContext = useUndoSafe();
   
   // Folder state
   const [newFolderName, setNewFolderName] = useState('');
   const [showCreateFolder, setShowCreateFolder] = useState(false);
   const [createdFolders, setCreatedFolders] = useState([]);
+  const [folderIdMap, setFolderIdMap] = useState({}); // Maps folder name -> folder id
   const [selectedFolder, setSelectedFolder] = useState(null);
   const [openFolders, setOpenFolders] = useState([]);
   const [folderMetadata, setFolderMetadata] = useState({});
@@ -31,6 +34,10 @@ export function useFolderOperations({ inventory, onLoadInventory }) {
       if (response.ok) {
         const data = await response.json();
         setCreatedFolders(data.map(f => f.name));
+        // Build folder ID map for deletion
+        const idMap = {};
+        data.forEach(f => { idMap[f.name] = f.id; });
+        setFolderIdMap(idMap);
       }
     } catch (error) {
       console.error('Error loading folders:', error);
@@ -70,6 +77,10 @@ export function useFolderOperations({ inventory, onLoadInventory }) {
         const data = await response.json();
         const actualName = data.name || trimmedName;
         setCreatedFolders(prev => [...prev, actualName]);
+        // Store the folder ID in the map
+        if (data.id) {
+          setFolderIdMap(prev => ({ ...prev, [actualName]: data.id }));
+        }
         setOpenFolders(prev => [...prev, actualName]);
         showToast(`Folder "${actualName}" created!`, TOAST_TYPES.SUCCESS);
         return true;
@@ -208,25 +219,53 @@ export function useFolderOperations({ inventory, onLoadInventory }) {
 
   // Delete a folder
   const deleteFolder = useCallback(async (folderName, activeTab, setActiveTab) => {
+    // Get folder ID from map
+    const folderId = folderIdMap[folderName];
+    if (!folderId) {
+      showToast('Folder not found', TOAST_TYPES.ERROR);
+      return false;
+    }
+    
+    // Show confirmation dialog
+    const confirmed = await confirm({
+      title: 'Delete Folder',
+      message: `Are you sure you want to delete "${folderName}"? Cards in this folder will be moved to Unsorted.`,
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      variant: 'danger'
+    });
+    
+    if (!confirmed) return false;
+    
     try {
-      const response = await fetchWithAuth(`/api/folders/${encodeURIComponent(folderName)}`, {
+      const response = await fetchWithAuth(`/api/folders/${folderId}`, {
         method: 'DELETE'
       });
       
       if (response.ok) {
         setCreatedFolders(prev => prev.filter(f => f !== folderName));
+        setFolderIdMap(prev => {
+          const newMap = { ...prev };
+          delete newMap[folderName];
+          return newMap;
+        });
         closeFolderTab(folderName, activeTab, setActiveTab);
         showToast(`Folder "${folderName}" deleted`, TOAST_TYPES.SUCCESS);
+        // Reload inventory to reflect cards moved to Unsorted
+        if (onLoadInventory) {
+          onLoadInventory();
+        }
         return true;
       } else {
-        showToast('Failed to delete folder', TOAST_TYPES.ERROR);
+        const errorData = await response.json().catch(() => ({}));
+        showToast(errorData.error || 'Failed to delete folder', TOAST_TYPES.ERROR);
         return false;
       }
     } catch (error) {
       showToast(`Error deleting folder: ${error.message}`, TOAST_TYPES.ERROR);
       return false;
     }
-  }, [closeFolderTab, showToast, setCreatedFolders]);
+  }, [folderIdMap, confirm, closeFolderTab, showToast, setCreatedFolders, onLoadInventory]);
 
   return {
     // State

@@ -89,6 +89,16 @@ export function useCardSearch(options = {}) {
         imageUrl: card.image_uris?.small || card.card_faces?.[0]?.image_uris?.small,
       }));
 
+      // Deduplicate by card name, keeping the first (usually most recent) printing
+      // This ensures each unique card appears only once in results
+      const uniqueByName = new Map();
+      for (const card of results) {
+        if (!uniqueByName.has(card.name)) {
+          uniqueByName.set(card.name, card);
+        }
+      }
+      results = [...uniqueByName.values()];
+
       // Sort by relevance score
       results = results.sort((a, b) => {
         const scoreA = scoreCardMatch(a.name, query);

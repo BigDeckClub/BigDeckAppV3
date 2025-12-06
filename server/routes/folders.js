@@ -8,7 +8,7 @@ const router = express.Router();
 const RESERVED_FOLDER_NAMES = ['unsorted', 'uncategorized', 'all cards'];
 
 // Default folder name for unsorted/uncategorized cards
-const DEFAULT_FOLDER_NAME = 'Uncategorized';
+const DEFAULT_FOLDER_NAME = 'Unsorted';
 
 // ========== FOLDERS ENDPOINTS ==========
 
