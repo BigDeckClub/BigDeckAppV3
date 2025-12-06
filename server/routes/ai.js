@@ -285,9 +285,11 @@ async function searchInventory(userId, query) {
     if (query && query.toLowerCase() !== 'all') {
       sql += ` AND (name ILIKE $2 OR folder ILIKE $2)`;
       params.push(`%${query}%`);
+      sql += ' ORDER BY name LIMIT 50';
+    } else {
+      // For 'all' queries (deck building), return full inventory
+      sql += ' ORDER BY name LIMIT 1000';
     }
-    
-    sql += ' ORDER BY name LIMIT 50';
     
     const result = await pool.query(sql, params);
     
