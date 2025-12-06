@@ -16,10 +16,8 @@ const MAX_TOOL_ITERATIONS = 5;
 let openaiClient = null;
 let clientError = null;
 
-// BigDeck-AI learning modules (lazy-loaded to avoid circular dependencies)
-let profileAnalyzerModule = null;
-let youtubeLearnerModule = null;
-let metaAnalyzerModule = null;
+// BigDeck-AI learning modules (lazy-loaded to reduce startup time and memory usage)
+// These modules import additional dependencies like moxfield, mtggoldfish, youtube integrations
 
 /**
  * Get or create OpenAI client
@@ -47,30 +45,27 @@ function getOpenAIClient() {
 
 /**
  * Lazy load learning modules (cached to avoid redundant imports)
+ * Uses generic lazy loader to reduce code duplication
  */
-async function getProfileAnalyzer() {
-  if (!profileAnalyzerModule) {
-    const module = await import('bigdeck-ai/src/learning/profileAnalyzer.js');
-    profileAnalyzerModule = module.profileAnalyzer;
-  }
-  return profileAnalyzerModule;
+async function createLazyLoader(modulePath, exportName) {
+  return async function() {
+    // Use a map to cache modules
+    if (!createLazyLoader.cache) {
+      createLazyLoader.cache = new Map();
+    }
+    
+    if (!createLazyLoader.cache.has(modulePath)) {
+      const module = await import(modulePath);
+      createLazyLoader.cache.set(modulePath, module[exportName]);
+    }
+    
+    return createLazyLoader.cache.get(modulePath);
+  };
 }
 
-async function getYoutubeLearner() {
-  if (!youtubeLearnerModule) {
-    const module = await import('bigdeck-ai/src/learning/youtubeLearner.js');
-    youtubeLearnerModule = module.youtubeLearner;
-  }
-  return youtubeLearnerModule;
-}
-
-async function getMetaAnalyzer() {
-  if (!metaAnalyzerModule) {
-    const module = await import('bigdeck-ai/src/learning/metaAnalyzer.js');
-    metaAnalyzerModule = module.metaAnalyzer;
-  }
-  return metaAnalyzerModule;
-}
+const getProfileAnalyzer = createLazyLoader('bigdeck-ai/src/learning/profileAnalyzer.js', 'profileAnalyzer');
+const getYoutubeLearner = createLazyLoader('bigdeck-ai/src/learning/youtubeLearner.js', 'youtubeLearner');
+const getMetaAnalyzer = createLazyLoader('bigdeck-ai/src/learning/metaAnalyzer.js', 'metaAnalyzer');
 
 /**
  * Tool definitions for OpenAI function calling
@@ -394,7 +389,8 @@ async function getCardPrice(cardName, setCode) {
     
     if (setCode) {
       // When set code is specified, use direct API call
-      // Library doesn't support set parameter in getCard()
+      // TODO: Consider adding set parameter support to bigdeck-ai library's scryfall.getCard()
+      // For now, library doesn't support set parameter in getCard()
       const url = `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(cardName)}&set=${setCode.toLowerCase()}`;
       const response = await fetch(url);
       card = await response.json();
