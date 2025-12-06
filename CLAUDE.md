@@ -40,6 +40,72 @@ BigDeckAppV3 is a React-based MTG (Magic: The Gathering) card inventory manageme
 | Testing Library (React & Jest-DOM) | - | Component testing |
 | jsdom | - | DOM environment for tests |
 
+### AI Integration
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| bigdeck-ai | github:BigDeckClub/BigDeckApp | Commander deck building AI library |
+| OpenAI API | - | GPT-4o-mini for conversational AI |
+
+---
+
+## BigDeck-AI Library Integration
+
+The application uses the `bigdeck-ai` library (from `github:BigDeckClub/BigDeckApp`) for AI-powered features. This library provides shared utilities, knowledge bases, and integrations for MTG Commander deck building.
+
+### Library-Provided Features
+
+**Core Exports** (from `bigdeck-ai`):
+- `systemPrompt` - AI system prompt for Commander deck building
+- `scryfall` - Scryfall API singleton with built-in rate limiting
+- `isCardBanned` - Check if a card is banned in Commander
+- `commanderRules` - Complete Commander format rules
+- `archetypes`, `deckStructure`, `staples` - MTG knowledge bases
+- Color identity utilities: `parseColorIdentity`, `validateDeckColorIdentity`, etc.
+- Mana curve and manabase calculation utilities
+
+**Learning Modules** (from `bigdeck-ai/src/learning/`):
+- `profileAnalyzer` - Analyze Moxfield/MTGGoldfish user profiles
+- `youtubeLearner` - Extract deck knowledge from YouTube videos
+- `metaAnalyzer` - Analyze format metagame trends
+
+### Application-Specific Tools
+
+The following tools are **app-specific** (require database access) and defined in `server/routes/ai.js`:
+- `get_user_inventory` - Fetch user's card inventory from database
+- `get_user_decks` - Fetch user's decks from database
+- `get_collection_analytics` - Get collection statistics from database
+
+### Usage in server/routes/ai.js
+
+```javascript
+import { systemPrompt, scryfall, isCardBanned } from 'bigdeck-ai';
+
+// All Scryfall API calls use the library's singleton
+async function searchScryfall(query, exact) {
+  if (exact) {
+    return await scryfall.getCard(query);
+  }
+  return await scryfall.searchCards(query);
+}
+
+// Learning modules are lazy-loaded with cached imports
+const getProfileAnalyzer = createLazyLoader('bigdeck-ai/src/learning/profileAnalyzer.js', 'profileAnalyzer');
+const getYoutubeLearner = createLazyLoader('bigdeck-ai/src/learning/youtubeLearner.js', 'youtubeLearner');
+const getMetaAnalyzer = createLazyLoader('bigdeck-ai/src/learning/metaAnalyzer.js', 'metaAnalyzer');
+
+// Usage in functions:
+const profileAnalyzer = await getProfileAnalyzer();
+const result = await profileAnalyzer.analyzeMoxfieldProfile(username);
+```
+
+### Benefits of Library Integration
+
+1. **Single source of truth** - AI tool schemas and MTG knowledge maintained in one place
+2. **Built-in rate limiting** - Scryfall API calls respect rate limits automatically
+3. **Reduced code duplication** - ~50 lines of code removed from ai.js
+4. **Easier maintenance** - Update MTG rules and knowledge in the library, not the app
+5. **Shared across projects** - Same AI capabilities can be used in CLI tools and other apps
+
 ---
 
 ## Project Structure

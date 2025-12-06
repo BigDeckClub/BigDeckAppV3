@@ -1,7 +1,7 @@
 import express from 'express';
 import { authenticate } from '../middleware/index.js';
 import OpenAI from 'openai';
-import { systemPrompt } from 'bigdeck-ai';
+import { systemPrompt, scryfall, isCardBanned } from 'bigdeck-ai';
 import { pool } from '../db/pool.js';
 
 const router = express.Router();
@@ -15,6 +15,9 @@ const MAX_TOOL_ITERATIONS = 5;
 // OpenAI client (lazy-loaded)
 let openaiClient = null;
 let clientError = null;
+
+// BigDeck-AI learning modules (lazy-loaded to reduce startup time and memory usage)
+// These modules import additional dependencies like moxfield, mtggoldfish, youtube integrations
 
 /**
  * Get or create OpenAI client
@@ -39,6 +42,30 @@ function getOpenAIClient() {
     throw error;
   }
 }
+
+/**
+ * Lazy load learning modules (cached to avoid redundant imports)
+ * Uses generic lazy loader to reduce code duplication
+ */
+function createLazyLoader(modulePath, exportName) {
+  return async function() {
+    // Use a map to cache modules
+    if (!createLazyLoader.cache) {
+      createLazyLoader.cache = new Map();
+    }
+    
+    if (!createLazyLoader.cache.has(modulePath)) {
+      const module = await import(modulePath);
+      createLazyLoader.cache.set(modulePath, module[exportName]);
+    }
+    
+    return createLazyLoader.cache.get(modulePath);
+  };
+}
+
+const getProfileAnalyzer = createLazyLoader('bigdeck-ai/src/learning/profileAnalyzer.js', 'profileAnalyzer');
+const getYoutubeLearner = createLazyLoader('bigdeck-ai/src/learning/youtubeLearner.js', 'youtubeLearner');
+const getMetaAnalyzer = createLazyLoader('bigdeck-ai/src/learning/metaAnalyzer.js', 'metaAnalyzer');
 
 /**
  * Tool definitions for OpenAI function calling
@@ -247,24 +274,18 @@ const tools = [
 ];
 
 /**
- * Execute Scryfall search
+ * Execute Scryfall search (uses bigdeck-ai library)
  */
 async function searchScryfall(query, exact = false) {
   try {
-    const endpoint = exact 
-      ? `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(query)}`
-      : `https://api.scryfall.com/cards/search?q=${encodeURIComponent(query)}`;
-    
-    const response = await fetch(endpoint);
-    const data = await response.json();
-    
-    if (data.object === 'error') {
-      return { error: data.details || 'Card not found' };
-    }
-    
-    // For exact match, return single card
-    if (exact || data.object === 'card') {
-      const card = data.object === 'card' ? data : data;
+    if (exact) {
+      // Get exact card by name
+      const card = await scryfall.getCard(query);
+      
+      if (!card || card.object === 'error') {
+        return { error: card?.details || 'Card not found' };
+      }
+      
       return {
         name: card.name,
         mana_cost: card.mana_cost,
@@ -282,8 +303,15 @@ async function searchScryfall(query, exact = false) {
       };
     }
     
-    // For search, return top 10 results
-    const cards = (data.data || []).slice(0, 10).map(card => ({
+    // Fuzzy/full-text search
+    const results = await scryfall.searchCards(query);
+    
+    if (!results || results.object === 'error') {
+      return { error: results?.details || 'Search failed' };
+    }
+    
+    // Return top 10 results
+    const cards = (results.data || []).slice(0, 10).map(card => ({
       name: card.name,
       mana_cost: card.mana_cost,
       type_line: card.type_line,
@@ -292,7 +320,7 @@ async function searchScryfall(query, exact = false) {
     }));
     
     return { 
-      total_cards: data.total_cards,
+      total_cards: results.total_cards,
       cards 
     };
   } catch (error) {
@@ -353,20 +381,28 @@ async function getUserInventory(userId, folder, search) {
 }
 
 /**
- * Get card prices (from Scryfall)
+ * Get card prices (uses bigdeck-ai scryfall library)
  */
 async function getCardPrice(cardName, setCode) {
   try {
-    let url = `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(cardName)}`;
+    let card;
+    
     if (setCode) {
-      url += `&set=${setCode.toLowerCase()}`;
+      // When set code is specified, use direct API call
+      // TODO: Consider adding set parameter support to bigdeck-ai library's scryfall.getCard()
+      // For now, library doesn't support set parameter in getCard()
+      // Apply same rate limiting as library
+      await scryfall.waitForRateLimit();
+      const url = `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(cardName)}&set=${setCode.toLowerCase()}`;
+      const response = await fetch(url);
+      card = await response.json();
+    } else {
+      // Use library's scryfall singleton for default card lookup
+      card = await scryfall.getCard(cardName);
     }
     
-    const response = await fetch(url);
-    const card = await response.json();
-    
-    if (card.object === 'error') {
-      return { error: card.details || 'Card not found' };
+    if (!card || card.object === 'error') {
+      return { error: card?.details || 'Card not found' };
     }
     
     return {
@@ -499,19 +535,15 @@ async function getCollectionAnalytics(userId) {
 // ============================================================================
 
 /**
- * Validate a Commander deck
+ * Validate a Commander deck (uses bigdeck-ai library)
  */
 async function validateDeck(deck, commander) {
   try {
-    // Import validation utilities from bigdeck-ai
-    const { isCardBanned } = await import('bigdeck-ai/knowledge/commanderRules');
-    const { validateDeckColorIdentity } = await import('bigdeck-ai/utils/colorIdentity');
-    
     const errors = [];
     const warnings = [];
     const info = [];
     
-    // Fetch commander info from Scryfall
+    // Fetch commander info from Scryfall (using library function)
     const commanderData = await searchScryfall(commander, true);
     if (commanderData.error) {
       return { valid: false, errors: [`Could not find commander: ${commander}`], warnings: [], info: [] };
@@ -525,7 +557,7 @@ async function validateDeck(deck, commander) {
       errors.push(`Deck must be exactly 100 cards (including commander). Current: ${totalCards}`);
     }
     
-    // Check for banned cards
+    // Check for banned cards (using library function)
     const bannedCards = deck.filter(cardName => isCardBanned(cardName));
     if (bannedCards.length > 0) {
       errors.push(`Banned cards detected: ${bannedCards.join(', ')}`);
@@ -566,11 +598,11 @@ async function validateDeck(deck, commander) {
 }
 
 /**
- * Analyze Moxfield profile
+ * Analyze Moxfield profile (uses bigdeck-ai library)
  */
 async function analyzeMoxfieldProfile(username) {
   try {
-    const { profileAnalyzer } = await import('bigdeck-ai/learning/profileAnalyzer.js');
+    const profileAnalyzer = await getProfileAnalyzer();
     const analysis = await profileAnalyzer.analyzeMoxfieldProfile(username);
     return analysis;
   } catch (error) {
@@ -580,11 +612,11 @@ async function analyzeMoxfieldProfile(username) {
 }
 
 /**
- * Analyze MTGGoldfish profile
+ * Analyze MTGGoldfish profile (uses bigdeck-ai library)
  */
 async function analyzeMTGGoldfishProfile(username) {
   try {
-    const { profileAnalyzer } = await import('bigdeck-ai/learning/profileAnalyzer.js');
+    const profileAnalyzer = await getProfileAnalyzer();
     const analysis = await profileAnalyzer.analyzeMTGGoldfishProfile(username);
     return analysis;
   } catch (error) {
@@ -594,11 +626,11 @@ async function analyzeMTGGoldfishProfile(username) {
 }
 
 /**
- * Learn from YouTube video
+ * Learn from YouTube video (uses bigdeck-ai library)
  */
 async function learnFromYouTube(url) {
   try {
-    const { youtubeLearner } = await import('bigdeck-ai/learning/youtubeLearner.js');
+    const youtubeLearner = await getYoutubeLearner();
     const result = await youtubeLearner.learnFromVideo(url);
     return result;
   } catch (error) {
@@ -608,11 +640,11 @@ async function learnFromYouTube(url) {
 }
 
 /**
- * Suggest deck tech videos
+ * Suggest deck tech videos (uses bigdeck-ai library)
  */
 async function suggestDeckTechs(commander) {
   try {
-    const { youtubeLearner } = await import('bigdeck-ai/learning/youtubeLearner.js');
+    const youtubeLearner = await getYoutubeLearner();
     const suggestions = await youtubeLearner.suggestDeckTechs(commander);
     return suggestions;
   } catch (error) {
@@ -622,11 +654,11 @@ async function suggestDeckTechs(commander) {
 }
 
 /**
- * Analyze format meta
+ * Analyze format meta (uses bigdeck-ai library)
  */
 async function analyzeFormatMeta(format = 'commander') {
   try {
-    const { metaAnalyzer } = await import('bigdeck-ai/learning/metaAnalyzer.js');
+    const metaAnalyzer = await getMetaAnalyzer();
     const analysis = await metaAnalyzer.analyzeFormat(format);
     return analysis;
   } catch (error) {
