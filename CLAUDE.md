@@ -88,10 +88,14 @@ async function searchScryfall(query, exact) {
   return await scryfall.searchCards(query);
 }
 
-// Learning functions dynamically import from library
-const { profileAnalyzer } = await import('bigdeck-ai/src/learning/profileAnalyzer.js');
-const { youtubeLearner } = await import('bigdeck-ai/src/learning/youtubeLearner.js');
-const { metaAnalyzer } = await import('bigdeck-ai/src/learning/metaAnalyzer.js');
+// Learning modules are lazy-loaded with cached imports
+const getProfileAnalyzer = createLazyLoader('bigdeck-ai/src/learning/profileAnalyzer.js', 'profileAnalyzer');
+const getYoutubeLearner = createLazyLoader('bigdeck-ai/src/learning/youtubeLearner.js', 'youtubeLearner');
+const getMetaAnalyzer = createLazyLoader('bigdeck-ai/src/learning/metaAnalyzer.js', 'metaAnalyzer');
+
+// Usage in functions:
+const profileAnalyzer = await getProfileAnalyzer();
+const result = await profileAnalyzer.analyzeMoxfieldProfile(username);
 ```
 
 ### Benefits of Library Integration

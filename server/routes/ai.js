@@ -47,7 +47,7 @@ function getOpenAIClient() {
  * Lazy load learning modules (cached to avoid redundant imports)
  * Uses generic lazy loader to reduce code duplication
  */
-async function createLazyLoader(modulePath, exportName) {
+function createLazyLoader(modulePath, exportName) {
   return async function() {
     // Use a map to cache modules
     if (!createLazyLoader.cache) {
@@ -391,6 +391,8 @@ async function getCardPrice(cardName, setCode) {
       // When set code is specified, use direct API call
       // TODO: Consider adding set parameter support to bigdeck-ai library's scryfall.getCard()
       // For now, library doesn't support set parameter in getCard()
+      // Apply same rate limiting as library
+      await scryfall.waitForRateLimit();
       const url = `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(cardName)}&set=${setCode.toLowerCase()}`;
       const response = await fetch(url);
       card = await response.json();
