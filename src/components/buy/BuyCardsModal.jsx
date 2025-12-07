@@ -101,12 +101,9 @@ export const BuyCardsModal = memo(function BuyCardsModal({
   };
 
   const getTcgPrice = (key, card) => priceData[key]?.tcg ?? card.tcgPrice ?? card.tcg ?? null;
-  const getCardKingdomPrice = (key, card) => priceData[key]?.ck ?? card.cardKingdomPrice ?? card.ckPrice ?? card.ck ?? null;
   const getPrimaryPrice = (key, card) => {
     const tcg = getTcgPrice(key, card);
     if (tcg !== undefined && tcg !== null) return tcg;
-    const ck = getCardKingdomPrice(key, card);
-    if (ck !== undefined && ck !== null) return ck;
     return card.price ?? card.estimatedPrice ?? null;
   };
 
@@ -131,7 +128,7 @@ export const BuyCardsModal = memo(function BuyCardsModal({
       .filter(({ priceKey }) => !priceData[priceKey]);
   }, [cards, priceData]);
 
-  // Sort cards by available vendor price (TCG first, then Card Kingdom)
+  // Sort cards by available TCG price (fallback to estimated price)
   const sortedCards = useMemo(() => {
     return [...filteredCards]
       .sort((a, b) => {
@@ -149,7 +146,7 @@ export const BuyCardsModal = memo(function BuyCardsModal({
       });
   }, [filteredCards, sortDirection]);
 
-  // Prefetch TCG/CK prices for all cards when modal is open (throttled to avoid rate limiting)
+  // Prefetch TCG prices for all cards when modal is open (throttled to avoid rate limiting)
   useEffect(() => {
     if (!isOpen || !getPrice) return undefined;
     let cancelled = false;
@@ -166,11 +163,11 @@ export const BuyCardsModal = memo(function BuyCardsModal({
           try {
             const result = await getPrice(card.name, setCode);
             if (!cancelled) {
-              setPriceData(prev => (prev[priceKey] ? prev : { ...prev, [priceKey]: result }));
+              setPriceData(prev => (prev[priceKey] ? prev : { ...prev, [priceKey]: { tcg: result?.tcg ?? result ?? null } }));
             }
           } catch (error) {
             if (!cancelled) {
-              setPriceData(prev => (prev[priceKey] ? prev : { ...prev, [priceKey]: { tcg: null, ck: null } }));
+              setPriceData(prev => (prev[priceKey] ? prev : { ...prev, [priceKey]: { tcg: null } }));
             }
           }
         }
@@ -368,7 +365,6 @@ export const BuyCardsModal = memo(function BuyCardsModal({
             {sortedCards.map(({ card, index, selectionKey, priceKey }) => {
               const selection = cardSelections[selectionKey] || { selected: true, quantity: card.quantity || 1 };
               const tcgPrice = getTcgPrice(priceKey, card);
-              const cardKingdomPrice = getCardKingdomPrice(priceKey, card);
               
               return (
                 <div
@@ -409,13 +405,8 @@ export const BuyCardsModal = memo(function BuyCardsModal({
 
                   <div className="flex-1 min-w-0">
                     <div className="text-sm text-slate-200 truncate">{card.name}</div>
-                    <div className="text-xs text-slate-400 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
-                      <span>
-                        TCG: <span className="text-slate-200">{formatPrice(tcgPrice)}</span>
-                      </span>
-                      <span>
-                        Card Kingdom: <span className="text-slate-200">{formatPrice(cardKingdomPrice)}</span>
-                      </span>
+                    <div className="text-xs text-slate-400">
+                      TCG: <span className="text-slate-200">{formatPrice(tcgPrice)}</span>
                     </div>
                   </div>
                 </div>

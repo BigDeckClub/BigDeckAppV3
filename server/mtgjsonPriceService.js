@@ -3,7 +3,9 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import StreamJsonParser from 'stream-json';
 import StreamObject from 'stream-json/streamers/StreamObject.js';
-import streamChain from 'stream-chain';
+import streamChainPkg from 'stream-chain';
+
+const { chain } = streamChainPkg;
 
 const { parser } = StreamJsonParser;
 const { streamObject } = StreamObject;
@@ -212,7 +214,7 @@ class MtgjsonPriceService {
       let processedCount = 0;
       
       return new Promise((resolve, reject) => {
-        const pipeline = streamChain([
+        const pipeline = chain([
           response.body,
           parser(),
           streamObject()
