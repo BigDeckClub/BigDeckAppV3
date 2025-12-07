@@ -16,3 +16,14 @@ export const aiApiLimiter = rateLimit({
   // Use default keyGenerator which properly handles IPv6
   // Cloud Run sets x-forwarded-for which express-rate-limit reads via trust proxy
 });
+
+// General API rate limiter for authenticated endpoints
+export const apiLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute window
+  max: 300, // 300 requests per minute (reasonable for normal use)
+  message: { error: 'Too many requests, please try again later' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  // Skip rate limiting for health check endpoints (mounted without /api prefix)
+  skip: (req) => req.path === '/health' || req.path.startsWith('/health'),
+});

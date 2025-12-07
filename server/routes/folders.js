@@ -1,8 +1,11 @@
 import express from 'express';
 import { pool } from '../db/pool.js';
-import { validateId, authenticate } from '../middleware/index.js';
+import { validateId, authenticate, apiLimiter } from '../middleware/index.js';
 
 const router = express.Router();
+
+// Apply rate limiting to prevent abuse
+router.use(apiLimiter);
 
 // Reserved folder names that cannot be created by users (case-insensitive)
 const RESERVED_FOLDER_NAMES = ['unsorted', 'uncategorized', 'all cards'];

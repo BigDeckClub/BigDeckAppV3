@@ -1,12 +1,15 @@
 import express from 'express';
 import { pool } from '../db/pool.js';
-import { validateId, authenticate } from '../middleware/index.js';
+import { validateId, authenticate, apiLimiter } from '../middleware/index.js';
 import { fetchRetry } from '../utils/index.js';
 import { scryfallQueue } from '../utils/scryfallQueue.js';
 import { recordChange, recordAudit, recordActivity } from './history.js';
-import { createInventoryItemSchema, updateInventoryItemSchema, validateBody } from '../utils/validation.js';
+import { createInventoryItemSchema, updateInventoryItemSchema, setThresholdSchema, validateBody } from '../utils/validation.js';
 
 const router = express.Router();
+
+// Apply rate limiting to all inventory routes to prevent abuse
+router.use(apiLimiter);
 
 // ========== INVENTORY ENDPOINTS ==========
 router.get('/inventory', authenticate, async (req, res) => {
@@ -322,15 +325,11 @@ router.post('/inventory/:id/toggle-alert', authenticate, validateId, async (req,
 });
 
 // Set low inventory threshold for a specific card
-router.post('/inventory/:id/set-threshold', authenticate, validateId, async (req, res) => {
+router.post('/inventory/:id/set-threshold', authenticate, validateId, validateBody(setThresholdSchema), async (req, res) => {
   const id = req.validatedId;
   const { threshold } = req.body;
 
   try {
-    if (threshold === undefined || threshold < 0) {
-      return res.status(400).json({ error: 'Invalid threshold value' });
-    }
-
     const result = await pool.query(
       'UPDATE inventory SET low_inventory_threshold = $1 WHERE id = $2 AND user_id = $3 RETURNING *',
       [threshold, id, req.userId]

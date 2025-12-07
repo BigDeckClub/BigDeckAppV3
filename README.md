@@ -49,15 +49,28 @@ The app will be available at http://localhost:5000
 Create a `.env` file in the root directory:
 
 ```env
-# NeonDB connection string (required)
-DATABASE_URL=postgresql://username:password@ep-xxxxx.us-east-1.aws.neon.tech/bigdeck?sslmode=require
+# Database Configuration (required)
+DATABASE_URL=postgresql://username:password@host:port/database
 
-# Server port (optional, defaults to 5000)
+# Supabase Authentication (required)
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+
+# CORS Configuration (optional, defaults to localhost)
+# Comma-separated list of allowed origins
+# Use '*' to allow all origins (not recommended for production)
+ALLOWED_ORIGINS=http://localhost:5000,http://localhost:3000
+
+# AI API Keys (optional, for external AI agent access)
+# Comma-separated list of valid API keys
+AI_API_KEYS=key1,key2,key3
+
+# Server Configuration
 PORT=5000
-
-# Node environment
 NODE_ENV=development
 ```
+
+See `.env.example` for a template.
 
 ### Development
 
@@ -110,6 +123,27 @@ npm test
 - `POST /api/containers/:id/sell` - Record container sale
 - `GET /api/sales` - Get sales history
 - `GET /api/prices/:cardName/:setCode` - Get card prices
+
+## Security
+
+This application implements several security best practices:
+
+- **CORS Protection**: Allowlist-based CORS configuration (configure via `ALLOWED_ORIGINS`)
+- **Content Security Policy**: Helmet CSP enabled with appropriate directives
+- **Rate Limiting**: Comprehensive rate limiting across all endpoints (5 requests/15min for auth, 300 req/min for general API/database routes, 30 req/min for AI endpoints)
+- **Timing-Safe Comparison**: API key validation uses constant-time comparison
+- **Input Validation**: Zod schemas validate all user inputs
+- **Request Tracking**: Unique request IDs for debugging and log correlation
+- **Error Handling**: Production errors don't leak sensitive information
+
+### Security Configuration
+
+For production deployments:
+
+1. Set `ALLOWED_ORIGINS` to your production domain(s)
+2. Set `NODE_ENV=production` for optimized logging and error handling
+3. Keep `DATABASE_URL` and API keys secure (never commit to version control)
+4. Configure strong API keys for AI agent access
 
 ## License
 

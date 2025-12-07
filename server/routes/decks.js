@@ -1,9 +1,12 @@
 import express from 'express';
 import { pool } from '../db/pool.js';
-import { validateId, authenticate } from '../middleware/index.js';
+import { validateId, authenticate, apiLimiter } from '../middleware/index.js';
 import { batchInsertReservations, batchInsertMissingCards } from '../utils/index.js';
 
 const router = express.Router();
+
+// Apply rate limiting to all deck routes to prevent abuse
+router.use(apiLimiter);
 
 // ========== DECKS ENDPOINTS ==========
 router.get('/decks', authenticate, async (req, res) => {

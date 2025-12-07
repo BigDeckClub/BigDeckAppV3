@@ -44,16 +44,20 @@ export async function initializeDatabase() {
         created_at TIMESTAMP DEFAULT NOW()
       )
     `);
-    await pool.query(`ALTER TABLE inventory ADD COLUMN IF NOT EXISTS image_url TEXT`).catch(() => {});
-    await pool.query(`ALTER TABLE inventory ADD COLUMN IF NOT EXISTS scryfall_id VARCHAR(255)`).catch(() => {});
-    await pool.query(`ALTER TABLE inventory ADD COLUMN IF NOT EXISTS user_id VARCHAR(255) REFERENCES users(id) ON DELETE CASCADE`).catch(() => {});
-    await pool.query(`ALTER TABLE inventory ADD COLUMN IF NOT EXISTS folder VARCHAR(255) DEFAULT 'Uncategorized'`).catch(() => {});
-    await pool.query(`ALTER TABLE inventory ADD COLUMN IF NOT EXISTS low_inventory_alert BOOLEAN DEFAULT false`).catch(() => {});
-    await pool.query(`ALTER TABLE inventory ADD COLUMN IF NOT EXISTS low_inventory_threshold INTEGER DEFAULT 0`).catch(() => {});
-    await pool.query(`ALTER TABLE inventory ADD COLUMN IF NOT EXISTS foil BOOLEAN DEFAULT false`).catch(() => {});
-    await pool.query(`ALTER TABLE inventory ADD COLUMN IF NOT EXISTS quality VARCHAR(10) DEFAULT 'NM'`).catch(() => {});
-    await pool.query(`ALTER TABLE inventory DROP COLUMN IF EXISTS location`).catch(() => {});
-    await pool.query(`ALTER TABLE inventory DROP COLUMN IF EXISTS is_shared_location`).catch(() => {});
+    
+    // Run inventory table alterations in parallel
+    await Promise.all([
+      pool.query(`ALTER TABLE inventory ADD COLUMN IF NOT EXISTS image_url TEXT`).catch(() => {}),
+      pool.query(`ALTER TABLE inventory ADD COLUMN IF NOT EXISTS scryfall_id VARCHAR(255)`).catch(() => {}),
+      pool.query(`ALTER TABLE inventory ADD COLUMN IF NOT EXISTS user_id VARCHAR(255) REFERENCES users(id) ON DELETE CASCADE`).catch(() => {}),
+      pool.query(`ALTER TABLE inventory ADD COLUMN IF NOT EXISTS folder VARCHAR(255) DEFAULT 'Uncategorized'`).catch(() => {}),
+      pool.query(`ALTER TABLE inventory ADD COLUMN IF NOT EXISTS low_inventory_alert BOOLEAN DEFAULT false`).catch(() => {}),
+      pool.query(`ALTER TABLE inventory ADD COLUMN IF NOT EXISTS low_inventory_threshold INTEGER DEFAULT 0`).catch(() => {}),
+      pool.query(`ALTER TABLE inventory ADD COLUMN IF NOT EXISTS foil BOOLEAN DEFAULT false`).catch(() => {}),
+      pool.query(`ALTER TABLE inventory ADD COLUMN IF NOT EXISTS quality VARCHAR(10) DEFAULT 'NM'`).catch(() => {}),
+      pool.query(`ALTER TABLE inventory DROP COLUMN IF EXISTS location`).catch(() => {}),
+      pool.query(`ALTER TABLE inventory DROP COLUMN IF EXISTS is_shared_location`).catch(() => {}),
+    ]);
 
     // Settings table (Step 7: Store user settings in backend)
     await pool.query(`
@@ -87,10 +91,14 @@ export async function initializeDatabase() {
         created_at TIMESTAMP DEFAULT NOW()
       )
     `);
-    await pool.query(`ALTER TABLE containers ADD COLUMN IF NOT EXISTS user_id VARCHAR(255) REFERENCES users(id) ON DELETE CASCADE`).catch(() => {});
-    await pool.query(`ALTER TABLE containers ADD COLUMN IF NOT EXISTS cards JSONB DEFAULT '[]'`).catch(() => {});
-    await pool.query(`ALTER TABLE containers DROP COLUMN IF EXISTS decklist_id`).catch(() => {});
-    await pool.query(`ALTER TABLE containers DROP COLUMN IF EXISTS location`).catch(() => {});
+    
+    // Run containers table alterations in parallel
+    await Promise.all([
+      pool.query(`ALTER TABLE containers ADD COLUMN IF NOT EXISTS user_id VARCHAR(255) REFERENCES users(id) ON DELETE CASCADE`).catch(() => {}),
+      pool.query(`ALTER TABLE containers ADD COLUMN IF NOT EXISTS cards JSONB DEFAULT '[]'`).catch(() => {}),
+      pool.query(`ALTER TABLE containers DROP COLUMN IF EXISTS decklist_id`).catch(() => {}),
+      pool.query(`ALTER TABLE containers DROP COLUMN IF EXISTS location`).catch(() => {}),
+    ]);
 
     // Container items table
     await pool.query(`
@@ -130,11 +138,15 @@ export async function initializeDatabase() {
         updated_at TIMESTAMP DEFAULT NOW()
       )
     `);
-    await pool.query(`ALTER TABLE imports ADD COLUMN IF NOT EXISTS user_id VARCHAR(255) REFERENCES users(id) ON DELETE CASCADE`).catch(() => {});
-    await pool.query(`ALTER TABLE imports ADD COLUMN IF NOT EXISTS card_list TEXT`).catch(() => {});
-    await pool.query(`ALTER TABLE imports ADD COLUMN IF NOT EXISTS source VARCHAR(50)`).catch(() => {});
-    await pool.query(`ALTER TABLE imports ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'pending'`).catch(() => {});
-    await pool.query(`ALTER TABLE imports ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP`).catch(() => {});
+    
+    // Run imports table alterations in parallel
+    await Promise.all([
+      pool.query(`ALTER TABLE imports ADD COLUMN IF NOT EXISTS user_id VARCHAR(255) REFERENCES users(id) ON DELETE CASCADE`).catch(() => {}),
+      pool.query(`ALTER TABLE imports ADD COLUMN IF NOT EXISTS card_list TEXT`).catch(() => {}),
+      pool.query(`ALTER TABLE imports ADD COLUMN IF NOT EXISTS source VARCHAR(50)`).catch(() => {}),
+      pool.query(`ALTER TABLE imports ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'pending'`).catch(() => {}),
+      pool.query(`ALTER TABLE imports ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP`).catch(() => {}),
+    ]);
 
     // Usage history table
     await pool.query(`
@@ -171,9 +183,11 @@ export async function initializeDatabase() {
       )
     `);
 
-    // Add lot tracking columns to inventory table
-    await pool.query(`ALTER TABLE inventory ADD COLUMN IF NOT EXISTS lot_id INTEGER REFERENCES purchase_lots(id) ON DELETE SET NULL`).catch(() => {});
-    await pool.query(`ALTER TABLE inventory ADD COLUMN IF NOT EXISTS lot_name TEXT`).catch(() => {});
+    // Add lot tracking columns to inventory table (run in parallel)
+    await Promise.all([
+      pool.query(`ALTER TABLE inventory ADD COLUMN IF NOT EXISTS lot_id INTEGER REFERENCES purchase_lots(id) ON DELETE SET NULL`).catch(() => {}),
+      pool.query(`ALTER TABLE inventory ADD COLUMN IF NOT EXISTS lot_name TEXT`).catch(() => {}),
+    ]);
 
     // Decks table
     await pool.query(`
@@ -188,15 +202,19 @@ export async function initializeDatabase() {
         updated_at TIMESTAMP DEFAULT NOW()
       )
     `);
-    await pool.query(`ALTER TABLE decks ADD COLUMN IF NOT EXISTS user_id VARCHAR(255) REFERENCES users(id) ON DELETE CASCADE`).catch(() => {});
-    await pool.query(`ALTER TABLE decks ADD COLUMN IF NOT EXISTS format VARCHAR(50) DEFAULT 'Casual'`).catch(() => {});
-    await pool.query(`ALTER TABLE decks ADD COLUMN IF NOT EXISTS cards JSONB DEFAULT '[]'`).catch(() => {});
-    await pool.query(`ALTER TABLE decks ADD COLUMN IF NOT EXISTS description TEXT`).catch(() => {});
-    await pool.query(`ALTER TABLE decks ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP`).catch(() => {});
-    await pool.query(`ALTER TABLE decks ADD COLUMN IF NOT EXISTS decklist_id INTEGER`).catch(() => {});
-    await pool.query(`ALTER TABLE decks ADD COLUMN IF NOT EXISTS is_deck_instance BOOLEAN DEFAULT FALSE`).catch(() => {});
-    await pool.query(`ALTER TABLE decks ADD COLUMN IF NOT EXISTS archidekt_url TEXT`).catch(() => {});
-    await pool.query(`ALTER TABLE decks ADD COLUMN IF NOT EXISTS last_synced TIMESTAMP`).catch(() => {});
+    
+    // Run decks table alterations in parallel
+    await Promise.all([
+      pool.query(`ALTER TABLE decks ADD COLUMN IF NOT EXISTS user_id VARCHAR(255) REFERENCES users(id) ON DELETE CASCADE`).catch(() => {}),
+      pool.query(`ALTER TABLE decks ADD COLUMN IF NOT EXISTS format VARCHAR(50) DEFAULT 'Casual'`).catch(() => {}),
+      pool.query(`ALTER TABLE decks ADD COLUMN IF NOT EXISTS cards JSONB DEFAULT '[]'`).catch(() => {}),
+      pool.query(`ALTER TABLE decks ADD COLUMN IF NOT EXISTS description TEXT`).catch(() => {}),
+      pool.query(`ALTER TABLE decks ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP`).catch(() => {}),
+      pool.query(`ALTER TABLE decks ADD COLUMN IF NOT EXISTS decklist_id INTEGER`).catch(() => {}),
+      pool.query(`ALTER TABLE decks ADD COLUMN IF NOT EXISTS is_deck_instance BOOLEAN DEFAULT FALSE`).catch(() => {}),
+      pool.query(`ALTER TABLE decks ADD COLUMN IF NOT EXISTS archidekt_url TEXT`).catch(() => {}),
+      pool.query(`ALTER TABLE decks ADD COLUMN IF NOT EXISTS last_synced TIMESTAMP`).catch(() => {}),
+    ]);
 
     // Deck reservations table
     await pool.query(`
@@ -310,66 +328,90 @@ export async function initializeDatabase() {
     `);
 
     // ========== PERFORMANCE INDEXES ==========
-    // Note: .catch() logs all errors for debugging - CREATE INDEX IF NOT EXISTS rarely fails
-    // Index for case-insensitive card name lookups
-    await pool.query(`
-      CREATE INDEX IF NOT EXISTS idx_inventory_name_lower 
-      ON inventory(LOWER(TRIM(name)));
-    `).catch(() => {});
+    // Note: Create indexes in parallel for better performance
+    // Using Promise.all for independent index creation operations
+    await Promise.all([
+      // Index for case-insensitive card name lookups
+      pool.query(`
+        CREATE INDEX IF NOT EXISTS idx_inventory_name_lower 
+        ON inventory(LOWER(TRIM(name)));
+      `).catch(() => {}),
 
-    // Index for deck reservation lookups by deck
-    await pool.query(`
-      CREATE INDEX IF NOT EXISTS idx_deck_reservations_deck_id 
-      ON deck_reservations(deck_id);
-    `).catch(() => {});
+      // Index for inventory user_id (frequent WHERE clause)
+      pool.query(`
+        CREATE INDEX IF NOT EXISTS idx_inventory_user_id 
+        ON inventory(user_id);
+      `).catch(() => {}),
 
-    // Index for deck reservation lookups by inventory item
-    await pool.query(`
-      CREATE INDEX IF NOT EXISTS idx_deck_reservations_inventory_id 
-      ON deck_reservations(inventory_item_id);
-    `).catch(() => {});
+      // Index for decks user_id (frequent WHERE clause)
+      pool.query(`
+        CREATE INDEX IF NOT EXISTS idx_decks_user_id 
+        ON decks(user_id);
+      `).catch(() => {}),
 
-    // Index for inventory folder filtering
-    await pool.query(`
-      CREATE INDEX IF NOT EXISTS idx_inventory_folder 
-      ON inventory(folder);
-    `).catch(() => {});
+      // Index for deck reservation lookups by deck
+      pool.query(`
+        CREATE INDEX IF NOT EXISTS idx_deck_reservations_deck_id 
+        ON deck_reservations(deck_id);
+      `).catch(() => {}),
 
-    // Index for deck instances lookup
-    await pool.query(`
-      CREATE INDEX IF NOT EXISTS idx_decks_is_instance 
-      ON decks(is_deck_instance);
-    `).catch(() => {});
+      // Index for deck reservation lookups by inventory item
+      pool.query(`
+        CREATE INDEX IF NOT EXISTS idx_deck_reservations_inventory_id 
+        ON deck_reservations(inventory_item_id);
+      `).catch(() => {}),
 
-    // Indexes for change history
-    await pool.query(`
-      CREATE INDEX IF NOT EXISTS idx_change_history_card_id 
-      ON change_history(card_id);
-    `).catch(() => {});
-    await pool.query(`
-      CREATE INDEX IF NOT EXISTS idx_change_history_changed_at 
-      ON change_history(changed_at DESC);
-    `).catch(() => {});
+      // Composite index for deck reservations (deck_id, inventory_item_id)
+      pool.query(`
+        CREATE INDEX IF NOT EXISTS idx_deck_reservations_composite 
+        ON deck_reservations(deck_id, inventory_item_id);
+      `).catch(() => {}),
 
-    // Indexes for audit log
-    await pool.query(`
-      CREATE INDEX IF NOT EXISTS idx_audit_log_created_at 
-      ON audit_log(created_at DESC);
-    `).catch(() => {});
-    await pool.query(`
-      CREATE INDEX IF NOT EXISTS idx_audit_log_action_type 
-      ON audit_log(action_type);
-    `).catch(() => {});
+      // Index for inventory folder filtering
+      pool.query(`
+        CREATE INDEX IF NOT EXISTS idx_inventory_folder 
+        ON inventory(folder);
+      `).catch(() => {}),
 
-    // Indexes for activity feed
-    await pool.query(`
-      CREATE INDEX IF NOT EXISTS idx_activity_feed_created_at 
-      ON activity_feed(created_at DESC);
-    `).catch(() => {});
-    await pool.query(`
-      CREATE INDEX IF NOT EXISTS idx_activity_feed_activity_type 
-      ON activity_feed(activity_type);
-    `).catch(() => {});
+      // Index for deck instances lookup
+      pool.query(`
+        CREATE INDEX IF NOT EXISTS idx_decks_is_instance 
+        ON decks(is_deck_instance);
+      `).catch(() => {}),
+
+      // Indexes for change history
+      pool.query(`
+        CREATE INDEX IF NOT EXISTS idx_change_history_card_id 
+        ON change_history(card_id);
+      `).catch(() => {}),
+      
+      pool.query(`
+        CREATE INDEX IF NOT EXISTS idx_change_history_changed_at 
+        ON change_history(changed_at DESC);
+      `).catch(() => {}),
+
+      // Indexes for audit log
+      pool.query(`
+        CREATE INDEX IF NOT EXISTS idx_audit_log_created_at 
+        ON audit_log(created_at DESC);
+      `).catch(() => {}),
+      
+      pool.query(`
+        CREATE INDEX IF NOT EXISTS idx_audit_log_action_type 
+        ON audit_log(action_type);
+      `).catch(() => {}),
+
+      // Indexes for activity feed
+      pool.query(`
+        CREATE INDEX IF NOT EXISTS idx_activity_feed_created_at 
+        ON activity_feed(created_at DESC);
+      `).catch(() => {}),
+      
+      pool.query(`
+        CREATE INDEX IF NOT EXISTS idx_activity_feed_activity_type 
+        ON activity_feed(activity_type);
+      `).catch(() => {}),
+    ]);
 
     console.log('[DB] ✓ Database initialized successfully');
   } catch (err) {

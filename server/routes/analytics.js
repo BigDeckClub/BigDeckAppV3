@@ -2,8 +2,12 @@ import express from 'express';
 import { pool } from '../db/pool.js';
 import { mtgjsonService } from '../mtgjsonPriceService.js';
 import { authenticate } from '../middleware/auth.js';
+import { apiLimiter } from '../middleware/index.js';
 
 const router = express.Router();
+
+// Apply rate limiting to prevent abuse
+router.use(apiLimiter);
 
 // ========== ANALYTICS ENDPOINTS ==========
 router.get('/analytics/market-values', authenticate, async (req, res) => {

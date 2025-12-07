@@ -1,7 +1,11 @@
 import express from 'express';
 import { pool } from '../db/pool.js';
+import { apiLimiter } from '../middleware/index.js';
 
 const router = express.Router();
+
+// Apply rate limiting to prevent abuse
+router.use(apiLimiter);
 
 // ========== SETTINGS ENDPOINTS ==========
 // GET /api/settings/:key - Retrieve a setting
