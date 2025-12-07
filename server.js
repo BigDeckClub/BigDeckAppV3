@@ -69,6 +69,11 @@ app.use(cors({
       return callback(null, true);
     }
 
+    // Allow local https dev
+    if (origin === 'https://localhost:5000') {
+      return callback(null, true);
+    }
+
     if (allowAllOrigins || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
