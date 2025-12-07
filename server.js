@@ -112,6 +112,13 @@ app.use(express.json({ limit: '10mb' }));
 // Enable gzip/brotli compression for all responses
 app.use(compression());
 
+// ========== SERVE STATIC ASSETS ==========
+// Must be before API routes so static files are served correctly
+app.use(express.static('dist', {
+  maxAge: '1d',
+  etag: true,
+}));
+
 // ========== REGISTER ALL ROUTES ==========
 registerRoutes(app);
 
@@ -131,12 +138,6 @@ async function startServer() {
       console.error('[APP] ✗ Failed to initialize MTGJSON price service:', error);
       console.warn('[APP] Continuing startup without MTGJSON price service. Some features may be unavailable.');
     }
-
-    // ========== SERVE STATIC ASSETS ==========
-    app.use(express.static('dist', {
-      maxAge: '1d', // Cache static assets for 1 day
-      etag: true,
-    }));
 
     // ========== CATCH-ALL HANDLER - SPA ROUTING ==========
     app.use((req, res) => {
