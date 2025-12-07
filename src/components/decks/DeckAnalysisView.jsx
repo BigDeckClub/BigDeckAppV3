@@ -7,6 +7,7 @@ import {
   ShoppingCart, Copy, Check
 } from 'lucide-react';
 import { EXTERNAL_APIS } from '../../config/api';
+import { BuyCardsModal } from '../buy/BuyCardsModal';
 
 /**
  * DeckAnalysisView - Advanced multi-deck analysis and comparison
@@ -34,6 +35,7 @@ export function DeckAnalysisView({ decks, selectedDeckIds, inventoryByName }) {
   const [hoveredCard, setHoveredCard] = useState(null);
   const [copiedToClipboard, setCopiedToClipboard] = useState(false);
   const [viewMode, setViewMode] = useState('list'); // list, grid
+  const [showBuyModal, setShowBuyModal] = useState(false);
 
   // Get selected decks
   const selectedDecks = useMemo(() => {
@@ -256,6 +258,16 @@ export function DeckAnalysisView({ decks, selectedDeckIds, inventoryByName }) {
     setCopiedToClipboard(true);
     setTimeout(() => setCopiedToClipboard(false), 2000);
   }, [analysis.missingCards]);
+
+  // Prepare missing cards payload for buy modal
+  const missingCardsForBuy = useMemo(() => (
+    analysis.missingCards.map(card => ({
+      name: card.name,
+      quantity: card.missing,
+      set: card.set,
+      price: card.estimatedPrice ?? card.price ?? 0
+    }))
+  ), [analysis.missingCards]);
 
   // Get card image URL
   const getCardImageUrl = (cardName) => {
@@ -546,6 +558,15 @@ export function DeckAnalysisView({ decks, selectedDeckIds, inventoryByName }) {
                 Missing Cards ({analysis.missingCards.length})
               </h3>
               <div className="flex flex-wrap gap-2">
+                  {analysis.missingCards.length > 0 && (
+                    <button
+                      onClick={() => setShowBuyModal(true)}
+                      className="flex items-center gap-2 px-3 py-2 bg-amber-700 hover:bg-amber-600 text-white rounded-lg transition-colors text-sm"
+                    >
+                      <ShoppingCart className="w-4 h-4" />
+                      Buy Missing
+                    </button>
+                  )}
                 <button
                   onClick={copyToClipboard}
                   className="flex items-center gap-2 px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg transition-colors text-sm"
@@ -944,6 +965,14 @@ export function DeckAnalysisView({ decks, selectedDeckIds, inventoryByName }) {
           </div>
         </div>
       )}
+
+      {/* Buy Missing Cards Modal */}
+      <BuyCardsModal
+        isOpen={showBuyModal}
+        onClose={() => setShowBuyModal(false)}
+        cards={missingCardsForBuy}
+        deckName={selectedDecks.length === 1 ? selectedDecks[0]?.name : 'Selected Decks'}
+      />
     </div>
   );
 }

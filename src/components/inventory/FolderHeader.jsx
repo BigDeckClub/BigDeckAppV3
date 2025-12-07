@@ -79,8 +79,7 @@ export const FolderHeader = memo(function FolderHeader({
                 itemType: 'folder',
                 itemId: null,
                 itemName: folderName,
-                purchasePrice: totalCost,
-                quantity: totalCards
+                purchasePrice: totalCost
               });
               setShowSellModal(true);
             }}

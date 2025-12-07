@@ -17,6 +17,17 @@ router.get('/prices/:cardName/:setCode', priceLimiter, async (req, res) => {
   }
   
   try {
+    // Ensure MTGJSON service has data before attempting CK lookup
+    let mtgjsonReady = mtgjsonService.isReady?.() ?? (mtgjsonService.priceData?.size > 0 && mtgjsonService.scryfallToMtgjsonMap?.size > 0);
+    if (!mtgjsonReady) {
+      try {
+        await mtgjsonService.initialize();
+        mtgjsonReady = mtgjsonService.isReady?.() ?? (mtgjsonService.priceData?.size > 0 && mtgjsonService.scryfallToMtgjsonMap?.size > 0);
+      } catch (err) {
+        console.warn('[PRICES] MTGJSON initialization on-demand failed:', err.message);
+      }
+    }
+
     let tcgPrice = 'N/A';
     let ckPrice = 'N/A';
     let scryfallRes = null;
@@ -50,8 +61,6 @@ router.get('/prices/:cardName/:setCode', priceLimiter, async (req, res) => {
     
     // Get Card Kingdom price from MTGJSON using the card's Scryfall ID
     // Only attempt CK lookup if MTGJSON service is ready
-    const mtgjsonReady = mtgjsonService.isReady();
-    
     if (cardData && mtgjsonReady) {
       try {
         // Scryfall returns the card's unique ID which we can use to look up MTGJSON prices
@@ -68,13 +77,12 @@ router.get('/prices/:cardName/:setCode', priceLimiter, async (req, res) => {
     }
     
     const result = { tcg: tcgPrice, ck: ckPrice };
-    
-    // Only cache if MTGJSON was ready
-    // This prevents caching incomplete data when service is still initializing
-    if (mtgjsonReady) {
+
+    // Avoid caching CK "N/A" responses when MTGJSON data was unavailable so we can retry soon
+    const shouldCache = ckPrice !== 'N/A' || mtgjsonReady;
+    if (shouldCache) {
       setCachedPrice(cacheKey, result);
     }
-    
     res.setHeader('Content-Type', 'application/json');
     res.status(200).json(result);
   } catch (error) {

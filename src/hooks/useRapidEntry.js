@@ -6,7 +6,7 @@ import { API_ENDPOINTS } from '../config/api';
 export const QUALITY_OPTIONS = ['NM', 'LP', 'MP', 'HP', 'DMG'];
 
 // Create a blank row template
-export const createEmptyRow = (stickyFolder = 'Uncategorized') => ({
+export const createEmptyRow = (stickyFolder = 'Unsorted') => ({
   id: `row-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
   cardName: '',
   searchQuery: '',
@@ -55,7 +55,7 @@ export function useRapidEntry({
   // Row state
   const [rows, setRows] = useState([createEmptyRow()]);
   const [activeRowIndex, setActiveRowIndex] = useState(0);
-  const [stickyFolder, setStickyFolder] = useState('Uncategorized');
+  const [stickyFolder, setStickyFolder] = useState('Unsorted');
   const [addedCards, setAddedCards] = useState([]);
   const [duplicateWarning, setDuplicateWarning] = useState(null);
   const [highlightedResult, setHighlightedResult] = useState(0);
@@ -209,7 +209,7 @@ export function useRapidEntry({
       quantity: row.quantity,
       foil: row.foil,
       quality: row.quality,
-      folder: row.folder || 'Uncategorized',
+      folder: row.folder || 'Unsorted',
       image_url: row.imageUrl,
     };
 
@@ -223,7 +223,7 @@ export function useRapidEntry({
     }));
 
     // Update sticky folder
-    if (row.folder && row.folder !== 'Uncategorized') {
+    if (row.folder && row.folder !== 'Unsorted') {
       setStickyFolder(row.folder);
     }
 
@@ -324,7 +324,7 @@ export function useRapidEntry({
       purchase_price: row.price ? parseFloat(row.price) : null,
       foil: row.foil,
       quality: row.quality,
-      folder: row.folder || 'Uncategorized',
+      folder: row.folder || 'Unsorted',
       image_url: row.imageUrl,
     };
 
@@ -423,42 +423,18 @@ export function useRapidEntry({
     ));
   }, [setRows]);
 
-  // Add a new row without submitting (Shift+Enter)
-  const handleAddNewRow = useCallback((rowIndex) => {
+  // Add a new row and submit current card (Shift+Enter)
+  const handleAddNewRow = useCallback(async (rowIndex) => {
     const row = rows[rowIndex];
     
     if (!row.selectedCard) {
       return false;
     }
 
-    // Mark current row as pending
-    setRows(prev => prev.map((r, idx) => {
-      if (idx !== rowIndex) return r;
-      return { ...r, status: 'pending' };
-    }));
-
-    // Update sticky folder
-    if (row.folder && row.folder !== 'Uncategorized') {
-      setStickyFolder(row.folder);
-    }
-
-    // Add new empty row and focus it
-    const newRow = createEmptyRow(stickyFolder);
-    const newRowIndex = rows.length;
-    setRows(prev => [...prev, newRow]);
-    setActiveRowIndex(newRowIndex);
-    
-    // Clear duplicate warning
-    setDuplicateWarning(null);
-    
-    // Focus on new row's card name input
-    setTimeout(() => {
-      const newInput = inputRefs.current[`name-${newRowIndex}`];
-      if (newInput) newInput.focus();
-    }, 50);
-    
+    // Reuse existing add-to-inventory logic so onAddCard runs once
+    await handleAddCardToInventory(rowIndex);
     return true;
-  }, [rows, stickyFolder, setRows, setStickyFolder, setActiveRowIndex, setDuplicateWarning]);
+  }, [rows, handleAddCardToInventory]);
 
   // Submit all pending cards at once (Ctrl+Shift+Enter)
   const handleSubmitAll = useCallback(async () => {

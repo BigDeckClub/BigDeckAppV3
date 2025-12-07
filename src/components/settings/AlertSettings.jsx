@@ -171,8 +171,9 @@ export const AlertSettings = ({ inventory = [] }) => {
         </div>
       )}
 
-      {/* Filter Toggle - always show so users know the feature exists */}
-      <div className="flex items-center justify-between mb-4 p-3 bg-slate-700/50 rounded-lg">
+      {/* Filter Toggle - only show when alerts exist */}
+      {totalAlertsCount > 0 && (
+        <div className="flex items-center justify-between mb-4 p-3 bg-slate-700/50 rounded-lg">
           <div className="flex items-center gap-2">
             <input
               type="checkbox"
@@ -193,6 +194,7 @@ export const AlertSettings = ({ inventory = [] }) => {
             {deckCardsOnly ? `${filteredCount} of ${totalAlertsCount} cards` : `${totalAlertsCount} cards`}
           </span>
         </div>
+      )}
 
       {Object.keys(cardsWithAlerts).length === 0 ? (
         <div className="text-center py-8">
