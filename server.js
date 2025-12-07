@@ -34,6 +34,13 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim())
   : ['http://localhost:5000', 'http://localhost:3000'];
 
+// Check if wildcard is present - treat as special case
+const allowAllOrigins = allowedOrigins.includes('*');
+
+// CSP configuration - 'unsafe-inline' is required for:
+// 1. Vite's development build which injects inline scripts
+// 2. React's inline event handlers and dynamic styles
+// TODO: Consider implementing nonce-based CSP for production builds
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -51,19 +58,21 @@ app.use(helmet({
 }));
 
 // CORS handler - allowlist-based configuration
+// Note: credentials cannot be used with wildcard origins per CORS spec
 app.use(cors({
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     
-    if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+    if (allowAllOrigins || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       console.warn(`[SECURITY] Blocked CORS request from origin: ${origin}`);
       callback(new Error('Not allowed by CORS'));
     }
   },
-  credentials: true,
+  // Only enable credentials if not using wildcard (CORS spec requirement)
+  credentials: !allowAllOrigins,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key']
 }));

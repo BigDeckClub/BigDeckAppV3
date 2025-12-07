@@ -130,7 +130,7 @@ This application implements several security best practices:
 
 - **CORS Protection**: Allowlist-based CORS configuration (configure via `ALLOWED_ORIGINS`)
 - **Content Security Policy**: Helmet CSP enabled with appropriate directives
-- **Rate Limiting**: Auth endpoints protected against brute force attacks
+- **Rate Limiting**: Comprehensive rate limiting across all endpoints (5 requests/15min for auth, 300 req/min for general API/database routes, 30 req/min for AI endpoints)
 - **Timing-Safe Comparison**: API key validation uses constant-time comparison
 - **Input Validation**: Zod schemas validate all user inputs
 - **Request Tracking**: Unique request IDs for debugging and log correlation

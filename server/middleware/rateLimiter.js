@@ -24,6 +24,6 @@ export const apiLimiter = rateLimit({
   message: { error: 'Too many requests, please try again later' },
   standardHeaders: true,
   legacyHeaders: false,
-  // Skip rate limiting for health check endpoints
-  skip: (req) => req.path.startsWith('/api/health'),
+  // Skip rate limiting for health check endpoints (mounted without /api prefix)
+  skip: (req) => req.path === '/health' || req.path.startsWith('/health'),
 });

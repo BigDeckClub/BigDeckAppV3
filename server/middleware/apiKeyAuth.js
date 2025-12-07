@@ -22,18 +22,25 @@ export async function authenticateApiKey(req, res, next) {
     }
 
     // Use timing-safe comparison to prevent timing attacks
+    // Always perform comparison with a buffer of the correct length to avoid leaking length info
     let isValid = false;
     const apiKeyBuffer = Buffer.from(apiKey);
     
     for (const validKey of validApiKeys) {
       const validKeyBuffer = Buffer.from(validKey);
       
-      // Only compare if lengths match (timingSafeEqual requires equal-length buffers)
-      if (apiKeyBuffer.length === validKeyBuffer.length) {
-        if (crypto.timingSafeEqual(apiKeyBuffer, validKeyBuffer)) {
+      // Always perform timing-safe comparison, using a dummy buffer if lengths don't match
+      const lengthMatch = apiKeyBuffer.length === validKeyBuffer.length;
+      const paddedApiKey = lengthMatch ? apiKeyBuffer : Buffer.alloc(validKeyBuffer.length);
+      
+      try {
+        if (lengthMatch && crypto.timingSafeEqual(paddedApiKey, validKeyBuffer)) {
           isValid = true;
           break;
         }
+      } catch (e) {
+        // Length mismatch or comparison error
+        continue;
       }
     }
     
