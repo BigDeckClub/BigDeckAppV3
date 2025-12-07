@@ -1,9 +1,12 @@
 import express from 'express';
 import { pool } from '../db/pool.js';
-import { authenticate } from '../middleware/auth.js';
+import { authenticate, apiLimiter } from '../middleware/auth.js';
 import { createSaleSchema, validateBody } from '../utils/validation.js';
 
 const router = express.Router();
+
+// Apply rate limiting to prevent abuse
+router.use(apiLimiter);
 
 // ========== SALES ENDPOINTS ==========
 

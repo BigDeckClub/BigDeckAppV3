@@ -1,10 +1,13 @@
 import express from 'express';
 import { pool } from '../db/pool.js';
-import { validateId } from '../middleware/index.js';
+import { validateId, apiLimiter } from '../middleware/index.js';
 import { authenticate } from '../middleware/auth.js';
 import { recordAudit, recordActivity } from './history.js';
 
 const router = express.Router();
+
+// Apply rate limiting to prevent abuse
+router.use(apiLimiter);
 
 // ========== IMPORTS ENDPOINTS ==========
 router.get('/imports', authenticate, async (req, res) => {

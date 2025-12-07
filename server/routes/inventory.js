@@ -1,12 +1,15 @@
 import express from 'express';
 import { pool } from '../db/pool.js';
-import { validateId, authenticate } from '../middleware/index.js';
+import { validateId, authenticate, apiLimiter } from '../middleware/index.js';
 import { fetchRetry } from '../utils/index.js';
 import { scryfallQueue } from '../utils/scryfallQueue.js';
 import { recordChange, recordAudit, recordActivity } from './history.js';
 import { createInventoryItemSchema, updateInventoryItemSchema, setThresholdSchema, validateBody } from '../utils/validation.js';
 
 const router = express.Router();
+
+// Apply rate limiting to all inventory routes to prevent abuse
+router.use(apiLimiter);
 
 // ========== INVENTORY ENDPOINTS ==========
 router.get('/inventory', authenticate, async (req, res) => {
