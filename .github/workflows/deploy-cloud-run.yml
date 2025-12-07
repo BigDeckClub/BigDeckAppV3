@@ -1,0 +1,78 @@
+name: Deploy to Cloud Run
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+# Required GitHub Repository Secrets:
+#
+# For Authentication (Workload Identity Federation):
+#   WIF_PROVIDER     - Full resource name of the WIF provider
+#                      e.g., projects/123456789/locations/global/workloadIdentityPools/github-pool/providers/github-provider
+#   WIF_SA_EMAIL     - Service account email
+#                      e.g., deployer@your-project.iam.gserviceaccount.com
+#   GCP_PROJECT      - Google Cloud project ID
+#                      e.g., your-project-id
+#
+# For Application (passed to Cloud Run):
+#   DATABASE_URL             - PostgreSQL connection string
+#   SUPABASE_URL             - Supabase project URL
+#   SUPABASE_SERVICE_ROLE_KEY - Supabase service role key
+#   OPENAI_API_KEY           - OpenAI API key (optional, for AI features)
+#   ALLOWED_ORIGINS          - Comma-separated allowed CORS origins
+#                              e.g., https://your-domain.com
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build production bundle
+        run: npm run build
+
+      - name: Authenticate to Google Cloud (Workload Identity Federation)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SA_EMAIL }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Deploy to Cloud Run
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: big-deck-app
+          project_id: ${{ secrets.GCP_PROJECT }}
+          region: us-central1
+          source: .
+          env_vars: |
+            NODE_ENV=production
+            DATABASE_URL=${{ secrets.DATABASE_URL }}
+            SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+            SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+            OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+            ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS }}
+
+      - name: Show service URL
+        run: |
+          echo "🚀 Deployment complete!"
+          echo "Service URL:"
+          gcloud run services describe big-deck-app --region us-central1 --format "value(status.url)"
