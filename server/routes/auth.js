@@ -1,8 +1,34 @@
 import express from 'express';
 import { createClient } from '@supabase/supabase-js';
+import { z } from 'zod';
+import rateLimit from 'express-rate-limit';
 import { pool } from '../db/pool.js';
 
 const router = express.Router();
+
+// ========== RATE LIMITERS FOR AUTH ENDPOINTS ==========
+// Strict rate limiting to prevent brute force attacks
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // 5 requests per 15 minutes
+  message: { error: 'Too many authentication attempts, please try again later' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// ========== VALIDATION SCHEMAS ==========
+const emailSchema = z.string().email('Invalid email format');
+const passwordSchema = z.string().min(6, 'Password must be at least 6 characters');
+
+const loginSchema = z.object({
+  email: emailSchema,
+  password: passwordSchema,
+});
+
+const signupSchema = z.object({
+  email: emailSchema,
+  password: passwordSchema,
+});
 
 // ========== SUPABASE AUTH PROXY ==========
 // Initialize Supabase client with service role key (server-side auth operations)
@@ -38,13 +64,16 @@ async function ensureUserInDatabase(user) {
   }
 }
 
-router.post('/auth/login', async (req, res) => {
+router.post('/auth/login', authLimiter, async (req, res) => {
   try {
-    const { email, password } = req.body;
-    
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password required' });
+    // Validate input
+    const validation = loginSchema.safeParse(req.body);
+    if (!validation.success) {
+      const errors = validation.error.errors.map(err => err.message).join(', ');
+      return res.status(400).json({ error: errors });
     }
+    
+    const { email, password } = validation.data;
 
     if (!supabaseServer) {
       console.error('[AUTH] Supabase not configured');
@@ -80,17 +109,16 @@ router.post('/auth/login', async (req, res) => {
   }
 });
 
-router.post('/auth/signup', async (req, res) => {
+router.post('/auth/signup', authLimiter, async (req, res) => {
   try {
-    const { email, password } = req.body;
+    // Validate input
+    const validation = signupSchema.safeParse(req.body);
+    if (!validation.success) {
+      const errors = validation.error.errors.map(err => err.message).join(', ');
+      return res.status(400).json({ error: errors });
+    }
     
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password required' });
-    }
-
-    if (password.length < 6) {
-      return res.status(400).json({ error: 'Password must be at least 6 characters' });
-    }
+    const { email, password } = validation.data;
 
     if (!supabaseServer) {
       console.error('[AUTH] Supabase not configured');

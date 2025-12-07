@@ -12,13 +12,15 @@ const dbUrl = process.env.DATABASE_URL;
 if (!dbUrl) {
   console.error('[DB] ✗ DATABASE_URL environment variable is not set');
   console.error('[DB] Please create a .env file with DATABASE_URL=postgresql://username:password@host:port/database');
-  // Allow the application to start but log a warning - pool operations will fail
+  throw new Error('DATABASE_URL is required but not configured');
 }
 
 const pool = new Pool({
   connectionString: dbUrl,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 5000
+  connectionTimeoutMillis: 5000,
+  max: 20, // Maximum number of clients in the pool
+  min: 2,  // Minimum number of clients in the pool
 });
 
 // ========== DATABASE CONNECTION MONITORING ==========

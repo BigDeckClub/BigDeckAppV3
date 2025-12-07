@@ -68,6 +68,13 @@ export const createSaleSchema = z.object({
 });
 
 /**
+ * Schema for setting low inventory threshold
+ */
+export const setThresholdSchema = z.object({
+  threshold: z.number().int().nonnegative('Threshold must be a non-negative integer'),
+});
+
+/**
  * Middleware factory for validating request body with a Zod schema
  * @param {z.ZodSchema} schema - The Zod schema to validate against
  * @returns {Function} Express middleware function

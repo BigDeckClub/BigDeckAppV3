@@ -1,3 +1,5 @@
+import crypto from 'crypto';
+
 /**
  * API Key authentication middleware for external AI agent access
  * Validates X-API-Key header against configured API keys
@@ -19,7 +21,29 @@ export async function authenticateApiKey(req, res, next) {
       return res.status(500).json({ error: 'API key authentication not configured' });
     }
 
-    if (!validApiKeys.includes(apiKey)) {
+    // Use timing-safe comparison to prevent timing attacks
+    let isValid = false;
+    const apiKeyBuffer = Buffer.from(apiKey);
+    
+    for (const validKey of validApiKeys) {
+      const validKeyBuffer = Buffer.from(validKey);
+      
+      // Only compare if lengths match (to use timingSafeEqual safely)
+      if (apiKeyBuffer.length === validKeyBuffer.length) {
+        try {
+          if (crypto.timingSafeEqual(apiKeyBuffer, validKeyBuffer)) {
+            isValid = true;
+            break;
+          }
+        } catch (_err) {
+          // timingSafeEqual can throw if buffers are different lengths
+          // This should not happen due to length check above, but handle it anyway
+          continue;
+        }
+      }
+    }
+    
+    if (!isValid) {
       console.warn('[API-KEY-AUTH] Invalid API key attempt');
       return res.status(401).json({ error: 'Invalid API key' });
     }
