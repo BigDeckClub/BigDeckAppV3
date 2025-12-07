@@ -1,9 +1,12 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { parser } from 'stream-json';
-import { streamValues } from 'stream-json/streamers/StreamValues.js';
-import { chain } from 'stream-chain';
+import StreamJsonParser from 'stream-json';
+import StreamValues from 'stream-json/streamers/StreamValues.js';
+import streamChain from 'stream-chain';
+
+const { parser } = StreamJsonParser;
+const { streamValues } = StreamValues;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -209,7 +212,7 @@ class MtgjsonPriceService {
       let processedCount = 0;
       
       return new Promise((resolve, reject) => {
-        const pipeline = chain([
+        const pipeline = streamChain([
           response.body,
           parser(),
           streamValues()
@@ -217,8 +220,17 @@ class MtgjsonPriceService {
 
         pipeline.on('data', (data) => {
           try {
-            // data.value contains { key: mtgjsonUuid, value: cardData }
-            const mtgjsonUuid = data.key;
+            // streamValues provides data in format: { key: path, value: actualValue }
+            // For objects like { "data": { "uuid1": {...}, "uuid2": {...} } }
+            // We get entries like { key: "data.uuid1", value: {...} }
+            
+            // Extract the UUID from the key (format: "data.uuid")
+            const keyParts = data.key.split('.');
+            if (keyParts[0] !== 'data' || keyParts.length !== 2) {
+              return; // Skip non-data entries
+            }
+            
+            const mtgjsonUuid = keyParts[1];
             const cardData = data.value;
             
             const scryfallId = cardData?.identifiers?.scryfallId;
