@@ -1,6 +1,6 @@
 import express from 'express';
 import { pool } from '../db/pool.js';
-import { authenticate, apiLimiter } from '../middleware/auth.js';
+import { authenticate, apiLimiter } from '../middleware/index.js';
 import { createSaleSchema, validateBody } from '../utils/validation.js';
 
 const router = express.Router();

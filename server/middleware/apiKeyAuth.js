@@ -28,17 +28,11 @@ export async function authenticateApiKey(req, res, next) {
     for (const validKey of validApiKeys) {
       const validKeyBuffer = Buffer.from(validKey);
       
-      // Only compare if lengths match (to use timingSafeEqual safely)
+      // Only compare if lengths match (timingSafeEqual requires equal-length buffers)
       if (apiKeyBuffer.length === validKeyBuffer.length) {
-        try {
-          if (crypto.timingSafeEqual(apiKeyBuffer, validKeyBuffer)) {
-            isValid = true;
-            break;
-          }
-        } catch (_err) {
-          // timingSafeEqual can throw if buffers are different lengths
-          // This should not happen due to length check above, but handle it anyway
-          continue;
+        if (crypto.timingSafeEqual(apiKeyBuffer, validKeyBuffer)) {
+          isValid = true;
+          break;
         }
       }
     }
