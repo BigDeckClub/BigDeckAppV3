@@ -1,6 +1,12 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import StreamJsonParser from 'stream-json';
+import StreamObject from 'stream-json/streamers/StreamObject.js';
+import streamChain from 'stream-chain';
+
+const { parser } = StreamJsonParser;
+const { streamObject } = StreamObject;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -43,6 +49,13 @@ class MtgjsonPriceService {
   isCacheStale() {
     if (!this.lastFetchTime) return true;
     return Date.now() - this.lastFetchTime > CACHE_DURATION_MS;
+  }
+
+  /**
+   * Check if the service is ready (has loaded Scryfall->MTGJSON mappings)
+   */
+  isReady() {
+    return this.scryfallToMtgjsonMap.size > 0;
   }
 
   /**
@@ -182,10 +195,10 @@ class MtgjsonPriceService {
   }
 
   /**
-   * Internal method to fetch identifiers mapping
+   * Internal method to fetch identifiers mapping using streaming parser
    */
   async _fetchIdentifiersData() {
-    console.log('[MTGJSON] Fetching identifiers data from API (this may take a while)...');
+    console.log('[MTGJSON] Fetching identifiers data from API (streaming parse)...');
     
     try {
       const response = await this._fetchWithTimeout(MTGJSON_IDENTIFIERS_URL, IDENTIFIERS_TIMEOUT_MS);
@@ -194,25 +207,51 @@ class MtgjsonPriceService {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      const data = await response.json();
+      // Use streaming parser to avoid loading entire file into memory
+      const newMap = new Map();
+      let processedCount = 0;
       
-      if (data && data.data) {
-        // Build Scryfall ID -> MTGJSON UUID mapping
-        // Only store mappings for cards that have prices
-        const newMap = new Map();
-        
-        for (const [mtgjsonUuid, cardData] of Object.entries(data.data)) {
-          const scryfallId = cardData.identifiers?.scryfallId;
-          if (scryfallId && this.priceData.has(mtgjsonUuid)) {
-            newMap.set(scryfallId, mtgjsonUuid);
+      return new Promise((resolve, reject) => {
+        const pipeline = streamChain([
+          response.body,
+          parser(),
+          streamObject()
+        ]);
+
+        pipeline.on('data', (data) => {
+          try {
+            // streamObject emits { key, value } pairs
+            // Filter to only process entries within 'data' object
+            if (data.key.startsWith('data.')) {
+              const mtgjsonUuid = data.key.substring(5); // Remove 'data.' prefix
+              const cardData = data.value;
+              
+              const scryfallId = cardData?.identifiers?.scryfallId;
+              if (scryfallId && this.priceData.has(mtgjsonUuid)) {
+                newMap.set(scryfallId, mtgjsonUuid);
+              }
+              
+              processedCount++;
+              if (processedCount % 50000 === 0) {
+                console.log(`[MTGJSON] Processed ${processedCount} identifiers...`);
+              }
+            }
+          } catch (err) {
+            console.debug('[MTGJSON] Error processing entry:', err.message);
           }
-        }
-        
-        this.scryfallToMtgjsonMap = newMap;
-        console.log(`[MTGJSON] ✓ Built ${this.scryfallToMtgjsonMap.size} Scryfall->MTGJSON ID mappings`);
-      } else {
-        console.warn('[MTGJSON] Invalid identifiers response format from API');
-      }
+        });
+
+        pipeline.on('end', () => {
+          this.scryfallToMtgjsonMap = newMap;
+          console.log(`[MTGJSON] ✓ Built ${this.scryfallToMtgjsonMap.size} Scryfall->MTGJSON ID mappings from ${processedCount} total entries`);
+          resolve();
+        });
+
+        pipeline.on('error', (err) => {
+          console.error('[MTGJSON] Stream parsing error:', err.message);
+          reject(err);
+        });
+      });
     } catch (err) {
       console.error('[MTGJSON] ✗ Failed to fetch identifiers data:', err.message);
       // Don't throw - prices can still work without the mapping if we have cached data

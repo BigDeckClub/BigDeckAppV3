@@ -49,7 +49,10 @@ router.get('/prices/:cardName/:setCode', priceLimiter, async (req, res) => {
     }
     
     // Get Card Kingdom price from MTGJSON using the card's Scryfall ID
-    if (cardData) {
+    // Only attempt CK lookup if MTGJSON service is ready
+    const mtgjsonReady = mtgjsonService.isReady();
+    
+    if (cardData && mtgjsonReady) {
       try {
         // Scryfall returns the card's unique ID which we can use to look up MTGJSON prices
         const scryfallId = cardData.id;
@@ -65,7 +68,13 @@ router.get('/prices/:cardName/:setCode', priceLimiter, async (req, res) => {
     }
     
     const result = { tcg: tcgPrice, ck: ckPrice };
-    setCachedPrice(cacheKey, result);
+    
+    // Only cache if MTGJSON was ready
+    // This prevents caching incomplete data when service is still initializing
+    if (mtgjsonReady) {
+      setCachedPrice(cacheKey, result);
+    }
+    
     res.setHeader('Content-Type', 'application/json');
     res.status(200).json(result);
   } catch (error) {
