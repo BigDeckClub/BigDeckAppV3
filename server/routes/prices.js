@@ -69,9 +69,9 @@ router.get('/prices/:cardName/:setCode', priceLimiter, async (req, res) => {
     
     const result = { tcg: tcgPrice, ck: ckPrice };
     
-    // Only cache if MTGJSON was ready OR both prices are valid
+    // Only cache if MTGJSON was ready
     // This prevents caching incomplete data when service is still initializing
-    if (mtgjsonReady || ckPrice !== 'N/A') {
+    if (mtgjsonReady) {
       setCachedPrice(cacheKey, result);
     }
     

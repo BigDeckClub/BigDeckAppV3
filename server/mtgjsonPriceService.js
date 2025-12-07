@@ -2,11 +2,11 @@ import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import StreamJsonParser from 'stream-json';
-import StreamValues from 'stream-json/streamers/StreamValues.js';
+import StreamObject from 'stream-json/streamers/StreamObject.js';
 import streamChain from 'stream-chain';
 
 const { parser } = StreamJsonParser;
-const { streamValues } = StreamValues;
+const { streamObject } = StreamObject;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -215,32 +215,26 @@ class MtgjsonPriceService {
         const pipeline = streamChain([
           response.body,
           parser(),
-          streamValues()
+          streamObject()
         ]);
 
         pipeline.on('data', (data) => {
           try {
-            // streamValues provides data in format: { key: path, value: actualValue }
-            // For objects like { "data": { "uuid1": {...}, "uuid2": {...} } }
-            // We get entries like { key: "data.uuid1", value: {...} }
-            
-            // Extract the UUID from the key (format: "data.uuid")
-            const keyParts = data.key.split('.');
-            if (keyParts[0] !== 'data' || keyParts.length !== 2) {
-              return; // Skip non-data entries
-            }
-            
-            const mtgjsonUuid = keyParts[1];
-            const cardData = data.value;
-            
-            const scryfallId = cardData?.identifiers?.scryfallId;
-            if (scryfallId && this.priceData.has(mtgjsonUuid)) {
-              newMap.set(scryfallId, mtgjsonUuid);
-            }
-            
-            processedCount++;
-            if (processedCount % 50000 === 0) {
-              console.log(`[MTGJSON] Processed ${processedCount} identifiers...`);
+            // streamObject emits { key, value } pairs
+            // Filter to only process entries within 'data' object
+            if (data.key.startsWith('data.')) {
+              const mtgjsonUuid = data.key.substring(5); // Remove 'data.' prefix
+              const cardData = data.value;
+              
+              const scryfallId = cardData?.identifiers?.scryfallId;
+              if (scryfallId && this.priceData.has(mtgjsonUuid)) {
+                newMap.set(scryfallId, mtgjsonUuid);
+              }
+              
+              processedCount++;
+              if (processedCount % 50000 === 0) {
+                console.log(`[MTGJSON] Processed ${processedCount} identifiers...`);
+              }
             }
           } catch (err) {
             console.debug('[MTGJSON] Error processing entry:', err.message);
