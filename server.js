@@ -5,6 +5,7 @@ import helmet from 'helmet';
 import compression from 'compression';
 import morgan from 'morgan';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 
 // Database and initialization
@@ -24,6 +25,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+const distPath = path.join(__dirname, 'dist');
 
 // Trust proxy for correct client IP handling in cloud environments
 app.set('trust proxy', 1);
@@ -114,13 +116,39 @@ app.use(compression());
 
 // ========== SERVE STATIC ASSETS ==========
 // Must be before API routes so static files are served correctly
-app.use(express.static('dist', {
+if (!fs.existsSync(distPath)) {
+  console.error(`[STATIC] dist folder not found at ${distPath}. Assets will 500 until build runs.`);
+}
+
+app.use(express.static(distPath, {
   maxAge: '1d',
   etag: true,
 }));
 
 // ========== REGISTER ALL ROUTES ==========
 registerRoutes(app);
+
+// ========== API 404 HANDLER ==========
+app.use('/api', (req, res) => {
+  console.log(`[404] API endpoint not found: ${req.method} ${req.path}`);
+  res.status(404).json({ error: 'API endpoint not found' });
+});
+
+// ========== CATCH-ALL HANDLER - SPA ROUTING ==========
+// Must come after API routes and before error handling
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api/')) {
+    return next();
+  }
+
+  const indexPath = path.join(distPath, 'index.html');
+  if (!fs.existsSync(indexPath)) {
+    console.error(`[STATIC] index.html missing at ${indexPath}. Returning 500.`);
+    return res.status(500).json({ error: 'Application bundle is not available. Please redeploy with a built client.' });
+  }
+
+  res.sendFile(indexPath);
+});
 
 // ========== CENTRALIZED ERROR HANDLING ==========
 app.use(errorHandler);
@@ -138,16 +166,6 @@ async function startServer() {
       console.error('[APP] ✗ Failed to initialize MTGJSON price service:', error);
       console.warn('[APP] Continuing startup without MTGJSON price service. Some features may be unavailable.');
     }
-
-    // ========== CATCH-ALL HANDLER - SPA ROUTING ==========
-    app.use((req, res) => {
-      if (req.path.startsWith('/api/')) {
-        console.log(`[404] API endpoint not found: ${req.method} ${req.path}`);
-        return res.status(404).json({ error: 'API endpoint not found' });
-      }
-      // Serve index.html for SPA routes
-      res.sendFile(path.join(__dirname, 'dist', 'index.html'));
-    });
 
     // ========== START SERVER ==========
     const PORT = process.env.PORT || 5000;
