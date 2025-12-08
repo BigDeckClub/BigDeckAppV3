@@ -230,7 +230,7 @@ export const CardGroup = memo(function CardGroup({
         }}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        className={`relative bg-gradient-to-br from-slate-800 to-slate-900 border ${allItemsSelected ? 'border-teal-500 ring-2 ring-teal-500/50' : 'border-slate-600 hover:border-teal-400'} rounded-lg p-3 md:p-4 transition-all duration-300 flex flex-col h-32 sm:h-36 md:h-40 hover:shadow-2xl hover:shadow-teal-500/30 hover:-translate-y-1 cursor-grab active:cursor-grabbing group active:scale-95`}
+        className={`relative bg-gradient-to-br ${allItemsSelected ? 'from-teal-900/40 to-slate-900 border-teal-500 ring-2 ring-teal-500/50 shadow-lg shadow-teal-500/20' : 'from-slate-800 to-slate-900 border-slate-600 hover:border-teal-400'} border rounded-lg p-3 md:p-4 transition-all duration-300 flex flex-col h-32 sm:h-36 md:h-40 hover:shadow-2xl hover:shadow-teal-500/30 hover:-translate-y-1 cursor-grab active:cursor-grabbing group active:scale-95`}
         onClick={handleOpenModal}
       >
         {/* Selection Checkbox (when selection mode enabled) */}
@@ -301,12 +301,20 @@ export const CardGroup = memo(function CardGroup({
         </div>
         
         {/* SKU Count Badge */}
-        {items.length > 1 && (
+        {items.length > 1 && !allItemsSelected && (
           <div className="absolute bottom-2 left-2 bg-teal-600/80 text-white text-[9px] font-bold px-1.5 py-0.5 rounded" title={`${items.length} SKUs`}>
             {items.length} SKUs
           </div>
         )}
-        
+
+        {/* Selected Badge */}
+        {allItemsSelected && (
+          <div className="absolute bottom-2 left-2 bg-teal-500 text-white text-[9px] font-bold px-2 py-0.5 rounded flex items-center gap-1">
+            <CheckSquare className="w-3 h-3" />
+            Selected
+          </div>
+        )}
+
         <div className="grid grid-cols-3 gap-2 text-center pt-2 border-t border-slate-700/50">
           <div className="space-y-1">
             <div className="text-slate-500 text-[7px] md:text-[9px] font-semibold uppercase">Qty</div>
@@ -341,7 +349,7 @@ export const CardGroup = memo(function CardGroup({
             e.dataTransfer.setData('skuData', JSON.stringify(items[0]));
           }
         }}
-        className={`relative rounded-xl overflow-hidden border ${allItemsSelected ? 'border-teal-500 ring-2 ring-teal-500/50' : 'border-slate-600 hover:border-teal-400'} transition-all duration-300 cursor-grab active:cursor-grabbing group hover:shadow-2xl hover:shadow-teal-500/30 hover:-translate-y-1 active:scale-95`}
+        className={`relative rounded-xl overflow-hidden border ${allItemsSelected ? 'border-teal-500 ring-2 ring-teal-500/50 shadow-lg shadow-teal-500/30' : 'border-slate-600 hover:border-teal-400'} transition-all duration-300 cursor-grab active:cursor-grabbing group hover:shadow-2xl hover:shadow-teal-500/30 hover:-translate-y-1 active:scale-95`}
         onClick={handleOpenModal}
       >
         {/* Card Image */}
@@ -422,9 +430,19 @@ export const CardGroup = memo(function CardGroup({
           </button>
           
           {/* SKU Count Badge */}
-          {items.length > 1 && (
+          {items.length > 1 && !allItemsSelected && (
             <div className="absolute bottom-2 left-2 bg-teal-600/90 text-white text-[10px] font-bold px-1.5 py-0.5 rounded backdrop-blur-sm" title={`${items.length} SKUs`}>
               {items.length} SKUs
+            </div>
+          )}
+
+          {/* Selected overlay */}
+          {allItemsSelected && (
+            <div className="absolute inset-0 bg-teal-500/20 pointer-events-none">
+              <div className="absolute bottom-2 left-2 bg-teal-500 text-white text-[10px] font-bold px-2 py-0.5 rounded flex items-center gap-1">
+                <CheckSquare className="w-3 h-3" />
+                Selected
+              </div>
             </div>
           )}
         </div>

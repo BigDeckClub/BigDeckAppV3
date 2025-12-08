@@ -95,11 +95,12 @@ export function useFolderOperations({ inventory, onLoadInventory }) {
   }, [showToast, createdFolders]);
 
   // Move a single inventory item to folder
-  const moveInventoryItemToFolder = useCallback(async (itemId, targetFolder) => {
+  // silent: if true, suppress success toast (useful for bulk operations)
+  const moveInventoryItemToFolder = useCallback(async (itemId, targetFolder, { silent = false } = {}) => {
     try {
       const item = inventory.find(i => i.id === itemId);
       if (!item) {
-        showToast('Item not found', TOAST_TYPES.ERROR);
+        if (!silent) showToast('Item not found', TOAST_TYPES.ERROR);
         return;
       }
 
@@ -156,12 +157,13 @@ export function useFolderOperations({ inventory, onLoadInventory }) {
             }
           },
         });
-      } else {
-        // Show success toast after API call succeeds (only if no undo context)
+      } else if (!silent) {
+        // Show success toast after API call succeeds (only if no undo context and not silent)
         showToast(`Moved ${itemQuantity}x ${itemName} to ${targetFolder}`, TOAST_TYPES.SUCCESS);
       }
     } catch (error) {
-      showToast(`Error moving item: ${error.message}`, TOAST_TYPES.ERROR);
+      if (!silent) showToast(`Error moving item: ${error.message}`, TOAST_TYPES.ERROR);
+      throw error; // Re-throw so caller can handle
     }
   }, [inventory, onLoadInventory, showToast, undoContext]);
 

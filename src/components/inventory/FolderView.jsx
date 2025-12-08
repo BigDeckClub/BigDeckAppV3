@@ -101,25 +101,34 @@ export function FolderView({
   const handleBulkMove = useCallback(async () => {
     if (!targetFolder || selectedCardIds.size === 0) return;
 
-    try {
-      let successCount = 0;
-      for (const cardId of selectedCardIds) {
-        await folderOps.moveInventoryItemToFolder(cardId, targetFolder);
-        successCount++;
-      }
+    let successCount = 0;
+    let failedCount = 0;
 
+    for (const cardId of selectedCardIds) {
+      try {
+        await folderOps.moveInventoryItemToFolder(cardId, targetFolder, { silent: true });
+        successCount++;
+      } catch {
+        failedCount++;
+      }
+    }
+
+    if (failedCount > 0) {
+      showToast(
+        `Moved ${successCount} card${successCount === 1 ? '' : 's'}, ${failedCount} failed`,
+        TOAST_TYPES.WARNING
+      );
+    } else {
       showToast(
         `Moved ${successCount} card${successCount === 1 ? '' : 's'} to ${targetFolder}`,
         TOAST_TYPES.SUCCESS
       );
-
-      // Reset selection
-      setSelectedCardIds(new Set());
-      setShowBulkMove(false);
-      setTargetFolder('');
-    } catch (error) {
-      showToast(`Failed to move cards: ${error.message}`, TOAST_TYPES.ERROR);
     }
+
+    // Reset selection
+    setSelectedCardIds(new Set());
+    setShowBulkMove(false);
+    setTargetFolder('');
   }, [targetFolder, selectedCardIds, folderOps, showToast]);
 
   const handleBulkDelete = useCallback(async () => {
@@ -135,23 +144,32 @@ export function FolderView({
 
     if (!confirmed) return;
 
-    try {
-      let successCount = 0;
-      for (const cardId of selectedCardIds) {
-        await deleteInventoryItem(cardId);
-        successCount++;
-      }
+    let successCount = 0;
+    let failedCount = 0;
 
+    for (const cardId of selectedCardIds) {
+      try {
+        await deleteInventoryItem(cardId, { silent: true });
+        successCount++;
+      } catch {
+        failedCount++;
+      }
+    }
+
+    if (failedCount > 0) {
+      showToast(
+        `Deleted ${successCount} card${successCount === 1 ? '' : 's'}, ${failedCount} failed`,
+        TOAST_TYPES.WARNING
+      );
+    } else {
       showToast(
         `Deleted ${successCount} card${successCount === 1 ? '' : 's'}`,
         TOAST_TYPES.SUCCESS
       );
-
-      // Reset selection
-      setSelectedCardIds(new Set());
-    } catch (error) {
-      showToast(`Failed to delete cards: ${error.message}`, TOAST_TYPES.ERROR);
     }
+
+    // Reset selection
+    setSelectedCardIds(new Set());
   }, [selectedCardIds, deleteInventoryItem, confirm, showToast]);
 
   const isAllSelected = allCardIds.length > 0 && selectedCardIds.size === allCardIds.length;

@@ -120,14 +120,17 @@ export function useInventoryOperations() {
   /**
    * Soft delete - moves item to Trash folder
    * @param {number} id - Item ID to delete
+   * @param {Object} [options] - Options
+   * @param {boolean} [options.silent] - If true, suppress toast notifications (for bulk operations)
    */
-  const deleteInventoryItem = useCallback(async (id) => {
+  const deleteInventoryItem = useCallback(async (id, { silent = false } = {}) => {
     try {
       await put(`/inventory/${id}`, { folder: 'Trash' });
       await loadInventory();
-      showToast('Card moved to Trash', TOAST_TYPES.SUCCESS);
+      if (!silent) showToast('Card moved to Trash', TOAST_TYPES.SUCCESS);
     } catch (error) {
-      showToast('Failed to delete card', TOAST_TYPES.ERROR);
+      if (!silent) showToast('Failed to delete card', TOAST_TYPES.ERROR);
+      throw error; // Re-throw so caller can handle
     }
   }, [put, loadInventory, showToast]);
 
