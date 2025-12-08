@@ -64,12 +64,7 @@ jobs:
             --project ${{ secrets.GCP_PROJECT }} \
             --allow-unauthenticated \
             --build-service-account=projects/${{ secrets.GCP_PROJECT }}/serviceAccounts/github-deployer@big-deck-app.iam.gserviceaccount.com \
-            --set-env-vars="NODE_ENV=production" \
-            --set-env-vars="DATABASE_URL=${{ secrets.DATABASE_URL }}" \
-            --set-env-vars="SUPABASE_URL=${{ secrets.SUPABASE_URL }}" \
-            --set-env-vars="SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
-            --set-env-vars="OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" \
-            --set-env-vars="ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS }}"
+            --set-env-vars="^@@^NODE_ENV=production@@DATABASE_URL=${{ secrets.DATABASE_URL }}@@SUPABASE_URL=${{ secrets.SUPABASE_URL }}@@SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}@@OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}@@ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS }}"
 
       - name: Show service URL
         run: |
