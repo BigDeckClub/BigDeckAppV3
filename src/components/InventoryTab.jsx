@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
-import { X, Menu, Trash2, CheckSquare, Square, FolderInput, ListFilter } from 'lucide-react';
+import { X, Menu, Trash2, CheckSquare, Square, FolderInput } from 'lucide-react';
 import { 
   Breadcrumb,
   CardGrid, 
@@ -71,10 +71,6 @@ export const InventoryTab = ({
   const [targetFolder, setTargetFolder] = useState('');
   const [isMoving, setIsMoving] = useState(false);
   
-  // Decklist filter state: 'all' | 'in-decklist' | 'not-in-decklist'
-  const [decklistFilter, setDecklistFilter] = useState('all');
-  const [decklistCardNames, setDecklistCardNames] = useState(new Set());
-  
   // Sort change handler
   const handleSortChange = useCallback((field, direction) => {
     setSortField(field);
@@ -87,32 +83,6 @@ export const InventoryTab = ({
     setShowBulkMove(false);
     setTargetFolder('');
   }, [activeTab]);
-
-  // Fetch deck templates to build set of card names in decklists
-  useEffect(() => {
-    const fetchDeckTemplates = async () => {
-      try {
-        const response = await fetchWithAuth('/api/decks');
-        if (response.ok) {
-          const decks = await response.json();
-          const cardNames = new Set();
-          decks.forEach(deck => {
-            // deck.cards can be a JSON string or array
-            const cards = typeof deck.cards === 'string' ? JSON.parse(deck.cards || '[]') : (deck.cards || []);
-            cards.forEach(card => {
-              if (card.name) {
-                cardNames.add(card.name.toLowerCase());
-              }
-            });
-          });
-          setDecklistCardNames(cardNames);
-        }
-      } catch (error) {
-        console.error('Error fetching deck templates:', error);
-      }
-    };
-    fetchDeckTemplates();
-  }, [deckRefreshTrigger]);
 
   // Folder operations hook
   const folderOps = useFolderOperations({ inventory, onLoadInventory: loadInventory });
@@ -211,51 +181,24 @@ export const InventoryTab = ({
       }, {});
   }, [filteredInventory]);
 
-  // Helper to check if a card is in a decklist (handles double-faced cards)
-  const isCardInDecklist = useCallback((cardName) => {
-    const lowerName = cardName.toLowerCase();
-    // Direct match
-    if (decklistCardNames.has(lowerName)) return true;
-    // For double-faced cards like "Avatar Aang // Aang, Master of Elements"
-    // Check if the front face matches
-    if (lowerName.includes(' // ')) {
-      const frontFace = lowerName.split(' // ')[0].trim();
-      if (decklistCardNames.has(frontFace)) return true;
-    }
-    return false;
-  }, [decklistCardNames]);
-
   const { inStockCards, outOfStockCards } = useMemo(() => {
     const entries = Object.entries(groupedInventory);
-    
     const inStock = entries.filter(([cardName, items]) => {
       const matchesSearch = inventorySearch === '' || cardName.toLowerCase().includes(inventorySearch.toLowerCase());
       const totalQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
-      // Apply decklist filter (handles double-faced cards)
-      const inDecklist = isCardInDecklist(cardName);
-      const matchesDecklistFilter = 
-        decklistFilter === 'all' ||
-        (decklistFilter === 'in-decklist' && inDecklist) ||
-        (decklistFilter === 'not-in-decklist' && !inDecklist);
-      return matchesSearch && matchesDecklistFilter && totalQty > 0;
+      return matchesSearch && totalQty > 0;
     });
     const outOfStock = entries.filter(([cardName, items]) => {
       const matchesSearch = inventorySearch === '' || cardName.toLowerCase().includes(inventorySearch.toLowerCase());
       const totalQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
-      // Apply decklist filter (handles double-faced cards)
-      const inDecklist = isCardInDecklist(cardName);
-      const matchesDecklistFilter = 
-        decklistFilter === 'all' ||
-        (decklistFilter === 'in-decklist' && inDecklist) ||
-        (decklistFilter === 'not-in-decklist' && !inDecklist);
-      return matchesSearch && matchesDecklistFilter && totalQty === 0;
+      return matchesSearch && totalQty === 0;
     });
     // Apply sorting to both lists
     return { 
       inStockCards: sortCards(inStock, sortField, sortDirection), 
       outOfStockCards: sortCards(outOfStock, sortField, sortDirection)
     };
-  }, [groupedInventory, inventorySearch, sortField, sortDirection, decklistFilter, isCardInDecklist]);
+  }, [groupedInventory, inventorySearch, sortField, sortDirection]);
 
   // Get all card IDs for All Cards tab
   const allCardIds = useMemo(() => {
@@ -568,27 +511,8 @@ export const InventoryTab = ({
                       )}
                     </div>
                     
-                    {/* Decklist Filter */}
-                    <div className="flex items-center gap-2 ml-auto">
-                      <ListFilter className="w-4 h-4 text-slate-400" />
-                      <select
-                        value={decklistFilter}
-                        onChange={(e) => setDecklistFilter(e.target.value)}
-                        className="px-3 py-1.5 bg-slate-700 border border-slate-600 text-slate-200 rounded-md text-sm focus:outline-none focus:border-teal-400"
-                      >
-                        <option value="all">All Cards</option>
-                        <option value="in-decklist">In Decklists</option>
-                        <option value="not-in-decklist">Not in Decklists</option>
-                      </select>
-                      {decklistFilter !== 'all' && (
-                        <span className="text-xs text-teal-400">
-                          {inStockCards.length + outOfStockCards.length} cards
-                        </span>
-                      )}
-                    </div>
-                    
                     {selectedCardIds.size > 0 && (
-                      <div className="flex items-center gap-2 w-full sm:w-auto">
+                      <div className="flex items-center gap-2">
                         {!showBulkMove ? (
                           <button
                             onClick={() => setShowBulkMove(true)}
@@ -736,10 +660,6 @@ export const InventoryTab = ({
                 onDeleteFolder={handleDeleteFolder}
                 sortField={sortField}
                 sortDirection={sortDirection}
-                decklistFilter={decklistFilter}
-                setDecklistFilter={setDecklistFilter}
-                decklistCardNames={decklistCardNames}
-                deleteInventoryItem={deleteInventoryItem}
               />
             ) : (
               <p className="text-slate-400 text-center py-12">Select a view to display cards.</p>

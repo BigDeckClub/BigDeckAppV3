@@ -5,6 +5,8 @@ import { getSetDisplayName } from '../../utils/cardHelpers';
 import { BuyCardsModal } from '../buy/BuyCardsModal';
 import { BuyButton } from '../buy/BuyButton';
 import { sortDeckCards } from '../../utils/sortCards';
+import { ColorFilterChips } from '../ui/ColorFilterChips';
+import { useColorFilter } from '../../hooks/useColorFilter';
 
 /**
  * DeckDetailView - Renders the deck detail view with reserved and missing cards
@@ -32,6 +34,22 @@ export const DeckDetailView = memo(function DeckDetailView({
   sortDirection = 'asc'
 }) {
   const [showBuyModal, setShowBuyModal] = useState(false);
+
+  // Get all cards for color filtering (reserved + missing)
+  const allDeckCards = useMemo(() => {
+    const reservedCards = (deckDetails?.reservations || []).map(r => ({ name: r.name }));
+    const missingFromDeck = (deck?.cards || []).map(c => ({ name: c.name }));
+    return [...reservedCards, ...missingFromDeck];
+  }, [deck, deckDetails]);
+
+  // Color filter hook
+  const {
+    selectedFilters: colorFilters,
+    toggleFilter: toggleColorFilter,
+    clearFilters: clearColorFilters,
+    filterCard: matchesColorFilter,
+    isLoading: colorFilterLoading,
+  } = useColorFilter({ cards: allDeckCards, enabled: true });
 
   // Calculate missing cards for the buy modal - memoized to avoid recalculation on every render
   const missingCards = useMemo(() => {
@@ -61,9 +79,11 @@ export const DeckDetailView = memo(function DeckDetailView({
     acc[cardName].push(res);
     return acc;
   }, {});
-  const filteredEntries = Object.entries(groupedReservations).filter(([cardName]) => 
-    inventorySearch === '' || cardName.toLowerCase().includes(inventorySearch.toLowerCase())
-  );
+  const filteredEntries = Object.entries(groupedReservations).filter(([cardName]) => {
+    const matchesSearch = inventorySearch === '' || cardName.toLowerCase().includes(inventorySearch.toLowerCase());
+    const passesColorFilter = colorFilters.length === 0 || matchesColorFilter({ name: cardName });
+    return matchesSearch && passesColorFilter;
+  });
   // Apply sorting to the reservation entries
   const reservationEntries = sortDeckCards(filteredEntries, sortField, sortDirection);
 
@@ -364,6 +384,19 @@ export const DeckDetailView = memo(function DeckDetailView({
           </div>
         </div>
 
+        {/* Color Filter */}
+        <div className="mb-2">
+          <ColorFilterChips
+            selectedFilters={colorFilters}
+            onToggleFilter={toggleColorFilter}
+            onClearFilters={clearColorFilters}
+            isLoading={colorFilterLoading}
+            variant="compact"
+            size="sm"
+            showLabel={true}
+          />
+        </div>
+
         {/* Reserved Cards Grid */}
         {reservationEntries.length > 0 && (
           <div>
@@ -406,6 +439,9 @@ export const DeckDetailView = memo(function DeckDetailView({
                     if (needed === 0) return null;
                     const matchesSearch = inventorySearch === '' || card.name.toLowerCase().includes(inventorySearch.toLowerCase());
                     if (!matchesSearch) return null;
+                    // Apply color filter
+                    const passesColorFilter = colorFilters.length === 0 || matchesColorFilter({ name: card.name });
+                    if (!passesColorFilter) return null;
                     return (
                       <div key={idx} className="flex justify-between items-center text-sm bg-slate-800 p-2 rounded mb-1">
                         <div className="flex-1">

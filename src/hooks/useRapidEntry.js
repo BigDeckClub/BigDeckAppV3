@@ -209,7 +209,7 @@ export function useRapidEntry({
       quantity: row.quantity,
       foil: row.foil,
       quality: row.quality,
-      folder: row.folder || 'Unsorted',
+      folder: row.folder || 'Uncategorized',
       image_url: row.imageUrl,
     };
 
@@ -223,7 +223,7 @@ export function useRapidEntry({
     }));
 
     // Update sticky folder
-    if (row.folder && row.folder !== 'Unsorted') {
+    if (row.folder && row.folder !== 'Uncategorized') {
       setStickyFolder(row.folder);
     }
 
@@ -324,7 +324,7 @@ export function useRapidEntry({
       purchase_price: row.price ? parseFloat(row.price) : null,
       foil: row.foil,
       quality: row.quality,
-      folder: row.folder || 'Unsorted',
+      folder: row.folder || 'Uncategorized',
       image_url: row.imageUrl,
     };
 
@@ -423,18 +423,42 @@ export function useRapidEntry({
     ));
   }, [setRows]);
 
-  // Add a new row and submit current card (Shift+Enter)
-  const handleAddNewRow = useCallback(async (rowIndex) => {
+  // Add a new row without submitting (Shift+Enter)
+  const handleAddNewRow = useCallback((rowIndex) => {
     const row = rows[rowIndex];
     
     if (!row.selectedCard) {
       return false;
     }
 
-    // Reuse existing add-to-inventory logic so onAddCard runs once
-    await handleAddCardToInventory(rowIndex);
+    // Mark current row as pending
+    setRows(prev => prev.map((r, idx) => {
+      if (idx !== rowIndex) return r;
+      return { ...r, status: 'pending' };
+    }));
+
+    // Update sticky folder
+    if (row.folder && row.folder !== 'Uncategorized') {
+      setStickyFolder(row.folder);
+    }
+
+    // Add new empty row and focus it
+    const newRow = createEmptyRow(stickyFolder);
+    const newRowIndex = rows.length;
+    setRows(prev => [...prev, newRow]);
+    setActiveRowIndex(newRowIndex);
+    
+    // Clear duplicate warning
+    setDuplicateWarning(null);
+    
+    // Focus on new row's card name input
+    setTimeout(() => {
+      const newInput = inputRefs.current[`name-${newRowIndex}`];
+      if (newInput) newInput.focus();
+    }, 50);
+    
     return true;
-  }, [rows, handleAddCardToInventory]);
+  }, [rows, stickyFolder, setRows, setStickyFolder, setActiveRowIndex, setDuplicateWarning]);
 
   // Submit all pending cards at once (Ctrl+Shift+Enter)
   const handleSubmitAll = useCallback(async () => {
@@ -456,7 +480,7 @@ export function useRapidEntry({
           quantity: row.quantity,
           foil: row.foil,
           quality: row.quality,
-          folder: row.folder || 'Unsorted',
+          folder: row.folder || 'Uncategorized',
           image_url: row.imageUrl,
         };
         setLotCards(prev => [...prev, cardData]);
@@ -490,7 +514,7 @@ export function useRapidEntry({
             purchase_price: row.price ? parseFloat(row.price) : null,
             foil: row.foil,
             quality: row.quality,
-            folder: row.folder || 'Unsorted',
+            folder: row.folder || 'Uncategorized',
             image_url: row.imageUrl,
           };
           return onAddCard(cardData).then(() => ({ success: true, row })).catch(err => ({ success: false, row, error: err }));

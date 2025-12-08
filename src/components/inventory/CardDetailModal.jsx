@@ -438,10 +438,8 @@ export const CardDetailModal = memo(function CardDetailModal({
     };
   }, [isOpen, onClose, getFocusableElements]);
   
-  // Load sales history and threshold settings when modal opens
+  // Load sales history and threshold settings on mount
   useEffect(() => {
-    if (!isOpen) return; // Only fetch when modal is open
-    
     const saved = localStorage.getItem('thresholdSettings');
     if (saved) {
       try {
@@ -451,17 +449,13 @@ export const CardDetailModal = memo(function CardDetailModal({
       }
     }
     
-    // Only fetch if we don't already have sales data
-    if (salesHistory.length === 0) {
-      authFetch('/api/sales')
-        .then(res => res.json())
-        .then(data => {
-          setSalesHistory(data || []);
-        })
-        .catch(err => console.error('[CardDetailModal] Error loading sales:', err));
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen]); // Only run when modal opens
+    authFetch('/api/sales')
+      .then(res => res.json())
+      .then(data => {
+        setSalesHistory(data || []);
+      })
+      .catch(err => console.error('[CardDetailModal] Error loading sales:', err));
+  }, [authFetch]);
 
   // Reset image state when card changes
   useEffect(() => {

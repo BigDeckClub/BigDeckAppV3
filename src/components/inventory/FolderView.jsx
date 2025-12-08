@@ -6,6 +6,8 @@ import { CardGrid } from './CardGrid';
 import { FolderHeader } from './FolderHeader';
 import { useToast, TOAST_TYPES } from '../../context/ToastContext';
 import { sortCards } from '../../utils/sortCards';
+import { ColorFilterChips } from '../ui/ColorFilterChips';
+import { useColorFilter } from '../../hooks/useColorFilter';
 
 /**
  * FolderView - Renders a generic folder view with folder header and card grid
@@ -31,6 +33,24 @@ export function FolderView({
   const [selectedCardIds, setSelectedCardIds] = useState(new Set());
   const [showBulkMove, setShowBulkMove] = useState(false);
   const [targetFolder, setTargetFolder] = useState('');
+
+  // Get all cards for color filtering
+  const allCardsFlat = useMemo(() => {
+    const folderData = groupedByFolder[folderName] || {};
+    return Object.entries(folderData).flatMap(([cardName, items]) =>
+      items.map(item => ({ ...item, name: cardName }))
+    );
+  }, [groupedByFolder, folderName]);
+
+  // Color filter hook
+  const {
+    selectedFilters: colorFilters,
+    toggleFilter: toggleColorFilter,
+    clearFilters: clearColorFilters,
+    filterCard: matchesColorFilter,
+    isLoading: colorFilterLoading,
+  } = useColorFilter({ cards: allCardsFlat, enabled: true });
+
   // Calculate folder cards and stats
   const { folderCards, availableCardsStats, folderDesc } = useMemo(() => {
     const folderData = groupedByFolder[folderName] || {};
@@ -52,11 +72,13 @@ export function FolderView({
       const reservedQty = items.reduce((sum, item) => sum + (parseInt(item.reserved_quantity) || 0), 0);
       // Apply decklist filter (handles double-faced cards)
       const inDecklist = isInDecklist(cardName);
-      const matchesDecklistFilter = 
+      const matchesDecklistFilter =
         decklistFilter === 'all' ||
         (decklistFilter === 'in-decklist' && inDecklist) ||
         (decklistFilter === 'not-in-decklist' && !inDecklist);
-      return matchesSearch && matchesDecklistFilter && (totalQty - reservedQty) > 0;
+      // Apply color filter
+      const passesColorFilter = colorFilters.length === 0 || matchesColorFilter({ name: cardName });
+      return matchesSearch && matchesDecklistFilter && passesColorFilter && (totalQty - reservedQty) > 0;
     });
     
     const stats = Object.entries(folderData).reduce((acc, [, items]) => {
@@ -77,7 +99,7 @@ export function FolderView({
     const sortedCards = sortCards(cards, sortField, sortDirection);
     
     return { folderCards: sortedCards, availableCardsStats: stats, folderDesc: desc };
-  }, [folderName, groupedByFolder, inventorySearch, folderOps.folderMetadata, sortField, sortDirection, decklistFilter, decklistCardNames]);
+  }, [folderName, groupedByFolder, inventorySearch, folderOps.folderMetadata, sortField, sortDirection, decklistFilter, decklistCardNames, colorFilters, matchesColorFilter]);
 
   // Get all card IDs for select all
   const allCardIds = useMemo(() => {
@@ -193,7 +215,20 @@ export function FolderView({
         onDeleteFolder={onDeleteFolder}
         isUnsorted={folderName === 'Uncategorized'}
       />
-      
+
+      {/* Color Filter */}
+      <div className="mb-4">
+        <ColorFilterChips
+          selectedFilters={colorFilters}
+          onToggleFilter={toggleColorFilter}
+          onClearFilters={clearColorFilters}
+          isLoading={colorFilterLoading}
+          variant="compact"
+          size="sm"
+          showLabel={true}
+        />
+      </div>
+
       {/* Bulk Selection Controls */}
       {folderCards.length > 0 && (
         <div className="bg-slate-800/50 rounded-lg border border-slate-600 p-3 mb-4 flex flex-wrap items-center gap-3">

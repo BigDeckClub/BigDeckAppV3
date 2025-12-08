@@ -7,6 +7,8 @@ import { useMarketplacePreferences } from '../../hooks/useMarketplacePreferences
 import { useToast, TOAST_TYPES } from '../../context/ToastContext';
 import { usePriceCache } from '../../context/PriceCacheContext';
 import { MARKETPLACES, buildCartUrl, buildClipboardText } from '../../utils/marketplaceUrls';
+import { ColorFilterChips } from '../ui/ColorFilterChips';
+import { useColorFilter } from '../../hooks/useColorFilter';
 
 /**
  * Helper function to create initial card selections
@@ -47,6 +49,15 @@ export const BuyCardsModal = memo(function BuyCardsModal({
   const [sortDirection, setSortDirection] = useState('desc'); // 'asc' | 'desc'
   const [searchQuery, setSearchQuery] = useState('');
   const [priceData, setPriceData] = useState({});
+
+  // Color filter hook
+  const {
+    selectedFilters: colorFilters,
+    toggleFilter: toggleColorFilter,
+    clearFilters: clearColorFilters,
+    filterCard: matchesColorFilter,
+    isLoading: colorFilterLoading,
+  } = useColorFilter({ cards, enabled: isOpen });
 
   // Reset selections when cards change
   useEffect(() => {
@@ -115,8 +126,12 @@ export const BuyCardsModal = memo(function BuyCardsModal({
         const priceKey = `${card.name}-${getSetCode(card.set) || index}`;
         return { card, index, selectionKey, priceKey };
       })
-      .filter(({ card }) => !query || card.name.toLowerCase().includes(query));
-  }, [cards, searchQuery]);
+      .filter(({ card }) => {
+        const matchesSearch = !query || card.name.toLowerCase().includes(query);
+        const passesColorFilter = colorFilters.length === 0 || matchesColorFilter(card);
+        return matchesSearch && passesColorFilter;
+      });
+  }, [cards, searchQuery, colorFilters, matchesColorFilter]);
 
   const cardsNeedingPrices = useMemo(() => {
     return cards
@@ -311,6 +326,17 @@ export const BuyCardsModal = memo(function BuyCardsModal({
           showRememberOption
           remember={rememberPreference}
           onRememberChange={setRememberPreference}
+        />
+
+        {/* Color Filter */}
+        <ColorFilterChips
+          selectedFilters={colorFilters}
+          onToggleFilter={toggleColorFilter}
+          onClearFilters={clearColorFilters}
+          isLoading={colorFilterLoading}
+          variant="compact"
+          size="sm"
+          showLabel={true}
         />
 
         {/* Cards List */}
