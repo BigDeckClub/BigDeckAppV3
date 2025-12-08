@@ -59,6 +59,12 @@ export async function initializeDatabase() {
       pool.query(`ALTER TABLE inventory DROP COLUMN IF EXISTS is_shared_location`).catch(() => {}),
     ]);
 
+    // Migration: Normalize folder names - 'Unsorted' should be 'Uncategorized'
+    const folderMigration = await pool.query(`UPDATE inventory SET folder = 'Uncategorized' WHERE folder = 'Unsorted'`);
+    if (folderMigration.rowCount > 0) {
+      console.log(`[DB] ✓ Migrated ${folderMigration.rowCount} cards from 'Unsorted' to 'Uncategorized' folder`);
+    }
+
     // Settings table (Step 7: Store user settings in backend)
     await pool.query(`
       CREATE TABLE IF NOT EXISTS settings (
