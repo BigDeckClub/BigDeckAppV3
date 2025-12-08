@@ -67,8 +67,8 @@ export function RapidEntryTable({
     setSubmitError,
   } = rapidEntry;
 
-  // All available folders (ensure Unsorted default is first)
-  const allFolders = ['Unsorted', ...createdFolders];
+  // All available folders (ensure Uncategorized default is first, shown as "Unsorted" in UI)
+  const allFolders = ['Uncategorized', ...createdFolders];
 
   // Keyboard navigation handler
   const handleKeyDown = useCallback((e, rowIndex, fieldType) => {
@@ -271,7 +271,7 @@ export function RapidEntryTable({
       {/* Keyboard Shortcuts Help */}
       <div className="text-xs text-slate-500 flex flex-wrap gap-x-4 gap-y-1">
         <span><kbd className="px-1.5 py-0.5 bg-slate-700 rounded">Enter</kbd> Select card</span>
-        <span><kbd className="px-1.5 py-0.5 bg-slate-700 rounded">Shift+Enter</kbd> Add & new row</span>
+        <span><kbd className="px-1.5 py-0.5 bg-slate-700 rounded">Shift+Enter</kbd> Submit card & new row</span>
         <span><kbd className="px-1.5 py-0.5 bg-slate-700 rounded">Ctrl+Shift+Enter</kbd> Submit all</span>
         <span><kbd className="px-1.5 py-0.5 bg-slate-700 rounded">Tab</kbd> Next field</span>
         <span><kbd className="px-1.5 py-0.5 bg-slate-700 rounded">Esc</kbd> Clear row</span>

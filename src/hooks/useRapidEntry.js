@@ -6,7 +6,7 @@ import { API_ENDPOINTS } from '../config/api';
 export const QUALITY_OPTIONS = ['NM', 'LP', 'MP', 'HP', 'DMG'];
 
 // Create a blank row template
-export const createEmptyRow = (stickyFolder = 'Unsorted') => ({
+export const createEmptyRow = (stickyFolder = 'Uncategorized') => ({
   id: `row-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
   cardName: '',
   searchQuery: '',
@@ -55,7 +55,7 @@ export function useRapidEntry({
   // Row state
   const [rows, setRows] = useState([createEmptyRow()]);
   const [activeRowIndex, setActiveRowIndex] = useState(0);
-  const [stickyFolder, setStickyFolder] = useState('Unsorted');
+  const [stickyFolder, setStickyFolder] = useState('Uncategorized');
   const [addedCards, setAddedCards] = useState([]);
   const [duplicateWarning, setDuplicateWarning] = useState(null);
   const [highlightedResult, setHighlightedResult] = useState(0);
@@ -456,7 +456,7 @@ export function useRapidEntry({
           quantity: row.quantity,
           foil: row.foil,
           quality: row.quality,
-          folder: row.folder || 'Uncategorized',
+          folder: row.folder || 'Unsorted',
           image_url: row.imageUrl,
         };
         setLotCards(prev => [...prev, cardData]);
@@ -490,7 +490,7 @@ export function useRapidEntry({
             purchase_price: row.price ? parseFloat(row.price) : null,
             foil: row.foil,
             quality: row.quality,
-            folder: row.folder || 'Uncategorized',
+            folder: row.folder || 'Unsorted',
             image_url: row.imageUrl,
           };
           return onAddCard(cardData).then(() => ({ success: true, row })).catch(err => ({ success: false, row, error: err }));

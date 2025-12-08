@@ -218,7 +218,7 @@ export function RapidEntryRow({
             className="w-full bg-slate-900/50 border border-slate-600 rounded px-2 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-teal-400 disabled:opacity-50"
           >
             {allFolders.map(f => (
-              <option key={f} value={f}>{f}</option>
+              <option key={f} value={f}>{f === 'Uncategorized' ? 'Unsorted' : f}</option>
             ))}
           </select>
         </div>
