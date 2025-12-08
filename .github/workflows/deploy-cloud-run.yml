@@ -63,7 +63,7 @@ jobs:
             --region us-central1 \
             --project ${{ secrets.GCP_PROJECT }} \
             --allow-unauthenticated \
-            --service-account=1093591806614-compute@developer.gserviceaccount.com \
+            --build-service-account=projects/${{ secrets.GCP_PROJECT }}/serviceAccounts/github-deployer@big-deck-app.iam.gserviceaccount.com \
             --set-env-vars="NODE_ENV=production" \
             --set-env-vars="DATABASE_URL=${{ secrets.DATABASE_URL }}" \
             --set-env-vars="SUPABASE_URL=${{ secrets.SUPABASE_URL }}" \
