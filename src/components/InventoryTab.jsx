@@ -739,6 +739,7 @@ export const InventoryTab = ({
                 decklistFilter={decklistFilter}
                 setDecklistFilter={setDecklistFilter}
                 decklistCardNames={decklistCardNames}
+                deleteInventoryItem={deleteInventoryItem}
               />
             ) : (
               <p className="text-slate-400 text-center py-12">Select a view to display cards.</p>

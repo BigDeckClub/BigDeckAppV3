@@ -238,14 +238,14 @@ export const CardGroup = memo(function CardGroup({
           <button
             type="button"
             onClick={handleToggleSelection}
-            className={`absolute top-1 right-1 p-1 rounded transition-all z-30 ${
-              allItemsSelected 
-                ? 'bg-teal-600 text-white' 
+            className={`absolute top-2 left-10 p-1.5 rounded-lg transition-all z-30 min-w-[36px] min-h-[36px] flex items-center justify-center ${
+              allItemsSelected
+                ? 'bg-teal-600 text-white'
                 : 'bg-slate-700/80 text-slate-300 hover:bg-slate-600'
             }`}
             title={allItemsSelected ? "Deselect" : "Select"}
           >
-            {allItemsSelected ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
+            {allItemsSelected ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
           </button>
         )}
         

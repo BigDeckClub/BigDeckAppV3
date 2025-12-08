@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
-import { CheckSquare, Square, FolderInput, ListFilter } from 'lucide-react';
+import { CheckSquare, Square, FolderInput, ListFilter, Trash2 } from 'lucide-react';
+import { useConfirm } from '../../context/ConfirmContext';
 import { CardGrid } from './CardGrid';
 import { FolderHeader } from './FolderHeader';
 import { useToast, TOAST_TYPES } from '../../context/ToastContext';
@@ -23,8 +24,10 @@ export function FolderView({
   decklistFilter = 'all',
   setDecklistFilter,
   decklistCardNames = new Set(),
+  deleteInventoryItem,
 }) {
   const { showToast } = useToast();
+  const { confirm } = useConfirm();
   const [selectedCardIds, setSelectedCardIds] = useState(new Set());
   const [showBulkMove, setShowBulkMove] = useState(false);
   const [targetFolder, setTargetFolder] = useState('');
@@ -97,19 +100,19 @@ export function FolderView({
 
   const handleBulkMove = useCallback(async () => {
     if (!targetFolder || selectedCardIds.size === 0) return;
-    
+
     try {
       let successCount = 0;
       for (const cardId of selectedCardIds) {
         await folderOps.moveInventoryItemToFolder(cardId, targetFolder);
         successCount++;
       }
-      
+
       showToast(
         `Moved ${successCount} card${successCount === 1 ? '' : 's'} to ${targetFolder}`,
         TOAST_TYPES.SUCCESS
       );
-      
+
       // Reset selection
       setSelectedCardIds(new Set());
       setShowBulkMove(false);
@@ -118,6 +121,38 @@ export function FolderView({
       showToast(`Failed to move cards: ${error.message}`, TOAST_TYPES.ERROR);
     }
   }, [targetFolder, selectedCardIds, folderOps, showToast]);
+
+  const handleBulkDelete = useCallback(async () => {
+    if (selectedCardIds.size === 0 || !deleteInventoryItem) return;
+
+    const confirmed = await confirm({
+      title: 'Delete Selected Cards',
+      message: `Are you sure you want to delete ${selectedCardIds.size} card${selectedCardIds.size === 1 ? '' : 's'}? They will be moved to Trash.`,
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      variant: 'danger'
+    });
+
+    if (!confirmed) return;
+
+    try {
+      let successCount = 0;
+      for (const cardId of selectedCardIds) {
+        await deleteInventoryItem(cardId);
+        successCount++;
+      }
+
+      showToast(
+        `Deleted ${successCount} card${successCount === 1 ? '' : 's'}`,
+        TOAST_TYPES.SUCCESS
+      );
+
+      // Reset selection
+      setSelectedCardIds(new Set());
+    } catch (error) {
+      showToast(`Failed to delete cards: ${error.message}`, TOAST_TYPES.ERROR);
+    }
+  }, [selectedCardIds, deleteInventoryItem, confirm, showToast]);
 
   const isAllSelected = allCardIds.length > 0 && selectedCardIds.size === allCardIds.length;
   const availableFolders = folderOps.createdFolders.filter(f => f !== folderName && f !== 'Trash');
@@ -192,13 +227,24 @@ export function FolderView({
           {selectedCardIds.size > 0 && (
             <div className="flex items-center gap-2">
               {!showBulkMove ? (
-                <button
-                  onClick={() => setShowBulkMove(true)}
-                  className="flex items-center gap-2 px-3 py-1.5 bg-teal-600 hover:bg-teal-500 text-white rounded-md transition-colors text-sm font-medium"
-                >
-                  <FolderInput className="w-4 h-4" />
-                  Move to Folder
-                </button>
+                <>
+                  <button
+                    onClick={() => setShowBulkMove(true)}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-teal-600 hover:bg-teal-500 text-white rounded-md transition-colors text-sm font-medium"
+                  >
+                    <FolderInput className="w-4 h-4" />
+                    Move to Folder
+                  </button>
+                  {deleteInventoryItem && (
+                    <button
+                      onClick={handleBulkDelete}
+                      className="flex items-center gap-2 px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white rounded-md transition-colors text-sm font-medium"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Delete Selected
+                    </button>
+                  )}
+                </>
               ) : (
                 <div className="flex items-center gap-2">
                   <select
@@ -271,6 +317,7 @@ FolderView.propTypes = {
   decklistFilter: PropTypes.oneOf(['all', 'in-decklist', 'not-in-decklist']),
   setDecklistFilter: PropTypes.func,
   decklistCardNames: PropTypes.instanceOf(Set),
+  deleteInventoryItem: PropTypes.func,
 };
 
 export default FolderView;
