@@ -37,3 +37,37 @@ export { EmptyState } from './EmptyState';
 export { Badge } from './Badge';
 export { Skeleton, CardSkeleton, ListItemSkeleton } from './Skeleton';
 export { KeyboardShortcutsHelp } from './KeyboardShortcutsHelp';
+
+// Navigation and layout components
+export { Header } from './Header';
+export { CommandPalette } from './CommandPalette';
+export { ColorFilterChips, ManaSymbol, ColorCombo, FilterChip } from './ColorFilterChips';
+
+// Inventory view components
+export { ViewModeToggle, VIEW_MODES } from './ViewModeToggle';
+export { CardGalleryView } from './CardGalleryView';
+export { CardListView } from './CardListView';
+export { CardTableView } from './CardTableView';
+export { FilterBar } from './FilterBar';
+export { VirtualizedView } from './VirtualizedView';
+
+// Import components
+export { DropZone } from './DropZone';
+export { ImportWizard } from './ImportWizard';
+
+// AI components
+export { AIChatPanel } from './AIChatPanel';
+
+// Deck components
+export { DeckCardTile } from './DeckCardTile';
+export { DeckStatsPanel } from './DeckStatsPanel';
+export { ManaCurveChart } from './ManaCurveChart';
+export { DeckColorPie } from './DeckColorPie';
+
+// Analytics components
+export { StatsCard } from './StatsCard';
+export { TrendChart } from './TrendChart';
+
+// Settings components
+export { SettingsSection, SettingsCard } from './SettingsSection';
+export { Toggle, ToggleGroup, RadioToggle } from './Toggle';

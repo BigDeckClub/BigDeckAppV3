@@ -14,6 +14,8 @@ import {
   DeckAnalysisView,
   ArchidektSyncModal
 } from './decks';
+import { DeckCardTile } from './ui';
+import { normalizeName, computeCompletion } from '../utils/deckHelpers';
 
 
 export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
@@ -84,7 +86,7 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
       const items = await res.json();
       const map = {};
       (items || []).forEach(i => {
-        const key = (i.name || '').toLowerCase().trim();
+        const key = normalizeName(i.name);
         const qty = (parseInt(i.quantity || 0) || 0) - (parseInt(i.reserved_quantity || 0) || 0);
         map[key] = (map[key] || 0) + Math.max(0, qty);
       });
@@ -350,22 +352,46 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
             </>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {decks.map(deck => (
-                <DeckCard
-                  key={deck.id}
-                  deck={deck}
-                  editingDeck={editingDeck}
-                  inventoryByName={inventoryByName}
-                  onSelect={setSelectedDeck}
-                  onCopy={previewCopyToDeck}
-                  onEdit={setEditingDeck}
-                  onEditCards={() => setEditingDeckForModal(deck)}
-                  onArchidektSync={() => setSyncingDeck(deck)}
-                  onDelete={deleteDeck}
-                  onUpdateName={updateDeckName}
-                  onCancelEdit={() => setEditingDeck(null)}
-                />
-              ))}
+              {decks.map(deck => {
+                // compute deck completion stats using inventoryByName
+                const cards = Array.isArray(deck.cards) ? deck.cards : [];
+                const inventoryMap = Object.keys(inventoryByName || {}).length > 0 ? inventoryByName : {};
+                const { totalCards, totalMissing, ownedCount, completionPercentage: clientCompletion } = computeCompletion(cards, inventoryMap);
+
+                // Prefer server-provided completion if available, otherwise use client calculation
+                const serverCompletion = typeof deck.completionPercentage === 'number' ? deck.completionPercentage : undefined;
+                const completionPercentage = serverCompletion !== undefined ? serverCompletion : clientCompletion;
+
+                const missingCards = cards.map((c) => {
+                  const key = normalizeName(c.name);
+                  const available = inventoryMap?.[key] || 0;
+                  const needed = Math.max(0, (c.quantity || 1) - available);
+                  return { name: c.name, quantity: needed, set: c.set };
+                }).filter(m => m.quantity > 0);
+
+                // (debug logging removed)
+                const colorIdentity = deck.color_identity || deck.colorIdentity || [];
+
+                return (
+                  <DeckCardTile
+                    key={deck.id}
+                    deck={deck}
+                    isEditing={editingDeck === deck.id}
+                    completionPercentage={completionPercentage}
+                    missingCards={missingCards}
+                    totalMissing={totalMissing}
+                    colorIdentity={colorIdentity}
+                    onSelect={setSelectedDeck}
+                    onCopy={previewCopyToDeck}
+                    onEdit={(id) => setEditingDeck(id)}
+                    onEditCards={() => setEditingDeckForModal(deck)}
+                    onArchidektSync={() => setSyncingDeck(deck)}
+                    onDelete={deleteDeck}
+                    onUpdateName={updateDeckName}
+                    onCancelEdit={() => setEditingDeck(null)}
+                  />
+                );
+              })}
             </div>
           )}
         </div>

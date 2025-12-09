@@ -2,7 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ===== DESIGN SYSTEM TOKENS ===== */
 :root {
+  /* Legacy colors (for backward compatibility) */
   --primary: #0f766e;
   --primary-light: #14b8a6;
   --primary-dark: #0d665d;
@@ -18,6 +20,38 @@
   --text-secondary: #cbd5e1;
   --text-muted: #94a3b8;
   --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+
+  /* MTG Color Tokens */
+  --mtg-white: #F9FAF4;
+  --mtg-white-dark: #F8E7B9;
+  --mtg-blue: #0E68AB;
+  --mtg-blue-dark: #0A4E82;
+  --mtg-black: #150B00;
+  --mtg-black-light: #2D2D2D;
+  --mtg-red: #D3202A;
+  --mtg-red-dark: #A31A22;
+  --mtg-green: #00733E;
+  --mtg-green-dark: #005C32;
+  --mtg-colorless: #9CA3AF;
+  --mtg-gold: #C9A227;
+
+  /* Spacing scale (4px base) */
+  --space-1: 0.25rem;  /* 4px */
+  --space-2: 0.5rem;   /* 8px */
+  --space-3: 0.75rem;  /* 12px */
+  --space-4: 1rem;     /* 16px */
+  --space-6: 1.5rem;   /* 24px */
+  --space-8: 2rem;     /* 32px */
+  --space-12: 3rem;    /* 48px */
+
+  /* Typography */
+  --font-display: 'Inter', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', Menlo, monospace;
+
+  /* Focus ring */
+  --focus-ring: 0 0 0 2px rgba(99, 102, 241, 0.5);
+  --focus-ring-offset: 0 0 0 4px rgba(99, 102, 241, 0.25);
 }
 
 * {
@@ -769,4 +803,46 @@ select {
 
 .animate-shake {
   animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+/* Safe area handling for mobile devices */
+.safe-area-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Command Palette specific animations */
+@keyframes cmdPaletteScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-cmd-palette {
+  animation: cmdPaletteScaleIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Focus visible utilities */
+.focus-visible-ring:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring), var(--focus-ring-offset);
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

@@ -23,6 +23,35 @@ export function DeckCard({
   const [showMissing, setShowMissing] = useState(false);
   const [showBuyModal, setShowBuyModal] = useState(false);
 
+  // Dev-only: derive color keys and mana curve for quick debugging in the UI
+  const colorLetterMap = { W: 'white', U: 'blue', B: 'black', R: 'red', G: 'green', C: 'colorless' };
+  const derivedColorKeys = (() => {
+    const fromDeck = deck.colorIdentity || deck.color_identity || deck.colorIdentityRaw;
+    if (Array.isArray(fromDeck) && fromDeck.length > 0) return Array.from(new Set(fromDeck.map(c => (typeof c === 'string' ? (colorLetterMap[c.toUpperCase()] || c.toLowerCase()) : c))));
+    const setKeys = new Set();
+    (deck.cards || []).forEach(card => {
+      const ci = card.color_identity || card.colorIdentity || card.colors || [];
+      if (Array.isArray(ci)) {
+        ci.forEach(c => {
+          const key = (typeof c === 'string') ? (colorLetterMap[c.toUpperCase()] || c.toLowerCase()) : null;
+          if (key) setKeys.add(key);
+        });
+      }
+    });
+    return Array.from(setKeys);
+  })();
+
+  const manaCurveCounts = (() => {
+    const counts = {};
+    (deck.cards || []).forEach(card => {
+      const qty = Number(card.quantity || 1) || 1;
+      const raw = card.cmc ?? card.mana_value ?? card.manaValue ?? 0;
+      const cmc = Math.max(0, Math.floor(Number(raw) || 0));
+      counts[cmc] = (counts[cmc] || 0) + qty;
+    });
+    return counts;
+  })();
+
   // Compute missing cards based on inventory mapping passed from parent
   const missingEntries = (deck.cards || []).map((card) => {
     const nameKey = (card.name || '').toLowerCase().trim();
@@ -110,6 +139,13 @@ export function DeckCard({
         </div>
         {deck.description && (
           <p className="text-xs text-slate-400 italic mt-2">{deck.description}</p>
+        )}
+        {process.env.NODE_ENV !== 'production' && (
+          <div className="mt-2 text-xs text-slate-400 bg-slate-900/30 p-2 rounded">
+            <div className="text-slate-300 font-semibold">Dev:</div>
+            <div className="mt-1">Colors: {(derivedColorKeys && derivedColorKeys.length) ? derivedColorKeys.join(', ') : 'none'}</div>
+            <div className="mt-1">Curve: {Object.keys(manaCurveCounts).length ? JSON.stringify(manaCurveCounts) : '{}'} </div>
+          </div>
         )}
       </div>
 

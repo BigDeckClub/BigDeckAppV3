@@ -14,10 +14,9 @@ import { OfflineBanner } from "./components/OfflineBanner";
 import { useApi } from "./hooks/useApi";
 import { TutorialModal } from "./components/TutorialModal";
 import { TabLoadingSpinner } from "./components/TabLoadingSpinner";
-import { Navigation } from "./components/Navigation";
 import { useCardSearch } from "./hooks/useCardSearch";
 import { getAllSets } from "./utils/scryfallApi";
-import { FullPageSpinner, KeyboardShortcutsHelp } from "./components/ui";
+import { FullPageSpinner, KeyboardShortcutsHelp, Header, CommandPalette } from "./components/ui";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { AIChatWidget } from "./components/AIChatWidget";
 
@@ -58,6 +57,7 @@ function MTGInventoryTrackerContent() {
   const [deckRefreshTrigger, setDeckRefreshTrigger] = useState(0);
   const [showTutorial, setShowTutorial] = useState(false);
   const [showKeyboardHelp, setShowKeyboardHelp] = useState(false);
+  const [showCommandPalette, setShowCommandPalette] = useState(false);
 
   const [allSets, setAllSets] = useState([]);
   const [successMessage, setSuccessMessage] = useState("");
@@ -75,6 +75,11 @@ function MTGInventoryTrackerContent() {
   }, []);
 
   const handleEscape = useCallback(() => {
+    // Close command palette first
+    if (showCommandPalette) {
+      setShowCommandPalette(false);
+      return;
+    }
     // Close keyboard help if open
     if (showKeyboardHelp) {
       setShowKeyboardHelp(false);
@@ -89,7 +94,11 @@ function MTGInventoryTrackerContent() {
     if (document.activeElement && document.activeElement.tagName === 'INPUT') {
       document.activeElement.blur();
     }
-  }, [showKeyboardHelp, showTutorial]);
+  }, [showCommandPalette, showKeyboardHelp, showTutorial]);
+
+  const openCommandPalette = useCallback(() => {
+    setShowCommandPalette(true);
+  }, []);
 
   const toggleKeyboardHelp = useCallback(() => {
     setShowKeyboardHelp(prev => !prev);
@@ -98,10 +107,11 @@ function MTGInventoryTrackerContent() {
   // Keyboard shortcuts configuration
   const shortcuts = useMemo(() => [
     { key: '/', handler: focusSearch, description: 'Focus search' },
-    { key: 'k', ctrlKey: true, handler: focusSearch, description: 'Focus search' },
+    { key: 'k', ctrlKey: true, handler: openCommandPalette, description: 'Open command palette' },
+    { key: 'k', metaKey: true, handler: openCommandPalette, description: 'Open command palette' },
     { key: 'Escape', handler: handleEscape, allowInInput: true, description: 'Close modal / Clear' },
     { key: '?', handler: toggleKeyboardHelp, description: 'Show keyboard shortcuts' },
-  ], [focusSearch, handleEscape, toggleKeyboardHelp]);
+  ], [focusSearch, openCommandPalette, handleEscape, toggleKeyboardHelp]);
 
   // Register keyboard shortcuts
   useKeyboardShortcuts(shortcuts, { enabled: !!user });
@@ -153,13 +163,14 @@ function MTGInventoryTrackerContent() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white">
-      <Navigation
+      <Header
         activeTab={activeTab}
         setActiveTab={setActiveTab}
+        onOpenCommandPalette={openCommandPalette}
         onShowTutorial={() => setShowTutorial(true)}
       />
 
-      <main className="max-w-7xl mx-auto px-4 py-8 main-content md:px-4 px-3">
+      <main className="max-w-7xl mx-auto px-4 py-8 main-content md:px-4 px-3 md:pb-8 pb-24">
         {isLoading && (
           <div className="text-center py-8">
             <div className="w-8 h-8 animate-spin mx-auto text-teal-400 border-2 border-teal-400 border-t-transparent rounded-full"></div>
@@ -234,6 +245,13 @@ function MTGInventoryTrackerContent() {
 
       <TutorialModal isOpen={showTutorial} onClose={() => setShowTutorial(false)} />
       <KeyboardShortcutsHelp isOpen={showKeyboardHelp} onClose={() => setShowKeyboardHelp(false)} />
+      <CommandPalette
+        isOpen={showCommandPalette}
+        onClose={() => setShowCommandPalette(false)}
+        onNavigate={setActiveTab}
+        onShowTutorial={() => setShowTutorial(true)}
+        onShowShortcuts={() => setShowKeyboardHelp(true)}
+      />
       <ToastContainer />
       <ConfirmDialog />
       <OfflineBanner />

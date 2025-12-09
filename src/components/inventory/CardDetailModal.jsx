@@ -438,8 +438,10 @@ export const CardDetailModal = memo(function CardDetailModal({
     };
   }, [isOpen, onClose, getFocusableElements]);
   
-  // Load sales history and threshold settings on mount
+  // Load sales history and threshold settings only when modal is open
   useEffect(() => {
+    if (!isOpen) return;
+
     const saved = localStorage.getItem('thresholdSettings');
     if (saved) {
       try {
@@ -448,14 +450,14 @@ export const CardDetailModal = memo(function CardDetailModal({
         console.error('[CardDetailModal] Error loading settings:', err);
       }
     }
-    
+
     authFetch('/api/sales')
       .then(res => res.json())
       .then(data => {
         setSalesHistory(data || []);
       })
       .catch(err => console.error('[CardDetailModal] Error loading sales:', err));
-  }, [authFetch]);
+  }, [isOpen, authFetch]);
 
   // Reset image state when card changes
   useEffect(() => {

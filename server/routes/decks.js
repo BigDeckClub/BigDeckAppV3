@@ -17,7 +17,67 @@ router.get('/decks', authenticate, async (req, res) => {
         AND user_id = $1
       ORDER BY created_at DESC
     `, [req.userId]);
-    res.json(result.rows);
+    const decks = result.rows || [];
+
+    // Collect all unique normalized card names across all decks so we can fetch inventory availability in one query
+    const normalizeKey = (name) => String(name || '').toLowerCase().trim();
+    const allNamesSet = new Set();
+    decks.forEach(d => {
+      if (d.cards && Array.isArray(d.cards) && d.cards.length > 0) {
+        d.cards.forEach(c => allNamesSet.add(normalizeKey(c.name)));
+      }
+    });
+
+    const allNames = Array.from(allNamesSet).filter(n => n.length > 0);
+
+    let availabilityMap = {};
+    if (allNames.length > 0) {
+      // Fetch aggregated available quantities for these names in a single query
+      const availRes = await pool.query(
+        `SELECT LOWER(TRIM(name)) AS name_key,
+          SUM(
+            GREATEST(COALESCE(quantity, 0) - COALESCE((SELECT SUM(dr.quantity_reserved) FROM deck_reservations dr WHERE dr.inventory_item_id = i.id), 0), 0)
+          ) AS available
+         FROM inventory i
+         WHERE LOWER(TRIM(i.name)) = ANY($1::text[])
+           AND i.user_id = $2
+         GROUP BY LOWER(TRIM(name))`,
+        [allNames, req.userId]
+      );
+
+      availabilityMap = (availRes.rows || []).reduce((acc, r) => {
+        acc[String(r.name_key || '')] = parseInt(r.available || 0, 10);
+        return acc;
+      }, {});
+    }
+
+    // For each deck, calculate totalCards, totalMissing and completionPercentage using availabilityMap
+    const enriched = decks.map(deck => {
+      const cards = Array.isArray(deck.cards) ? deck.cards : [];
+      const neededByName = {};
+      let totalCards = 0;
+      cards.forEach(c => {
+        const q = parseInt(c.quantity || 1, 10) || 1;
+        totalCards += q;
+        const key = normalizeKey(c.name);
+        neededByName[key] = (neededByName[key] || 0) + q;
+      });
+
+      let totalMissing = 0;
+      Object.entries(neededByName).forEach(([name, needed]) => {
+        const avail = availabilityMap[name] || 0;
+        if (avail < needed) {
+          totalMissing += (needed - avail);
+        }
+      });
+
+      const ownedCount = Math.max(0, totalCards - totalMissing);
+      const completionPercentage = totalCards > 0 ? Math.round((ownedCount / totalCards) * 10000) / 100 : 0; // keep two decimals if needed
+
+      return { ...deck, _computed_totalCards: totalCards, _computed_missing: totalMissing, completionPercentage };
+    });
+
+    res.json(enriched);
   } catch (error) {
     console.error('[DECKS] Error fetching decks:', error.message);
     res.status(500).json({ error: 'Failed to fetch decks' });

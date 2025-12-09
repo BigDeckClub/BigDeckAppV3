@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { BarChart3, TrendingUp, Package, DollarSign, History, Filter, Activity, Shield, Bell } from 'lucide-react';
+import { BarChart3, TrendingUp, Package, DollarSign, Filter, Activity, Shield, Bell, Layers, ShoppingCart, CreditCard } from 'lucide-react';
 import { ChangeLogTab } from './ChangeLogTab';
 import { ActivityFeed } from './ActivityFeed';
 import { AuditLog } from './AuditLog';
 import { AlertSettings } from './settings/AlertSettings';
 import { fetchWithAuth } from '../utils/apiClient';
+import { StatsCard, TrendChart } from './ui';
 
 export const AnalyticsTab = ({ inventory }) => {
   const [marketValues, setMarketValues] = useState({ cardkingdom: 0, tcgplayer: 0 });
@@ -71,6 +72,11 @@ export const AnalyticsTab = ({ inventory }) => {
     acc[set].value += (item.quantity || 0) * (parseFloat(item.purchase_price) || 0);
     return acc;
   }, {});
+
+  const bySetData = Object.entries(bySet)
+    .map(([set, d]) => ({ label: set, value: d.value }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 10);
 
   // Top 5 most valuable cards
   const topCards = [...inventory]
@@ -145,59 +151,74 @@ export const AnalyticsTab = ({ inventory }) => {
         </div>
       ) : (
         <>
-          {/* Key Metrics */}
+          {/* Key Metrics - Card Stats */}
           <div className="mb-8">
-        <h3 className="text-sm font-semibold text-slate-400 mb-3">Purchase Value</h3>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
-          {/* Card Metrics Box */}
-          <div className="bg-slate-800 border border-slate-600 rounded-lg p-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <div className="text-slate-400 text-xs font-semibold mb-1">Total Cards</div>
-                <div className="text-2xl font-bold text-teal-300">{cardMetrics.totalCards}</div>
-              </div>
-              <div>
-                <div className="text-slate-400 text-xs font-semibold mb-1">Available</div>
-                <div className="text-2xl font-bold text-blue-300">{totalAvailable}</div>
-              </div>
-              <div>
-                <div className="text-slate-400 text-xs font-semibold mb-1">Unique Cards</div>
-                <div className="text-2xl font-bold text-cyan-300">{cardMetrics.uniqueCards}</div>
-              </div>
-              <div>
-                <div className="text-slate-400 text-xs font-semibold mb-1">Sold (60d)</div>
-                <div className="text-2xl font-bold text-red-300">{cardMetrics.totalSoldLast60d}</div>
-              </div>
-              <div>
-                <div className="text-slate-400 text-xs font-semibold mb-1">Purchased (60d)</div>
-                <div className="text-2xl font-bold text-green-300">{cardMetrics.totalPurchasedLast60d}</div>
-              </div>
-              <div>
-                <div className="text-slate-400 text-xs font-semibold mb-1">Total Cards Sold</div>
-                <div className="text-2xl font-bold text-amber-300">{cardMetrics.lifetimeTotalCards}</div>
-              </div>
+            <h3 className="text-sm font-semibold text-slate-400 mb-3">Inventory Overview</h3>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+              <StatsCard
+                title="Total Cards"
+                value={cardMetrics.totalCards.toLocaleString()}
+                icon={Layers}
+                color="teal"
+              />
+              <StatsCard
+                title="Available"
+                value={totalAvailable.toLocaleString()}
+                icon={Package}
+                color="blue"
+              />
+              <StatsCard
+                title="Unique Cards"
+                value={cardMetrics.uniqueCards.toLocaleString()}
+                icon={CreditCard}
+                color="slate"
+              />
+              <StatsCard
+                title="Sold (60d)"
+                value={cardMetrics.totalSoldLast60d.toLocaleString()}
+                icon={ShoppingCart}
+                color="red"
+              />
+              <StatsCard
+                title="Purchased (60d)"
+                value={cardMetrics.totalPurchasedLast60d.toLocaleString()}
+                icon={TrendingUp}
+                color="emerald"
+              />
+              <StatsCard
+                title="Lifetime Sold"
+                value={cardMetrics.lifetimeTotalCards.toLocaleString()}
+                icon={BarChart3}
+                color="amber"
+              />
             </div>
-          </div>
 
-          {/* Value Metrics Box */}
-          <div className="bg-slate-800 border border-slate-600 rounded-lg p-4">
-            <div className="space-y-4">
-              <div>
-                <div className="text-slate-400 text-xs font-semibold mb-1">Current Inventory Value</div>
-                <div className="text-2xl font-bold text-blue-300">${totalValue.toFixed(2)}</div>
-              </div>
-              <div className="border-t border-slate-600 pt-4">
-                <div className="text-slate-400 text-xs font-semibold mb-1">Card Kingdom Value</div>
-                <div className="text-2xl font-bold text-purple-300">${marketValues.cardkingdom.toFixed(2)}</div>
-              </div>
-              <div className="border-t border-slate-600 pt-4">
-                <div className="text-slate-400 text-xs font-semibold mb-1">TCGPlayer Value</div>
-                <div className="text-2xl font-bold text-pink-300">${marketValues.tcgplayer.toFixed(2)}</div>
-              </div>
+            {/* Value Metrics */}
+            <h3 className="text-sm font-semibold text-slate-400 mb-3">Collection Value</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <StatsCard
+                title="Purchase Value"
+                value={`$${totalValue.toFixed(2)}`}
+                icon={DollarSign}
+                color="blue"
+                subtitle="Based on purchase prices"
+              />
+              <StatsCard
+                title="Card Kingdom"
+                value={`$${marketValues.cardkingdom.toFixed(2)}`}
+                icon={DollarSign}
+                color="purple"
+                subtitle="Current market value"
+              />
+              <StatsCard
+                title="TCGPlayer"
+                value={`$${marketValues.tcgplayer.toFixed(2)}`}
+                icon={DollarSign}
+                color="amber"
+                subtitle="Current market value"
+              />
             </div>
           </div>
-        </div>
-      </div>
 
       {/* Cards by Folder */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
@@ -252,6 +273,21 @@ export const AnalyticsTab = ({ inventory }) => {
               </div>
             ))}
         </div>
+        {/* Trend chart for top sets */}
+        {bySetData.length > 0 && (
+          <div className="mt-4">
+            <TrendChart
+              data={bySetData}
+              dataKey="value"
+              labelKey="label"
+              title="Top Sets by Value"
+              subtitle="Top 10 sets by purchase value"
+              format="currency"
+              color="teal"
+              height={180}
+            />
+          </div>
+        )}
       </div>
         </>
       )}

@@ -1,7 +1,8 @@
 import React, { memo } from 'react';
 import PropTypes from 'prop-types';
-import { X, Grid3X3, List, Folder, Image } from 'lucide-react';
+import { X, Folder } from 'lucide-react';
 import { SortControls } from './SortControls';
+import { ViewModeToggle, VIEW_MODES } from '../ui';
 
 /**
  * InventoryTabs - Tab navigation for inventory views
@@ -163,41 +164,16 @@ export const InventoryTabs = memo(function InventoryTabs({
         )}
 
         {/* View Mode Toggle */}
-        <div className="flex gap-1 bg-slate-800/50 rounded-lg p-1.5 border border-slate-700">
-          <button
-            onClick={() => setViewMode('card')}
-            className={`p-2 rounded-lg transition-all duration-300 ${
-              viewMode === 'card'
-                ? 'bg-gradient-to-br from-teal-600 to-teal-700 text-white shadow-lg shadow-teal-500/30'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/30'
-            }`}
-            title="Card View"
-          >
-            <Grid3X3 className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => setViewMode('list')}
-            className={`p-2 rounded-lg transition-all duration-300 ${
-              viewMode === 'list'
-                ? 'bg-gradient-to-br from-teal-600 to-teal-700 text-white shadow-lg shadow-teal-500/30'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/30'
-            }`}
-            title="List View"
-          >
-            <List className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => setViewMode('image')}
-            className={`p-2 rounded-lg transition-all duration-300 ${
-              viewMode === 'image'
-                ? 'bg-gradient-to-br from-teal-600 to-teal-700 text-white shadow-lg shadow-teal-500/30'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/30'
-            }`}
-            title="Image View"
-          >
-            <Image className="w-4 h-4" />
-          </button>
-        </div>
+        <ViewModeToggle
+          activeMode={
+            viewMode === 'card' ? VIEW_MODES.GALLERY :
+            viewMode === 'image' ? VIEW_MODES.GALLERY :
+            viewMode === 'list' ? VIEW_MODES.LIST :
+            viewMode === 'table' ? VIEW_MODES.TABLE :
+            VIEW_MODES.GALLERY
+          }
+          onChange={(mode) => setViewMode(mode === VIEW_MODES.GALLERY ? 'card' : mode)}
+        />
       </div>
     </div>
   );

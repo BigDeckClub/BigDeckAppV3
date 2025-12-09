@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import { X, Trash2, ChevronDown, FileEdit, Link2, ShoppingCart } from 'lucide-react';
 import { getSetDisplayName } from '../../utils/cardHelpers';
+import { normalizeName, computeCompletion } from '../../utils/deckHelpers';
 import { BuyButton } from '../buy/BuyButton';
 import { BuyCardsModal } from '../buy/BuyCardsModal';
+import { ManaCurveChart, DeckColorPie, DeckStatsPanel } from '../ui';
 
 /**
  * DeckDetailsView component - Displays detailed view of a single deck
@@ -20,14 +22,15 @@ export function DeckDetailsView({
   const [showMissing, setShowMissing] = useState(false);
   const [showBuyModal, setShowBuyModal] = useState(false);
 
-  // Compute missing cards
-  const missingEntries = (deck.cards || []).map((card) => {
-    const nameKey = (card.name || '').toLowerCase().trim();
+  // Compute missing cards using shared helpers
+  const cards = Array.isArray(deck.cards) ? deck.cards : [];
+  const { totalCards, totalMissing } = computeCompletion(cards, inventoryByName || {});
+  const missingEntries = cards.map((card) => {
+    const nameKey = normalizeName(card.name);
     const available = inventoryByName?.[nameKey] || 0;
     const needed = Math.max(0, (card.quantity || 1) - available);
     return { name: card.name, quantity: needed, set: card.set };
   }).filter(m => m.quantity > 0);
-  const totalMissing = missingEntries.reduce((sum, m) => sum + m.quantity, 0);
   return (
     <div className="space-y-4">
       <button
@@ -90,6 +93,39 @@ export function DeckDetailsView({
           </div>
         </div>
 
+        {/* Deck Statistics Charts */}
+        {deck.cards && deck.cards.length > 0 && (() => {
+          const totalCards = deck.cards.reduce((s, c) => s + (c.quantity || 1), 0);
+          const ownedCount = totalCards - totalMissing;
+          const completionPercentage = totalCards > 0 ? (ownedCount / totalCards) * 100 : 100;
+          const averageCmc = deck.cards.reduce((s, c) => s + ((c.cmc || c.converted_mana_cost || 0) * (c.quantity || 1)), 0) / Math.max(1, totalCards);
+          const typeBreakdown = {};
+          return (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <DeckStatsPanel
+                cards={deck.cards}
+                totalValue={0}
+                completionPercentage={completionPercentage}
+                missingCount={totalMissing}
+                ownedCount={ownedCount}
+                averageCmc={averageCmc}
+                typeBreakdown={typeBreakdown}
+              />
+              <ManaCurveChart
+                cards={deck.cards}
+                showStats={true}
+                title="Mana Curve"
+              />
+              <DeckColorPie
+                cards={deck.cards}
+                showLegend={true}
+                size="md"
+                title="Color Distribution"
+              />
+            </div>
+          );
+        })()}
+
         <div className="mb-4">
           <label className="block text-sm text-slate-400 mb-2">Description</label>
           <textarea
@@ -110,7 +146,7 @@ export function DeckDetailsView({
             <h3 className="text-teal-300 font-semibold mb-3">Deck Cards</h3>
             <div className="space-y-2">
               {deck.cards.map((card, idx) => {
-                const nameKey = (card.name || '').toLowerCase().trim();
+                const nameKey = normalizeName(card.name);
                 const available = inventoryByName?.[nameKey] || 0;
                 const needed = Math.max(0, (card.quantity || 1) - available);
                 const isMissing = needed > 0;

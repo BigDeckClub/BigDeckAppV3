@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Database, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Database, Loader2, CheckCircle2, AlertCircle, User, Bell, Shield } from 'lucide-react';
 import { useToast, TOAST_TYPES } from '../../context/ToastContext';
 import { api } from '../../utils/apiClient';
+import { SettingsSection, Toggle } from '../ui';
 
 /**
  * AccountSettings component - Account settings tab
@@ -12,16 +13,23 @@ export const AccountSettings = () => {
   const [isBackfilling, setIsBackfilling] = useState(false);
   const [backfillResult, setBackfillResult] = useState(null);
 
+  // Example settings state (would persist to backend in production)
+  const [notifications, setNotifications] = useState({
+    priceAlerts: true,
+    lowStock: true,
+    weeklyReport: false,
+  });
+
   const handleBackfillScryfallIds = async () => {
     if (isBackfilling) return;
-    
+
     setIsBackfilling(true);
     setBackfillResult(null);
 
     try {
       const result = await api.post('/inventory/backfill-scryfall-ids', {});
       setBackfillResult(result);
-      
+
       if (result.updated > 0) {
         showToast(
           `Successfully updated ${result.updated} card${result.updated === 1 ? '' : 's'} with Scryfall IDs for price tracking`,
@@ -39,41 +47,84 @@ export const AccountSettings = () => {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="bg-slate-800 rounded-lg border border-slate-600 p-6">
-        <h2 className="text-xl font-bold text-slate-100 mb-4">Account Settings</h2>
-        <p className="text-slate-400 text-sm">Manage your account and preferences</p>
-        <p className="text-slate-500 text-xs mt-2">More options coming soon...</p>
-      </div>
+    <div className="space-y-6">
+      {/* Account Info Section */}
+      <SettingsSection
+        title="Account Settings"
+        description="Manage your account and preferences"
+        icon={User}
+        collapsible={false}
+      >
+        <p className="text-slate-500 text-sm">More account options coming soon...</p>
+      </SettingsSection>
+
+      {/* Notifications Section */}
+      <SettingsSection
+        title="Notifications"
+        description="Configure how you receive alerts and updates"
+        icon={Bell}
+        badge="Preview"
+        badgeColor="purple"
+      >
+        <div className="space-y-1 divide-y divide-slate-700/50">
+          <SettingsSection.Item
+            label="Price Alerts"
+            description="Get notified when card prices change significantly"
+          >
+            <Toggle
+              checked={notifications.priceAlerts}
+              onChange={(checked) => setNotifications(prev => ({ ...prev, priceAlerts: checked }))}
+              color="teal"
+            />
+          </SettingsSection.Item>
+
+          <SettingsSection.Item
+            label="Low Stock Alerts"
+            description="Alert when cards fall below threshold"
+          >
+            <Toggle
+              checked={notifications.lowStock}
+              onChange={(checked) => setNotifications(prev => ({ ...prev, lowStock: checked }))}
+              color="teal"
+            />
+          </SettingsSection.Item>
+
+          <SettingsSection.Item
+            label="Weekly Report"
+            description="Receive a weekly summary of your collection"
+          >
+            <Toggle
+              checked={notifications.weeklyReport}
+              onChange={(checked) => setNotifications(prev => ({ ...prev, weeklyReport: checked }))}
+              color="teal"
+            />
+          </SettingsSection.Item>
+        </div>
+      </SettingsSection>
 
       {/* Data Management Section */}
-      <div className="bg-slate-800 rounded-lg border border-slate-600 p-6">
-        <h2 className="text-xl font-bold text-slate-100 mb-2 flex items-center gap-2">
-          <Database className="w-5 h-5 text-purple-400" />
-          Data Management
-        </h2>
-        <p className="text-slate-400 text-sm mb-6">
-          Tools to maintain and update your inventory data
-        </p>
-
-        {/* Backfill Scryfall IDs */}
+      <SettingsSection
+        title="Data Management"
+        description="Tools to maintain and update your inventory data"
+        icon={Database}
+      >
         <div className="space-y-4">
           <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
-            <h3 className="text-lg font-semibold text-slate-200 mb-2">
+            <h3 className="text-base font-semibold text-slate-200 mb-2">
               Update Price Data
             </h3>
             <p className="text-slate-400 text-sm mb-4">
-              Populate Scryfall IDs for cards missing them. This enables CardKingdom and TCGPlayer 
-              price tracking in the Analytics tab. This process may take a few minutes for large inventories.
+              Populate Scryfall IDs for cards missing them. This enables CardKingdom and TCGPlayer
+              price tracking in the Analytics tab.
             </p>
 
             <button
               onClick={handleBackfillScryfallIds}
               disabled={isBackfilling}
-              className={`px-4 py-2 rounded-lg font-semibold transition-all flex items-center gap-2 ${
+              className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
                 isBackfilling
                   ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
-                  : 'bg-purple-600 hover:bg-purple-700 text-white'
+                  : 'bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-400 hover:to-cyan-400 text-white shadow-lg shadow-teal-500/25'
               }`}
             >
               {isBackfilling ? (
@@ -92,7 +143,7 @@ export const AccountSettings = () => {
             {/* Backfill Result Display */}
             {backfillResult && !isBackfilling && (
               <div className={`mt-4 p-3 rounded-lg border ${
-                backfillResult.error 
+                backfillResult.error
                   ? 'bg-red-900/20 border-red-600/30 text-red-300'
                   : 'bg-green-900/20 border-green-600/30 text-green-300'
               }`}>
@@ -126,7 +177,17 @@ export const AccountSettings = () => {
             )}
           </div>
         </div>
-      </div>
+      </SettingsSection>
+
+      {/* Privacy & Security Section */}
+      <SettingsSection
+        title="Privacy & Security"
+        description="Manage your data and security preferences"
+        icon={Shield}
+        defaultExpanded={false}
+      >
+        <p className="text-slate-500 text-sm">Security options coming soon...</p>
+      </SettingsSection>
     </div>
   );
 };
