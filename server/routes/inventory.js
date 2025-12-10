@@ -1,18 +1,28 @@
 import express from 'express';
-import { pool } from '../db/pool.js';
+import { pool as defaultPool } from '../db/pool.js';
 import { validateId, authenticate, apiLimiter } from '../middleware/index.js';
 import { fetchRetry } from '../utils/index.js';
-import { scryfallQueue } from '../utils/scryfallQueue.js';
+import { scryfallServerClient as defaultScryfallClient } from '../utils/scryfallClient.server.js';
 import { recordChange, recordAudit, recordActivity } from './history.js';
 import { createInventoryItemSchema, updateInventoryItemSchema, setThresholdSchema, validateBody } from '../utils/validation.js';
 
-const router = express.Router();
-
-// Apply rate limiting to all inventory routes to prevent abuse
-router.use(apiLimiter);
+/**
+ * Create an inventory router with injectable dependencies for easier testing.
+ * @param {{pool, scryfallServerClient, validateIdMiddleware, authenticateMiddleware, apiLimiterMiddleware}} deps
+ */
+export function createInventoryRouter({
+  pool = defaultPool,
+  scryfallServerClient = defaultScryfallClient,
+  validateIdMiddleware = validateId,
+  authenticateMiddleware = authenticate,
+  apiLimiterMiddleware = apiLimiter
+} = {}) {
+  const router = express.Router();
+  // Apply rate limiting to all inventory routes to prevent abuse
+  router.use(apiLimiterMiddleware);
 
 // ========== INVENTORY ENDPOINTS ==========
-router.get('/inventory', authenticate, async (req, res) => {
+  router.get('/inventory', authenticateMiddleware, async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT i.id, i.name, i.set, i.set_name, i.quantity, i.purchase_price, i.purchase_date, 
@@ -28,43 +38,33 @@ router.get('/inventory', authenticate, async (req, res) => {
     );
     res.json(result.rows);
   } catch (error) {
-    console.error('[INVENTORY] Error fetching:', error.message);
-    res.status(500).json({ error: 'Failed to fetch inventory' });
-  }
-});
+      console.error('[INVENTORY] Error fetching:', error.message);
+      res.status(500).json({ error: 'Failed to fetch inventory' });
+    }
+  });
 
-router.post('/inventory', authenticate, validateBody(createInventoryItemSchema), async (req, res) => {
+  router.post('/inventory', authenticateMiddleware, validateBody(createInventoryItemSchema), async (req, res) => {
   const { name, set, set_name, quantity, purchase_price, purchase_date, reorder_type, image_url, folder, foil, quality } = req.body;
   
   try {
-    // Fetch Scryfall ID for better market value tracking
+    // Fetch Scryfall ID for better market value tracking (non-blocking lookup)
     let scryfallId = null;
     try {
-      // Use rate-limited queue to prevent Scryfall API rate limit issues
-      scryfallId = await scryfallQueue.enqueue(async () => {
-        let scryfallRes = null;
-        
-        // Try exact match with set if available
-        if (set && set.length > 0) {
-          const exactUrl = `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(name)}&set=${set.toLowerCase()}`;
-          scryfallRes = await fetchRetry(exactUrl);
-          if (!scryfallRes?.ok) scryfallRes = null;
+      // Normalize set if present
+      let normalizedSet = null;
+      if (set) {
+        if (typeof set === 'string') {
+          const s = set.trim().toLowerCase();
+          if (s && s !== 'unknown') normalizedSet = s;
+        } else if (typeof set === 'object') {
+          const s = (set.editioncode || set.mtgoCode || '').toString().trim().toLowerCase();
+          if (s && s !== 'unknown') normalizedSet = s;
         }
-        
-        // Fallback to fuzzy match
-        if (!scryfallRes) {
-          const fuzzyUrl = `https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(name)}`;
-          scryfallRes = await fetchRetry(fuzzyUrl);
-        }
-        
-        if (scryfallRes?.ok) {
-          const cardData = await scryfallRes.json();
-          return cardData.id || null;
-        }
-        return null;
-      });
-      
-      if (scryfallId) {
+      }
+
+      const card = await scryfallServerClient.getCardByName(name, { exact: true, set: normalizedSet });
+      if (card?.scryfall_id) {
+        scryfallId = card.scryfall_id;
         console.log(`[INVENTORY] ✓ Found Scryfall ID for "${name}"${set ? ` (${set})` : ''}`);
       } else {
         console.warn(`[INVENTORY] ⚠ Could not find Scryfall ID for "${name}"${set ? ` (${set})` : ''} - market prices will not be available`);
@@ -74,12 +74,15 @@ router.post('/inventory', authenticate, validateBody(createInventoryItemSchema),
       // Continue without Scryfall ID - not critical
     }
 
+    // scryfall lookup completed
+
     const result = await pool.query(
       `INSERT INTO inventory (user_id, name, set, set_name, quantity, purchase_price, purchase_date, reorder_type, image_url, scryfall_id, folder, foil, quality, created_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW())
        RETURNING *`,
       [req.userId, name, set || null, set_name || null, quantity || 1, purchase_price || null, purchase_date || null, reorder_type || 'normal', image_url || null, scryfallId, folder || 'Uncategorized', foil || false, quality || 'NM']
     );
+    // INSERT completed
     
     // Record PURCHASE transaction for analytics
     if (purchase_price && (quantity || 1) > 0) {
@@ -109,8 +112,8 @@ router.post('/inventory', authenticate, validateBody(createInventoryItemSchema),
   }
 });
 
-router.put('/inventory/:id', authenticate, validateId, validateBody(updateInventoryItemSchema), async (req, res) => {
-  const id = req.validatedId;
+  router.put('/inventory/:id', authenticateMiddleware, validateIdMiddleware, validateBody(updateInventoryItemSchema), async (req, res) => {
+    const id = req.validatedId;
   const { quantity, purchase_price, purchase_date, reorder_type, folder, low_inventory_alert, low_inventory_threshold, foil, quality } = req.body;
 
   try {
@@ -213,10 +216,10 @@ router.put('/inventory/:id', authenticate, validateId, validateBody(updateInvent
     console.error('[INVENTORY] Error updating:', error.message);
     res.status(500).json({ error: 'Failed to update inventory item' });
   }
-});
+  });
 
 // Empty Trash - permanently delete all items in Trash folder
-router.delete('/inventory/trash', authenticate, async (req, res) => {
+  router.delete('/inventory/trash', authenticateMiddleware, async (req, res) => {
   try {
     const result = await pool.query(
       "DELETE FROM inventory WHERE folder = 'Trash' AND user_id = $1 RETURNING *",
@@ -246,16 +249,16 @@ router.delete('/inventory/trash', authenticate, async (req, res) => {
     console.error('[INVENTORY] Error emptying trash:', error.message);
     res.status(500).json({ error: 'Failed to empty trash' });
   }
-});
+  });
 
-router.delete('/inventory/:id', authenticate, validateId, async (req, res) => {
-  const id = req.validatedId;
+  router.delete('/inventory/:id', authenticateMiddleware, validateIdMiddleware, async (req, res) => {
+    const id = req.validatedId;
 
-  try {
-    const result = await pool.query(
-      'DELETE FROM inventory WHERE id = $1 AND user_id = $2 RETURNING *',
-      [id, req.userId]
-    );
+    try {
+      const result = await pool.query(
+        'DELETE FROM inventory WHERE id = $1 AND user_id = $2 RETURNING *',
+        [id, req.userId]
+      );
     
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Inventory item not found' });
@@ -273,15 +276,15 @@ router.delete('/inventory/:id', authenticate, validateId, async (req, res) => {
     });
     
     res.json({ message: 'Inventory item deleted', item: result.rows[0] });
-  } catch (error) {
-    console.error('[INVENTORY] Error deleting:', error.message);
-    res.status(500).json({ error: 'Failed to delete inventory item' });
-  }
-});
+    } catch (error) {
+      console.error('[INVENTORY] Error deleting:', error.message);
+      res.status(500).json({ error: 'Failed to delete inventory item' });
+    }
+  });
 
 // Toggle low inventory alert for a specific card
-router.post('/inventory/:id/toggle-alert', authenticate, validateId, async (req, res) => {
-  const id = req.validatedId;
+  router.post('/inventory/:id/toggle-alert', authenticateMiddleware, validateIdMiddleware, async (req, res) => {
+    const id = req.validatedId;
   console.log('[API] TOGGLE-ALERT ENDPOINT HIT with id:', id);
 
   try {
@@ -317,16 +320,16 @@ router.post('/inventory/:id/toggle-alert', authenticate, validateId, async (req,
     console.log('[API] Alert toggled successfully:', beforeAlert, '→', afterAlert);
     
     res.json(result.rows[0]);
-  } catch (error) {
-    console.error('[API] TOGGLE ERROR:', error.message);
-    console.error('[API] Error stack:', error.stack);
-    res.status(500).json({ error: 'Failed to toggle alert' });
-  }
-});
+    } catch (error) {
+      console.error('[API] TOGGLE ERROR:', error.message);
+      console.error('[API] Error stack:', error.stack);
+      res.status(500).json({ error: 'Failed to toggle alert' });
+    }
+  });
 
 // Set low inventory threshold for a specific card
-router.post('/inventory/:id/set-threshold', authenticate, validateId, validateBody(setThresholdSchema), async (req, res) => {
-  const id = req.validatedId;
+  router.post('/inventory/:id/set-threshold', authenticateMiddleware, validateIdMiddleware, validateBody(setThresholdSchema), async (req, res) => {
+    const id = req.validatedId;
   const { threshold } = req.body;
 
   try {
@@ -340,14 +343,14 @@ router.post('/inventory/:id/set-threshold', authenticate, validateId, validateBo
     }
     
     res.json(result.rows[0]);
-  } catch (error) {
-    console.error('[INVENTORY] Error setting threshold:', error.message);
-    res.status(500).json({ error: 'Failed to set threshold' });
-  }
-});
+    } catch (error) {
+      console.error('[INVENTORY] Error setting threshold:', error.message);
+      res.status(500).json({ error: 'Failed to set threshold' });
+    }
+  });
 
 // POST /api/inventory/backfill-scryfall-ids - Backfill missing Scryfall IDs for price tracking
-router.post('/inventory/backfill-scryfall-ids', authenticate, async (req, res) => {
+  router.post('/inventory/backfill-scryfall-ids', authenticateMiddleware, async (req, res) => {
   try {
     // Find all inventory items without Scryfall IDs for this user
     const result = await pool.query(
@@ -367,57 +370,45 @@ router.post('/inventory/backfill-scryfall-ids', authenticate, async (req, res) =
     }
     
     console.log(`[BACKFILL] Starting to backfill ${itemsToUpdate.length} items with missing Scryfall IDs`);
-    
+
+    // Use batchResolve in chunks to avoid many individual requests and to reuse rate-limited queue
+    const CHUNK_SIZE = 75;
     let successCount = 0;
     let notFoundCount = 0;
     let errorCount = 0;
-    
-    // Process items with rate limiting
-    for (const item of itemsToUpdate) {
+
+      const identifiers = itemsToUpdate.map(it => ({ name: it.name, set: (typeof it.set === 'string' ? it.set.toLowerCase() : (it.set?.editioncode || it.set?.mtgoCode || '') ) }));
+
+    for (let i = 0; i < identifiers.length; i += CHUNK_SIZE) {
+      const chunk = identifiers.slice(i, i + CHUNK_SIZE);
       try {
-        const scryfallId = await scryfallQueue.enqueue(async () => {
-          let scryfallRes = null;
-          
-          // Try exact match with set if available
-          if (item.set && item.set.length > 0) {
-            const exactUrl = `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(item.name)}&set=${item.set.toLowerCase()}`;
-            scryfallRes = await fetchRetry(exactUrl);
-            if (!scryfallRes?.ok) scryfallRes = null;
+        const resolved = await scryfallServerClient.batchResolve(chunk);
+        // Update database for items found in this chunk
+        for (const item of itemsToUpdate.slice(i, i + CHUNK_SIZE)) {
+          const key = `${(item.name || '').toLowerCase().trim()}|${(item.set || '').toLowerCase().trim()}`;
+          const card = resolved[key];
+          if (card && card.scryfall_id) {
+            try {
+              await pool.query('UPDATE inventory SET scryfall_id = $1 WHERE id = $2', [card.scryfall_id, item.id]);
+              successCount++;
+              console.log(`[BACKFILL] ✓ Updated item ${item.id}: "${item.name}" with Scryfall ID`);
+            } catch (dbErr) {
+              errorCount++;
+              console.error(`[BACKFILL] ✗ DB update failed for item ${item.id}:`, dbErr.message);
+            }
+          } else {
+            notFoundCount++;
+            console.log(`[BACKFILL] ⚠ Could not find Scryfall ID for item ${item.id}: "${item.name}"`);
           }
-          
-          // Fallback to fuzzy match
-          if (!scryfallRes) {
-            const fuzzyUrl = `https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(item.name)}`;
-            scryfallRes = await fetchRetry(fuzzyUrl);
-          }
-          
-          if (scryfallRes?.ok) {
-            const cardData = await scryfallRes.json();
-            return cardData.id || null;
-          }
-          return null;
-        });
-        
-        if (scryfallId) {
-          // Update the inventory item with the found Scryfall ID
-          await pool.query(
-            'UPDATE inventory SET scryfall_id = $1 WHERE id = $2',
-            [scryfallId, item.id]
-          );
-          successCount++;
-          console.log(`[BACKFILL] ✓ Updated item ${item.id}: "${item.name}" with Scryfall ID`);
-        } else {
-          notFoundCount++;
-          console.log(`[BACKFILL] ⚠ Could not find Scryfall ID for item ${item.id}: "${item.name}"`);
         }
       } catch (err) {
-        errorCount++;
-        console.error(`[BACKFILL] ✗ Error processing item ${item.id}:`, err.message);
+        errorCount += Math.min(CHUNK_SIZE, chunk.length);
+        console.error('[BACKFILL] ✗ batchResolve failed for chunk:', err.message);
       }
     }
-    
+
     console.log(`[BACKFILL] Complete: ${successCount} updated, ${notFoundCount} not found, ${errorCount} errors`);
-    
+
     res.json({
       success: true,
       message: `Backfill complete: ${successCount} items updated with Scryfall IDs`,
@@ -433,7 +424,7 @@ router.post('/inventory/backfill-scryfall-ids', authenticate, async (req, res) =
 });
 
 // POST /api/inventory/bulk-threshold - Bulk update thresholds and alerts (DEBUG VERSION)
-router.post('/inventory/bulk-threshold', authenticate, async (req, res) => {
+  router.post('/inventory/bulk-threshold', authenticateMiddleware, async (req, res) => {
   console.log('[BULK-THRESHOLD] Endpoint hit');
   console.log('[BULK-THRESHOLD] Request body:', JSON.stringify(req.body).substring(0, 500));
   
@@ -496,14 +487,14 @@ router.post('/inventory/bulk-threshold', authenticate, async (req, res) => {
     console.error('[BULK-THRESHOLD] Fatal error:', error);
     res.status(500).json({ error: error.message || 'Failed to bulk update thresholds' });
   }
-});
+  });
 
 // GET /api/inventory/alerts/deck-card-names - Get card names from all deck templates for filtering alerts
-router.get('/inventory/alerts/deck-card-names', authenticate, async (req, res) => {
+  router.get('/inventory/alerts/deck-card-names', authenticateMiddleware, async (req, res) => {
   try {
     // Get all unique card names from deck templates (non-deck-instances)
-    const result = await pool.query(`
-      SELECT DISTINCT LOWER(TRIM(jsonb_array_elements(cards)->>'name')) as card_name
+    const result = await pool.query(
+      `SELECT DISTINCT LOWER(TRIM(jsonb_array_elements(cards)->>'name')) as card_name
       FROM decks 
       WHERE user_id = $1 
         AND (is_deck_instance = FALSE OR is_deck_instance IS NULL)
@@ -516,11 +507,16 @@ router.get('/inventory/alerts/deck-card-names', authenticate, async (req, res) =
       .map(row => row.card_name)
       .filter(name => name && name.trim().length > 0);
     
-    res.json({ cardNames });
-  } catch (error) {
-    console.error('[INVENTORY] Error fetching deck card names:', error.message);
-    res.status(500).json({ error: 'Failed to fetch deck card names' });
-  }
-});
+      res.json({ cardNames });
+    } catch (error) {
+      console.error('[INVENTORY] Error fetching deck card names:', error.message);
+      res.status(500).json({ error: 'Failed to fetch deck card names' });
+    }
+  });
 
-export default router;
+  return router;
+}
+
+// Default export for runtime usage with real dependencies
+const defaultRouter = createInventoryRouter();
+export default defaultRouter;
