@@ -1,48 +1,10 @@
-import React from "react";
-
-/**
- * Card wrapper using design tokens
- * Props: children, className
- */
-export default function Card({ children, className = "", role = 'region', ariaLabel }) {
-  return (
-    <div
-      role={role}
-      aria-label={ariaLabel}
-      className={`bg-card border border-[var(--card-border)] rounded-md p-4 shadow-sm ${className}`}
-    >
-      {children}
-    </div>
-  );
-}
 import React from 'react';
 import PropTypes from 'prop-types';
 
 /**
  * Card container component with glassmorphism styling matching the design system.
- * 
- * @example
- * // Basic card
- * <Card>
- *   <p>Card content goes here</p>
- * </Card>
- * 
- * @example
- * // Card with header and footer
- * <Card
- *   header={<h3>Card Title</h3>}
- *   footer={<Button>Action</Button>}
- * >
- *   <p>Card body content</p>
- * </Card>
- * 
- * @example
- * // Compact card with hover effect
- * <Card variant="compact" hoverable>
- *   <p>Compact card content</p>
- * </Card>
  */
-export function Card({
+export default function Card({
   children,
   header,
   footer,
@@ -121,5 +83,3 @@ Card.propTypes = {
   /** Additional CSS classes */
   className: PropTypes.string,
 };
-
-export default Card;
