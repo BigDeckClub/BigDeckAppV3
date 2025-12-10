@@ -1,3 +1,36 @@
+import React from "react";
+import PropTypes from "prop-types";
+
+/**
+ * Button
+ * Props:
+ * - variant: 'primary' | 'ghost' | 'outline'
+ * - size: 'sm' | 'md' | 'lg'
+ */
+export default function Button({ children, variant = "primary", size = "md", ...rest }) {
+  const base = "inline-flex items-center justify-center font-medium rounded-md";
+  const sizes = {
+    sm: "px-3 py-1.5 text-sm",
+    md: "px-4 py-2 text-md",
+    lg: "px-5 py-3 text-lg"
+  };
+  const variants = {
+    primary: "bg-gradient-to-b from-accent to-accent2 text-black",
+    ghost: "bg-transparent text-muted border border-transparent",
+    outline: "bg-transparent text-muted border"
+  };
+  return (
+    <button className={`${base} ${sizes[size]} ${variants[variant]}`} {...rest}>
+      {children}
+    </button>
+  );
+}
+
+Button.propTypes = {
+  variant: PropTypes.oneOf(["primary", "ghost", "outline"]),
+  size: PropTypes.oneOf(["sm", "md", "lg"]),
+  children: PropTypes.node
+};
 import React from 'react';
 import PropTypes from 'prop-types';
 

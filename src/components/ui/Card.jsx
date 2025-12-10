@@ -1,3 +1,16 @@
+import React from "react";
+
+/**
+ * Card wrapper using design tokens
+ * Props: children, className
+ */
+export default function Card({ children, className = "" }) {
+  return (
+    <div className={`bg-card border border-[var(--card-border)] rounded-md p-4 shadow-sm ${className}`}>
+      {children}
+    </div>
+  );
+}
 import React from 'react';
 import PropTypes from 'prop-types';
 

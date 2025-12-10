@@ -3,6 +3,7 @@
 @tailwind utilities;
 
 @import "./styles/community-theme.css";
+@import "./styles/design-tokens.css";
 
 /* ===== DESIGN SYSTEM TOKENS ===== */
 :root {
