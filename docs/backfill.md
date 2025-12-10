@@ -58,3 +58,11 @@ Notes & safety
 - Use `dryRun: true` to preview the number of items that would be updated without writing to the database.
 
 If you'd like, I can open a PR for this change and include migration scripts to add the new inventory columns explicitly rather than relying on runtime ALTER TABLEs.
+
+-- Testing & Rollout Checklist
+
+- Use `dryRun: true` for initial runs to preview updates before writing to DB.
+- Start with small `limit` values (e.g., 50) and verify logs and API usage.
+- Monitor application logs for `[BACKFILL]` messages and Scryfall 429/5xx errors.
+- Once comfortable, increase batch sizes gradually and run multiple background jobs.
+

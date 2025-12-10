@@ -93,6 +93,19 @@ npm start
 npm test
 ```
 
+## Scryfall Backfill & Rate Limiting
+
+This project uses a rate-limited queue for Scryfall requests (`server/utils/scryfallQueue.js`) to avoid exceeding API limits. To reduce synchronous per-request lookups, we've added:
+
+- A server-side backfill job: `server/jobs/backfillScryfall.js` — enriches inventory rows with `scryfall_id`, `image_uri_small`, `image_uri_normal`, `mana_value`, and `color_identity`.
+- An admin trigger endpoint: `POST /api/admin/backfill-scryfall` (requires authenticated admin user listed in `ADMIN_USER_IDS` env var).
+
+Testing & rollout recommendations:
+- Use `dryRun: true` to preview changes.
+- Start with small `limit` (e.g., 50) and monitor logs and Scryfall API usage.
+- Prefer background execution (`background: true`) for long-running backfills.
+
+
 ## Project Structure
 
 ```
