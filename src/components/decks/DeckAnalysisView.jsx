@@ -278,8 +278,8 @@ export function DeckAnalysisView({ decks, selectedDeckIds, inventoryByName }) {
   if (selectedDeckIds.length === 0) {
     return (
       <div className="text-center py-12">
-        <BarChart3 className="w-16 h-16 text-slate-600 mx-auto mb-4" />
-        <p className="text-slate-400">Select at least one deck to see analysis</p>
+        <BarChart3 className="w-16 h-16 text-ui-muted mx-auto mb-4" />
+        <p className="text-ui-muted">Select at least one deck to see analysis</p>
       </div>
     );
   }
@@ -303,7 +303,7 @@ export function DeckAnalysisView({ decks, selectedDeckIds, inventoryByName }) {
             top: Math.min(window.innerHeight - 370, Math.max(10, hoveredCard.y - 180))
           }}
         >
-          <div className="bg-slate-900 rounded-lg shadow-2xl border border-slate-600 p-2">
+          <div className="bg-ui-card rounded-lg shadow-2xl border border-ui-border p-2">
             <img
               src={getCardImageUrl(hoveredCard.name)}
               alt={hoveredCard.name}
@@ -315,16 +315,16 @@ export function DeckAnalysisView({ decks, selectedDeckIds, inventoryByName }) {
       )}
 
       {/* Tab Navigation */}
-      <div className="bg-slate-800 rounded-lg border border-slate-600 p-2">
+      <div className="bg-ui-card rounded-lg border border-ui-border p-2">
         <div className="flex flex-wrap gap-2">
           {tabs.map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all text-sm font-medium ${
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all text-sm font-medium ${
                 activeTab === tab.id
-                  ? 'bg-teal-600 text-white shadow-lg shadow-teal-600/30'
-                  : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                  ? 'bg-ui-primary text-ui-primary-foreground shadow-lg'
+                  : 'bg-ui-surface text-ui-muted hover:bg-ui-surface/60'
               }`}
             >
               <tab.icon className="w-4 h-4" />
@@ -338,73 +338,73 @@ export function DeckAnalysisView({ decks, selectedDeckIds, inventoryByName }) {
       {activeTab === 'overview' && (
         <>
           {/* Overall Summary */}
-          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-lg border border-slate-600 p-6">
+          <div className="bg-ui-card rounded-lg border border-ui-border p-6">
             <h2 className="text-2xl font-bold text-teal-300 mb-4 flex items-center gap-2">
               <BarChart3 className="w-6 h-6" />
               Multi-Deck Analysis
             </h2>
             
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-              <div className="bg-slate-900/50 rounded-lg p-4">
-                <div className="text-slate-400 text-sm mb-1">Decks</div>
-                <div className="text-2xl font-bold text-teal-300">{selectedDecks.length}</div>
+              <div className="bg-ui-card/50 rounded-lg p-4">
+                <div className="text-ui-muted text-sm mb-1">Decks</div>
+                <div className="text-2xl font-bold text-ui-primary">{selectedDecks.length}</div>
               </div>
-              <div className="bg-slate-900/50 rounded-lg p-4">
-                <div className="text-slate-400 text-sm mb-1">Cards Needed</div>
-                <div className="text-2xl font-bold text-blue-300">{analysis.totalCardsNeeded}</div>
+              <div className="bg-ui-card/50 rounded-lg p-4">
+                <div className="text-ui-muted text-sm mb-1">Cards Needed</div>
+                <div className="text-2xl font-bold text-ui-accent">{analysis.totalCardsNeeded}</div>
               </div>
-              <div className="bg-slate-900/50 rounded-lg p-4">
-                <div className="text-slate-400 text-sm mb-1">Cards Owned</div>
-                <div className="text-2xl font-bold text-green-300">{analysis.totalCardsOwned}</div>
+              <div className="bg-ui-card/50 rounded-lg p-4">
+                <div className="text-ui-muted text-sm mb-1">Cards Owned</div>
+                <div className="text-2xl font-bold text-ui-primary">{analysis.totalCardsOwned}</div>
               </div>
-              <div className="bg-slate-900/50 rounded-lg p-4">
-                <div className="text-slate-400 text-sm mb-1">Completion</div>
-                <div className="text-2xl font-bold text-amber-300">
+              <div className="bg-ui-card/50 rounded-lg p-4">
+                <div className="text-ui-muted text-sm mb-1">Completion</div>
+                <div className="text-2xl font-bold text-ui-accent">
                   {analysis.completionRate.toFixed(1)}%
                 </div>
               </div>
-              <div className="bg-slate-900/50 rounded-lg p-4">
-                <div className="text-slate-400 text-sm mb-1 flex items-center gap-1">
+              <div className="bg-ui-card/50 rounded-lg p-4">
+                <div className="text-ui-muted text-sm mb-1 flex items-center gap-1">
                   <DollarSign className="w-3 h-3" />
                   Est. Cost
                 </div>
-                <div className="text-2xl font-bold text-emerald-300">
+                <div className="text-2xl font-bold text-ui-primary">
                   ${analysis.estimatedCost.toFixed(2)}
                 </div>
               </div>
             </div>
 
             {/* Completion Progress Bar */}
-            <div className="bg-slate-900 rounded-full h-4 overflow-hidden">
+            <div className="bg-ui-surface rounded-full h-4 overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-teal-600 to-green-500 transition-all duration-500"
+                className="h-full bg-ui-primary transition-all duration-500"
                 style={{ width: `${Math.min(100, analysis.completionRate)}%` }}
               />
             </div>
           </div>
 
           {/* Deck Quantity Sliders - Collapsible */}
-          <div className="bg-slate-800 rounded-lg border border-slate-600 overflow-hidden">
+          <div className="bg-ui-card rounded-lg border border-ui-border overflow-hidden">
             <button
               onClick={() => toggleSection('quantities')}
-              className="w-full flex items-center justify-between p-4 hover:bg-slate-700/50 transition-colors"
+              className="w-full flex items-center justify-between p-4 hover:bg-ui-surface/60 transition-colors"
             >
               <h3 className="text-lg font-semibold text-teal-300 flex items-center gap-2">
                 <Package className="w-5 h-5" />
                 Deck Quantities
               </h3>
               {expandedSections.quantities ? (
-                <ChevronUp className="w-5 h-5 text-slate-400" />
+                <ChevronUp className="w-5 h-5 text-ui-muted" />
               ) : (
-                <ChevronDown className="w-5 h-5 text-slate-400" />
+                <ChevronDown className="w-5 h-5 text-ui-muted" />
               )}
             </button>
             {expandedSections.quantities && (
               <div className="p-4 pt-0 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {selectedDecks.map(deck => (
-                  <div key={deck.id} className="bg-slate-900/50 rounded-lg p-4">
+                  <div key={deck.id} className="bg-ui-card/50 rounded-lg p-4">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-slate-200 font-medium truncate">{deck.name}</span>
+                      <span className="text-ui-text font-medium truncate">{deck.name}</span>
                       <span className="text-teal-300 font-bold text-lg ml-2">
                         {deckQuantities[deck.id] || 1}x
                       </span>
@@ -415,9 +415,9 @@ export function DeckAnalysisView({ decks, selectedDeckIds, inventoryByName }) {
                       max="10"
                       value={deckQuantities[deck.id] || 1}
                       onChange={(e) => handleQuantityChange(deck.id, parseInt(e.target.value))}
-                      className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-teal-500"
+                      className="w-full h-2 bg-ui-surface rounded-lg appearance-none cursor-pointer accent-teal-500"
                     />
-                    <div className="flex justify-between text-xs text-slate-500 mt-1">
+                    <div className="flex justify-between text-xs text-ui-muted mt-1">
                       <span>1</span>
                       <span>10</span>
                     </div>
@@ -428,28 +428,28 @@ export function DeckAnalysisView({ decks, selectedDeckIds, inventoryByName }) {
           </div>
 
           {/* Per-Deck Statistics - Collapsible */}
-          <div className="bg-slate-800 rounded-lg border border-slate-600 overflow-hidden">
+          <div className="bg-ui-card rounded-lg border border-ui-border overflow-hidden">
             <button
               onClick={() => toggleSection('stats')}
-              className="w-full flex items-center justify-between p-4 hover:bg-slate-700/50 transition-colors"
+              className="w-full flex items-center justify-between p-4 hover:bg-ui-surface/60 transition-colors"
             >
               <h3 className="text-lg font-semibold text-teal-300 flex items-center gap-2">
                 <TrendingUp className="w-5 h-5" />
                 Individual Deck Stats
               </h3>
               {expandedSections.stats ? (
-                <ChevronUp className="w-5 h-5 text-slate-400" />
+                <ChevronUp className="w-5 h-5 text-ui-muted" />
               ) : (
-                <ChevronDown className="w-5 h-5 text-slate-400" />
+                <ChevronDown className="w-5 h-5 text-ui-muted" />
               )}
             </button>
             {expandedSections.stats && (
               <div className="p-4 pt-0 space-y-3">
                 {analysis.deckStats.map(stat => (
-                  <div key={stat.deckId} className="bg-slate-900/50 rounded-lg p-4">
+                  <div key={stat.deckId} className="bg-ui-card/50 rounded-lg p-4">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
-                        <span className="text-slate-200 font-medium">{stat.deckName}</span>
+                        <span className="text-ui-text font-medium">{stat.deckName}</span>
                         {stat.copies > 1 && (
                           <span className="text-xs bg-teal-600 text-white px-2 py-0.5 rounded">
                             {stat.copies}x
@@ -465,19 +465,19 @@ export function DeckAnalysisView({ decks, selectedDeckIds, inventoryByName }) {
                     </div>
                     <div className="grid grid-cols-3 gap-4 text-sm mb-2">
                       <div>
-                        <div className="text-slate-400">Required</div>
+                        <div className="text-ui-muted">Required</div>
                         <div className="text-blue-300 font-semibold">{stat.required}</div>
                       </div>
                       <div>
-                        <div className="text-slate-400">Owned</div>
+                        <div className="text-ui-muted">Owned</div>
                         <div className="text-green-300 font-semibold">{stat.owned}</div>
                       </div>
                       <div>
-                        <div className="text-slate-400">Missing</div>
+                        <div className="text-ui-muted">Missing</div>
                         <div className="text-red-300 font-semibold">{stat.missing}</div>
                       </div>
                     </div>
-                    <div className="bg-slate-900 rounded-full h-2 overflow-hidden">
+                    <div className="bg-ui-card/50 rounded-full h-2 overflow-hidden">
                       <div
                         className={`h-full transition-all duration-500 ${
                           stat.completion === 100 ? 'bg-green-500' : 
@@ -495,7 +495,7 @@ export function DeckAnalysisView({ decks, selectedDeckIds, inventoryByName }) {
           {/* Quick Stats Summary */}
           {analysis.missingCards.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-gradient-to-br from-red-900/30 to-slate-800 rounded-lg border border-red-600/30 p-4">
+              <div className="bg-ui-card/50 rounded-lg border border-red-600/30 p-4">
                 <div className="flex items-center justify-between mb-2">
                   <h4 className="text-red-300 font-semibold flex items-center gap-2">
                     <AlertCircle className="w-4 h-4" />
@@ -511,7 +511,7 @@ export function DeckAnalysisView({ decks, selectedDeckIds, inventoryByName }) {
                 <div className="space-y-1">
                   {analysis.missingCards.slice(0, 5).map((card, idx) => (
                     <div key={idx} className="flex items-center justify-between text-sm">
-                      <span className="text-slate-300 truncate">{card.name}</span>
+                      <span className="text-ui-text truncate">{card.name}</span>
                       <span className="text-red-400 font-medium ml-2">-{card.missing}</span>
                     </div>
                   ))}
@@ -519,7 +519,7 @@ export function DeckAnalysisView({ decks, selectedDeckIds, inventoryByName }) {
               </div>
 
               {analysis.sharedCards.length > 0 && (
-                <div className="bg-gradient-to-br from-teal-900/30 to-slate-800 rounded-lg border border-teal-600/30 p-4">
+                <div className="bg-ui-card/50 rounded-lg border border-teal-600/30 p-4">
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="text-teal-300 font-semibold flex items-center gap-2">
                       <CheckCircle2 className="w-4 h-4" />
@@ -535,7 +535,7 @@ export function DeckAnalysisView({ decks, selectedDeckIds, inventoryByName }) {
                   <div className="space-y-1">
                     {analysis.sharedCards.slice(0, 5).map((card, idx) => (
                       <div key={idx} className="flex items-center justify-between text-sm">
-                        <span className="text-slate-300 truncate">{card.name}</span>
+                        <span className="text-ui-text truncate">{card.name}</span>
                         <span className="text-teal-400 font-medium ml-2">{card.decks.length} decks</span>
                       </div>
                     ))}
@@ -551,7 +551,7 @@ export function DeckAnalysisView({ decks, selectedDeckIds, inventoryByName }) {
       {activeTab === 'missing' && (
         <div className="space-y-4">
           {/* Actions Bar */}
-          <div className="bg-slate-800 rounded-lg border border-slate-600 p-4">
+          <div className="bg-ui-card rounded-lg border border-ui-border p-4">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <h3 className="text-lg font-semibold text-red-300 flex items-center gap-2">
                 <AlertCircle className="w-5 h-5" />
@@ -569,7 +569,7 @@ export function DeckAnalysisView({ decks, selectedDeckIds, inventoryByName }) {
                   )}
                 <button
                   onClick={copyToClipboard}
-                  className="flex items-center gap-2 px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg transition-colors text-sm"
+                  className="flex items-center gap-2 px-3 py-2 bg-ui-surface hover:bg-ui-surface/60 text-ui-text rounded-lg transition-colors text-sm"
                 >
                   {copiedToClipboard ? (
                     <>
@@ -585,7 +585,7 @@ export function DeckAnalysisView({ decks, selectedDeckIds, inventoryByName }) {
                 </button>
                 <button
                   onClick={exportToCSV}
-                  className="flex items-center gap-2 px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg transition-colors text-sm"
+                  className="flex items-center gap-2 px-3 py-2 bg-ui-surface hover:bg-ui-surface/60 text-ui-text rounded-lg transition-colors text-sm"
                 >
                   <Download className="w-4 h-4" />
                   Export CSV
@@ -608,21 +608,21 @@ export function DeckAnalysisView({ decks, selectedDeckIds, inventoryByName }) {
           </div>
 
           {/* Search and Filters */}
-          <div className="bg-slate-800 rounded-lg border border-slate-600 p-4">
+          <div className="bg-ui-card rounded-lg border border-ui-border p-4">
             <div className="flex flex-wrap gap-3">
               <div className="flex-1 min-w-[200px] relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ui-muted" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search cards..."
-                  className="w-full pl-10 pr-4 py-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-200 placeholder-slate-500 focus:border-teal-500 focus:outline-none"
+                  className="w-full pl-10 pr-4 py-2 bg-ui-card/50 border border-ui-border rounded-lg text-ui-text placeholder-ui-muted focus:border-teal-500 focus:outline-none"
                 />
                 {searchQuery && (
                   <button
                     onClick={() => setSearchQuery('')}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-ui-muted hover:text-ui-text"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -631,7 +631,7 @@ export function DeckAnalysisView({ decks, selectedDeckIds, inventoryByName }) {
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-200 focus:border-teal-500 focus:outline-none"
+                className="px-3 py-2 bg-ui-card/50 border border-ui-border rounded-lg text-ui-text focus:border-teal-500 focus:outline-none"
               >
                 <option value="missing">Sort by Missing</option>
                 <option value="name">Sort by Name</option>
@@ -640,20 +640,20 @@ export function DeckAnalysisView({ decks, selectedDeckIds, inventoryByName }) {
               </select>
               <button
                 onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
-                className="p-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-400 hover:text-slate-200"
+                className="p-2 bg-ui-card/50 border border-ui-border rounded-lg text-ui-muted hover:text-ui-text"
               >
                 {sortOrder === 'asc' ? <SortAsc className="w-5 h-5" /> : <SortDesc className="w-5 h-5" />}
               </button>
-              <div className="flex gap-1 bg-slate-900 border border-slate-600 rounded-lg p-1">
+              <div className="flex gap-1 bg-ui-card/50 border border-ui-border rounded-lg p-1">
                 <button
                   onClick={() => setViewMode('list')}
-                  className={`p-2 rounded ${viewMode === 'list' ? 'bg-teal-600 text-white' : 'text-slate-400 hover:text-slate-200'}`}
+                  className={`p-2 rounded ${viewMode === 'list' ? 'bg-teal-600 text-white' : 'text-ui-muted hover:text-ui-text'}`}
                 >
                   <List className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => setViewMode('grid')}
-                  className={`p-2 rounded ${viewMode === 'grid' ? 'bg-teal-600 text-white' : 'text-slate-400 hover:text-slate-200'}`}
+                  className={`p-2 rounded ${viewMode === 'grid' ? 'bg-teal-600 text-white' : 'text-ui-muted hover:text-ui-text'}`}
                 >
                   <Grid3X3 className="w-4 h-4" />
                 </button>
@@ -687,15 +687,15 @@ export function DeckAnalysisView({ decks, selectedDeckIds, inventoryByName }) {
             const totalMissingCount = filteredCards.reduce((sum, card) => sum + card.missing, 0);
             
             return (
-              <div className="bg-slate-800 rounded-lg border border-slate-600">
+              <div className="bg-ui-card rounded-lg border border-ui-border">
                 {/* Header with count */}
-                <div className="bg-slate-900/50 px-4 py-3 border-b border-slate-700">
+                <div className="bg-ui-card/50 px-4 py-3 border-b border-ui-border">
                   <div className="flex items-center justify-between mb-2">
-                    <div className="text-sm text-slate-400">
+                    <div className="text-sm text-ui-muted">
                       Showing <span className="text-red-300 font-semibold">{filteredCards.length}</span> unique cards
                       {searchQuery && ` matching "${searchQuery}"`}
                     </div>
-                    <div className="text-sm text-slate-400">
+                    <div className="text-sm text-ui-muted">
                       Total missing: <span className="text-red-300 font-bold">{totalMissingCount}</span> cards
                     </div>
                   </div>
@@ -715,27 +715,27 @@ export function DeckAnalysisView({ decks, selectedDeckIds, inventoryByName }) {
                     <div>
                       {filteredCards.map((card, idx) => (
                         <div
-                          key={idx}
-                          className={`flex items-center justify-between p-4 hover:bg-slate-700/50 transition-colors ${idx !== filteredCards.length - 1 ? 'border-b border-slate-700' : ''}`}
-                          onMouseEnter={(e) => setHoveredCard({ name: card.name, x: e.clientX, y: e.clientY })}
+                            key={idx}
+                            className={`flex items-center justify-between p-4 hover:bg-ui-surface/60 transition-colors ${idx !== filteredCards.length - 1 ? 'border-b border-ui-border' : ''}`}
+                            onMouseEnter={(e) => setHoveredCard({ name: card.name, x: e.clientX, y: e.clientY })}
                           onMouseLeave={() => setHoveredCard(null)}
                         >
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <span className="text-red-400 font-bold text-lg">#{idx + 1}</span>
-                              <span className="text-slate-200 font-medium">{card.name}</span>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-red-400 font-bold text-lg">#{idx + 1}</span>
+                                <span className="text-ui-text font-medium">{card.name}</span>
+                              </div>
+                              <div className="text-xs text-ui-muted mt-1 ml-8">
+                                Used in {card.decks.map(d => d.deckName).join(', ')}
+                              </div>
                             </div>
-                            <div className="text-xs text-slate-400 mt-1 ml-8">
-                              Used in {card.decks.map(d => d.deckName).join(', ')}
-                            </div>
-                          </div>
                           <div className="flex items-center gap-4">
                             <div className="text-sm text-right">
-                              <div className="text-slate-400">
-                                Need <span className="text-blue-300 font-semibold">{card.totalRequired}</span>
-                                {' / '}
-                                Have <span className="text-green-300 font-semibold">{card.available}</span>
-                              </div>
+                                <div className="text-ui-muted">
+                                  Need <span className="text-blue-300 font-semibold">{card.totalRequired}</span>
+                                  {' / '}
+                                  Have <span className="text-green-300 font-semibold">{card.available}</span>
+                                </div>
                             </div>
                             <div className="text-2xl font-bold text-red-400 w-16 text-right">
                               -{card.missing}
@@ -749,11 +749,11 @@ export function DeckAnalysisView({ decks, selectedDeckIds, inventoryByName }) {
                       {filteredCards.map((card, idx) => (
                         <div
                           key={idx}
-                          className="bg-slate-900 rounded-lg border border-slate-700 overflow-hidden hover:border-red-500/50 transition-colors"
+                          className="bg-ui-card rounded-lg border border-ui-border overflow-hidden hover:border-red-500/50 transition-colors"
                           onMouseEnter={(e) => setHoveredCard({ name: card.name, x: e.clientX, y: e.clientY })}
                           onMouseLeave={() => setHoveredCard(null)}
                         >
-                          <div className="aspect-[3/4] bg-slate-900 relative">
+                            <div className="aspect-[3/4] bg-ui-card/50 relative">
                             <img
                               src={getCardImageUrl(card.name)}
                               alt={card.name}
@@ -763,17 +763,17 @@ export function DeckAnalysisView({ decks, selectedDeckIds, inventoryByName }) {
                                 e.target.nextSibling.style.display = 'flex';
                               }}
                             />
-                            <div className="absolute inset-0 hidden items-center justify-center bg-slate-900 text-slate-500 text-sm p-2 text-center">
+                              <div className="absolute inset-0 hidden items-center justify-center bg-ui-card text-ui-muted text-sm p-2 text-center">
                               {card.name}
                             </div>
-                            <div className="absolute top-2 right-2 bg-red-600 text-white font-bold px-2 py-1 rounded text-sm">
+                              <div className="absolute top-2 right-2 bg-red-600 text-white font-bold px-2 py-1 rounded text-sm">
                               -{card.missing}
                             </div>
                           </div>
-                          <div className="p-2">
-                            <div className="text-xs text-slate-200 truncate font-medium">{card.name}</div>
-                            <div className="text-xs text-slate-500">{card.decks.length} deck(s)</div>
-                          </div>
+                            <div className="p-2">
+                              <div className="text-xs text-ui-text truncate font-medium">{card.name}</div>
+                              <div className="text-xs text-ui-muted">{card.decks.length} deck(s)</div>
+                            </div>
                         </div>
                       ))}
                     </div>
@@ -781,7 +781,7 @@ export function DeckAnalysisView({ decks, selectedDeckIds, inventoryByName }) {
                   
                   {/* Empty state */}
                   {filteredCards.length === 0 && (
-                    <div className="flex flex-col items-center justify-center py-12 text-slate-400">
+                    <div className="flex flex-col items-center justify-center py-12 text-ui-muted">
                       <AlertCircle className="w-12 h-12 mb-3 opacity-50" />
                       {searchQuery ? (
                         <p>No missing cards match "{searchQuery}"</p>
@@ -800,44 +800,44 @@ export function DeckAnalysisView({ decks, selectedDeckIds, inventoryByName }) {
       {/* Shared Cards Tab */}
       {activeTab === 'shared' && (
         <div className="space-y-4">
-          <div className="bg-slate-800 rounded-lg border border-slate-600 p-4">
+          <div className="bg-ui-card rounded-lg border border-ui-border p-4">
             <h3 className="text-lg font-semibold text-teal-300 flex items-center gap-2">
               <CheckCircle2 className="w-5 h-5" />
               Shared Cards ({analysis.sharedCards.length})
             </h3>
-            <p className="text-sm text-slate-400 mt-1">
+            <p className="text-sm text-ui-muted mt-1">
               Cards that appear in multiple selected decks - these share inventory across decks
             </p>
           </div>
 
           {/* Search */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ui-muted" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search shared cards..."
-              className="w-full pl-10 pr-4 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-200 placeholder-slate-500 focus:border-teal-500 focus:outline-none"
+              className="w-full pl-10 pr-4 py-2 bg-ui-card/50 border border-ui-border rounded-lg text-ui-text placeholder-ui-muted focus:border-teal-500 focus:outline-none"
             />
           </div>
 
-          <div className="bg-slate-800 rounded-lg border border-slate-600 overflow-hidden">
-            <div className="max-h-[600px] overflow-y-auto divide-y divide-slate-700">
+          <div className="bg-ui-card rounded-lg border border-ui-border overflow-hidden">
+            <div className="max-h-[600px] overflow-y-auto divide-y divide-ui-border">
               {analysis.sharedCards
                 .filter(card => !searchQuery || card.name.toLowerCase().includes(searchQuery.toLowerCase()))
                 .map((card, idx) => (
                   <div
                     key={idx}
-                    className="p-4 hover:bg-slate-700/50 transition-colors"
+                    className="p-4 hover:bg-ui-surface/60 transition-colors"
                     onMouseEnter={(e) => setHoveredCard({ name: card.name, x: e.clientX, y: e.clientY })}
                     onMouseLeave={() => setHoveredCard(null)}
                   >
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <Eye className="w-4 h-4 text-slate-500" />
-                          <span className="text-slate-200 font-medium">{card.name}</span>
+                          <Eye className="w-4 h-4 text-ui-muted" />
+                          <span className="text-ui-text font-medium">{card.name}</span>
                           <span className="text-xs bg-teal-600 text-white px-2 py-0.5 rounded">
                             {card.decks.length} decks
                           </span>
@@ -846,7 +846,7 @@ export function DeckAnalysisView({ decks, selectedDeckIds, inventoryByName }) {
                       <div className="text-right">
                         <div className="text-sm">
                           <span className="text-blue-300 font-semibold">{card.totalRequired}</span>
-                          <span className="text-slate-400 mx-1">/</span>
+                          <span className="text-ui-muted mx-1">/</span>
                           <span className="text-green-300 font-semibold">{card.available}</span>
                         </div>
                         {card.totalRequired > card.available && (
@@ -860,7 +860,7 @@ export function DeckAnalysisView({ decks, selectedDeckIds, inventoryByName }) {
                       {card.decks.map((deckInfo, i) => (
                         <span
                           key={i}
-                          className="text-xs bg-slate-700 text-slate-300 px-2 py-1 rounded"
+                          className="text-xs bg-ui-surface text-ui-text px-2 py-1 rounded"
                         >
                           {deckInfo.deckName}: {deckInfo.quantity}×{deckInfo.copies}
                         </span>
@@ -877,24 +877,24 @@ export function DeckAnalysisView({ decks, selectedDeckIds, inventoryByName }) {
       {activeTab === 'breakdown' && (
         <div className="space-y-4">
           {/* Search and Filters */}
-          <div className="bg-slate-800 rounded-lg border border-slate-600 p-4">
+          <div className="bg-ui-card rounded-lg border border-ui-border p-4">
             <div className="flex flex-wrap gap-3 items-center">
               <div className="flex-1 min-w-[200px] relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ui-muted" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search all cards..."
-                  className="w-full pl-10 pr-4 py-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-200 placeholder-slate-500 focus:border-teal-500 focus:outline-none"
+                  className="w-full pl-10 pr-4 py-2 bg-ui-card/50 border border-ui-border rounded-lg text-ui-text placeholder-ui-muted focus:border-teal-500 focus:outline-none"
                 />
               </div>
-              <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+              <label className="flex items-center gap-2 text-sm text-ui-muted cursor-pointer">
                 <input
                   type="checkbox"
                   checked={filterMissingOnly}
                   onChange={(e) => setFilterMissingOnly(e.target.checked)}
-                  className="w-4 h-4 rounded border-slate-600 text-teal-500 focus:ring-teal-500"
+                  className="w-4 h-4 rounded border-ui-border text-teal-500 focus:ring-teal-500"
                 />
                 <Filter className="w-4 h-4" />
                 Missing only
@@ -902,7 +902,7 @@ export function DeckAnalysisView({ decks, selectedDeckIds, inventoryByName }) {
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-200 focus:border-teal-500 focus:outline-none"
+                className="px-3 py-2 bg-ui-card/50 border border-ui-border rounded-lg text-ui-text focus:border-teal-500 focus:outline-none"
               >
                 <option value="missing">Sort by Missing</option>
                 <option value="name">Sort by Name</option>
@@ -911,18 +911,18 @@ export function DeckAnalysisView({ decks, selectedDeckIds, inventoryByName }) {
               </select>
               <button
                 onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
-                className="p-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-400 hover:text-slate-200"
+                className="p-2 bg-ui-card/50 border border-ui-border rounded-lg text-ui-muted hover:text-ui-text"
               >
                 {sortOrder === 'asc' ? <SortAsc className="w-5 h-5" /> : <SortDesc className="w-5 h-5" />}
               </button>
             </div>
-            <div className="mt-3 text-sm text-slate-400">
+            <div className="mt-3 text-sm text-ui-muted">
               Showing {filteredCards.length} of {analysis.cardRequirements.length} unique cards
             </div>
           </div>
 
           {/* All Cards List */}
-          <div className="bg-slate-800 rounded-lg border border-slate-600 overflow-hidden">
+          <div className="bg-ui-card rounded-lg border border-ui-border overflow-hidden">
             <div className="max-h-[600px] overflow-y-auto">
               {filteredCards.map((card, idx) => {
                 const missing = Math.max(0, card.totalRequired - card.available);
@@ -931,15 +931,15 @@ export function DeckAnalysisView({ decks, selectedDeckIds, inventoryByName }) {
                 return (
                   <div
                     key={idx}
-                    className={`flex items-center justify-between p-3 border-b border-slate-700 last:border-0 hover:bg-slate-700/30 transition-colors ${
+                    className={`flex items-center justify-between p-3 border-b border-ui-border last:border-0 hover:bg-ui-surface/30 transition-colors ${
                       isComplete ? 'bg-green-900/10' : ''
                     }`}
                     onMouseEnter={(e) => setHoveredCard({ name: card.name, x: e.clientX, y: e.clientY })}
                     onMouseLeave={() => setHoveredCard(null)}
                   >
                     <div className="flex items-center gap-3 flex-1">
-                      <Eye className="w-4 h-4 text-slate-500 flex-shrink-0" />
-                      <span className="text-slate-200">{card.name}</span>
+                      <Eye className="w-4 h-4 text-ui-muted flex-shrink-0" />
+                      <span className="text-ui-text">{card.name}</span>
                       {card.decks.length > 1 && (
                         <span className="text-xs bg-teal-600/50 text-teal-200 px-1.5 py-0.5 rounded">
                           {card.decks.length} decks
@@ -949,7 +949,7 @@ export function DeckAnalysisView({ decks, selectedDeckIds, inventoryByName }) {
                     <div className="flex items-center gap-4">
                       <span className="text-sm">
                         <span className="text-blue-300">{card.totalRequired}</span>
-                        <span className="text-slate-500 mx-1">/</span>
+                        <span className="text-ui-muted mx-1">/</span>
                         <span className="text-green-300">{card.available}</span>
                       </span>
                       {isComplete ? (

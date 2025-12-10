@@ -40,10 +40,10 @@ const StepIndicator = memo(function StepIndicator({ steps, currentStep }) {
                 className={`
                   w-10 h-10 rounded-full flex items-center justify-center transition-all
                   ${isCompleted
-                    ? 'bg-teal-500 text-white'
+                    ? 'bg-ui-accent text-ui-primary-foreground'
                     : isCurrent
-                      ? 'bg-accent text-white ring-4 ring-accent/20'
-                      : 'bg-slate-800 text-slate-500 border border-slate-700'
+                      ? 'bg-ui-accent text-ui-primary-foreground ring-4 ring-ui-accent/20'
+                      : 'bg-ui-surface text-ui-muted border border-ui-border'
                   }
                 `}
               >
@@ -57,7 +57,7 @@ const StepIndicator = memo(function StepIndicator({ steps, currentStep }) {
               <span
                 className={`
                   mt-2 text-xs font-medium
-                  ${isCurrent ? 'text-white' : 'text-slate-500'}
+                  ${isCurrent ? 'text-ui-primary-foreground' : 'text-ui-muted'}
                 `}
               >
                 {step.label}
@@ -69,7 +69,7 @@ const StepIndicator = memo(function StepIndicator({ steps, currentStep }) {
               <div
                 className={`
                   w-16 h-0.5 mx-2 transition-colors
-                  ${isCompleted ? 'bg-teal-500' : 'bg-slate-700'}
+                  ${isCompleted ? 'bg-ui-accent' : 'bg-ui-border'}
                 `}
               />
             )}
@@ -92,20 +92,20 @@ const FormatSelector = memo(function FormatSelector({ formats, selectedFormat, o
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
       {formats.map((format) => (
-        <button
+          <button
           key={format.value}
           onClick={() => onSelect(format.value)}
           className={`
             p-4 rounded-lg border text-left transition-all
             ${selectedFormat === format.value
-              ? 'border-accent bg-accent/10 ring-2 ring-accent/30'
-              : 'border-slate-700 bg-slate-800/50 hover:border-slate-600 hover:bg-slate-800'
+              ? 'border-ui-accent bg-ui-accent/10 ring-2 ring-ui-accent/30'
+              : 'border-ui-border bg-ui-surface/50 hover:border-ui-border hover:bg-ui-surface'
             }
           `}
         >
-          <div className="font-medium text-white mb-1">{format.label}</div>
+          <div className="font-medium text-ui-text mb-1">{format.label}</div>
           {format.description && (
-            <div className="text-xs text-slate-400">{format.description}</div>
+            <div className="text-xs text-ui-muted">{format.description}</div>
           )}
         </button>
       ))}
@@ -136,28 +136,28 @@ const PreviewTable = memo(function PreviewTable({
   };
 
   return (
-    <div className="border border-slate-700 rounded-lg overflow-hidden">
+    <div className="border border-ui-border rounded-lg overflow-hidden">
       <div className="overflow-x-auto max-h-[400px]">
         <table className="w-full text-sm">
-          <thead className="bg-slate-800/80 sticky top-0">
+          <thead className="bg-ui-surface/80 sticky top-0">
             <tr>
-              <th className="px-3 py-2 text-left text-xs font-medium text-slate-400 uppercase">Name</th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-slate-400 uppercase">Set</th>
-              <th className="px-3 py-2 text-center text-xs font-medium text-slate-400 uppercase">Qty</th>
-              <th className="px-3 py-2 text-center text-xs font-medium text-slate-400 uppercase">Foil</th>
-              <th className="px-3 py-2 text-right text-xs font-medium text-slate-400 uppercase">Price</th>
-              <th className="px-3 py-2 text-center text-xs font-medium text-slate-400 uppercase">Status</th>
+              <th className="px-3 py-2 text-left text-xs font-medium text-ui-muted uppercase">Name</th>
+              <th className="px-3 py-2 text-left text-xs font-medium text-ui-muted uppercase">Set</th>
+              <th className="px-3 py-2 text-center text-xs font-medium text-ui-muted uppercase">Qty</th>
+              <th className="px-3 py-2 text-center text-xs font-medium text-ui-muted uppercase">Foil</th>
+              <th className="px-3 py-2 text-right text-xs font-medium text-ui-muted uppercase">Price</th>
+              <th className="px-3 py-2 text-center text-xs font-medium text-ui-muted uppercase">Status</th>
               <th className="px-3 py-2 w-20"></th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-800">
+          <tbody className="divide-y divide-ui-border">
             {cards.map((card) => (
               <tr
                 key={card.id}
                 className={`
                   ${card.status === 'imported' ? 'bg-emerald-900/10' : ''}
                   ${card.status === 'error' ? 'bg-red-900/10' : ''}
-                  hover:bg-slate-800/50
+                  hover:bg-ui-surface/50
                 `}
               >
                 {editingId === card.id ? (
@@ -168,7 +168,7 @@ const PreviewTable = memo(function PreviewTable({
                         type="text"
                         value={card.name}
                         onChange={(e) => onUpdateCard(card.id, { name: e.target.value })}
-                        className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-white text-sm"
+                        className="w-full bg-ui-card border border-ui-border rounded px-2 py-1 text-ui-text text-sm"
                       />
                     </td>
                     <td className="px-3 py-2">
@@ -176,7 +176,7 @@ const PreviewTable = memo(function PreviewTable({
                         type="text"
                         value={card.set || ''}
                         onChange={(e) => onUpdateCard(card.id, { set: e.target.value.toUpperCase() })}
-                        className="w-20 bg-slate-900 border border-slate-600 rounded px-2 py-1 text-white text-sm"
+                        className="w-20 bg-ui-card border border-ui-border rounded px-2 py-1 text-ui-text text-sm"
                       />
                     </td>
                     <td className="px-3 py-2">
@@ -185,7 +185,7 @@ const PreviewTable = memo(function PreviewTable({
                         min="1"
                         value={card.quantity}
                         onChange={(e) => onUpdateCard(card.id, { quantity: parseInt(e.target.value, 10) || 1 })}
-                        className="w-16 bg-slate-900 border border-slate-600 rounded px-2 py-1 text-white text-sm text-center"
+                        className="w-16 bg-ui-card border border-ui-border rounded px-2 py-1 text-ui-text text-sm text-center"
                       />
                     </td>
                     <td className="px-3 py-2 text-center">
@@ -193,7 +193,7 @@ const PreviewTable = memo(function PreviewTable({
                         type="checkbox"
                         checked={card.foil || false}
                         onChange={(e) => onUpdateCard(card.id, { foil: e.target.checked })}
-                        className="w-4 h-4 rounded border-slate-600 bg-slate-900 text-teal-500"
+                        className="w-4 h-4 rounded border-ui-border bg-ui-card text-teal-500"
                       />
                     </td>
                     <td className="px-3 py-2">
@@ -202,16 +202,16 @@ const PreviewTable = memo(function PreviewTable({
                         step="0.01"
                         value={card.price || ''}
                         onChange={(e) => onUpdateCard(card.id, { price: e.target.value })}
-                        className="w-20 bg-slate-900 border border-slate-600 rounded px-2 py-1 text-white text-sm text-right"
+                        className="w-20 bg-ui-card border border-ui-border rounded px-2 py-1 text-ui-text text-sm text-right"
                       />
                     </td>
                     <td className="px-3 py-2 text-center">
-                      <span className="text-xs text-slate-400">Editing</span>
+                      <span className="text-xs text-ui-muted">Editing</span>
                     </td>
                     <td className="px-3 py-2 text-center">
                       <button
                         onClick={() => setEditingId(null)}
-                        className="p-1 text-teal-400 hover:text-teal-300"
+                        className="p-1 text-ui-accent hover:text-ui-accent/80"
                       >
                         <Check className="w-4 h-4" />
                       </button>
@@ -220,17 +220,17 @@ const PreviewTable = memo(function PreviewTable({
                 ) : (
                   // Display mode
                   <>
-                    <td className="px-3 py-2 text-white font-medium">{card.name}</td>
-                    <td className="px-3 py-2 text-slate-400">{card.set || '—'}</td>
-                    <td className="px-3 py-2 text-center text-slate-300">{card.quantity}</td>
+                    <td className="px-3 py-2 text-ui-text font-medium">{card.name}</td>
+                    <td className="px-3 py-2 text-ui-muted">{card.set || '—'}</td>
+                    <td className="px-3 py-2 text-center text-ui-muted">{card.quantity}</td>
                     <td className="px-3 py-2 text-center">
                       {card.foil ? (
                         <span className="text-amber-400">✦</span>
                       ) : (
-                        <span className="text-slate-600">—</span>
+                        <span className="text-ui-muted">—</span>
                       )}
                     </td>
-                    <td className="px-3 py-2 text-right text-slate-300">{formatPrice(card.price)}</td>
+                    <td className="px-3 py-2 text-right text-ui-muted">{formatPrice(card.price)}</td>
                     <td className="px-3 py-2 text-center">
                       {card.status === 'imported' && (
                         <span className="inline-flex items-center gap-1 text-xs text-emerald-400">
@@ -243,7 +243,7 @@ const PreviewTable = memo(function PreviewTable({
                         </span>
                       )}
                       {card.status === 'pending' && (
-                        <span className="text-xs text-slate-500">Pending</span>
+                        <span className="text-xs text-ui-muted">Pending</span>
                       )}
                     </td>
                     <td className="px-3 py-2">
@@ -251,14 +251,14 @@ const PreviewTable = memo(function PreviewTable({
                         {card.status !== 'imported' && (
                           <button
                             onClick={() => setEditingId(card.id)}
-                            className="p-1 text-slate-400 hover:text-white"
+                            className="p-1 text-ui-muted hover:text-ui-text"
                           >
                             <Edit3 className="w-3.5 h-3.5" />
                           </button>
                         )}
                         <button
                           onClick={() => onRemoveCard(card.id)}
-                          className="p-1 text-slate-400 hover:text-red-400"
+                          className="p-1 text-ui-muted hover:text-red-400"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -292,23 +292,23 @@ const ImportProgress = memo(function ImportProgress({ current, total, status }) 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <span className="text-sm text-slate-400">
+        <span className="text-sm text-ui-muted">
           {status === 'importing' ? 'Importing cards...' : 'Import complete!'}
         </span>
-        <span className="text-sm font-medium text-white">
+        <span className="text-sm font-medium text-ui-text">
           {current} / {total}
         </span>
       </div>
-      <div className="h-3 bg-slate-800 rounded-full overflow-hidden">
+      <div className="h-3 bg-ui-surface rounded-full overflow-hidden">
         <div
           className={`h-full transition-all duration-300 ${
-            status === 'complete' ? 'bg-emerald-500' : 'bg-accent'
+            status === 'complete' ? 'bg-emerald-500' : 'bg-ui-accent'
           }`}
           style={{ width: `${percentage}%` }}
         />
       </div>
       {status === 'importing' && (
-        <div className="flex items-center justify-center gap-2 text-accent">
+        <div className="flex items-center justify-center gap-2 text-ui-accent">
           <Loader2 className="w-4 h-4 animate-spin" />
           <span className="text-sm">Processing...</span>
         </div>
@@ -434,7 +434,7 @@ export const ImportWizard = memo(function ImportWizard({
   const importComplete = currentStep === 3 && !isImporting && stats.imported > 0;
 
   return (
-    <div className={`bg-slate-900/50 rounded-xl border border-slate-700 p-6 ${className}`}>
+    <div className={`bg-ui-surface/50 rounded-xl border border-ui-border p-6 ${className}`}>
       {/* Step indicator */}
       <StepIndicator steps={WIZARD_STEPS} currentStep={currentStep} />
 
@@ -443,7 +443,7 @@ export const ImportWizard = memo(function ImportWizard({
         {/* Step 1: Upload */}
         {currentStep === 0 && (
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-white mb-4">Upload Your File</h3>
+            <h3 className="text-lg font-semibold text-ui-heading mb-4">Upload Your File</h3>
             <DropZone
               onFileSelect={handleFileSelect}
               acceptedTypes={['csv', 'txt']}
@@ -461,17 +461,17 @@ export const ImportWizard = memo(function ImportWizard({
         {currentStep === 1 && (
           <div className="space-y-6">
             <div>
-              <h3 className="text-lg font-semibold text-white mb-4">Configure Import</h3>
+              <h3 className="text-lg font-semibold text-ui-heading mb-4">Configure Import</h3>
               {detectedFormat && (
-                <p className="text-sm text-slate-400 mb-4">
-                  Detected format: <span className="text-teal-400">{detectedFormat}</span>
+                <p className="text-sm text-ui-muted mb-4">
+                  Detected format: <span className="text-ui-accent">{detectedFormat}</span>
                 </p>
               )}
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
+                <label className="block text-sm font-medium text-ui-muted mb-2">
                   File Format
                 </label>
                 <FormatSelector
@@ -483,13 +483,13 @@ export const ImportWizard = memo(function ImportWizard({
 
               {folders.length > 0 && (
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                  <label className="block text-sm font-medium text-ui-muted mb-2">
                     Destination Folder
                   </label>
                   <select
                     value={selectedFolder}
                     onChange={(e) => setSelectedFolder(e.target.value)}
-                    className="w-full max-w-xs bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-accent/50"
+                    className="w-full max-w-xs bg-ui-card border border-ui-border rounded-lg px-4 py-2.5 text-ui-text focus:outline-none focus:ring-2 ring-ui-accent/50"
                   >
                     <option value="Uncategorized">Uncategorized</option>
                     {folders.map((folder) => (
@@ -508,20 +508,20 @@ export const ImportWizard = memo(function ImportWizard({
         {currentStep === 2 && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-white">
+              <h3 className="text-lg font-semibold text-ui-heading">
                 Preview ({stats.total} cards)
               </h3>
-              <div className="flex items-center gap-4 text-sm">
-                {stats.pending > 0 && (
-                  <span className="text-slate-400">{stats.pending} pending</span>
-                )}
-                {stats.imported > 0 && (
-                  <span className="text-emerald-400">{stats.imported} imported</span>
-                )}
-                {stats.errors > 0 && (
-                  <span className="text-red-400">{stats.errors} errors</span>
-                )}
-              </div>
+                <div className="flex items-center gap-4 text-sm">
+                  {stats.pending > 0 && (
+                    <span className="text-ui-muted">{stats.pending} pending</span>
+                  )}
+                  {stats.imported > 0 && (
+                    <span className="text-emerald-400">{stats.imported} imported</span>
+                  )}
+                  {stats.errors > 0 && (
+                    <span className="text-red-400">{stats.errors} errors</span>
+                  )}
+                </div>
             </div>
 
             {parsedCards.length > 0 ? (
@@ -533,7 +533,7 @@ export const ImportWizard = memo(function ImportWizard({
                 setEditingId={setEditingId}
               />
             ) : (
-              <div className="text-center py-12 text-slate-400">
+              <div className="text-center py-12 text-ui-muted">
                 No cards parsed from file. Please check the format.
               </div>
             )}
@@ -543,7 +543,7 @@ export const ImportWizard = memo(function ImportWizard({
         {/* Step 4: Import */}
         {currentStep === 3 && (
           <div className="space-y-6">
-            <h3 className="text-lg font-semibold text-white text-center">
+            <h3 className="text-lg font-semibold text-ui-heading text-center">
               {importComplete ? 'Import Complete!' : 'Importing Cards'}
             </h3>
 
@@ -558,7 +558,7 @@ export const ImportWizard = memo(function ImportWizard({
                 <div className="w-16 h-16 rounded-full bg-emerald-500/20 flex items-center justify-center mx-auto">
                   <CheckCircle2 className="w-8 h-8 text-emerald-400" />
                 </div>
-                <p className="text-slate-300">
+                <p className="text-ui-muted">
                   Successfully imported {stats.imported} cards
                   {stats.errors > 0 && (
                     <span className="text-red-400"> ({stats.errors} failed)</span>
@@ -566,7 +566,7 @@ export const ImportWizard = memo(function ImportWizard({
                 </p>
                 <button
                   onClick={handleReset}
-                  className="px-6 py-2 bg-accent hover:bg-accent/90 text-white rounded-lg transition-colors"
+                  className="px-6 py-2 bg-ui-accent hover:bg-ui-accent/90 text-ui-primary-foreground rounded-lg transition-colors"
                 >
                   Import More Cards
                 </button>
@@ -578,15 +578,15 @@ export const ImportWizard = memo(function ImportWizard({
 
       {/* Navigation buttons */}
       {currentStep < 3 && (
-        <div className="flex items-center justify-between mt-8 pt-6 border-t border-slate-700">
+        <div className="flex items-center justify-between mt-8 pt-6 border-t border-ui-border">
           <button
             onClick={handleBack}
             disabled={currentStep === 0}
             className={`
               flex items-center gap-2 px-4 py-2 rounded-lg transition-colors
               ${currentStep === 0
-                ? 'text-slate-600 cursor-not-allowed'
-                : 'text-slate-300 hover:text-white hover:bg-slate-800'
+                ? 'text-ui-muted cursor-not-allowed'
+                : 'text-ui-text hover:text-ui-heading hover:bg-ui-surface'
               }
             `}
           >
@@ -600,8 +600,8 @@ export const ImportWizard = memo(function ImportWizard({
             className={`
               flex items-center gap-2 px-6 py-2 rounded-lg font-medium transition-colors
               ${canGoNext && !isLoading
-                ? 'bg-accent hover:bg-accent/90 text-white'
-                : 'bg-slate-700 text-slate-500 cursor-not-allowed'
+                ? 'bg-ui-accent hover:bg-ui-accent/90 text-ui-primary-foreground'
+                : 'bg-ui-surface text-ui-muted cursor-not-allowed'
               }
             `}
           >

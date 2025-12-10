@@ -133,7 +133,7 @@ export const CardPreviewTooltip = memo(function CardPreviewTooltip({
   const tooltip = (
     <div
       ref={tooltipRef}
-      className="fixed z-[9999] pointer-events-none"
+      className="fixed z-[50] pointer-events-none"
       style={{
         top: `${position.top}px`,
         left: `${position.left}px`,
@@ -144,19 +144,19 @@ export const CardPreviewTooltip = memo(function CardPreviewTooltip({
       aria-label={`Card preview: ${cardName}`}
     >
       <div 
-        className="bg-slate-800/95 border border-slate-600 rounded-lg shadow-2xl overflow-hidden"
+        className="bg-ui-card border border-ui-border rounded-lg shadow-2xl overflow-hidden"
         style={{
           aspectRatio: CARD_ASPECT_RATIO
         }}
       >
         {/* Loading skeleton */}
         {!imageLoaded && !imageError && (
-          <div className="absolute inset-0 bg-slate-700/80 animate-pulse" />
+          <div className="absolute inset-0 bg-ui-surface animate-pulse" />
         )}
         
         {/* Error state */}
         {imageError && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-700/80 text-slate-400 p-4">
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-ui-surface text-ui-muted p-4">
             <span className="text-xs text-center">Image not available</span>
           </div>
         )}

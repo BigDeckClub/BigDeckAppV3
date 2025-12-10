@@ -20,8 +20,8 @@ export const DeckSidebar = memo(function DeckSidebar({
   }
 
   return (
-    <div className="pt-3 border-t border-slate-700 mt-3">
-      <h3 className="text-sm font-semibold text-teal-300 mb-2">🎴 Decks</h3>
+    <div className="pt-3 border-t border-ui-border mt-3">
+      <h3 className="text-sm font-semibold text-ui-primary mb-2">🎴 Decks</h3>
       {deckInstances.map((deck) => {
         const isDeckOpen = openDecks.includes(deck.id);
         const decklistTotal = (deck.cards || []).reduce((sum, c) => sum + (c.quantity || 1), 0);
@@ -32,21 +32,21 @@ export const DeckSidebar = memo(function DeckSidebar({
             key={`deck-${deck.id}`}
             className={`group text-left p-2.5 rounded-lg transition-all duration-200 mb-1.5 border-l-4 cursor-pointer ${
               isDeckOpen
-                ? 'bg-gradient-to-r from-green-600/40 to-green-700/30 border-l-4 border-green-400 shadow-md shadow-green-500/10'
-                : 'bg-gradient-to-r from-slate-700 to-slate-800 border-l-4 border-transparent hover:from-slate-600 hover:to-slate-700 hover:shadow-md hover:shadow-slate-600/20'
+                ? 'bg-ui-primary/40 border-l-4 border-ui-primary shadow-md'
+                : 'bg-ui-surface border-l-4 border-transparent hover:bg-ui-surface/90 hover:shadow-md'
             }`}
             onClick={() => openDeckTab(deck)}
             onDragOver={(e) => {
               e.preventDefault();
-              e.currentTarget.classList.add('bg-green-700/60', 'border-green-300');
+              e.currentTarget.classList.add('bg-ui-primary/60', 'border-ui-primary');
             }}
             onDragLeave={(e) => {
-              e.currentTarget.classList.remove('bg-green-700/60', 'border-green-300');
+              e.currentTarget.classList.remove('bg-ui-primary/60', 'border-ui-primary');
             }}
             onDrop={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              e.currentTarget.classList.remove('bg-green-700/60', 'border-green-300');
+              e.currentTarget.classList.remove('bg-ui-primary/60', 'border-ui-primary');
               try {
                 const deckCardDataStr = e.dataTransfer.getData('deckCardData');
                 const skuDataStr = e.dataTransfer.getData('skuData');
@@ -79,7 +79,7 @@ export const DeckSidebar = memo(function DeckSidebar({
                   });
                   setShowSellModal(true);
                 }}
-                className="ml-2 text-green-400 opacity-0 group-hover:opacity-100 transition-all duration-200 hover:text-green-200 hover:scale-125 hover:drop-shadow-lg"
+                className="ml-2 text-ui-muted opacity-0 group-hover:opacity-100 transition-all duration-200 hover:text-ui-primary hover:scale-125 hover:drop-shadow-lg"
                 title="Sell this deck"
               >
                 <DollarSign className="w-4 h-4" />
@@ -94,22 +94,22 @@ export const DeckSidebar = memo(function DeckSidebar({
                 if (missing > 0) {
                   return (
                     <>
-                      <span className="text-green-300">{reserved} reserved</span>
-                      <span className="text-red-400">{missing} missing</span>
+                      <span className="text-ui-primary">{reserved} reserved</span>
+                      <span className="text-ui-accent">{missing} missing</span>
                     </>
                   );
                 } else {
                   const displayReserved = decklistTotal > 0 ? decklistTotal : reserved;
                   return (
                     <>
-                      <span className="text-green-300">{displayReserved} reserved</span>
-                      {extras > 0 && <span className="text-purple-400">+{extras} extra</span>}
+                      <span className="text-ui-primary">{displayReserved} reserved</span>
+                      {extras > 0 && <span className="text-ui-muted">+{extras} extra</span>}
                     </>
                   );
                 }
               })()}
             </div>
-            <div className="text-xs text-amber-300 mt-1">
+            <div className="text-xs text-ui-accent mt-1">
               Cost: ${deckCost.toFixed(2)}
             </div>
           </div>

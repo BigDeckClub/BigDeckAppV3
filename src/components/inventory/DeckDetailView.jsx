@@ -5,7 +5,6 @@ import { getSetDisplayName } from '../../utils/cardHelpers';
 import { BuyCardsModal } from '../buy/BuyCardsModal';
 import { BuyButton } from '../buy/BuyButton';
 import { sortDeckCards } from '../../utils/sortCards';
-
 /**
  * DeckDetailView - Renders the deck detail view with reserved and missing cards
  * Extracted from InventoryTab for better component organization
@@ -14,7 +13,6 @@ export const DeckDetailView = memo(function DeckDetailView({
   deck,
   deckDetails,
   viewMode,
-  inventorySearch,
   expandedCards,
   setExpandedCards,
   expandedMissingCards,
@@ -107,7 +105,7 @@ export const DeckDetailView = memo(function DeckDetailView({
             };
             e.dataTransfer.setData('deckCardData', JSON.stringify(deckCardData));
           }}
-          className="relative bg-gradient-to-br from-slate-800 to-slate-900 border border-green-600 hover:border-green-400 rounded-lg p-4 transition-all flex flex-col h-36 md:h-40 hover:shadow-lg hover:shadow-green-500/20 cursor-grab active:cursor-grabbing group" 
+          className="relative bg-ui-card border border-ui-border hover:border-ui-primary rounded-lg p-4 transition-all flex flex-col h-36 md:h-40 hover:shadow-card cursor-grab active:cursor-grabbing group" 
           onClick={() => setExpandedCards(isExpanded ? {} : {[cardName]: true})}
         >
           <button
@@ -115,41 +113,41 @@ export const DeckDetailView = memo(function DeckDetailView({
               e.stopPropagation();
               items.forEach(item => removeCardFromDeck(deckId, item.id, item.quantity_reserved));
             }}
-            className="absolute top-2 right-2 p-1.5 bg-slate-700/60 hover:bg-slate-600 text-slate-300 hover:text-red-400 rounded-lg transition-all opacity-0 group-hover:opacity-100 z-20"
+            className="absolute top-2 right-2 p-1.5 bg-ui-surface hover:bg-ui-card text-ui-muted hover:text-ui-accent rounded-lg transition-all opacity-0 group-hover:opacity-100 z-20"
             title="Remove all from deck"
           >
             <X className="w-5 h-5" />
           </button>
           <div className="text-center px-1 cursor-pointer flex items-center justify-center gap-1 mb-1">
-            <h3 className="text-xs md:text-sm font-semibold text-slate-50 line-clamp-2 break-words flex-1">
+            <h3 className="text-xs md:text-sm font-semibold text-ui-text line-clamp-2 break-words flex-1">
               {cardName.split('//')[0].trim()}
             </h3>
           </div>
           
           <div className="flex-1 flex items-center justify-center min-h-0 py-2">
             <div className="text-center">
-              <div className="text-slate-400 text-[9px] md:text-xs font-semibold uppercase tracking-wider mb-1">Reserved</div>
-              <div className="text-2xl md:text-3xl font-bold text-green-400 leading-tight">{totalQty}</div>
+              <div className="text-ui-muted text-[9px] md:text-xs font-semibold uppercase tracking-wider mb-1">Reserved</div>
+              <div className="text-2xl md:text-3xl font-bold text-ui-primary leading-tight">{totalQty}</div>
             </div>
           </div>
           
           <div className="grid grid-cols-3 gap-2 text-center pt-2 border-t border-slate-700/50">
             <div className="space-y-1">
-              <div className="text-slate-500 text-[7px] md:text-[9px] font-semibold uppercase">Reserved</div>
+              <div className="text-ui-muted text-[7px] md:text-[9px] font-semibold uppercase">Reserved</div>
               <div className="h-4 flex items-center justify-center">
-                <div className={`font-bold leading-none text-green-400 ${getStatFontSize(totalQty)}`}>{totalQty}</div>
+                <div className={`font-bold leading-none text-ui-primary ${getStatFontSize(totalQty)}`}>{totalQty}</div>
               </div>
             </div>
             <div className="space-y-1">
               <div className="text-slate-500 text-[7px] md:text-[9px] font-semibold uppercase">Cost</div>
               <div className="h-4 flex items-center justify-center">
-                <div className={`font-bold leading-none text-blue-300 ${getStatFontSize(avgPrice.toFixed(2))}`}>${avgPrice.toFixed(2)}</div>
+                <div className={`font-bold leading-none text-ui-accent ${getStatFontSize(avgPrice.toFixed(2))}`}>${avgPrice.toFixed(2)}</div>
               </div>
             </div>
             <div className="space-y-1">
               <div className="text-slate-500 text-[7px] md:text-[9px] font-semibold uppercase">Total</div>
               <div className="h-4 flex items-center justify-center">
-                <div className={`font-bold leading-none text-amber-400 ${getStatFontSize(formatTotal(totalValue))}`}>${formatTotal(totalValue)}</div>
+                <div className={`font-bold leading-none text-ui-accent ${getStatFontSize(formatTotal(totalValue))}`}>${formatTotal(totalValue)}</div>
               </div>
             </div>
           </div>
@@ -207,7 +205,7 @@ export const DeckDetailView = memo(function DeckDetailView({
 
   // Helper function to render expanded set items
   const renderExpandedSetItems = (items, currentDeckId) => (
-    <div className="bg-slate-800 rounded-lg border border-slate-600 p-3 shadow-lg mt-2">
+    <div className="bg-ui-card rounded-lg border border-ui-border p-3 shadow-card mt-2">
       <div className="flex flex-wrap gap-3">
         {Object.values(
           items.reduce((acc, item) => {
@@ -223,16 +221,16 @@ export const DeckDetailView = memo(function DeckDetailView({
           const totalQtyInSet = setItems.reduce((sum, item) => sum + (item.quantity_reserved || 0), 0);
           const avgSetPrice = setItems.reduce((sum, item) => sum + (parseFloat(item.purchase_price) || 0), 0) / setItems.length;
           
-          return (
-            <div key={`${firstItem.set}-${firstItem.id}`} className="flex-1 min-w-[160px] bg-slate-700 rounded-lg p-2 border border-slate-500">
+            return (
+            <div key={`${firstItem.set}-${firstItem.id}`} className="flex-1 min-w-[160px] bg-ui-surface rounded-lg p-2 border border-ui-border">
               <div className="space-y-1">
-                <div className="flex justify-between items-center pb-1 border-b border-slate-500">
-                  <span className="text-xs font-bold text-green-300">{firstItem.set?.toUpperCase() || 'N/A'}</span>
-                  <span className="text-[9px] text-slate-400 bg-slate-600 px-1 py-0.5 rounded">{setItems.length}</span>
+                <div className="flex justify-between items-center pb-1 border-b border-ui-border">
+                  <span className="text-xs font-bold text-ui-primary">{firstItem.set?.toUpperCase() || 'N/A'}</span>
+                  <span className="text-[9px] text-ui-muted bg-ui-card px-1 py-0.5 rounded">{setItems.length}</span>
                 </div>
                 <div className="flex justify-between text-xs">
-                  <div><span className="text-slate-400">Qty: </span><span className="text-green-300 font-bold">{totalQtyInSet}</span></div>
-                  <div><span className="text-slate-400">Avg: </span><span className="text-blue-300 font-bold">${avgSetPrice.toFixed(2)}</span></div>
+                  <div><span className="text-ui-muted">Qty: </span><span className="text-ui-primary font-bold">{totalQtyInSet}</span></div>
+                  <div><span className="text-ui-muted">Avg: </span><span className="text-ui-accent font-bold">${avgSetPrice.toFixed(2)}</span></div>
                 </div>
                 <div className="space-y-0.5 max-h-16 overflow-y-auto">
                   {setItems.map((item) => (

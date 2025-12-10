@@ -8,6 +8,7 @@
   --bda-surface: #0f172a; /* panels, cards */
   --bda-card: rgba(30,41,59,0.6);
   --bda-text: #e6eef6; /* primary text */
+  --bda-heading: #ffffff; /* heading text */
   --bda-muted: #9aa6b2; /* secondary text */
   --bda-border: rgba(255,255,255,0.06);
   --bda-primary: #14b8a6; /* primary accent */
@@ -25,6 +26,7 @@
   --bda-surface: #ffffff;
   --bda-card: rgba(255,255,255,0.9);
   --bda-text: #0f172a;
+  --bda-heading: #0f172a;
   --bda-muted: #6b7280;
   --bda-border: rgba(15,23,42,0.06);
   --bda-primary: #0f766e;
@@ -39,12 +41,30 @@
   --bda-surface: #0f172a;
   --bda-card: rgba(15,23,42,0.6);
   --bda-text: #e6eef6;
+  --bda-heading: #ffffff;
   --bda-muted: #94a3b8;
   --bda-border: rgba(255,255,255,0.04);
   --bda-primary: #14b8a6;
   --bda-primary-foreground: #042f2d;
   --bda-accent: #f59e0b;
   --bda-ring: 0 0 0 4px rgba(20,184,166,0.08);
+}
+
+/* Parchment theme */
+.theme-parchment {
+  --bda-bg: #f5f1e8; /* A parchment-like off-white */
+  --bda-surface: #efebe2; /* Slightly lighter for surfaces */
+  --bda-card: rgba(245, 241, 232, 0.8); /* Semi-transparent card background */
+  --bda-text: #4a2c2a; /* Dark, warm brown for text */
+  --bda-heading: #3c2423; /* Darker brown for headings */
+  --bda-muted: #7a5c5a; /* Lighter, muted brown for secondary text */
+  --bda-border: rgba(74, 44, 42, 0.15); /* Brownish border */
+  --bda-primary: #9A7B1E; /* MTG Gold for primary elements */
+  --bda-primary-foreground: #f5f1e8; /* Light text on primary */
+  --bda-accent: #A31A22; /* MTG Red for accents and CTAs */
+  --bda-ring: 0 0 0 4px rgba(154, 123, 30, 0.2); /* Gold-tinted ring */
+  background-image: linear-gradient(rgba(0,0,0,0.02) 1px, transparent 1px), linear-gradient(to right, rgba(0,0,0,0.02) 1px, transparent 1px);
+  background-size: 1px 1px;
 }
 
 /* Respect system preference by default */

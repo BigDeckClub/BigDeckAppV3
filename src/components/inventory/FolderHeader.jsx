@@ -23,10 +23,10 @@ export const FolderHeader = memo(function FolderHeader({
   isUnsorted
 }) {
   return (
-    <div className="bg-slate-800 rounded-lg border border-slate-600 p-4 mb-4">
+    <div className="bg-ui-card rounded-lg border border-ui-border p-4 mb-4">
       <div className="flex justify-between items-start">
         <div className="flex-1">
-          <h2 className="text-2xl font-bold text-teal-300">{folderName === 'Uncategorized' ? 'Unsorted' : folderName}</h2>
+          <h2 className="text-2xl font-bold text-ui-primary">{folderName === 'Uncategorized' ? 'Unsorted' : folderName}</h2>
           {editingFolderName === folderName ? (
             <input
               type="text"
@@ -43,7 +43,7 @@ export const FolderHeader = memo(function FolderHeader({
                 }
               }}
               placeholder="Add folder description..."
-              className="w-full mt-1 px-2 py-1 bg-slate-700 border border-slate-600 rounded text-slate-300 placeholder-slate-500 focus:outline-none focus:border-teal-400"
+              className="w-full mt-1 px-2 py-1 bg-ui-surface border border-ui-border rounded text-ui-text placeholder-ui-muted focus:outline-none focus:border-ui-primary"
               autoFocus
             />
           ) : (
@@ -52,23 +52,23 @@ export const FolderHeader = memo(function FolderHeader({
                 setEditingFolderName(folderName);
                 setEditingFolderDesc(folderDesc);
               }}
-              className="text-sm text-slate-400 mt-1 cursor-pointer hover:text-slate-300 transition-colors"
+              className="text-sm text-ui-muted mt-1 cursor-pointer hover:text-ui-text transition-colors"
             >
               {folderDesc || 'Click to add description...'}
             </p>
           )}
           <div className="flex gap-4 mt-3 text-sm">
             <div>
-              <span className="text-slate-400">Cards: </span>
-              <span className="font-semibold text-slate-200">{totalCards}</span>
+              <span className="text-ui-muted">Cards: </span>
+              <span className="font-semibold text-ui-text">{totalCards}</span>
             </div>
             <div>
-              <span className="text-slate-400">Unique: </span>
-              <span className="font-semibold text-slate-200">{uniqueCards}</span>
+              <span className="text-ui-muted">Unique: </span>
+              <span className="font-semibold text-ui-text">{uniqueCards}</span>
             </div>
             <div>
-              <span className="text-slate-400">Total Cost: </span>
-              <span className="font-semibold text-green-400">${totalCost.toFixed(2)}</span>
+              <span className="text-ui-muted">Total Cost: </span>
+              <span className="font-semibold text-ui-primary">${totalCost.toFixed(2)}</span>
             </div>
           </div>
         </div>
@@ -83,7 +83,7 @@ export const FolderHeader = memo(function FolderHeader({
               });
               setShowSellModal(true);
             }}
-            className="bg-green-600 hover:bg-green-500 text-white p-2 rounded transition-colors flex items-center"
+            className="bg-ui-primary hover:bg-ui-primary/90 text-ui-primary-foreground p-2 rounded transition-colors flex items-center"
             title="Sell this folder"
           >
             <DollarSign className="w-4 h-4" />
@@ -91,7 +91,7 @@ export const FolderHeader = memo(function FolderHeader({
           {!isUnsorted && onDeleteFolder && (
             <button
               onClick={() => onDeleteFolder(folderName)}
-              className="bg-red-600 hover:bg-red-500 text-white p-2 rounded transition-colors flex items-center"
+              className="bg-ui-accent hover:bg-ui-accent/90 text-ui-accent-foreground p-2 rounded transition-colors flex items-center"
               title="Delete this folder"
             >
               <Trash2 className="w-4 h-4" />

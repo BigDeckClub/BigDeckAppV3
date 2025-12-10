@@ -86,7 +86,7 @@ export const BuyButton = memo(function BuyButton({
             e.stopPropagation();
             setIsOpen(!isOpen);
           }}
-          className={`${sizeClasses[size]} text-slate-400 hover:text-teal-400 hover:bg-teal-600/20 rounded transition-colors`}
+          className={`${sizeClasses[size]} text-ui-muted hover:text-ui-primary hover:bg-ui-primary/20 rounded transition-colors`}
           title="Buy this card"
         >
           <ShoppingCart className={iconSizes[size]} />
@@ -95,27 +95,27 @@ export const BuyButton = memo(function BuyButton({
         {isOpen && (
           <div
             ref={dropdownRef}
-            className="absolute right-0 top-full mt-1 z-50 bg-slate-800 border border-slate-600 rounded-lg shadow-xl min-w-[180px] py-1"
+            className="absolute right-0 top-full mt-1 z-50 bg-ui-card border border-ui-border rounded-lg shadow-xl min-w-[180px] py-1"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="px-3 py-2 text-xs text-slate-400 border-b border-slate-700">
+            <div className="px-3 py-2 text-xs text-ui-muted border-b border-ui-border">
               {quantity}x {card.name || card}
             </div>
             {Object.entries(MARKETPLACES).map(([key, marketplace]) => (
               <button
                 key={key}
                 onClick={() => handleOpenMarketplace(key)}
-                className="w-full px-3 py-2 text-left text-sm text-slate-200 hover:bg-slate-700 flex items-center gap-2"
+                className="w-full px-3 py-2 text-left text-sm text-ui-text hover:bg-ui-surface/60 flex items-center gap-2"
               >
                 <span>{marketplace.icon}</span>
                 <span>{marketplace.name}</span>
-                <ExternalLink className="w-3 h-3 ml-auto text-slate-500" />
+                <ExternalLink className="w-3 h-3 ml-auto text-ui-muted" />
               </button>
             ))}
-            <div className="border-t border-slate-700 mt-1 pt-1">
+            <div className="border-t border-ui-border mt-1 pt-1">
               <button
                 onClick={() => handleCopy(getPreferredMarketplace())}
-                className="w-full px-3 py-2 text-left text-sm text-slate-400 hover:bg-slate-700 flex items-center gap-2"
+                className="w-full px-3 py-2 text-left text-sm text-ui-muted hover:bg-ui-surface/60 flex items-center gap-2"
               >
                 <Copy className="w-3 h-3" />
                 <span>Copy to clipboard</span>
@@ -134,7 +134,7 @@ export const BuyButton = memo(function BuyButton({
         e.stopPropagation();
         handleQuickBuy();
       }}
-      className={`${sizeClasses[size]} bg-gradient-to-br from-teal-600 to-teal-700 hover:from-teal-500 hover:to-teal-600 text-white rounded transition-all flex items-center gap-1`}
+      className={`${sizeClasses[size]} bg-ui-primary hover:bg-ui-primary/90 text-ui-primary-foreground rounded transition-all flex items-center gap-1`}
       title="Buy this card"
     >
       <ShoppingCart className={iconSizes[size]} />

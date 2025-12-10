@@ -13,17 +13,10 @@ export async function getCardPrices({ name, set, scryfall_id } = {}) {
   const cached = getCachedPrice(cacheKey);
   if (cached) return { ...cached, source: cached.source || 'none' };
 
-  // Ensure MTGJSON loaded
-  let mtgReady = mtgjsonService.isReady?.() ?? false;
-  if (!mtgReady) {
-    try {
-      await mtgjsonService.initialize();
-      mtgReady = mtgjsonService.isReady?.() ?? false;
-    } catch (err) {
-      console.warn('[PRICE-RESOLVER] MTGJSON initialize failed:', err?.message || err);
-      mtgReady = false;
-    }
-  }
+  // Check if MTGJSON service is ready (do not attempt to initialize here —
+  // initialization should happen once at server startup). If it's not ready,
+  // we'll fall back to Scryfall per-request to avoid repeated expensive loads.
+  const mtgReady = mtgjsonService.isReady?.() ?? false;
 
   let tcg = null;
   let ck = null;

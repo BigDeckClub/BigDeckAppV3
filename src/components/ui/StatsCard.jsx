@@ -37,7 +37,7 @@ const formatPercentage = (num) => {
 const TrendIndicator = memo(function TrendIndicator({ value, inverted = false }) {
   if (value === 0 || value === null || value === undefined) {
     return (
-      <span className="inline-flex items-center gap-1 text-slate-500 text-sm">
+      <span className="inline-flex items-center gap-1 text-ui-muted text-sm">
         <Minus className="w-4 h-4" />
         <span>0%</span>
       </span>
@@ -186,10 +186,10 @@ export const StatsCard = memo(function StatsCard({
       icon: 'text-red-400 bg-red-500/20',
     },
     slate: {
-      gradient: 'from-slate-700/50 to-slate-800/50',
-      border: 'border-slate-600',
-      text: 'text-slate-300',
-      icon: 'text-slate-400 bg-slate-700',
+      gradient: 'from-ui-surface/50 to-ui-surface/50',
+      border: 'border-ui-border',
+      text: 'text-ui-text',
+      icon: 'text-ui-muted bg-ui-surface',
     },
   };
 
@@ -224,8 +224,8 @@ export const StatsCard = memo(function StatsCard({
   // Variant styles
   const variantStyles = {
     default: `bg-gradient-to-br ${colorConfig.gradient} border ${colorConfig.border}`,
-    solid: `bg-slate-800 border ${colorConfig.border}`,
-    minimal: 'bg-slate-800/30 border border-slate-700/50',
+    solid: `bg-ui-surface border ${colorConfig.border}`,
+    minimal: 'bg-ui-surface/30 border border-ui-border',
   };
 
   return (
@@ -244,7 +244,7 @@ export const StatsCard = memo(function StatsCard({
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
           {/* Title */}
-          <p className={`${sizeConfig.title} text-slate-400 font-medium uppercase tracking-wider mb-1`}>
+          <p className={`${sizeConfig.title} text-ui-muted font-medium uppercase tracking-wider mb-1`}>
             {title}
           </p>
 
@@ -260,10 +260,10 @@ export const StatsCard = memo(function StatsCard({
                 <TrendIndicator value={trend} inverted={trendInverted} />
               )}
               {trendLabel && (
-                <span className="text-xs text-slate-500">{trendLabel}</span>
+                <span className="text-xs text-ui-muted">{trendLabel}</span>
               )}
               {subtitle && !trend && (
-                <span className="text-xs text-slate-500">{subtitle}</span>
+                <span className="text-xs text-ui-muted">{subtitle}</span>
               )}
             </div>
           )}

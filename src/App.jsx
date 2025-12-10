@@ -1,4 +1,4 @@
-import React, { useState, useEffect, lazy, useCallback, Suspense, useRef, useMemo } from "react";
+import React, { useState, useEffect, lazy, Suspense, useRef, useMemo, useCallback } from "react";
 import { PriceCacheProvider } from "./context/PriceCacheContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ToastProvider, useToast, TOAST_TYPES } from "./context/ToastContext";
@@ -152,7 +152,7 @@ function MTGInventoryTrackerContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white">
+    <div className="min-h-screen bg-ui-bg text-ui-text">
       <Navigation
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -242,6 +242,8 @@ function MTGInventoryTrackerContent() {
   );
 }
 
+import { ThemeProvider } from "./context/ThemeContext";
+
 function MTGInventoryTracker() {
   return (
     <ErrorBoundary>
@@ -263,5 +265,9 @@ function MTGInventoryTracker() {
 }
 
 export default function App() {
-  return <MTGInventoryTracker />;
+  return (
+    <ThemeProvider>
+      <MTGInventoryTracker />
+    </ThemeProvider>
+  );
 }

@@ -18,6 +18,7 @@ import {
   X,
 } from 'lucide-react';
 import { UserDropdown } from '../UserDropdown';
+import ThemeToggle from './ThemeToggle';
 
 /**
  * Navigation items configuration
@@ -58,12 +59,12 @@ const CommandPaletteTrigger = memo(function CommandPaletteTrigger({ onClick }) {
   return (
     <button
       onClick={onClick}
-      className="flex items-center gap-2 px-3 py-1.5 text-sm text-slate-400 bg-slate-800/50 hover:bg-slate-700/50 border border-slate-700 hover:border-slate-600 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-accent/50"
+      className="flex items-center gap-2 px-3 py-1.5 text-sm text-ui-muted bg-ui-card hover:bg-ui-surface border border-ui-border hover:border-ui-primary rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-ui-primary"
       aria-label="Open command palette (Cmd+K)"
     >
       <Search className="w-4 h-4" />
       <span className="hidden md:inline text-slate-500">Search...</span>
-      <kbd className="hidden md:flex items-center gap-0.5 px-1.5 py-0.5 text-xs font-mono text-slate-500 bg-slate-900/50 border border-slate-700 rounded">
+      <kbd className="hidden md:flex items-center gap-0.5 px-1.5 py-0.5 text-xs font-mono text-ui-muted bg-ui-surface border border-ui-border rounded">
         <Command className="w-3 h-3" />
         <span>K</span>
       </kbd>
@@ -86,10 +87,10 @@ const NavButton = memo(function NavButton({ item, isActive, onClick }) {
       onClick={onClick}
       className={`
         flex items-center gap-2 px-3 py-2 rounded-lg font-medium text-sm transition-all duration-200
-        focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50
+        focus:outline-none focus-visible:ring-2 focus-visible:ring-ui-primary
         ${isActive
-          ? 'bg-gradient-to-r from-teal-500/20 to-cyan-500/20 text-teal-400 border border-teal-500/30'
-          : 'text-slate-400 hover:text-white hover:bg-slate-800/50 border border-transparent'
+          ? 'bg-ui-card text-ui-primary border border-ui-primary'
+          : 'text-ui-muted hover:text-ui-heading hover:bg-ui-card border border-transparent'
         }
       `}
       aria-current={isActive ? 'page' : undefined}
@@ -122,8 +123,8 @@ const MobileNavButton = memo(function MobileNavButton({ item, isActive, onClick 
       className={`
         flex flex-col items-center justify-center py-2 px-3 flex-1 max-w-[70px] rounded-lg transition-all duration-150
         ${isActive
-          ? 'text-teal-400 bg-teal-500/10'
-          : 'text-slate-500 hover:text-slate-300'
+          ? 'text-ui-primary bg-ui-primary/10'
+          : 'text-ui-muted hover:text-ui-heading'
         }
       `}
       aria-current={isActive ? 'page' : undefined}
@@ -162,7 +163,7 @@ export const Header = memo(function Header({
   return (
     <>
       {/* Desktop Header */}
-      <header className="hidden md:block sticky top-0 z-50 bg-slate-900/80 backdrop-blur-xl border-b border-slate-800">
+      <header className="hidden md:block sticky top-0 z-50 bg-ui-surface backdrop-blur-xl border-b border-ui-border">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-between h-16">
             {/* Left: Logo */}
@@ -182,10 +183,11 @@ export const Header = memo(function Header({
 
             {/* Right: Command Palette + User */}
             <div className="flex items-center gap-3">
+              <ThemeToggle />
               <CommandPaletteTrigger onClick={onOpenCommandPalette} />
               <button
                 onClick={onShowTutorial}
-                className="p-2 text-slate-400 hover:text-teal-400 rounded-lg hover:bg-slate-800/50 transition-colors"
+                className="p-2 text-ui-muted hover:text-ui-primary rounded-lg hover:bg-ui-card transition-colors"
                 title="Help & Tutorial"
                 aria-label="Open help and tutorial"
               >
@@ -209,6 +211,7 @@ export const Header = memo(function Header({
             >
               <Search className="w-5 h-5" />
             </button>
+            <ThemeToggle />
             <UserDropdown setActiveTab={setActiveTab} activeTab={activeTab} />
           </div>
         </div>

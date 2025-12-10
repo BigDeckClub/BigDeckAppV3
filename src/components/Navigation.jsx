@@ -3,7 +3,7 @@
  * @module components/Navigation
  */
 
-import React, { startTransition } from 'react';
+import React from 'react';
 import PropTypes from 'prop-types';
 import {
   Layers,
@@ -12,8 +12,11 @@ import {
   BookOpen,
   TrendingUp,
   Settings,
+  Moon,
+  Sun,
 } from 'lucide-react';
 import { UserDropdown } from './UserDropdown';
+import { useTheme } from '../context/ThemeContext';
 
 /**
  * Navigation items configuration
@@ -37,10 +40,16 @@ const DESKTOP_NAV_ITEMS = NAV_ITEMS.filter(item => item.id !== 'settings');
  */
 function DesktopNavButton({ item, activeTab, setActiveTab }) {
   const Icon = item.icon;
+  const isActive = activeTab === item.id;
   return (
     <button
-      onClick={() => startTransition(() => setActiveTab(item.id))}
-      className={`px-4 py-2 nav-tab inactive ${activeTab === item.id ? 'btn-primary' : 'hover:shadow-lg'}`}
+      onClick={() => setActiveTab(item.id)}
+      className={`px-4 py-2 rounded-lg transition-all duration-300 font-medium text-sm cursor-pointer border border-transparent
+        ${isActive
+          ? 'bg-ui-primary text-ui-primary-foreground shadow-lg'
+          : 'text-ui-text hover:bg-ui-card hover:shadow-lg'
+        }`
+      }
     >
       <Icon className="w-5 h-5 inline mr-2" />
       {item.label}
@@ -63,13 +72,19 @@ DesktopNavButton.propTypes = {
  */
 function MobileNavButton({ item, activeTab, setActiveTab }) {
   const Icon = item.icon;
+  const isActive = activeTab === item.id;
   return (
     <button
-      onClick={() => startTransition(() => setActiveTab(item.id))}
-      className={`mobile-nav-item ${activeTab === item.id ? 'active' : 'inactive'}`}
+      onClick={() => setActiveTab(item.id)}
+      className={`flex flex-col items-center justify-center transition-all duration-150 ease-in-out p-2 rounded-lg min-w-[50px] flex-1 max-w-[65px]
+        ${isActive
+          ? 'text-ui-primary'
+          : 'text-ui-muted'
+        }`
+      }
     >
-      <Icon className="w-5 h-5 mobile-nav-icon" />
-      <span className="mobile-nav-label">{item.label}</span>
+      <Icon className="w-5 h-5" />
+      <span className="text-xs mt-1 font-medium">{item.label}</span>
     </button>
   );
 }
@@ -93,21 +108,30 @@ MobileNavButton.propTypes = {
  * @param {function} props.onShowTutorial - Function to show tutorial modal
  */
 export function Navigation({ activeTab, setActiveTab, onShowTutorial }) {
+  const { theme, toggleTheme } = useTheme();
+
   return (
     <>
       {/* Desktop Navigation */}
-      <nav className="bg-gradient-to-r from-slate-900 to-slate-800 border-b border-slate-700 sticky top-0 z-[100] shadow-xl shadow-slate-900/50 isolate">
+      <nav className="bg-ui-surface border-b border-ui-border sticky top-0 z-[99999] pointer-events-auto shadow-lg isolate hidden md:block">
         <div className="max-w-7xl mx-auto px-4 py-4 app-header flex items-center justify-between">
-          <div className="desktop-nav flex gap-2 items-center">
+          <div className="flex gap-2 items-center">
             <button
               onClick={onShowTutorial}
-              className="px-3 py-2 text-slate-400 hover:text-teal-400 text-sm font-medium transition"
+              className="px-3 py-2 text-ui-muted hover:text-ui-primary text-sm font-medium transition"
               title="View tutorial"
             >
               ?
             </button>
+            <button
+              onClick={toggleTheme}
+              className="px-3 py-2 text-ui-muted hover:text-ui-primary text-sm font-medium transition"
+              title="Toggle theme"
+            >
+              {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+            </button>
           </div>
-          <div className="desktop-nav flex gap-2 items-center">
+          <div className="flex gap-2 items-center">
             {DESKTOP_NAV_ITEMS.map((item) => (
               <DesktopNavButton
                 key={item.id}
@@ -122,8 +146,8 @@ export function Navigation({ activeTab, setActiveTab, onShowTutorial }) {
       </nav>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="mobile-nav">
-        <div className="mobile-nav-inner">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-ui-surface border-t border-ui-border p-2 md:hidden">
+        <div className="flex items-center justify-around w-full">
           {NAV_ITEMS.map((item) => (
             <MobileNavButton
               key={item.id}
@@ -137,11 +161,3 @@ export function Navigation({ activeTab, setActiveTab, onShowTutorial }) {
     </>
   );
 }
-
-Navigation.propTypes = {
-  activeTab: PropTypes.string.isRequired,
-  setActiveTab: PropTypes.func.isRequired,
-  onShowTutorial: PropTypes.func.isRequired,
-};
-
-export default Navigation;

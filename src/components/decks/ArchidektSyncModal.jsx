@@ -140,16 +140,16 @@ export function ArchidektSyncModal({ deck, onClose, onSyncComplete }) {
 
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-      <div className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 rounded-lg max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="bg-ui-surface border border-ui-border rounded-lg max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-slate-600">
+        <div className="flex items-center justify-between p-4 border-b border-ui-border">
           <div className="flex items-center gap-2">
-            <Link2 className="w-5 h-5 text-teal-400" />
-            <h2 className="text-xl font-bold text-teal-300">Archidekt Sync</h2>
+            <Link2 className="w-5 h-5 text-ui-accent" />
+            <h2 className="text-xl font-bold text-ui-heading">Archidekt Sync</h2>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-white transition-colors"
+            className="text-ui-muted hover:text-ui-text transition-colors"
             disabled={loading || syncing}
           >
             <X className="w-5 h-5" />
@@ -160,7 +160,7 @@ export function ArchidektSyncModal({ deck, onClose, onSyncComplete }) {
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {/* URL Input */}
           <div>
-            <label className="block text-sm text-slate-400 mb-2">
+            <label className="block text-sm text-ui-muted mb-2">
               Archidekt Deck URL
             </label>
             <div className="flex gap-2">
@@ -169,13 +169,13 @@ export function ArchidektSyncModal({ deck, onClose, onSyncComplete }) {
                 value={archidektUrl}
                 onChange={(e) => setArchidektUrl(e.target.value)}
                 placeholder="https://archidekt.com/decks/123456"
-                className="flex-1 bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white placeholder-slate-500"
+                className="flex-1 bg-ui-card border border-ui-border rounded px-3 py-2 text-ui-text placeholder:text-ui-muted"
                 disabled={loading || syncing}
               />
               <button
                 onClick={handleFetchSync}
                 disabled={loading || syncing || !archidektUrl}
-                className="bg-teal-600 hover:bg-teal-500 text-white px-4 py-2 rounded font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="bg-ui-accent hover:bg-ui-accent/90 text-ui-primary-foreground px-4 py-2 rounded font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                 {loading ? 'Fetching...' : 'Fetch Changes'}
@@ -203,17 +203,17 @@ export function ArchidektSyncModal({ deck, onClose, onSyncComplete }) {
                   <div className="space-y-2 text-sm">
                     {syncData.archidektName !== deck.name && (
                       <div className="flex items-center gap-2">
-                        <span className="text-slate-400">Name:</span>
-                        <span className="text-slate-300">{deck.name}</span>
-                        <ArrowRight className="w-3 h-3 text-slate-500" />
+                            <span className="text-ui-muted">Name:</span>
+                            <span className="text-ui-text">{deck.name}</span>
+                        <ArrowRight className="w-3 h-3 text-ui-muted" />
                         <span className="text-blue-300 font-medium">{syncData.archidektName}</span>
                       </div>
                     )}
                     {syncData.archidektFormat !== deck.format && (
                       <div className="flex items-center gap-2">
-                        <span className="text-slate-400">Format:</span>
-                        <span className="text-slate-300">{deck.format}</span>
-                        <ArrowRight className="w-3 h-3 text-slate-500" />
+                            <span className="text-ui-muted">Format:</span>
+                            <span className="text-ui-text">{deck.format}</span>
+                        <ArrowRight className="w-3 h-3 text-ui-muted" />
                         <span className="text-blue-300 font-medium">{syncData.archidektFormat}</span>
                       </div>
                     )}
@@ -301,10 +301,10 @@ export function ArchidektSyncModal({ deck, onClose, onSyncComplete }) {
 
         {/* Footer */}
         {syncData?.hasChanges && (
-          <div className="p-4 border-t border-slate-600 flex justify-end gap-2">
+          <div className="p-4 border-t border-ui-border flex justify-end gap-2">
             <button
               onClick={onClose}
-              className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded font-medium"
+              className="px-4 py-2 bg-ui-surface hover:bg-ui-surface/90 text-ui-text rounded font-medium"
               disabled={syncing}
             >
               Cancel

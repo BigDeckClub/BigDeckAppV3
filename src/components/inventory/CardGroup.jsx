@@ -241,7 +241,7 @@ export const CardGroup = memo(function CardGroup({
         }}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        className={`relative bg-gradient-to-br ${allItemsSelected ? 'from-teal-900/40 to-slate-900 border-teal-500 ring-2 ring-teal-500/50 shadow-lg shadow-teal-500/20' : 'from-slate-800 to-slate-900 border-slate-600 hover:border-teal-400'} border rounded-lg p-3 md:p-4 transition-all duration-300 flex flex-col h-32 sm:h-36 md:h-40 hover:shadow-2xl hover:shadow-teal-500/30 hover:-translate-y-1 cursor-grab active:cursor-grabbing group active:scale-95`}
+        className={`relative ${allItemsSelected ? 'border-ui-primary ring-2 ring-ui-primary shadow-lg' : 'border border-ui-border hover:border-ui-primary'} bg-ui-card rounded-lg p-3 md:p-4 transition-all duration-300 flex flex-col h-32 sm:h-36 md:h-40 hover:shadow-2xl hover:-translate-y-1 cursor-grab active:cursor-grabbing group active:scale-95`}
         onClick={handleOpenModal}
       >
         {/* Selection Checkbox (when selection mode enabled) */}
@@ -251,8 +251,8 @@ export const CardGroup = memo(function CardGroup({
             onClick={handleToggleSelection}
             className={`absolute top-2 left-10 p-1.5 rounded-lg transition-all z-30 min-w-[36px] min-h-[36px] flex items-center justify-center ${
               allItemsSelected
-                ? 'bg-teal-600 text-white'
-                : 'bg-slate-700/80 text-slate-300 hover:bg-slate-600'
+                ? 'bg-ui-primary text-ui-primary-foreground'
+                : 'bg-ui-surface text-ui-muted hover:bg-ui-card'
             }`}
             title={allItemsSelected ? "Deselect" : "Select"}
           >
@@ -264,7 +264,7 @@ export const CardGroup = memo(function CardGroup({
           <button
             type="button"
             onClick={handleRestoreAll}
-            className="absolute top-2 left-2 p-1.5 bg-slate-700/80 hover:bg-green-600/60 text-slate-300 hover:text-green-300 rounded-lg transition-all z-20 duration-200 min-w-[36px] min-h-[36px] flex items-center justify-center"
+            className="absolute top-2 left-2 p-1.5 bg-ui-surface hover:bg-ui-card text-ui-muted hover:text-ui-primary rounded-lg transition-all z-20 duration-200 min-w-[36px] min-h-[36px] flex items-center justify-center"
             title="Restore all copies"
           >
             <RotateCcw className="w-5 h-5" />
@@ -275,7 +275,7 @@ export const CardGroup = memo(function CardGroup({
             onClick={(e) => {
               handleToggleLowInventory(items[0], e);
             }}
-            className="absolute top-2 left-2 p-1.5 bg-slate-700/80 hover:bg-yellow-600/60 text-slate-300 hover:text-yellow-300 rounded-lg transition-all z-20 duration-200 min-w-[36px] min-h-[36px] flex items-center justify-center"
+            className="absolute top-2 left-2 p-1.5 bg-ui-surface hover:bg-ui-card text-ui-muted hover:text-ui-accent rounded-lg transition-all z-20 duration-200 min-w-[36px] min-h-[36px] flex items-center justify-center"
             title={items[0]?.low_inventory_alert ? "Alert enabled" : "Enable low inventory alert"}
             disabled={togglingId === items[0]?.id}
           >
@@ -287,33 +287,33 @@ export const CardGroup = memo(function CardGroup({
             e.stopPropagation();
             items.forEach(item => deleteInventoryItem(item.id));
           }}
-          className="absolute top-2 right-2 p-1.5 bg-slate-700/80 hover:bg-red-600/60 text-slate-300 hover:text-white rounded-lg transition-all opacity-0 group-hover:opacity-100 z-20 duration-200 min-w-[36px] min-h-[36px] flex items-center justify-center"
+          className="absolute top-2 right-2 p-1.5 bg-ui-surface hover:bg-ui-card text-ui-muted hover:text-ui-accent rounded-lg transition-all opacity-0 group-hover:opacity-100 z-20 duration-200 min-w-[36px] min-h-[36px] flex items-center justify-center"
           title="Delete all copies"
         >
           <X className="w-5 h-5" />
         </button>
         <div className="text-center px-1 cursor-pointer flex items-center justify-center gap-1 mb-1">
-          <h3 className={`text-xs md:text-sm font-semibold ${isTrashView ? 'text-red-200' : 'text-slate-50'} line-clamp-2 break-words flex-1`}>
+          <h3 className={`text-xs md:text-sm font-semibold ${isTrashView ? 'text-ui-accent' : 'text-ui-text'} line-clamp-2 break-words flex-1`}>
             {cardName.split('//')[0].trim()}
           </h3>
         </div>
         
         <div className="flex-1 flex items-center justify-center min-h-0 py-2">
           <div className="text-center">
-            <div className={`${isTrashView ? 'text-red-400' : 'text-slate-400'} text-[9px] md:text-xs font-semibold uppercase tracking-wider mb-1`}>{isTrashView ? 'In Trash' : 'Available'}</div>
-            <div className={`text-2xl md:text-3xl font-bold ${isTrashView ? 'text-red-400' : 'text-green-400'} leading-tight`}>{available}</div>
+            <div className={`${isTrashView ? 'text-ui-accent' : 'text-ui-muted'} text-[9px] md:text-xs font-semibold uppercase tracking-wider mb-1`}>{isTrashView ? 'In Trash' : 'Available'}</div>
+            <div className={`text-2xl md:text-3xl font-bold ${isTrashView ? 'text-ui-accent' : 'text-ui-primary'} leading-tight`}>{available}</div>
           </div>
         </div>
         
         {/* View Details Indicator */}
-        <div className="absolute bottom-2 right-2 flex items-center gap-1 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="absolute bottom-2 right-2 flex items-center gap-1 text-ui-muted opacity-0 group-hover:opacity-100 transition-opacity">
           <Eye className="w-3 h-3" />
           <span className="text-[9px] font-medium">View</span>
         </div>
         
         {/* SKU Count Badge */}
         {items.length > 1 && !allItemsSelected && (
-          <div className="absolute bottom-2 left-2 bg-teal-600/80 text-white text-[9px] font-bold px-1.5 py-0.5 rounded" title={`${items.length} SKUs`}>
+          <div className="absolute bottom-2 left-2 bg-ui-primary text-ui-primary-foreground text-[9px] font-bold px-1.5 py-0.5 rounded" title={`${items.length} SKUs`}>
             {items.length} SKUs
           </div>
         )}

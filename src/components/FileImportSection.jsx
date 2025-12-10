@@ -140,7 +140,7 @@ export const FileImportSection = ({
         );
       default:
         return (
-          <span className="text-xs text-slate-400">Pending</span>
+          <span className="text-xs text-ui-muted">Pending</span>
         );
     }
   };
@@ -156,14 +156,14 @@ export const FileImportSection = ({
       <div className="flex flex-wrap items-center gap-4">
         {/* Format Selector */}
         <div className="flex-1 min-w-[200px]">
-          <label htmlFor="format-select" className="block text-xs text-slate-400 mb-1">
+          <label htmlFor="format-select" className="block text-xs text-ui-muted mb-1">
             Import Format
           </label>
           <select
             id="format-select"
             value={selectedFormat}
             onChange={(e) => setSelectedFormat(e.target.value)}
-            className="w-full bg-slate-900/50 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-teal-400"
+            className="w-full bg-ui-surface border border-ui-border rounded-lg px-3 py-2 text-sm text-ui-text focus:outline-none focus:ring-1 focus:ring-ui-primary"
           >
             {SUPPORTED_FORMATS.map(format => (
               <option key={format.value} value={format.value}>
@@ -175,14 +175,14 @@ export const FileImportSection = ({
 
         {/* Folder Selector */}
         <div className="flex-1 min-w-[200px]">
-          <label htmlFor="folder-select" className="block text-xs text-slate-400 mb-1">
+          <label htmlFor="folder-select" className="block text-xs text-ui-muted mb-1">
             Destination Folder
           </label>
           <select
             id="folder-select"
             value={selectedFolder}
             onChange={(e) => setSelectedFolder(e.target.value)}
-            className="w-full bg-slate-900/50 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-teal-400"
+            className="w-full bg-ui-surface border border-ui-border rounded-lg px-3 py-2 text-sm text-ui-text focus:outline-none focus:ring-1 focus:ring-ui-primary"
           >
             {allFolders.map(folder => (
               <option key={folder} value={folder}>
@@ -194,13 +194,13 @@ export const FileImportSection = ({
 
         {/* Download Template Dropdown */}
         <div className="flex-1 min-w-[200px]">
-          <label htmlFor="template-select" className="block text-xs text-slate-400 mb-1">
+          <label htmlFor="template-select" className="block text-xs text-ui-muted mb-1">
             Download Template
           </label>
           <div className="flex gap-2">
             <select
               id="template-select"
-              className="flex-1 bg-slate-900/50 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-teal-400"
+              className="flex-1 bg-ui-surface border border-ui-border rounded-lg px-3 py-2 text-sm text-ui-text focus:outline-none focus:ring-1 focus:ring-ui-primary"
               defaultValue=""
               onChange={(e) => {
                 if (e.target.value) {
@@ -219,10 +219,10 @@ export const FileImportSection = ({
             <button
               onClick={() => downloadTemplate(selectedFormat)}
               className={`px-3 py-2 rounded-lg transition-colors ${
-                selectedFormat === 'auto' 
-                  ? 'bg-slate-800 text-slate-500 cursor-not-allowed' 
-                  : 'bg-slate-700 hover:bg-slate-600'
-              }`}
+                  selectedFormat === 'auto' 
+                    ? 'bg-ui-surface text-ui-muted cursor-not-allowed' 
+                    : 'bg-ui-surface hover:bg-ui-surface/90'
+                }`}
               title={selectedFormat === 'auto' ? 'Select a format to download its template' : 'Download selected template'}
               type="button"
               disabled={selectedFormat === 'auto'}
@@ -243,8 +243,8 @@ export const FileImportSection = ({
         className={`
           relative border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-all
           ${isDragging 
-            ? 'border-teal-400 bg-teal-400/10' 
-            : 'border-slate-600 hover:border-slate-500 hover:bg-slate-800/30'
+            ? 'border-ui-primary bg-ui-primary/10' 
+            : 'border-ui-border hover:border-ui-border hover:bg-ui-surface/30'
           }
         `}
       >
@@ -258,17 +258,17 @@ export const FileImportSection = ({
         
         {isLoading ? (
           <div className="flex flex-col items-center gap-3">
-            <Loader2 className="w-10 h-10 text-teal-400 animate-spin" />
-            <p className="text-slate-300">Parsing file...</p>
+            <Loader2 className="w-10 h-10 text-ui-primary animate-spin" />
+            <p className="text-ui-muted">Parsing file...</p>
           </div>
         ) : (
           <div className="flex flex-col items-center gap-3">
-            <Upload className={`w-10 h-10 ${isDragging ? 'text-teal-400' : 'text-slate-500'}`} />
+            <Upload className={`w-10 h-10 ${isDragging ? 'text-ui-primary' : 'text-ui-muted'}`} />
             <div>
-              <p className="text-slate-300">
+              <p className="text-ui-text">
                 {isDragging ? 'Drop file here' : 'Drag & drop a CSV or TXT file'}
               </p>
-              <p className="text-sm text-slate-500 mt-1">
+              <p className="text-sm text-ui-muted mt-1">
                 or click to browse
               </p>
             </div>
@@ -278,12 +278,12 @@ export const FileImportSection = ({
 
       {/* Error Display */}
       {error && (
-        <div className="flex items-center gap-2 p-3 bg-red-900/20 border border-red-500/50 rounded-lg text-red-300">
+        <div className="flex items-center gap-2 p-3 bg-ui-accent/20 border border-ui-accent rounded-lg text-ui-accent-foreground">
           <AlertTriangle className="w-5 h-5 flex-shrink-0" />
           <span>{error}</span>
           <button
             onClick={clearCards}
-            className="ml-auto p-1 hover:bg-red-500/20 rounded"
+            className="ml-auto p-1 hover:bg-ui-accent/30 rounded"
             type="button"
           >
             <X className="w-4 h-4" />
@@ -301,7 +301,7 @@ export const FileImportSection = ({
               <span className="font-medium">
                 {parsedCards.length} cards parsed
                 {detectedFormat && (
-                  <span className="text-slate-400 text-sm ml-2">
+                  <span className="text-ui-muted text-sm ml-2">
                     (Format: {detectedFormat})
                   </span>
                 )}
@@ -309,7 +309,7 @@ export const FileImportSection = ({
             </div>
             <div className="flex items-center gap-4 text-sm">
               {pendingCount > 0 && (
-                <span className="text-slate-400">{pendingCount} pending</span>
+                <span className="text-ui-muted">{pendingCount} pending</span>
               )}
               {importedCount > 0 && (
                 <span className="text-emerald-400">{importedCount} imported</span>
@@ -324,12 +324,12 @@ export const FileImportSection = ({
           {isImporting && (
             <div className="space-y-2">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-400">Importing cards...</span>
+                <span className="text-ui-muted">Importing cards...</span>
                 <span className="text-teal-400">
                   {importProgress.current} / {importProgress.total}
                 </span>
               </div>
-              <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+              <div className="h-2 bg-ui-surface rounded-full overflow-hidden">
                 <div
                   className="h-full bg-teal-500 transition-all duration-300"
                   style={{ 
@@ -343,29 +343,29 @@ export const FileImportSection = ({
           )}
 
           {/* Preview Table */}
-          <div className="border border-slate-700 rounded-lg overflow-hidden">
+          <div className="border border-ui-border rounded-lg overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-slate-800/50">
+                <thead className="bg-ui-card/50">
                   <tr>
-                    <th className="px-3 py-2 text-left text-xs font-semibold text-slate-400 uppercase">Card Name</th>
-                    <th className="px-3 py-2 text-left text-xs font-semibold text-slate-400 uppercase">Set</th>
-                    <th className="px-3 py-2 text-center text-xs font-semibold text-slate-400 uppercase">Qty</th>
-                    <th className="px-3 py-2 text-center text-xs font-semibold text-slate-400 uppercase">Condition</th>
-                    <th className="px-3 py-2 text-center text-xs font-semibold text-slate-400 uppercase">Foil</th>
-                    <th className="px-3 py-2 text-right text-xs font-semibold text-slate-400 uppercase">Price</th>
-                    <th className="px-3 py-2 text-center text-xs font-semibold text-slate-400 uppercase">Status</th>
-                    <th className="px-3 py-2 text-center text-xs font-semibold text-slate-400 uppercase">Actions</th>
+                    <th className="px-3 py-2 text-left text-xs font-semibold text-ui-muted uppercase">Card Name</th>
+                    <th className="px-3 py-2 text-left text-xs font-semibold text-ui-muted uppercase">Set</th>
+                    <th className="px-3 py-2 text-center text-xs font-semibold text-ui-muted uppercase">Qty</th>
+                    <th className="px-3 py-2 text-center text-xs font-semibold text-ui-muted uppercase">Condition</th>
+                    <th className="px-3 py-2 text-center text-xs font-semibold text-ui-muted uppercase">Foil</th>
+                    <th className="px-3 py-2 text-right text-xs font-semibold text-ui-muted uppercase">Price</th>
+                    <th className="px-3 py-2 text-center text-xs font-semibold text-ui-muted uppercase">Status</th>
+                    <th className="px-3 py-2 text-center text-xs font-semibold text-ui-muted uppercase">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-700">
+                <tbody className="divide-y divide-ui-border">
                   {parsedCards.map((card) => (
                     <tr 
                       key={card.id} 
                       className={`
                         ${card.status === 'imported' ? 'bg-emerald-900/10' : ''}
                         ${card.status === 'error' ? 'bg-red-900/10' : ''}
-                        hover:bg-slate-800/30
+                        hover:bg-ui-surface/30
                       `}
                     >
                       {editingId === card.id ? (
@@ -376,7 +376,7 @@ export const FileImportSection = ({
                               type="text"
                               value={card.name}
                               onChange={(e) => updateCard(card.id, { name: e.target.value })}
-                              className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-white text-sm focus:outline-none focus:ring-1 focus:ring-teal-400"
+                              className="w-full bg-ui-surface border border-ui-border rounded px-2 py-1 text-ui-text text-sm focus:outline-none focus:ring-1 focus:ring-teal-400"
                             />
                           </td>
                           <td className="px-3 py-2">
@@ -384,7 +384,7 @@ export const FileImportSection = ({
                               type="text"
                               value={getSetCode(card.set)}
                               onChange={(e) => updateCard(card.id, { set: e.target.value.toUpperCase() })}
-                              className="w-20 bg-slate-900 border border-slate-600 rounded px-2 py-1 text-white text-sm focus:outline-none focus:ring-1 focus:ring-teal-400"
+                              className="w-20 bg-ui-surface border border-ui-border rounded px-2 py-1 text-ui-text text-sm focus:outline-none focus:ring-1 focus:ring-teal-400"
                             />
                           </td>
                           <td className="px-3 py-2 text-center">
@@ -393,14 +393,14 @@ export const FileImportSection = ({
                               min="1"
                               value={card.quantity}
                               onChange={(e) => updateCard(card.id, { quantity: parseInt(e.target.value, 10) || 1 })}
-                              className="w-16 bg-slate-900 border border-slate-600 rounded px-2 py-1 text-white text-sm text-center focus:outline-none focus:ring-1 focus:ring-teal-400"
+                              className="w-16 bg-ui-surface border border-ui-border rounded px-2 py-1 text-ui-text text-sm text-center focus:outline-none focus:ring-1 focus:ring-teal-400"
                             />
                           </td>
                           <td className="px-3 py-2 text-center">
                             <select
                               value={card.condition}
                               onChange={(e) => updateCard(card.id, { condition: e.target.value })}
-                              className="bg-slate-900 border border-slate-600 rounded px-2 py-1 text-white text-sm focus:outline-none focus:ring-1 focus:ring-teal-400"
+                              className="bg-ui-surface border border-ui-border rounded px-2 py-1 text-ui-text text-sm focus:outline-none focus:ring-1 focus:ring-teal-400"
                             >
                               {QUALITY_OPTIONS.map(q => (
                                 <option key={q} value={q}>{q}</option>
@@ -412,7 +412,7 @@ export const FileImportSection = ({
                               type="checkbox"
                               checked={card.foil}
                               onChange={(e) => updateCard(card.id, { foil: e.target.checked })}
-                              className="w-4 h-4 rounded border-slate-600 bg-slate-900 text-teal-500 focus:ring-teal-400"
+                              className="w-4 h-4 rounded border-ui-border bg-ui-surface text-teal-500 focus:ring-teal-400"
                             />
                           </td>
                           <td className="px-3 py-2 text-right">
@@ -422,7 +422,7 @@ export const FileImportSection = ({
                               min="0"
                               value={card.price}
                               onChange={(e) => updateCard(card.id, { price: e.target.value })}
-                              className="w-20 bg-slate-900 border border-slate-600 rounded px-2 py-1 text-white text-sm text-right focus:outline-none focus:ring-1 focus:ring-teal-400"
+                              className="w-20 bg-ui-surface border border-ui-border rounded px-2 py-1 text-ui-text text-sm text-right focus:outline-none focus:ring-1 focus:ring-teal-400"
                             />
                           </td>
                           <td className="px-3 py-2 text-center">
@@ -442,18 +442,18 @@ export const FileImportSection = ({
                       ) : (
                         // Display mode
                         <>
-                          <td className="px-3 py-2 text-white font-medium">{card.name}</td>
-                          <td className="px-3 py-2 text-slate-400">{getSetDisplayName(card.set, true) || '-'}</td>
-                          <td className="px-3 py-2 text-center text-slate-300">{card.quantity}</td>
-                          <td className="px-3 py-2 text-center text-slate-300">{card.condition}</td>
+                          <td className="px-3 py-2 text-ui-text font-medium">{card.name}</td>
+                          <td className="px-3 py-2 text-ui-muted">{getSetDisplayName(card.set, true) || '-'}</td>
+                          <td className="px-3 py-2 text-center text-ui-text">{card.quantity}</td>
+                          <td className="px-3 py-2 text-center text-ui-text">{card.condition}</td>
                           <td className="px-3 py-2 text-center">
                             {card.foil ? (
                               <span className="text-amber-400">✦</span>
                             ) : (
-                              <span className="text-slate-600">-</span>
+                              <span className="text-ui-muted">-</span>
                             )}
                           </td>
-                          <td className="px-3 py-2 text-right text-slate-300">
+                          <td className="px-3 py-2 text-right text-ui-text">
                             {formatPrice(card.price)}
                           </td>
                           <td className="px-3 py-2 text-center">
@@ -467,7 +467,7 @@ export const FileImportSection = ({
                               {card.status !== 'imported' && (
                                 <button
                                   onClick={() => setEditingId(card.id)}
-                                  className="p-1 text-slate-400 hover:text-slate-300"
+                                  className="p-1 text-ui-muted hover:text-ui-text"
                                   title="Edit"
                                   type="button"
                                 >
@@ -476,7 +476,7 @@ export const FileImportSection = ({
                               )}
                               <button
                                 onClick={() => removeCard(card.id)}
-                                className="p-1 text-slate-400 hover:text-red-400"
+                                className="p-1 text-ui-muted hover:text-red-400"
                                 title="Remove"
                                 type="button"
                               >
@@ -497,7 +497,7 @@ export const FileImportSection = ({
           <div className="flex flex-wrap items-center justify-between gap-4">
             <button
               onClick={clearCards}
-              className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors text-sm"
+              className="px-4 py-2 bg-ui-surface hover:bg-ui-surface/90 rounded-lg transition-colors text-sm text-ui-text"
               type="button"
             >
               Clear All
@@ -510,7 +510,7 @@ export const FileImportSection = ({
                 flex items-center gap-2 px-6 py-2 rounded-lg font-medium transition-all text-sm
                 ${pendingCount > 0 && !isImporting
                   ? 'bg-teal-600 hover:bg-teal-500 text-white'
-                  : 'bg-slate-700 text-slate-500 cursor-not-allowed'
+                  : 'bg-ui-surface text-ui-muted cursor-not-allowed'
                 }
               `}
               type="button"
