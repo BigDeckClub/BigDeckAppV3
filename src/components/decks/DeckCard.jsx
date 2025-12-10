@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import { Download, Edit2, Trash2, FileEdit, Link2, ShoppingCart } from 'lucide-react';
 import { BuyButton } from '../buy/BuyButton';
 import { BuyCardsModal } from '../buy/BuyCardsModal';
+import DeckColorGradientBar from './DeckColorGradientBar';
 
 /**
  * DeckCard component - Displays a single deck in the deck list grid
@@ -63,9 +64,17 @@ export function DeckCard({
   return (
     <>
     <div
-      className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 hover:border-teal-500 rounded-lg p-4 cursor-pointer transition-all hover:shadow-lg hover:shadow-teal-500/20"
+      className="relative overflow-hidden bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 hover:border-teal-500 rounded-lg p-4 pt-6 cursor-pointer transition-all hover:shadow-lg hover:shadow-teal-500/20"
       onClick={() => onSelect(deck)}
     >
+      {/* Absolute top gradient strip - ensure parent is relative + overflow-hidden */}
+      <DeckColorGradientBar
+        colors={(derivedColorKeys && derivedColorKeys.length) ? derivedColorKeys : ['colorless']}
+        height={12}
+        radius={8}
+        debug={process.env.NODE_ENV !== 'production'}
+        className="absolute top-0 left-0 right-0 z-50"
+      />
       <div className="flex justify-between items-start mb-3">
         <div className="flex-1 min-w-0">
           <h3 className="text-lg font-bold text-teal-300 break-words">{deck.name}</h3>

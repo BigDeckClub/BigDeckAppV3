@@ -21,7 +21,9 @@ export function DeckColorGradientBar({
   colors = ['colorless'],
   height = 6,
   radius = 6,
-  className = ''
+  className = '',
+  debug = false,
+  style: styleProp = {}
 }) {
   // normalize color keys to 'white','blue','black','red','green','colorless'
   // Prefer CSS variables defined in `src/index.css`. If a key is a hex string it will be used directly.
@@ -69,7 +71,10 @@ export function DeckColorGradientBar({
     height: `${height}px`,
     borderTopLeftRadius: `${radius}px`,
     borderTopRightRadius: `${radius}px`,
-    background: `linear-gradient(90deg, ${stops})`
+    background: `linear-gradient(90deg, ${stops})`,
+    boxSizing: 'border-box',
+    ...(debug ? { outline: '2px solid rgba(220,38,38,0.9)' } : {}),
+    ...styleProp
   };
 
   const ariaLabel = `Deck colors: ${normalized.join(', ')}`;
@@ -86,7 +91,9 @@ DeckColorGradientBar.propTypes = {
   colors: PropTypes.arrayOf(PropTypes.string),
   height: PropTypes.number,
   radius: PropTypes.number,
-  className: PropTypes.string
+  className: PropTypes.string,
+  debug: PropTypes.bool,
+  style: PropTypes.object
 };
 
 export default DeckColorGradientBar;

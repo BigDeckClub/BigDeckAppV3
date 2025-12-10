@@ -10,7 +10,6 @@ import {
   FolderSidebar,
   FolderView
 } from './inventory';
-import { FilterBar, CardGalleryView, CardListView, CardTableView, VirtualizedView } from './ui';
 import { SellModal } from './SellModal';
 import { useFolderOperations } from '../hooks/useFolderOperations';
 import { useDeckReservations } from '../hooks/useDeckReservations';
@@ -356,21 +355,6 @@ export const InventoryTab = ({
     onSetThreshold: setThresholdHandler
   };
 
-  // Flatten grouped inventory for alternate UI views (gallery/list/table)
-  const flatCards = useMemo(() => {
-    return Object.values(groupedInventory).flat();
-  }, [groupedInventory]);
-
-  // Selection handler used by CardGallery/CardList/Table views
-  const handleSelectCard = useCallback((card, selected) => {
-    setSelectedCardIds((prev) => {
-      const next = new Set(prev);
-      if (selected) next.add(card.id);
-      else next.delete(card.id);
-      return next;
-    });
-  }, []);
-
   // Get current deck for deck detail view (non-hook logic)
   const currentDeckId = deckOps.openDecks.find(id => `deck-${id}` === activeTab);
   const currentDeck = deckOps.deckInstances.find(d => d.id === currentDeckId);
@@ -445,19 +429,6 @@ export const InventoryTab = ({
           inventorySearch={inventorySearch}
           setInventorySearch={setInventorySearch}
         />
-
-        {/* New unified filter bar from UI library */}
-        <div className="mt-3">
-          <FilterBar
-            searchQuery={inventorySearch}
-            onSearchChange={setInventorySearch}
-            // other filter props can be wired up later
-            activeFiltersCount={0}
-            onClearAll={() => {
-              setInventorySearch('');
-            }}
-          />
-        </div>
 
         <Breadcrumb
           navigationPath={navigationPath}
@@ -585,39 +556,29 @@ export const InventoryTab = ({
                     )}
                   </div>
 
-                  {/* New unified views from UI library */}
-                  {viewMode === 'card' ? (
-                    <CardGalleryView
-                      cards={flatCards}
-                      selectedCards={selectedCardIds}
-                      onSelect={handleSelectCard}
-                      onQuantityChange={(card, qty) => updateInventoryItem(card.id, { quantity: qty })}
-                      onCardClick={() => {}}
-                      onContextMenu={() => {}}
-                    />
-                  ) : viewMode === 'list' ? (
-                    <CardListView
-                      cards={flatCards}
-                      selectedCards={selectedCardIds}
-                      onSelect={(card, checked) => handleSelectCard(card, checked)}
-                      onSelectAll={(checked) => {
-                        if (checked) setSelectedCardIds(new Set(flatCards.map(c => c.id)));
-                        else setSelectedCardIds(new Set());
-                      }}
-                      onQuantityChange={(card, qty) => updateInventoryItem(card.id, { quantity: qty })}
-                      onCardClick={() => {}}
-                    />
-                  ) : (
-                    <CardTableView
-                      cards={flatCards}
-                      selectedCards={selectedCardIds}
-                      onSelect={(card, checked) => handleSelectCard(card, checked)}
-                      onSelectAll={(checked) => {
-                        if (checked) setSelectedCardIds(new Set(flatCards.map(c => c.id)));
-                        else setSelectedCardIds(new Set());
-                      }}
-                      onQuantityChange={(card, qty) => updateInventoryItem(card.id, { quantity: qty })}
-                      onCardClick={() => {}}
+                  <CardGrid 
+                    cards={inStockCards} 
+                    {...cardGridProps}
+                    selectedCardIds={selectedCardIds}
+                    setSelectedCardIds={setSelectedCardIds}
+                  />
+                  {inStockCards.length > 0 && outOfStockCards.length > 0 && (
+                    <div className="border-t border-slate-700 pt-4">
+                      <h3 className="text-sm font-semibold text-slate-400 mb-3">Out of Stock</h3>
+                      <CardGrid 
+                        cards={outOfStockCards} 
+                        {...cardGridProps}
+                        selectedCardIds={selectedCardIds}
+                        setSelectedCardIds={setSelectedCardIds}
+                      />
+                    </div>
+                  )}
+                  {outOfStockCards.length > 0 && inStockCards.length === 0 && (
+                    <CardGrid 
+                      cards={outOfStockCards} 
+                      {...cardGridProps}
+                      selectedCardIds={selectedCardIds}
+                      setSelectedCardIds={setSelectedCardIds}
                     />
                   )}
                 </>

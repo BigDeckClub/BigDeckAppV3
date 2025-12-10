@@ -22,6 +22,7 @@ import {
   Copy,
 } from 'lucide-react';
 import DeckColorGradientBar from '../decks/DeckColorGradientBar';
+import { ensureCardMetadata, getCachedMetadata } from '../../hooks/useScryfallCache';
 
 /**
  * Format date for display
@@ -190,6 +191,13 @@ export const DeckCardTile = memo(function DeckCardTile({
   onCancelEdit,
   className = '',
 }) {
+  // Listen for enrichment events to force re-render when client-side metadata is fetched
+  const [, setTick] = React.useState(0);
+  React.useEffect(() => {
+    const onEnriched = (e) => setTick(t => t + 1);
+    window.addEventListener('deck-enriched', onEnriched);
+    return () => window.removeEventListener('deck-enriched', onEnriched);
+  }, []);
   const [showMissing, setShowMissing] = useState(false);
   const [showActions, setShowActions] = useState(false);
 
@@ -221,7 +229,7 @@ export const DeckCardTile = memo(function DeckCardTile({
       onClick={() => onSelect?.(deck)}
     >
       {/* Top color gradient strip (deck color pie) */}
-      <div className="absolute top-0 left-0 right-0">
+      <div className="absolute top-0 left-0 right-0 z-20">
         {(() => {
           // Compute color keys: prefer provided colorIdentity, otherwise derive from cards
           let keys = (colorIdentity && colorIdentity.length > 0) ? colorIdentity.slice() : [];
@@ -232,6 +240,32 @@ export const DeckCardTile = memo(function DeckCardTile({
               (cardColors || []).forEach((ch) => set.add(String(ch).toUpperCase()));
             });
             keys = Array.from(set);
+          }
+          // If still empty, try to enrich via client-side Scryfall cache (async)
+          if ((!keys || keys.length === 0) && Array.isArray(deck.cards) && deck.cards.length > 0) {
+            (async () => {
+              try {
+                const unique = deck.cards.map(c => ({ name: c.name, set: c.set })).slice(0, 20);
+                const metaMap = await ensureCardMetadata(unique);
+                const sset = new Set();
+                deck.cards.forEach(c => {
+                  const key = `${(c.name||'').toLowerCase().trim()}|${(c.set||'').toLowerCase().trim()}`;
+                  const meta = metaMap[key] || getCachedMetadata(c.name, c.set);
+                  (meta?.color_identity || []).forEach(ci => sset.add(String(ci).toUpperCase()));
+                });
+                const newKeys = Array.from(sset);
+                if (newKeys.length > 0) {
+                  // Force re-render by updating a dummy state via a custom event on deck
+                  // Note: using a small trick: set a property and trigger a reflow by dispatching an event
+                  // Better approach is to lift state; this is minimal to avoid broad refactors.
+                  deck.__scryfall_enriched = true;
+                  const ev = new CustomEvent('deck-enriched', { detail: { deckId: deck.id } });
+                  window.dispatchEvent(ev);
+                }
+              } catch (e) {
+                // ignore
+              }
+            })();
           }
           if (!keys || keys.length === 0) keys = ['C'];
 
@@ -244,11 +278,20 @@ export const DeckCardTile = memo(function DeckCardTile({
           });
 
           return (
-            <DeckColorGradientBar
-              colors={mapped}
-              height={6}
-              radius={12}
-            />
+            <>
+              <DeckColorGradientBar
+                colors={mapped}
+                height={process.env.NODE_ENV !== 'production' ? 12 : 6}
+                radius={12}
+                debug={process.env.NODE_ENV !== 'production'}
+                className="z-20"
+              />
+              {process.env.NODE_ENV !== 'production' && (
+                <div className="absolute top-3 left-3 text-[10px] text-slate-200 bg-black/30 px-2 py-0.5 rounded z-40">
+                  <div>Keys: {mapped.join(', ')}</div>
+                </div>
+              )}
+            </>
           );
         })()}
       </div>

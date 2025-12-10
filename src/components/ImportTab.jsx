@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Layers, Upload } from 'lucide-react';
 import { RapidEntryTable } from './rapid-entry/RapidEntryTable';
 import { FileImportSection } from './FileImportSection';
-import { DropZone, ImportWizard } from './ui';
 import { fetchWithAuth } from '../utils/apiClient';
 
 export const ImportTab = ({ 
@@ -51,18 +50,6 @@ export const ImportTab = ({
 
   return (
     <div className="space-y-6">
-      {/* Import Wizard (top-level flow) */}
-      <div className="card rounded-lg p-4 sm:p-6 border border-slate-700">
-        <ImportWizard />
-      </div>
-
-      {/* Drag & Drop zone from UI components */}
-      <div className="card rounded-lg p-4 sm:p-6 border border-slate-700">
-        <DropZone onFileSelect={(file) => {
-          // For now, just log file - FileImportSection handles parsing when using input
-          console.log('DropZone file:', file);
-        }} />
-      </div>
       {/* Rapid Entry Section */}
       <div className="card rounded-lg p-4 sm:p-6 border border-slate-700">
         <div className="flex items-center gap-3 mb-4">
