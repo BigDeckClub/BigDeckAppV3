@@ -1,0 +1,59 @@
+/* Community Theme - CSS variables for runtime theming
+   Phase 0 - global variables that can be manipulated by a ThemeProvider
+   and referenced by Tailwind via CSS variable mappings in tailwind.config.js
+*/
+:root {
+  /* Core UI tokens */
+  --bda-bg: #0f172a; /* app background */
+  --bda-surface: #0f172a; /* panels, cards */
+  --bda-card: rgba(30,41,59,0.6);
+  --bda-text: #e6eef6; /* primary text */
+  --bda-muted: #9aa6b2; /* secondary text */
+  --bda-border: rgba(255,255,255,0.06);
+  --bda-primary: #14b8a6; /* primary accent */
+  --bda-primary-foreground: #022c2a; /* text on primary */
+  --bda-accent: #f59e0b; /* CTA accent */
+  --bda-ring: 0 0 0 4px rgba(20,184,166,0.12);
+
+  /* Utility tokens */
+  --bda-elevation-1: 0 4px 6px -1px rgba(2,6,23,0.6), 0 2px 4px -2px rgba(2,6,23,0.6);
+}
+
+/* Light theme overrides */
+.theme-light {
+  --bda-bg: #f7fafc;
+  --bda-surface: #ffffff;
+  --bda-card: rgba(255,255,255,0.9);
+  --bda-text: #0f172a;
+  --bda-muted: #6b7280;
+  --bda-border: rgba(15,23,42,0.06);
+  --bda-primary: #0f766e;
+  --bda-primary-foreground: #ffffff;
+  --bda-accent: #c084fc;
+  --bda-ring: 0 0 0 4px rgba(15,118,110,0.12);
+}
+
+/* Dark theme overrides */
+.theme-dark {
+  --bda-bg: #0b1220;
+  --bda-surface: #0f172a;
+  --bda-card: rgba(15,23,42,0.6);
+  --bda-text: #e6eef6;
+  --bda-muted: #94a3b8;
+  --bda-border: rgba(255,255,255,0.04);
+  --bda-primary: #14b8a6;
+  --bda-primary-foreground: #042f2d;
+  --bda-accent: #f59e0b;
+  --bda-ring: 0 0 0 4px rgba(20,184,166,0.08);
+}
+
+/* Respect system preference by default */
+@media (prefers-color-scheme: light) {
+  :root { /* keep defaults neutral - encourage explicit provider */ }
+}
+
+/* Small helper utilities that rely on the variables */
+.bda-bg { background-color: var(--bda-bg) !important; }
+.bda-surface { background-color: var(--bda-surface) !important; }
+.bda-text { color: var(--bda-text) !important; }
+.bda-muted { color: var(--bda-muted) !important; }

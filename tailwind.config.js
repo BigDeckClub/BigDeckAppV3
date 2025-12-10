@@ -94,6 +94,19 @@ export default {
           900: '#18181B',
           950: '#09090B',
         },
+        // UI tokens mapped to CSS variables so runtime themes can drive Tailwind styles
+        ui: {
+          bg: 'var(--bda-bg)',
+          surface: 'var(--bda-surface)',
+          card: 'var(--bda-card)',
+          text: 'var(--bda-text)',
+          muted: 'var(--bda-muted)',
+          border: 'var(--bda-border)',
+          primary: 'var(--bda-primary)',
+          'primary-foreground': 'var(--bda-primary-foreground)',
+          accent: 'var(--bda-accent)',
+          ring: 'var(--bda-ring)',
+        },
       },
       // Typography
       fontFamily: {
