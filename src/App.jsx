@@ -1,32 +1,3 @@
-import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { CommunityThemeProvider } from "./context/CommunityThemeContext";
-import Home from "./pages/Home";
-import DashboardRevamp from "./pages/DashboardRevamp";
-import InventoryRevamp from "./pages/InventoryRevamp";
-import DecksRevamp from "./pages/DecksRevamp";
-
-/*
-  IMPORTANT: replace CURRENT_COMMUNITY_ID with the app's source of community id,
-  e.g., from route params or server-side injected variable.
-*/
-const CURRENT_COMMUNITY_ID = process.env.REACT_APP_COMMUNITY_ID || "1";
-
-export default function App() {
-  return (
-    <CommunityThemeProvider communityId={CURRENT_COMMUNITY_ID}>
-      <Router>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/dashboard" element={<DashboardRevamp />} />
-          <Route path="/inventory" element={<InventoryRevamp />} />
-          <Route path="/decks" element={<DecksRevamp />} />
-          {/* keep legacy routes intact; add redirects if needed */}
-        </Routes>
-      </Router>
-    </CommunityThemeProvider>
-  );
-}
 import React, { useState, useEffect, lazy, useCallback, Suspense, useRef, useMemo } from "react";
 import { PriceCacheProvider } from "./context/PriceCacheContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";

@@ -12,6 +12,7 @@ export default function Card({
   hoverable = false,
   padding = 'default',
   className = '',
+  ariaLabel, // accept camelCase prop and map to aria-label
   ...props
 }) {
   const baseClasses = `
@@ -49,7 +50,7 @@ export default function Card({
   ].filter(Boolean).join(' ');
 
   return (
-    <div className={cardClasses} {...props}>
+    <div className={cardClasses} aria-label={ariaLabel} {...props}>
       {header && (
         <div className={`border-b border-slate-700/50 ${paddingClasses[padding] || paddingClasses.default} pb-3`}>
           {header}
@@ -83,3 +84,6 @@ Card.propTypes = {
   /** Additional CSS classes */
   className: PropTypes.string,
 };
+
+// Export named for tests that import `{ Card }`
+export { Card };

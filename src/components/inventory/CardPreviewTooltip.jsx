@@ -2,6 +2,7 @@ import React, { memo, useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import PropTypes from 'prop-types';
 import { EXTERNAL_APIS } from '../../config/api';
+import scryfallClient from '../../utils/scryfallClient';
 
 // MTG card aspect ratio constants (standard card dimensions)
 const CARD_ASPECT_WIDTH = 488;
@@ -15,8 +16,14 @@ const CARD_ASPECT_RATIO = `${CARD_ASPECT_WIDTH}/${CARD_ASPECT_HEIGHT}`;
  */
 function getSetCode(set) {
   if (!set) return null;
-  if (typeof set === 'string') return set.toLowerCase();
-  return (set.editioncode || set.mtgoCode || '').toLowerCase() || null;
+  if (typeof set === 'string') {
+    const val = set.toString().trim().toLowerCase();
+    if (!val || val === 'unknown') return null;
+    return val;
+  }
+  const candidate = (set.editioncode || set.mtgoCode || '').toString().trim().toLowerCase();
+  if (!candidate || candidate === 'unknown') return null;
+  return candidate;
 }
 
 /**
@@ -27,20 +34,14 @@ function getSetCode(set) {
  * @param {boolean} skipSetCode - If true, don't include set code (fallback for mismatched set codes)
  * @returns {string} - Scryfall image URL
  */
-function getCardImageUrl(cardName, setCode, imageUri, skipSetCode = false) {
-  // If we have a direct image URI, use it
-  if (imageUri) {
-    return imageUri;
-  }
-  
-  // Use Scryfall's named lookup for reliability
+// Prefer known URIs / ids via scryfallClient.getImageUrl, otherwise fall back to Scryfall named lookup
+function getNamedImageUrl(cardName, setCode, version = 'normal', skipSetCode = false) {
   const encodedName = encodeURIComponent(cardName.split('//')[0].trim());
-  // If we have a set code and skipSetCode is false, include it for more accurate results
   const normalizedSetCode = getSetCode(setCode);
   if (normalizedSetCode && !skipSetCode) {
-    return `${EXTERNAL_APIS.SCRYFALL}/cards/named?exact=${encodedName}&set=${normalizedSetCode}&format=image&version=normal`;
+    return `${EXTERNAL_APIS.SCRYFALL}/cards/named?exact=${encodedName}&set=${normalizedSetCode}&format=image&version=${version}`;
   }
-  return `${EXTERNAL_APIS.SCRYFALL}/cards/named?exact=${encodedName}&format=image&version=normal`;
+  return `${EXTERNAL_APIS.SCRYFALL}/cards/named?exact=${encodedName}&format=image&version=${version}`;
 }
 
 /**
@@ -122,7 +123,12 @@ export const CardPreviewTooltip = memo(function CardPreviewTooltip({
     return null;
   }
   
-  const imageUrl = getCardImageUrl(cardName, setCode, imageUri, skipSetCode);
+  const candidate = scryfallClient.getImageUrl({
+    image_uris: imageUri ? { normal: imageUri, small: imageUri } : undefined,
+    name: cardName,
+    set: setCode,
+  }, { version: 'normal' });
+  const imageUrl = candidate || getNamedImageUrl(cardName, setCode, 'normal', skipSetCode);
   
   const tooltip = (
     <div

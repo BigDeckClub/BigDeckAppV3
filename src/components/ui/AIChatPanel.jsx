@@ -231,7 +231,7 @@ const WelcomeScreen = memo(function WelcomeScreen({ onSuggestionClick, suggestio
       </div>
 
       {/* Title and description */}
-      <h2 className="text-2xl font-bold text-white mb-2">BigDeckAI</h2>
+      <h2 className="text-2xl font-bold text-white mb-2">Welcome to BigDeckAI</h2>
       <p className="text-slate-400 text-center max-w-md mb-8">
         Your AI-powered deck building assistant. Ask about deck strategies,
         card recommendations, format legality, or get help analyzing your collection.
@@ -289,7 +289,7 @@ ScrollButton.propTypes = {
  */
 const DEFAULT_SUGGESTIONS = [
   'Help me build a Commander deck',
-  'What cards work well with my commander?',
+  'What are good cards for a burn deck?',
   'Analyze my deck for weaknesses',
   'Suggest budget alternatives',
 ];

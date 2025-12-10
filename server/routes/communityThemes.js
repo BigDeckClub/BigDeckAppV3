@@ -1,5 +1,5 @@
 import express from 'express';
-import asyncHandler from '../middleware/asyncHandler.js';
+import { asyncHandler } from '../middleware/asyncHandler.js';
 import { pool } from '../db/pool.js';
 import { optionalAuth } from '../middleware/auth.js';
 

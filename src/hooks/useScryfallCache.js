@@ -22,12 +22,27 @@ const saveCache = () => {
   }
 };
 
+// Helper to safely extract a usable Scryfall set code from string or object
+function normalizeSetCode(setCode) {
+  if (!setCode) return null;
+  if (typeof setCode === 'string') {
+    const val = setCode.trim().toLowerCase();
+    if (!val || val === 'unknown') return null;
+    return val;
+  }
+  // If object, prefer editioncode or mtgoCode
+  const candidate = (setCode.editioncode || setCode.mtgoCode || '').toString().trim().toLowerCase();
+  if (!candidate || candidate === 'unknown') return null;
+  return candidate;
+}
+
 // Fetch card by exact name (optionally with set) from Scryfall
 async function fetchCardByName(name, setCode) {
   if (!name) return null;
   const params = new URLSearchParams();
   params.set('exact', name);
-  if (setCode) params.set('set', setCode);
+  const safeSet = normalizeSetCode(setCode);
+  if (safeSet) params.set('set', safeSet);
   const url = `https://api.scryfall.com/cards/named?${params.toString()}`;
   try {
     const res = await fetch(url);

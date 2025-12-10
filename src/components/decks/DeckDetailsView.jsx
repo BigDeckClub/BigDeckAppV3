@@ -101,7 +101,8 @@ export function DeckDetailsView({
           const averageCmc = deck.cards.reduce((s, c) => s + ((c.cmc || c.converted_mana_cost || 0) * (c.quantity || 1)), 0) / Math.max(1, totalCards);
           const typeBreakdown = {};
           return (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className="space-y-4 mb-6">
+              {/* Compact stats row */}
               <DeckStatsPanel
                 cards={deck.cards}
                 totalValue={0}
@@ -110,18 +111,22 @@ export function DeckDetailsView({
                 ownedCount={ownedCount}
                 averageCmc={averageCmc}
                 typeBreakdown={typeBreakdown}
+                compact={true}
               />
-              <ManaCurveChart
-                cards={deck.cards}
-                showStats={true}
-                title="Mana Curve"
-              />
-              <DeckColorPie
-                cards={deck.cards}
-                showLegend={true}
-                size="md"
-                title="Color Distribution"
-              />
+              {/* Charts row */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <ManaCurveChart
+                  cards={deck.cards}
+                  showStats={true}
+                  title="Mana Curve"
+                />
+                <DeckColorPie
+                  cards={deck.cards}
+                  showLegend={true}
+                  size="md"
+                  title="Color Distribution"
+                />
+              </div>
             </div>
           );
         })()}

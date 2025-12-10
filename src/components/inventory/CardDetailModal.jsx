@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import { X, Trash2, Edit2, Bell, BellOff, ChevronDown, ChevronUp, Package, DollarSign, Calendar, Hash, FolderOpen, Save, XCircle, Image } from 'lucide-react';
 import { calculateSmartThreshold } from '../../utils/thresholdCalculator';
 import { EXTERNAL_APIS } from '../../config/api';
+import scryfallClient from '../../utils/scryfallClient';
 import { Button } from '../ui/Button';
 import { useAuthFetch } from '../../hooks/useAuthFetch';
 
@@ -12,12 +13,15 @@ import { useAuthFetch } from '../../hooks/useAuthFetch';
  * @param {string} setCode - Set code (optional)
  * @returns {string} - Scryfall image URL
  */
-function getCardImageUrl(cardName, setCode) {
-  // Use Scryfall's named lookup for reliability
+// Helper to construct named lookup URL when needed
+function getNamedImageUrl(cardName, setCode) {
   const encodedName = encodeURIComponent(cardName.split('//')[0].trim());
-  // If we have a set code, include it for more accurate results
-  if (setCode) {
-    return `${EXTERNAL_APIS.SCRYFALL}/cards/named?exact=${encodedName}&set=${setCode.toLowerCase()}&format=image&version=normal`;
+  const safeSet = (typeof setCode === 'string'
+    ? setCode.toString().trim()
+    : (setCode?.editioncode || setCode?.mtgoCode || '')).toString().trim();
+  const includeSet = safeSet && safeSet.toLowerCase() !== 'unknown';
+  if (includeSet) {
+    return `${EXTERNAL_APIS.SCRYFALL}/cards/named?exact=${encodedName}&set=${safeSet.toLowerCase()}&format=image&version=normal`;
   }
   return `${EXTERNAL_APIS.SCRYFALL}/cards/named?exact=${encodedName}&format=image&version=normal`;
 }
@@ -359,6 +363,7 @@ export const CardDetailModal = memo(function CardDetailModal({
   // Refs for focus management
   const modalRef = useRef(null);
   const previousActiveElement = useRef(null);
+  const salesFetchedRef = useRef(false);
   
   // Get all focusable elements within a container
   const getFocusableElements = useCallback((container) => {
@@ -438,7 +443,7 @@ export const CardDetailModal = memo(function CardDetailModal({
     };
   }, [isOpen, onClose, getFocusableElements]);
   
-  // Load sales history and threshold settings on mount
+  // Load threshold settings from localStorage on mount
   useEffect(() => {
     const saved = localStorage.getItem('thresholdSettings');
     if (saved) {
@@ -448,14 +453,25 @@ export const CardDetailModal = memo(function CardDetailModal({
         console.error('[CardDetailModal] Error loading settings:', err);
       }
     }
-    
+  }, []);
+
+  // Load sales history only when modal opens (and only once per open)
+  useEffect(() => {
+    if (!isOpen) {
+      salesFetchedRef.current = false;
+      return;
+    }
+
+    if (salesFetchedRef.current) return;
+    salesFetchedRef.current = true;
+
     authFetch('/api/sales')
       .then(res => res.json())
       .then(data => {
         setSalesHistory(data || []);
       })
       .catch(err => console.error('[CardDetailModal] Error loading sales:', err));
-  }, [authFetch]);
+  }, [isOpen, authFetch]);
 
   // Reset image state when card changes
   useEffect(() => {
@@ -575,7 +591,20 @@ export const CardDetailModal = memo(function CardDetailModal({
     });
   };
 
-  const imageUrl = getCardImageUrl(cardName, firstItem?.set);
+  // Prefer direct URIs or id-based images via centralized client, else fallback to named lookup
+  const candidate = scryfallClient.getImageUrl({
+    image_uris: firstItem?.image_uris,
+    card_faces: firstItem?.card_faces,
+    scryfall_id: firstItem?.scryfall_id,
+    name: cardName,
+    set: firstItem?.set,
+  }, { version: 'normal' });
+
+  const safeSet = (typeof firstItem?.set === 'string'
+    ? firstItem?.set.toString().trim()
+    : (firstItem?.set?.editioncode || firstItem?.set?.mtgoCode || '')).toString().trim();
+
+  const imageUrl = candidate || getNamedImageUrl(cardName, safeSet);
 
   return (
     <div 

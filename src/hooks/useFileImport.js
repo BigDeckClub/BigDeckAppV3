@@ -4,6 +4,7 @@
  * @module hooks/useFileImport
  */
 import { useState, useCallback } from 'react';
+import scryfallClient from '../utils/scryfallClient.js';
 
 /**
  * Factory to create a unique ID generator with its own counter
@@ -434,13 +435,26 @@ export function useFileImport({ addInventoryItem, showToast }) {
     
     setIsImporting(true);
     setImportProgress({ current: 0, total: validCards.length });
-    
+
+    // Batch-resolve Scryfall data for all parsed cards to reduce requests
+    const identifiers = validCards.map(c => ({ name: c.name, set: c.set || '' }));
+    let resolvedMap = {};
+    try {
+      resolvedMap = await scryfallClient.batchResolve(identifiers);
+    } catch (err) {
+      // If batch fails, fall back to empty map and proceed with individual adds
+      console.warn('[IMPORT] Scryfall batchResolve failed:', err.message);
+      resolvedMap = {};
+    }
+
     let successCount = 0;
     let errorCount = 0;
-    
+
     for (let i = 0; i < validCards.length; i++) {
       const card = validCards[i];
-      
+      const key = `${(card.name || '').toLowerCase().trim()}|${(card.set || '').toLowerCase().trim()}`;
+      const resolved = resolvedMap[key];
+
       try {
         const item = {
           name: card.name,
@@ -451,15 +465,18 @@ export function useFileImport({ addInventoryItem, showToast }) {
           folder,
           foil: card.foil,
           quality: card.condition,
+          // include scryfall id when available to help server-side processing
+          scryfall_id: resolved?.scryfall_id || null,
+          image_uris: resolved?.image_uris || null,
         };
-        
+
         await addInventoryItem(item);
-        
+
         // Mark as imported
         setParsedCards(prev => prev.map(c => 
           c.id === card.id ? { ...c, status: 'imported' } : c
         ));
-        
+
         successCount++;
       } catch (err) {
         // Mark as error
@@ -468,10 +485,10 @@ export function useFileImport({ addInventoryItem, showToast }) {
         ));
         errorCount++;
       }
-      
+
       setImportProgress({ current: i + 1, total: validCards.length });
     }
-    
+
     setIsImporting(false);
     
     if (successCount > 0) {

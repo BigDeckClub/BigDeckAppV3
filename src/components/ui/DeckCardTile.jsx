@@ -200,6 +200,21 @@ export const DeckCardTile = memo(function DeckCardTile({
   }, []);
   const [showMissing, setShowMissing] = useState(false);
   const [showActions, setShowActions] = useState(false);
+  const actionsRef = React.useRef(null);
+
+  // Close dropdown when clicking outside
+  React.useEffect(() => {
+    if (!showActions) return;
+
+    const handleClickOutside = (e) => {
+      if (actionsRef.current && !actionsRef.current.contains(e.target)) {
+        setShowActions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showActions]);
 
   const cardCount = deck.cards?.length || 0;
   const totalCards = deck.cards?.reduce((sum, c) => sum + (c.quantity || 1), 0) || 0;
@@ -345,15 +360,9 @@ export const DeckCardTile = memo(function DeckCardTile({
             </button>
 
             {showActions && (
-              <>
-                <div
-                  className="fixed inset-0 z-10"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowActions(false);
-                  }}
-                />
-                <div className="absolute right-0 top-full mt-1 z-20 w-48 bg-slate-800 border border-slate-700 rounded-lg shadow-xl py-1 animate-fade-in">
+              <div
+                ref={actionsRef}
+                className="absolute right-0 top-full mt-1 z-50 w-48 bg-slate-800 border border-slate-700 rounded-lg shadow-xl py-1 animate-fade-in">
                   {onEdit && (
                     <button
                       onClick={handleAction(() => onEdit(deck.id))}
@@ -403,7 +412,6 @@ export const DeckCardTile = memo(function DeckCardTile({
                     </>
                   )}
                 </div>
-              </>
             )}
           </div>
         </div>

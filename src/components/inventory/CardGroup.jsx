@@ -7,6 +7,7 @@ import { useConfirm } from '../../context/ConfirmContext';
 import { useHoverPreview } from '../../hooks/useHoverPreview';
 import { EXTERNAL_APIS } from '../../config/api';
 import { getSetCode } from '../../utils/cardHelpers';
+import scryfallClient from '../../utils/scryfallClient';
 
 /**
  * Get card image URL from Scryfall
@@ -16,7 +17,9 @@ import { getSetCode } from '../../utils/cardHelpers';
  * @param {boolean} skipSetCode - If true, don't include set code (fallback for mismatched set codes)
  * @returns {string} - Scryfall image URL
  */
-function getCardImageUrl(cardName, set, version = 'normal', skipSetCode = false) {
+// Image selection: prefer direct image URIs or known ids via scryfallClient.getImageUrl,
+// fall back to Scryfall named lookup by name (with optional set code).
+function getNamedImageUrl(cardName, set, version = 'normal', skipSetCode = false) {
   const encodedName = encodeURIComponent(cardName.split('//')[0].trim());
   const setCode = getSetCode(set);
   if (setCode && !skipSetCode) {
@@ -183,6 +186,14 @@ export const CardGroup = memo(function CardGroup({
   const firstItem = items[0];
   const previewImageUri = firstItem?.image_uri || firstItem?.image_uris?.normal || null;
   const previewSetCode = firstItem?.set || null;
+  const previewCandidate = scryfallClient.getImageUrl({
+    image_uris: firstItem?.image_uris,
+    card_faces: firstItem?.card_faces,
+    scryfall_id: firstItem?.scryfall_id,
+    name: cardName,
+    set: firstItem?.set,
+  }, { version: 'normal' });
+  const previewFinalImage = previewImageUri || previewCandidate || null;
   
   return (
     <div>
@@ -363,23 +374,36 @@ export const CardGroup = memo(function CardGroup({
           
           {/* Card image */}
           {!imageError ? (
-            <img
-              src={getCardImageUrl(cardName, items[0]?.set, 'normal', skipSetCode)}
-              alt={cardName}
-              className={`w-full h-full object-cover transition-opacity ${imageLoading ? 'opacity-0' : 'opacity-100'}`}
-              onLoad={() => setImageLoading(false)}
-              onError={() => {
-                // If we haven't tried without set code yet, retry without it
-                if (!skipSetCode && getSetCode(items[0]?.set)) {
-                  setSkipSetCode(true);
-                  setImageLoading(true);
-                } else {
-                  setImageError(true);
-                  setImageLoading(false);
-                }
-              }}
-              loading="lazy"
-            />
+            (() => {
+              // prefer known URIs / ids via scryfallClient, fallback to named lookup
+              const candidate = scryfallClient.getImageUrl({
+                image_uris: items[0]?.image_uris,
+                card_faces: items[0]?.card_faces,
+                scryfall_id: items[0]?.scryfall_id,
+                name: cardName,
+                set: items[0]?.set,
+              }, { version: 'normal' });
+              const src = candidate || getNamedImageUrl(cardName, items[0]?.set, 'normal', skipSetCode);
+              return (
+                <img
+                  src={src}
+                  alt={cardName}
+                  className={`w-full h-full object-cover transition-opacity ${imageLoading ? 'opacity-0' : 'opacity-100'}`}
+                  onLoad={() => setImageLoading(false)}
+                  onError={() => {
+                    // If we haven't tried without set code yet, retry without it
+                    if (!skipSetCode && getSetCode(items[0]?.set)) {
+                      setSkipSetCode(true);
+                      setImageLoading(true);
+                    } else {
+                      setImageError(true);
+                      setImageLoading(false);
+                    }
+                  }}
+                  loading="lazy"
+                />
+              );
+            })()
           ) : (
             <div className="absolute inset-0 bg-slate-800 flex flex-col items-center justify-center text-slate-400 p-4">
               <ImageOff className="w-10 h-10 mb-2" />
