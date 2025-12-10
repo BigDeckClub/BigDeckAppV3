@@ -4,9 +4,13 @@ import React from "react";
  * Card wrapper using design tokens
  * Props: children, className
  */
-export default function Card({ children, className = "" }) {
+export default function Card({ children, className = "", role = 'region', ariaLabel }) {
   return (
-    <div className={`bg-card border border-[var(--card-border)] rounded-md p-4 shadow-sm ${className}`}>
+    <div
+      role={role}
+      aria-label={ariaLabel}
+      className={`bg-card border border-[var(--card-border)] rounded-md p-4 shadow-sm ${className}`}
+    >
       {children}
     </div>
   );
