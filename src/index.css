@@ -70,6 +70,27 @@ html, body {
   letter-spacing: -0.01em;
 }
 
+/* Skip to content link styles */
+.skip-to-content {
+  position: absolute;
+  left: -999px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+.skip-to-content:focus {
+  left: 1rem;
+  top: 1rem;
+  width: auto;
+  height: auto;
+  padding: 0.5rem 1rem;
+  background: rgba(2,6,23,0.9);
+  color: white;
+  border-radius: 6px;
+  z-index: 9999;
+}
+
 body {
   @apply m-0 p-0 overflow-x-hidden;
 }
