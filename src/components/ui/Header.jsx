@@ -200,7 +200,7 @@ export const Header = memo(function Header({
       </header>
 
       {/* Mobile Header (top bar with logo + search) */}
-      <header className="md:hidden sticky top-0 z-50 bg-[var(--bg-page)] backdrop-blur-xl border-b border-slate-800 safe-area-top">
+      <header className="md:hidden sticky top-0 z-50 bg-ui-surface backdrop-blur-xl border-b border-ui-border safe-area-top">
         <div className="flex items-center justify-between px-4 h-14">
           <Logo />
           <div className="flex items-center gap-2">
@@ -219,7 +219,7 @@ export const Header = memo(function Header({
 
       {/* Mobile Bottom Navigation */}
       <nav
-        className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[var(--bg-page)] backdrop-blur-xl border-t border-slate-800 safe-area-bottom"
+        className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-ui-surface backdrop-blur-xl border-t border-ui-border safe-area-bottom"
         role="navigation"
         aria-label="Mobile navigation"
       >

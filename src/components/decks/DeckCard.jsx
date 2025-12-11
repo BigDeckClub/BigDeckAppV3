@@ -97,7 +97,7 @@ export function DeckCard({
               e.stopPropagation();
               onEdit(deck.id);
             }}
-            className="text-[var(--text-muted)] hover:text-teal-400 transition-colors bg-[var(--muted-surface)] hover:bg-slate-600 p-1.5 rounded"
+            className="text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors bg-[var(--muted-surface)] p-1.5 rounded"
             title="Edit deck name"
           >
             <Edit2 className="w-4 h-4" />
@@ -120,7 +120,7 @@ export function DeckCard({
           type="text"
           defaultValue={deck.name}
           placeholder="Deck name"
-          className="w-full bg-[var(--muted-surface)] border border-teal-600 rounded px-2 py-1 text-white text-sm mb-2"
+          className="w-full bg-[var(--muted-surface)] border border-[var(--border)] rounded px-2 py-1 text-[var(--text-primary)] text-sm mb-2"
           onBlur={(e) => {
             onUpdateName(deck.id, e.target.value);
           }}
@@ -162,17 +162,17 @@ export function DeckCard({
         <div className="mt-3">
           <button
             onClick={(e) => { e.stopPropagation(); setShowMissing(prev => !prev); }}
-            className="w-full flex items-center justify-between p-2 bg-gradient-to-r from-red-700/20 to-red-800/10 hover:from-red-700/30 hover:to-red-800/20 rounded text-sm font-semibold text-red-300 border border-red-700/30"
+            className="w-full flex items-center justify-between p-2 bg-[var(--muted-surface)] hover:bg-[var(--surface)] rounded text-sm font-semibold text-[var(--text-primary)] border border-[var(--border)]"
           >
             <span>Missing to complete: {totalMissing}</span>
             <span className="text-xs text-red-200">{showMissing ? '▲' : '▼'}</span>
           </button>
           {showMissing && (
-            <div className="mt-2 bg-[var(--bg-page)] rounded p-2 max-h-40 overflow-y-auto border border-red-700/20">
+            <div className="mt-2 bg-[var(--muted-surface)] rounded p-2 max-h-40 overflow-y-auto border border-[var(--border)]">
               <div className="flex justify-end mb-2">
                 <button
                   onClick={(e) => { e.stopPropagation(); setShowBuyModal(true); }}
-                  className="flex items-center gap-1 px-2 py-1 bg-amber-600 hover:bg-amber-500 text-white text-xs rounded transition-colors"
+                  className="flex items-center gap-1 px-2 py-1 btn-primary text-xs rounded transition-colors"
                   title="Buy all missing cards"
                 >
                   <ShoppingCart className="w-3 h-3" />
@@ -196,7 +196,7 @@ export function DeckCard({
 
       <button
         onClick={() => onSelect(deck)}
-        className="w-full mt-4 bg-[var(--muted-surface)] hover:bg-teal-600 text-white px-3 py-1 rounded text-sm transition-colors"
+        className="w-full mt-4 bg-[var(--surface)] text-[var(--text-primary)] px-3 py-1 rounded text-sm transition-colors"
       >
         View Details
       </button>
@@ -207,7 +207,7 @@ export function DeckCard({
             e.stopPropagation();
             onEditCards(deck);
           }}
-          className="w-full mt-2 bg-purple-600 hover:bg-purple-500 text-white px-3 py-1 rounded text-sm transition-colors flex items-center justify-center gap-2"
+          className="w-full mt-2 bg-[var(--muted-surface)] hover:bg-[var(--surface)] text-[var(--text-primary)] px-3 py-1 rounded text-sm transition-colors flex items-center justify-center gap-2"
         >
           <FileEdit className="w-4 h-4" />
           Edit Cards
@@ -220,7 +220,7 @@ export function DeckCard({
             e.stopPropagation();
             onArchidektSync(deck);
           }}
-          className="w-full mt-2 bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded text-sm transition-colors flex items-center justify-center gap-2"
+          className="w-full mt-2 bg-[var(--muted-surface)] hover:bg-[var(--surface)] text-[var(--text-primary)] px-3 py-1 rounded text-sm transition-colors flex items-center justify-center gap-2"
         >
           <Link2 className="w-4 h-4" />
           Archidekt Sync

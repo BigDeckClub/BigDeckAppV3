@@ -74,8 +74,8 @@ export function RapidEntryRow({
               onKeyDown={(e) => handleKeyDown(e, rowIndex, 'name')}
               disabled={row.status === 'added'}
               className={`
-                flex-1 bg-[var(--bg-page)] border rounded px-3 py-2 text-sm text-white 
-                placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-teal-400
+                flex-1 bg-[var(--muted-surface)] border rounded px-3 py-2 text-sm text-[var(--text-primary)] 
+                placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-[var(--accent-600)]
                 ${row.status === 'valid' ? 'border-teal-500' : 'border-[var(--border)]'}
                 ${row.status === 'added' ? 'opacity-60' : ''}
               `}
@@ -84,7 +84,7 @@ export function RapidEntryRow({
           
           {/* Search Dropdown */}
           {showDropdown && activeRowIndex === rowIndex && searchResults.length > 0 && row.status !== 'added' && (
-            <div className="absolute top-full left-0 right-0 mt-1 bg-[var(--bg-page)] border border-[var(--border)] rounded-lg shadow-xl max-h-60 overflow-y-auto z-30">
+            <div className="absolute top-full left-0 right-0 mt-1 bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-xl max-h-60 overflow-y-auto z-30">
               {searchIsLoading && (
                 <div className="px-4 py-3 text-sm text-[var(--text-muted)]">Searching...</div>
               )}
@@ -104,7 +104,7 @@ export function RapidEntryRow({
                       className={`
                         px-4 py-2 cursor-pointer border-b border-[var(--border)] last:border-b-0
                         flex items-center gap-3
-                        ${idx === highlightedResult ? 'bg-teal-600/30' : 'hover:bg-teal-600/20'}
+                        ${idx === highlightedResult ? 'bg-[var(--accent)]/30' : 'hover:bg-[var(--accent)]/20'}
                       `}
                     >
                       {card.imageUrl && (
