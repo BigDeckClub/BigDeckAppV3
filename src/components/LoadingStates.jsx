@@ -7,7 +7,7 @@ import PropTypes from 'prop-types';
 export function CardSkeleton({ className = '' }) {
   return (
     <div
-      className={`bg-gradient-to-br from-slate-800 to-slate-900 border border-[var(--border)] rounded-lg p-4 h-36 md:h-40 animate-pulse ${className}`}
+      className={`bg-[var(--bda-surface)] border border-[var(--bda-border)] rounded-lg p-4 h-36 md:h-40 animate-pulse ${className}`}
     >
       {/* Title skeleton */}
       <div className="h-4 bg-[var(--muted-surface)] rounded w-3/4 mx-auto mb-4" />
@@ -52,7 +52,7 @@ export function ListSkeleton({ rows = 5, className = '' }) {
       {Array.from({ length: rows }).map((_, index) => (
         <div
           key={index}
-          className="bg-gradient-to-br from-slate-800 to-slate-900 border border-[var(--border)] rounded-lg p-4 animate-pulse"
+          className="bg-[var(--bda-surface)] border border-[var(--bda-border)] rounded-lg p-4 animate-pulse"
         >
           <div className="flex items-center justify-between gap-4">
             <div className="flex-1 min-w-0">

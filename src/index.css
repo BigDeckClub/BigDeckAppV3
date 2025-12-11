@@ -88,19 +88,23 @@ body {
 /* Navigation */
 .nav-tab {
   @apply px-4 py-2 rounded-lg transition-all duration-300 font-medium text-sm cursor-pointer border border-transparent;
+  color: var(--bda-muted);
 }
 
-.nav-tab.active {
+.nav-tab.active,
+.nav-tab.btn-primary {
   background: var(--bda-primary);
   color: var(--bda-primary-foreground);
-  border: 1px solid var(--bda-border);
-  box-shadow: none;
+  border: 1px solid transparent;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .nav-tab.inactive {
   color: var(--bda-muted);
 }
-.nav-tab.inactive:hover {
+
+.nav-tab.inactive:hover,
+.nav-tab:hover:not(.active):not(.btn-primary) {
   color: var(--bda-text);
   background: var(--card-hover);
   border-color: var(--bda-border);

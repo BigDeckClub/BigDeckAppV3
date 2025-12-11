@@ -296,12 +296,12 @@ export const FolderSidebar = memo(function FolderSidebar({
                   }}
                   className={`w-full text-left p-3 rounded-lg transition-all duration-300 border-l-4 ${
                     isSelected
-                      ? 'bg-surface border-l-4 border-[var(--accent)] shadow-md shadow-[var(--accent)]/10'
-                      : 'bg-gradient-to-r from-slate-700/50 to-slate-800/50 border-l-transparent hover:from-slate-600/50 hover:to-slate-700/50 hover:shadow-md hover:shadow-slate-600/20'
+                      ? 'bg-[var(--bda-surface)] border-l-4 border-[var(--bda-primary)] shadow-md'
+                      : 'bg-[var(--card-hover)] border-l-transparent hover:bg-[var(--bda-surface)] hover:shadow-md'
                   }`}
                 >
-                  <div className="font-medium text-sm text-slate-100">{folder}</div>
-                  <div className="text-xs text-teal-300">{folderInStockCards.length} {folderInStockCards.length === 1 ? 'card' : 'cards'}</div>
+                  <div className="font-medium text-sm text-[var(--bda-text)]">{folder}</div>
+                  <div className="text-xs text-[var(--bda-primary)]">{folderInStockCards.length} {folderInStockCards.length === 1 ? 'card' : 'cards'}</div>
                 </button>
               </div>
             );
