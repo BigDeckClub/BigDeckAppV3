@@ -41,16 +41,16 @@ export const FolderSidebar = memo(function FolderSidebar({
       sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
     }`}>
       {/* Folder List */}
-      <div className="rounded-lg p-4 border-2 border-[var(--accent)] bg-surface space-y-3 max-h-[calc(100vh-220px)] overflow-y-auto scrollbar-thumb-rounded shadow-xl shadow-slate-900/50">
+      <div className="rounded-lg p-4 border-2 border-[var(--bda-primary)] bg-[var(--bda-surface)] space-y-3 max-h-[calc(100vh-220px)] overflow-y-auto scrollbar-thumb-rounded shadow-lg">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-teal-300 flex items-center gap-1.5">
+          <h3 className="text-sm font-semibold text-[var(--bda-primary)] flex items-center gap-1.5">
             <Folder className="w-4 h-4" />
             Folders
           </h3>
           {!showCreateFolder && (
             <button
               onClick={() => setShowCreateFolder(true)}
-              className="text-teal-300 hover:text-teal-200 transition-colors"
+              className="text-[var(--bda-primary)] hover:opacity-80 transition-colors"
               title="New Folder"
             >
               <Plus className="w-4 h-4" />
@@ -65,7 +65,7 @@ export const FolderSidebar = memo(function FolderSidebar({
               placeholder="Folder name"
               value={newFolderName}
               onChange={(e) => setNewFolderName(e.target.value)}
-              className="w-full bg-[var(--surface)] border border-teal-600 rounded px-3 py-2 text-white placeholder-gray-400 text-sm"
+              className="w-full bg-[var(--input-bg)] border border-[var(--bda-primary)] rounded px-3 py-2 text-[var(--bda-text)] placeholder-[var(--bda-muted)] text-sm"
               autoFocus
               onKeyDown={async (e) => {
                 if (e.key === 'Enter' && newFolderName.trim()) {
@@ -96,7 +96,7 @@ export const FolderSidebar = memo(function FolderSidebar({
                     }
                   }
                 }}
-                className="flex-1 bg-teal-600 hover:bg-teal-700 text-white px-3 py-1 rounded text-xs font-semibold transition-colors"
+                className="flex-1 bg-[var(--bda-primary)] hover:opacity-90 text-[var(--bda-primary-foreground)] px-3 py-1 rounded text-xs font-semibold transition-colors"
               >
                 Create
               </button>
@@ -105,7 +105,7 @@ export const FolderSidebar = memo(function FolderSidebar({
                   setNewFolderName('');
                   setShowCreateFolder(false);
                 }}
-                className="bg-[var(--muted-surface)] hover:bg-slate-600 text-white px-2 py-1 rounded text-xs transition-colors"
+                className="bg-[var(--card-hover)] hover:bg-[var(--bda-surface)] text-[var(--bda-muted)] px-2 py-1 rounded text-xs transition-colors"
               >
                 <X className="w-3 h-3" />
               </button>
@@ -174,8 +174,8 @@ export const FolderSidebar = memo(function FolderSidebar({
                     : 'bg-surface border-l-4 border-transparent hover:bg-[var(--muted-surface)]'
                 }`}
               >
-                <div className="font-medium text-sm text-slate-100">Unsorted</div>
-                <div className="text-xs text-teal-300">{totalAvailableCards} available • {uniqueCards} unique {uniqueCards === 1 ? 'card' : 'cards'}</div>
+                <div className="font-medium text-sm text-[var(--bda-text)]">Unsorted</div>
+                <div className="text-xs text-[var(--bda-primary)]">{totalAvailableCards} available • {uniqueCards} unique {uniqueCards === 1 ? 'card' : 'cards'}</div>
               </button>
             </div>
           );
@@ -241,8 +241,8 @@ export const FolderSidebar = memo(function FolderSidebar({
                     : 'bg-surface border-l-4 border-transparent hover:bg-[var(--muted-surface)]'
                 }`}
               >
-                <div className="font-medium text-sm text-slate-100">{folderName}</div>
-                <div className="text-xs text-teal-300">{totalAvailableCards} available • {uniqueCards} {uniqueCards === 1 ? 'unique' : 'unique'}</div>
+                <div className="font-medium text-sm text-[var(--bda-text)]">{folderName}</div>
+                <div className="text-xs text-[var(--bda-primary)]">{totalAvailableCards} available • {uniqueCards} {uniqueCards === 1 ? 'unique' : 'unique'}</div>
               </button>
             </div>
           );
