@@ -77,14 +77,14 @@ function FeatureCard({ feature, index }) {
       <div className="absolute inset-0 bg-gradient-to-br from-teal-500/20 to-cyan-500/20 rounded-xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
       {/* Card */}
-      <div className="relative bg-slate-800/40 backdrop-blur-sm border border-slate-700/50 hover:border-teal-500/50 rounded-xl p-6 transition-all duration-500 hover:shadow-2xl hover:shadow-teal-500/20 hover:bg-slate-800/60 transform hover:scale-105">
+      <div className="relative bg-[var(--surface)] backdrop-blur-sm border border-[var(--border)] hover:border-teal-500/50 rounded-xl p-6 transition-all duration-500 hover:shadow-2xl hover:shadow-teal-500/20 hover:bg-[var(--surface)] transform hover:scale-105">
         <div className="flex items-start gap-4">
           <div className={`flex-shrink-0 w-12 h-12 rounded-lg bg-gradient-to-br from-teal-500/30 to-cyan-500/30 border border-teal-500/50 flex items-center justify-center transition-all duration-500 ${isHovered ? 'scale-110' : ''}`}>
             <Icon className="w-6 h-6 text-teal-400" />
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="text-white font-semibold mb-1 group-hover:text-teal-300 transition-colors">{feature.title}</h3>
-            <p className="text-slate-400 text-sm leading-relaxed">{feature.description}</p>
+            <p className="text-[var(--text-muted)] text-sm leading-relaxed">{feature.description}</p>
           </div>
         </div>
       </div>
@@ -175,7 +175,7 @@ export function LoginForm({ onSuccess }) {
                 <span className="text-2xl text-transparent bg-gradient-to-r from-teal-400 to-cyan-500 bg-clip-text">.app</span>
               </div>
             </div>
-            <p className="text-slate-400 text-lg">Professional MTG Inventory Management</p>
+            <p className="text-[var(--text-muted)] text-lg">Professional MTG Inventory Management</p>
           </div>
 
           {/* Features Grid */}
@@ -207,18 +207,18 @@ export function LoginForm({ onSuccess }) {
                 </div>
                 <h1 className="text-3xl font-bold text-white">BigDeck<span className="text-transparent bg-gradient-to-r from-teal-400 to-cyan-500 bg-clip-text">.app</span></h1>
               </div>
-              <p className="text-slate-400">Professional MTG Inventory Management</p>
+              <p className="text-[var(--text-muted)]">Professional MTG Inventory Management</p>
             </div>
 
             {/* Auth Card */}
             <div className="relative group">
               {/* Card */}
-              <div className="relative bg-slate-800/50 backdrop-blur-md rounded-xl border border-slate-700/60 hover:border-slate-600/80 p-8 shadow-xl transition-all duration-500 animate-fade-up hover:bg-slate-800/60" style={{ animationDelay: '0.1s' }}>
+              <div className="relative bg-[var(--surface)] backdrop-blur-md rounded-xl border border-[var(--border)] hover:border-[var(--border)] p-8 shadow-xl transition-all duration-500 animate-fade-up hover:bg-[var(--surface)]" style={{ animationDelay: '0.1s' }}>
                 <div className="mb-8">
                   <h2 className="text-2xl font-bold text-transparent bg-gradient-to-r from-white to-slate-300 bg-clip-text mb-2">
                     {isSignup ? 'Create Account' : 'Welcome Back'}
                   </h2>
-                  <p className="text-slate-400">
+                  <p className="text-[var(--text-muted)]">
                     {isSignup 
                       ? 'Start managing your MTG collection today' 
                       : 'Sign in to your inventory'}
@@ -234,7 +234,7 @@ export function LoginForm({ onSuccess }) {
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="you@example.com"
                       required
-                      className="bg-slate-700/50 border-slate-600/50"
+                      className="bg-[var(--muted-surface)] border-[var(--border)]"
                     />
                   </div>
 
@@ -246,7 +246,7 @@ export function LoginForm({ onSuccess }) {
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
                       required
-                      className="bg-slate-700/50 border-slate-600/50"
+                      className="bg-[var(--muted-surface)] border-[var(--border)]"
                     />
                   </div>
 
@@ -270,14 +270,14 @@ export function LoginForm({ onSuccess }) {
                   </Button>
                 </form>
 
-                <div className="mt-6 pt-6 border-t border-slate-700/50 text-center animate-fade-up" style={{ animationDelay: '0.5s' }}>
+                <div className="mt-6 pt-6 border-t border-[var(--border)] text-center animate-fade-up" style={{ animationDelay: '0.5s' }}>
                   <button
                     type="button"
                     onClick={() => {
                       setIsSignup(!isSignup);
                       setError('');
                     }}
-                    className="text-slate-400 hover:text-teal-400 hover:bg-teal-500/10 text-sm font-medium transition px-3 py-1 rounded-lg"
+                    className="text-[var(--text-muted)] hover:text-teal-400 hover:bg-teal-500/10 text-sm font-medium transition px-3 py-1 rounded-lg"
                   >
                     {isSignup 
                       ? 'Already have an account? Sign in' 
@@ -288,7 +288,7 @@ export function LoginForm({ onSuccess }) {
             </div>
 
             {/* Footer */}
-            <p className="text-center text-slate-500 text-xs mt-6 animate-fade-up" style={{ animationDelay: '0.6s' }}>
+            <p className="text-center text-[var(--text-muted)] text-xs mt-6 animate-fade-up" style={{ animationDelay: '0.6s' }}>
               By signing in, you agree to our Terms of Service
             </p>
           </div>

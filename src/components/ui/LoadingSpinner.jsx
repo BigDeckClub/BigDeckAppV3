@@ -33,7 +33,7 @@ export function LoadingSpinner({
   const colorClasses = {
     primary: 'text-teal-500',
     white: 'text-white',
-    slate: 'text-slate-400',
+    slate: 'text-[var(--text-muted)]',
   };
 
   const spinnerClasses = [
@@ -67,7 +67,7 @@ export function LoadingSpinner({
         />
       </svg>
       {label && (
-        <span className="text-sm text-slate-400">{label}</span>
+        <span className="text-sm text-[var(--text-muted)]">{label}</span>
       )}
     </div>
   );

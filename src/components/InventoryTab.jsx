@@ -54,7 +54,7 @@ export const InventoryTab = ({
   
   // UI State
   const [activeTab, setActiveTab] = useState('all');
-  const [viewMode, setViewMode] = useState('card');
+  const [viewMode, setViewMode] = useState('image');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [draggedTabData, setDraggedTabData] = useState(null);
   const [inventorySearch, setInventorySearch] = useState('');
@@ -367,7 +367,7 @@ export const InventoryTab = ({
   }, []);
 
   return (
-    <div className="flex gap-6 min-h-screen bg-slate-900 max-w-7xl mx-auto w-full">
+    <div className="flex gap-6 min-h-screen bg-[var(--bg-page)] max-w-7xl mx-auto w-full">
       {/* Error Message Toast */}
       {successMessage && successMessage.includes('Error') && (
         <div className="fixed top-4 right-4 z-50 rounded-lg p-4 border flex items-center justify-between bg-red-900 bg-opacity-30 border-red-500 text-red-200">
@@ -486,11 +486,11 @@ export const InventoryTab = ({
               Object.keys(groupedInventory).length > 0 ? (
                 <>
                   {/* Bulk Selection Controls for All Cards */}
-                  <div className="bg-slate-800/50 rounded-lg border border-slate-600 p-3 mb-4 flex flex-wrap items-center gap-3">
+                  <div className="bg-[var(--surface)] rounded-lg border border-[var(--border)] p-3 mb-4 flex flex-wrap items-center gap-3">
                     <div className="flex items-center gap-2">
                       <button
                         onClick={isAllSelected ? handleDeselectAll : handleSelectAll}
-                        className="flex items-center gap-2 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-md transition-colors text-sm font-medium"
+                        className="flex items-center gap-2 px-3 py-1.5 bg-[var(--muted-surface)] hover:bg-slate-600 text-slate-200 rounded-md transition-colors text-sm font-medium"
                       >
                         {isAllSelected ? (
                           <>
@@ -505,7 +505,7 @@ export const InventoryTab = ({
                         )}
                       </button>
                       {selectedCardIds.size > 0 && (
-                        <span className="text-sm text-slate-400">
+                        <span className="text-sm text-[var(--text-muted)]">
                           {uniqueCardsSelected} unique card{uniqueCardsSelected === 1 ? '' : 's'} • {totalCardsSelected} total card{totalCardsSelected === 1 ? '' : 's'} selected
                         </span>
                       )}
@@ -526,7 +526,7 @@ export const InventoryTab = ({
                             <select
                               value={targetFolder}
                               onChange={(e) => setTargetFolder(e.target.value)}
-                              className="px-3 py-1.5 bg-slate-700 border border-slate-600 text-slate-200 rounded-md text-sm focus:outline-none focus:border-teal-400"
+                              className="px-3 py-1.5 bg-[var(--muted-surface)] border border-[var(--border)] text-slate-200 rounded-md text-sm focus:outline-none focus:border-teal-400"
                             >
                               <option value="">Select folder...</option>
                               {availableFolders.map(folder => (
@@ -536,7 +536,7 @@ export const InventoryTab = ({
                             <button
                               onClick={handleBulkMove}
                               disabled={!targetFolder || isMoving}
-                              className="px-3 py-1.5 bg-teal-600 hover:bg-teal-500 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded-md transition-colors text-sm font-medium"
+                              className="px-3 py-1.5 bg-teal-600 hover:bg-teal-500 disabled:bg-[var(--muted-surface)] disabled:text-[var(--text-muted)] text-white rounded-md transition-colors text-sm font-medium"
                             >
                               {isMoving ? 'Moving...' : 'Move'}
                             </button>
@@ -546,7 +546,7 @@ export const InventoryTab = ({
                                 setTargetFolder('');
                               }}
                               disabled={isMoving}
-                              className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-slate-300 rounded-md transition-colors text-sm"
+                              className="px-3 py-1.5 bg-[var(--muted-surface)] hover:bg-slate-600 disabled:opacity-50 text-[var(--text-muted)] rounded-md transition-colors text-sm"
                             >
                               Cancel
                             </button>
@@ -563,8 +563,8 @@ export const InventoryTab = ({
                     setSelectedCardIds={setSelectedCardIds}
                   />
                   {inStockCards.length > 0 && outOfStockCards.length > 0 && (
-                    <div className="border-t border-slate-700 pt-4">
-                      <h3 className="text-sm font-semibold text-slate-400 mb-3">Out of Stock</h3>
+                    <div className="border-t border-[var(--border)] pt-4">
+                      <h3 className="text-sm font-semibold text-[var(--text-muted)] mb-3">Out of Stock</h3>
                       <CardGrid 
                         cards={outOfStockCards} 
                         {...cardGridProps}
@@ -583,7 +583,7 @@ export const InventoryTab = ({
                   )}
                 </>
               ) : (
-                <p className="text-slate-400 text-center py-12">No cards in inventory yet. Add some from the Imports tab!</p>
+                <p className="text-[var(--text-muted)] text-center py-12">No cards in inventory yet. Add some from the Imports tab!</p>
               )
             ) : activeTab === 'Trash' ? (
               (() => {
@@ -643,7 +643,7 @@ export const InventoryTab = ({
                     {trashCards.length > 0 ? (
                       <CardGrid cards={sortCards(trashCards, sortField, sortDirection)} {...cardGridProps} isTrashView={true} />
                     ) : (
-                      <p className="text-slate-400 text-center py-12">Trash is empty.</p>
+                      <p className="text-[var(--text-muted)] text-center py-12">Trash is empty.</p>
                     )}
                   </>
                 );
@@ -662,7 +662,7 @@ export const InventoryTab = ({
                 sortDirection={sortDirection}
               />
             ) : (
-              <p className="text-slate-400 text-center py-12">Select a view to display cards.</p>
+              <p className="text-[var(--text-muted)] text-center py-12">Select a view to display cards.</p>
             )}
           </div>
         )}

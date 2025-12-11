@@ -64,7 +64,7 @@ export function DeckCard({
   return (
     <>
     <div
-      className="relative overflow-hidden bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 hover:border-teal-500 rounded-lg p-4 pt-6 cursor-pointer transition-all hover:shadow-lg hover:shadow-teal-500/20"
+      className="relative overflow-hidden surface border border-[var(--border)] rounded-lg p-4 pt-6 cursor-pointer transition-all hover:shadow-card"
       onClick={() => onSelect(deck)}
     >
       {/* Absolute top gradient strip - ensure parent is relative + overflow-hidden */}
@@ -77,8 +77,8 @@ export function DeckCard({
       />
       <div className="flex justify-between items-start mb-3">
         <div className="flex-1 min-w-0">
-          <h3 className="text-lg font-bold text-teal-300 break-words">{deck.name}</h3>
-          <p className="text-xs text-slate-400 mt-1">{deck.format}</p>
+          <h3 style={{ color: 'var(--text-primary)' }} className="text-lg font-bold break-words">{deck.name}</h3>
+          <p style={{ color: 'var(--text-muted)' }} className="text-xs mt-1">{deck.format}</p>
         </div>
         <div className="flex gap-2 flex-shrink-0 ml-2">
           <button
@@ -86,7 +86,7 @@ export function DeckCard({
               e.stopPropagation();
               onCopy(deck);
             }}
-            className="text-slate-300 hover:text-green-400 hover:bg-green-600/20 px-2.5 py-1.5 rounded text-xs font-semibold transition-colors flex items-center gap-1.5"
+            className="text-[var(--text-muted)] hover:text-green-400 hover:bg-green-600/20 px-2.5 py-1.5 rounded text-xs font-semibold transition-colors flex items-center gap-1.5"
             title="Copy to Inventory - Name your deck instance"
           >
             <Download className="w-4 h-4" />
@@ -97,7 +97,7 @@ export function DeckCard({
               e.stopPropagation();
               onEdit(deck.id);
             }}
-            className="text-slate-400 hover:text-teal-400 transition-colors bg-slate-700 hover:bg-slate-600 p-1.5 rounded"
+            className="text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors bg-[var(--muted-surface)] p-1.5 rounded"
             title="Edit deck name"
           >
             <Edit2 className="w-4 h-4" />
@@ -107,7 +107,7 @@ export function DeckCard({
               e.stopPropagation();
               onDelete(deck.id);
             }}
-            className="text-slate-400 hover:text-red-400 transition-colors"
+            className="text-[var(--text-muted)] hover:text-red-400 transition-colors"
             title="Delete"
           >
             <Trash2 className="w-4 h-4" />
@@ -120,7 +120,7 @@ export function DeckCard({
           type="text"
           defaultValue={deck.name}
           placeholder="Deck name"
-          className="w-full bg-slate-700 border border-teal-600 rounded px-2 py-1 text-white text-sm mb-2"
+          className="w-full bg-[var(--muted-surface)] border border-[var(--border)] rounded px-2 py-1 text-[var(--text-primary)] text-sm mb-2"
           onBlur={(e) => {
             onUpdateName(deck.id, e.target.value);
           }}
@@ -140,18 +140,18 @@ export function DeckCard({
 
       <div className="space-y-2">
         <div className="flex justify-between text-sm">
-          <span className="text-slate-400">Cards:</span>
+          <span className="text-[var(--text-muted)]">Cards:</span>
           <span className="text-teal-300 font-semibold">{(deck.cards && deck.cards.length) || 0}</span>
         </div>
-        <div className="text-xs text-slate-500">
+        <div className="text-xs text-[var(--text-muted)]">
           Created: {new Date(deck.created_at).toLocaleDateString()}
         </div>
         {deck.description && (
-          <p className="text-xs text-slate-400 italic mt-2">{deck.description}</p>
+          <p className="text-xs text-[var(--text-muted)] italic mt-2">{deck.description}</p>
         )}
         {process.env.NODE_ENV !== 'production' && (
-          <div className="mt-2 text-xs text-slate-400 bg-slate-900/30 p-2 rounded">
-            <div className="text-slate-300 font-semibold">Dev:</div>
+          <div className="mt-2 text-xs text-[var(--text-muted)] bg-[var(--bg-page)] p-2 rounded">
+            <div className="text-[var(--text-muted)] font-semibold">Dev:</div>
             <div className="mt-1">Colors: {(derivedColorKeys && derivedColorKeys.length) ? derivedColorKeys.join(', ') : 'none'}</div>
             <div className="mt-1">Curve: {Object.keys(manaCurveCounts).length ? JSON.stringify(manaCurveCounts) : '{}'} </div>
           </div>
@@ -162,17 +162,17 @@ export function DeckCard({
         <div className="mt-3">
           <button
             onClick={(e) => { e.stopPropagation(); setShowMissing(prev => !prev); }}
-            className="w-full flex items-center justify-between p-2 bg-gradient-to-r from-red-700/20 to-red-800/10 hover:from-red-700/30 hover:to-red-800/20 rounded text-sm font-semibold text-red-300 border border-red-700/30"
+            className="w-full flex items-center justify-between p-2 bg-[var(--muted-surface)] hover:bg-[var(--surface)] rounded text-sm font-semibold text-[var(--text-primary)] border border-[var(--border)]"
           >
             <span>Missing to complete: {totalMissing}</span>
             <span className="text-xs text-red-200">{showMissing ? '▲' : '▼'}</span>
           </button>
           {showMissing && (
-            <div className="mt-2 bg-slate-900 rounded p-2 max-h-40 overflow-y-auto border border-red-700/20">
+            <div className="mt-2 bg-[var(--muted-surface)] rounded p-2 max-h-40 overflow-y-auto border border-[var(--border)]">
               <div className="flex justify-end mb-2">
                 <button
                   onClick={(e) => { e.stopPropagation(); setShowBuyModal(true); }}
-                  className="flex items-center gap-1 px-2 py-1 bg-amber-600 hover:bg-amber-500 text-white text-xs rounded transition-colors"
+                  className="flex items-center gap-1 px-2 py-1 btn-primary text-xs rounded transition-colors"
                   title="Buy all missing cards"
                 >
                   <ShoppingCart className="w-3 h-3" />
@@ -196,7 +196,7 @@ export function DeckCard({
 
       <button
         onClick={() => onSelect(deck)}
-        className="w-full mt-4 bg-slate-700 hover:bg-teal-600 text-white px-3 py-1 rounded text-sm transition-colors"
+        className="w-full mt-4 bg-[var(--surface)] text-[var(--text-primary)] px-3 py-1 rounded text-sm transition-colors"
       >
         View Details
       </button>
@@ -207,7 +207,7 @@ export function DeckCard({
             e.stopPropagation();
             onEditCards(deck);
           }}
-          className="w-full mt-2 bg-purple-600 hover:bg-purple-500 text-white px-3 py-1 rounded text-sm transition-colors flex items-center justify-center gap-2"
+          className="w-full mt-2 bg-[var(--muted-surface)] hover:bg-[var(--surface)] text-[var(--text-primary)] px-3 py-1 rounded text-sm transition-colors flex items-center justify-center gap-2"
         >
           <FileEdit className="w-4 h-4" />
           Edit Cards
@@ -220,7 +220,7 @@ export function DeckCard({
             e.stopPropagation();
             onArchidektSync(deck);
           }}
-          className="w-full mt-2 bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded text-sm transition-colors flex items-center justify-center gap-2"
+          className="w-full mt-2 bg-[var(--muted-surface)] hover:bg-[var(--surface)] text-[var(--text-primary)] px-3 py-1 rounded text-sm transition-colors flex items-center justify-center gap-2"
         >
           <Link2 className="w-4 h-4" />
           Archidekt Sync

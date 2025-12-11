@@ -158,7 +158,7 @@ function Toast({ toast, onDismiss }) {
         {toast.dismissible && (
           <button
             onClick={handleDismiss}
-            className="flex-shrink-0 p-1 rounded-md text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+            className="flex-shrink-0 p-1 rounded-md text-[var(--text-muted)] hover:text-white hover:bg-white/10 transition-colors"
             aria-label="Dismiss notification"
           >
             <X className="w-4 h-4" />

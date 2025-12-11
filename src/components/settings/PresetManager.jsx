@@ -158,10 +158,10 @@ export const PresetManager = ({
   }, [selectedCategory, presetMode, selectedCards, flattenedCards, cardLookup, put, onSuccess]);
 
   return (
-    <div className="bg-slate-800 rounded-lg border border-slate-600 p-6">
+    <div className="bg-[var(--surface)] rounded-lg border border-[var(--border)] p-6">
       <div className="flex items-center gap-3 mb-6">
         <Zap className="w-6 h-6 text-teal-400" />
-        <h2 className="text-xl font-bold text-slate-100">Threshold Presets</h2>
+        <h2 className="text-xl font-bold text-[var(--text-primary)]">Threshold Presets</h2>
       </div>
       
       {/* Success/Error Message */}
@@ -173,11 +173,11 @@ export const PresetManager = ({
       
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-semibold text-slate-300 mb-2">Select Category</label>
+          <label className="block text-sm font-semibold text-[var(--text-muted)] mb-2">Select Category</label>
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white focus:outline-none focus:border-teal-500"
+            className="w-full bg-[var(--muted-surface)] border border-[var(--border)] rounded px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:border-teal-500"
           >
             {Object.entries(THRESHOLD_PRESETS).map(([cat, preset]) => (
               <option key={cat} value={cat}>
@@ -187,16 +187,16 @@ export const PresetManager = ({
           </select>
         </div>
 
-        <div className="bg-slate-700/50 rounded p-3 border border-slate-600">
-          <p className="text-sm text-slate-300 font-semibold mb-1">Selected: {selectedCategory}</p>
-          <p className="text-xs text-slate-400">{THRESHOLD_PRESETS[selectedCategory].description}</p>
-          <p className="text-xs text-slate-400 mt-2">
+        <div className="bg-[var(--muted-surface)] rounded p-3 border border-[var(--border)]">
+          <p className="text-sm text-[var(--text-muted)] font-semibold mb-1">Selected: {selectedCategory}</p>
+          <p className="text-xs text-[var(--text-muted)]">{THRESHOLD_PRESETS[selectedCategory].description}</p>
+          <p className="text-xs text-[var(--text-muted)] mt-2">
             <strong>Threshold:</strong> {THRESHOLD_PRESETS[selectedCategory].threshold}
           </p>
         </div>
 
         {presetMode === 'single' && flattenedCards.length > 0 && (
-          <div className="max-h-32 overflow-y-auto space-y-2 bg-slate-700/30 rounded p-3 border border-slate-600">
+          <div className="max-h-32 overflow-y-auto space-y-2 bg-[var(--muted-surface)] rounded p-3 border border-[var(--border)]">
             {flattenedCards.map(item => (
               <div key={item.id}>
                 <label className="flex items-center gap-2 cursor-pointer hover:bg-slate-600/50 p-1 rounded">
@@ -206,12 +206,12 @@ export const PresetManager = ({
                     onChange={() => toggleCardSelection(item.id)}
                     className="w-4 h-4 cursor-pointer"
                   />
-                  <span className="text-sm text-slate-300 flex-1">
+                  <span className="text-sm text-[var(--text-muted)] flex-1">
                     {item.name} ({item.set?.toUpperCase()})
                     {item.foil && <span className="ml-2 text-xs text-purple-400">FOIL</span>}
-                    {item.quality && item.quality !== 'NM' && <span className="ml-2 text-xs text-slate-400">{item.quality}</span>}
+                    {item.quality && item.quality !== 'NM' && <span className="ml-2 text-xs text-[var(--text-muted)]">{item.quality}</span>}
                   </span>
-                  <span className="text-xs text-slate-400">Qty: {item._totalQuantity || item.quantity || 0}</span>
+                  <span className="text-xs text-[var(--text-muted)]">Qty: {item._totalQuantity || item.quantity || 0}</span>
                   {item._mergedCount > 1 && (
                     <button
                       onClick={(e) => {
@@ -226,10 +226,10 @@ export const PresetManager = ({
                   )}
                 </label>
                 {item._mergedCount > 1 && expandedMerged[item.id] && (
-                  <div className="ml-6 mt-1 space-y-1 bg-slate-700/30 rounded p-2 border-l-2 border-teal-500/30">
+                  <div className="ml-6 mt-1 space-y-1 bg-[var(--muted-surface)] rounded p-2 border-l-2 border-teal-500/30">
                     {item._mergedItems.map((subItem, idx) => (
-                      <div key={subItem.id} className="flex items-center gap-2 text-xs text-slate-400 py-1">
-                        <span className="text-slate-500">#{idx + 1}</span>
+                      <div key={subItem.id} className="flex items-center gap-2 text-xs text-[var(--text-muted)] py-1">
+                        <span className="text-[var(--text-muted)]">#{idx + 1}</span>
                         <span>ID: {subItem.id}</span>
                         <span>Qty: {subItem.quantity || 0}</span>
                         <span>Threshold: {subItem.low_inventory_threshold || 0}</span>
@@ -247,8 +247,8 @@ export const PresetManager = ({
             onClick={() => setPresetMode('single')}
             className={`flex-1 px-3 py-2 rounded text-sm font-semibold transition-colors ${
               presetMode === 'single'
-                ? 'bg-teal-600 text-white'
-                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                ? 'bg-teal-600 text-[var(--bda-primary-foreground)]'
+                : 'bg-[var(--muted-surface)] text-[var(--text-muted)] hover:bg-slate-600'
             }`}
           >
             Apply to Selected
@@ -257,8 +257,8 @@ export const PresetManager = ({
             onClick={() => setPresetMode('bulk')}
             className={`flex-1 px-3 py-2 rounded text-sm font-semibold transition-colors ${
               presetMode === 'bulk'
-                ? 'bg-teal-600 text-white'
-                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                ? 'bg-teal-600 text-[var(--bda-primary-foreground)]'
+                : 'bg-[var(--muted-surface)] text-[var(--text-muted)] hover:bg-slate-600'
             }`}
           >
             Apply to All
@@ -268,7 +268,7 @@ export const PresetManager = ({
         <button
           onClick={handleApplyPreset}
           disabled={saving || (presetMode === 'single' && selectedCards.length === 0)}
-          className="w-full px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full px-4 py-2 bg-teal-600 hover:bg-teal-700 text-[var(--bda-primary-foreground)] rounded font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {saving ? 'Applying...' : `Apply ${selectedCategory} Preset`}
         </button>

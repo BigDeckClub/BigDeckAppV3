@@ -69,7 +69,7 @@ export function ConfirmDialog() {
       {/* Dialog */}
       <div
         ref={dialogRef}
-        className="relative bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl border border-slate-600 shadow-2xl max-w-md w-full mx-4 overflow-hidden animate-scale-in"
+        className="relative bg-[var(--bda-surface)] rounded-xl border border-[var(--bda-border)] shadow-2xl max-w-md w-full mx-4 overflow-hidden animate-scale-in"
       >
         <div className="p-6">
           {/* Header */}
@@ -82,13 +82,13 @@ export function ConfirmDialog() {
             <div className="flex-1 min-w-0">
               <h3
                 id="confirm-dialog-title"
-                className={`text-lg font-semibold ${isDanger ? 'text-red-300' : 'text-white'}`}
+                className={`text-lg font-semibold ${isDanger ? 'text-red-500' : 'text-[var(--bda-text)]'}`}
               >
                 {options.title}
               </h3>
               <p
                 id="confirm-dialog-description"
-                className="mt-2 text-sm text-slate-300"
+                className="mt-2 text-sm text-[var(--text-muted)]"
               >
                 {options.message}
               </p>
@@ -99,17 +99,17 @@ export function ConfirmDialog() {
           <div className="mt-6 flex gap-3 justify-end">
             <button
               onClick={handleCancel}
-              className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 focus:ring-offset-slate-800"
+              className="px-4 py-2 text-sm font-medium text-[var(--bda-muted)] bg-[var(--card-hover)] hover:bg-[var(--bda-surface)] rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--bda-primary)] focus:ring-offset-2"
             >
               {options.cancelText}
             </button>
             <button
               ref={confirmButtonRef}
               onClick={handleConfirm}
-              className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 ${
+              className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
                 isDanger
                   ? 'bg-red-600 hover:bg-red-500 text-white focus:ring-red-500'
-                  : 'bg-teal-600 hover:bg-teal-500 text-white focus:ring-teal-500'
+                  : 'bg-[var(--bda-primary)] hover:opacity-90 text-[var(--bda-primary-foreground)] focus:ring-[var(--bda-primary)]'
               }`}
             >
               {options.confirmText}

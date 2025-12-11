@@ -19,11 +19,11 @@ export function LogoutButton() {
 
   return (
     <div className="flex items-center gap-4">
-      <span className="text-sm text-slate-400">{user?.email}</span>
+      <span className="text-sm text-[var(--text-muted)]">{user?.email}</span>
       <button
         onClick={handleLogout}
         disabled={loading}
-        className="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded flex items-center gap-2 transition disabled:opacity-50"
+        className="px-3 py-2 bg-[var(--muted-surface)] hover:bg-slate-600 text-white rounded flex items-center gap-2 transition disabled:opacity-50"
       >
         <LogOut className="w-4 h-4" />
         {loading ? 'Logging out...' : 'Logout'}

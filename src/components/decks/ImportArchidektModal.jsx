@@ -12,22 +12,22 @@ export function ImportArchidektModal({
   onCancel
 }) {
   return (
-    <div className="bg-slate-800 rounded-lg border border-blue-500/50 p-4 mb-4">
+    <div className="bg-[var(--surface)] rounded-lg border border-blue-500/50 p-4 mb-4">
       <h3 className="text-lg font-semibold text-blue-300 mb-4">Import Deck from Archidekt</h3>
       <div className="space-y-3">
         <div>
-          <label className="block text-sm text-slate-400 mb-1">Archidekt Deck URL</label>
+          <label className="block text-sm text-[var(--text-muted)] mb-1">Archidekt Deck URL</label>
           <input
             type="text"
             placeholder="e.g., https://archidekt.com/decks/1234567"
             value={archidektUrl}
             onChange={(e) => onUrlChange(e.target.value)}
-            className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white placeholder-slate-500"
+            className="w-full bg-[var(--muted-surface)] border border-[var(--border)] rounded px-3 py-2 text-white placeholder-slate-500"
             onKeyDown={(e) => e.key === 'Enter' && onImport()}
             autoFocus
             disabled={isImporting}
           />
-          <p className="text-xs text-slate-500 mt-1">Paste the full URL of any public Archidekt deck</p>
+          <p className="text-xs text-[var(--text-muted)] mt-1">Paste the full URL of any public Archidekt deck</p>
         </div>
         <div className="flex gap-2 pt-2">
           <button
@@ -40,7 +40,7 @@ export function ImportArchidektModal({
           <button
             onClick={onCancel}
             disabled={isImporting}
-            className="flex-1 bg-slate-700 hover:bg-slate-600 disabled:bg-slate-600 text-white px-3 py-2 rounded transition-colors"
+            className="flex-1 bg-[var(--muted-surface)] hover:bg-slate-600 disabled:bg-slate-600 text-white px-3 py-2 rounded transition-colors"
           >
             Cancel
           </button>

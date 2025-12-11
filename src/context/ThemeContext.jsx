@@ -1,45 +1,72 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import PropTypes from 'prop-types';
 
 const ThemeContext = createContext();
 
-export const useTheme = () => useContext(ThemeContext);
+const THEMES = ['dark', 'parchment'];
+const THEME_STORAGE_KEY = 'bigdeck-theme';
+const LEGACY_STORAGE_KEY = 'theme';
 
-export function ThemeProvider({ children }) {
+export const ThemeProvider = ({ children }) => {
   const [theme, setTheme] = useState(() => {
     try {
-      return localStorage.getItem('bda-theme') || 'default';
-    } catch (err) {
-      return 'default';
+      let saved = localStorage.getItem(THEME_STORAGE_KEY);
+      if (!saved) {
+        saved = localStorage.getItem(LEGACY_STORAGE_KEY);
+        if (saved) {
+          localStorage.setItem(THEME_STORAGE_KEY, saved);
+        }
+      }
+      if (saved && THEMES.includes(saved)) return saved;
+      return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'parchment';
+    } catch (e) {
+      return 'dark';
     }
   });
 
   useEffect(() => {
-    const root = document.documentElement || document.body;
-    // remove any previous theme- classes we control
-    root.classList.remove('theme-parchment');
-    root.classList.remove('theme-default');
-    if (theme && theme !== 'default') {
-      root.classList.add(`theme-${theme}`);
+    const root = document.documentElement;
+    
+    THEMES.forEach(t => {
+      root.classList.remove(`theme-${t}`);
+    });
+    root.classList.remove('dark');
+    
+    root.classList.add(`theme-${theme}`);
+    
+    if (theme === 'dark') {
+      root.classList.add('dark');
     }
-    try {
-      localStorage.setItem('bda-theme', theme);
-    } catch (err) {
-      // ignore
-    }
+    
+    try { 
+      localStorage.setItem(THEME_STORAGE_KEY, theme);
+      localStorage.setItem(LEGACY_STORAGE_KEY, theme);
+    } catch (e) {}
   }, [theme]);
 
-  const toggleTheme = () => {
-    setTheme((prevTheme) => (prevTheme === 'parchment' ? 'default' : 'parchment'));
+  const toggle = () => {
+    setTheme(prev => {
+      const currentIndex = THEMES.indexOf(prev);
+      return THEMES[(currentIndex + 1) % THEMES.length];
+    });
+  };
+
+  const setSpecificTheme = (newTheme) => {
+    if (THEMES.includes(newTheme)) {
+      setTheme(newTheme);
+    }
   };
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme, setTheme }}>
+    <ThemeContext.Provider value={{ 
+      theme, 
+      setTheme: setSpecificTheme, 
+      toggle,
+      themes: THEMES 
+    }}>
       {children}
     </ThemeContext.Provider>
   );
-}
-
-ThemeProvider.propTypes = {
-  children: PropTypes.node.isRequired,
 };
+
+export const useTheme = () => useContext(ThemeContext);
+export default ThemeContext;

@@ -1,79 +1,64 @@
-/* Community Theme - CSS variables for runtime theming
-   Phase 0 - global variables that can be manipulated by a ThemeProvider
-   and referenced by Tailwind via CSS variable mappings in tailwind.config.js
-*/
 :root {
-  /* Core UI tokens */
-  --bda-bg: #0f172a; /* app background */
-  --bda-surface: #0f172a; /* panels, cards */
-  --bda-card: rgba(30,41,59,0.6);
-  --bda-text: #e6eef6; /* primary text */
-  --bda-heading: #ffffff; /* heading text */
-  --bda-muted: #9aa6b2; /* secondary text */
-  --bda-border: rgba(255,255,255,0.06);
-  --bda-primary: #14b8a6; /* primary accent */
-  --bda-primary-foreground: #022c2a; /* text on primary */
-  --bda-accent: #f59e0b; /* CTA accent */
-  --bda-ring: 0 0 0 4px rgba(20,184,166,0.12);
-
-  /* Utility tokens */
-  --bda-elevation-1: 0 4px 6px -1px rgba(2,6,23,0.6), 0 2px 4px -2px rgba(2,6,23,0.6);
-}
-
-/* Light theme overrides */
-.theme-light {
-  --bda-bg: #f7fafc;
-  --bda-surface: #ffffff;
-  --bda-card: rgba(255,255,255,0.9);
-  --bda-text: #0f172a;
+  --bda-bg: #F6F1E8;
+  --bda-surface: #FFF9F2;
+  --bda-card: rgba(255, 249, 242, 0.95);
+  --bda-text: #172126;
   --bda-heading: #0f172a;
-  --bda-muted: #6b7280;
-  --bda-border: rgba(15,23,42,0.06);
-  --bda-primary: #0f766e;
-  --bda-primary-foreground: #ffffff;
-  --bda-accent: #c084fc;
-  --bda-ring: 0 0 0 4px rgba(15,118,110,0.12);
+  --bda-muted: #4A453F;
+  --bda-border: rgba(23,33,38,0.12);
+  --bda-primary: #14B8A6;
+  --bda-primary-foreground: #FFFFFF;
+  --bda-accent: #14B8A6;
+  --bda-ring: 0 0 0 3px rgba(20, 184, 166, 0.15);
+  --bda-elevation-1: 0 4px 6px -1px rgba(0, 0, 0, 0.08);
+  
+  --header-bg: rgba(255, 249, 242, 0.95);
+  --input-bg: #F1E9E1;
+  --card-hover: rgba(23, 33, 38, 0.06);
 }
 
-/* Dark theme overrides */
 .theme-dark {
-  --bda-bg: #0b1220;
-  --bda-surface: #0f172a;
-  --bda-card: rgba(15,23,42,0.6);
-  --bda-text: #e6eef6;
-  --bda-heading: #ffffff;
-  --bda-muted: #94a3b8;
-  --bda-border: rgba(255,255,255,0.04);
-  --bda-primary: #14b8a6;
-  --bda-primary-foreground: #042f2d;
-  --bda-accent: #f59e0b;
-  --bda-ring: 0 0 0 4px rgba(20,184,166,0.08);
+  --bda-bg: #0C1424;
+  --bda-surface: #111B2E;
+  --bda-card: rgba(17, 27, 46, 0.85);
+  --bda-text: #E8EEF6;
+  --bda-heading: #F4F8FC;
+  --bda-muted: #8B99AB;
+  --bda-border: rgba(255, 255, 255, 0.08);
+  --bda-primary: #14B8A6;
+  --bda-primary-foreground: #042f2e;
+  --bda-accent: #14B8A6;
+  --bda-ring: 0 0 0 3px rgba(20, 184, 166, 0.2);
+  --bda-elevation-1: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+  
+  --header-bg: rgba(17, 27, 46, 0.95);
+  --input-bg: #172033;
+  --card-hover: rgba(255, 255, 255, 0.04);
 }
 
-/* Parchment theme */
+
+
 .theme-parchment {
-  --bda-bg: #f5f1e8; /* A parchment-like off-white */
-  --bda-surface: #efebe2; /* Slightly lighter for surfaces */
-  --bda-card: rgba(245, 241, 232, 0.8); /* Semi-transparent card background */
-  --bda-text: #4a2c2a; /* Dark, warm brown for text */
-  --bda-heading: #3c2423; /* Darker brown for headings */
-  --bda-muted: #7a5c5a; /* Lighter, muted brown for secondary text */
-  --bda-border: rgba(74, 44, 42, 0.15); /* Brownish border */
-  --bda-primary: #9A7B1E; /* MTG Gold for primary elements */
-  --bda-primary-foreground: #f5f1e8; /* Light text on primary */
-  --bda-accent: #A31A22; /* MTG Red for accents and CTAs */
-  --bda-ring: 0 0 0 4px rgba(154, 123, 30, 0.2); /* Gold-tinted ring */
-  background-image: linear-gradient(rgba(0,0,0,0.02) 1px, transparent 1px), linear-gradient(to right, rgba(0,0,0,0.02) 1px, transparent 1px);
-  background-size: 1px 1px;
+  --bda-bg: #F5F0E1;
+  --bda-surface: #FFFBF2;
+  --bda-card: rgba(255, 251, 242, 0.95);
+  --bda-text: #3D3424;
+  --bda-heading: #2C2417;
+  --bda-muted: #4D4537;
+  --bda-border: rgba(107, 93, 77, 0.15);
+  --bda-primary: #B8860B;
+  --bda-primary-foreground: #FFFFFF;
+  --bda-accent: #B8860B;
+  --bda-ring: 0 0 0 3px rgba(184, 134, 11, 0.15);
+  
+  --header-bg: rgba(255, 251, 242, 0.95);
+  --input-bg: #EBE4D3;
+  --card-hover: rgba(107, 93, 77, 0.08);
 }
 
-/* Respect system preference by default */
-@media (prefers-color-scheme: light) {
-  :root { /* keep defaults neutral - encourage explicit provider */ }
-}
-
-/* Small helper utilities that rely on the variables */
-.bda-bg { background-color: var(--bda-bg) !important; }
-.bda-surface { background-color: var(--bda-surface) !important; }
-.bda-text { color: var(--bda-text) !important; }
-.bda-muted { color: var(--bda-muted) !important; }
+.bda-bg { background-color: var(--bda-bg); }
+.bda-surface { background-color: var(--bda-surface); }
+.bda-card { background-color: var(--bda-card); }
+.bda-text { color: var(--bda-text); }
+.bda-heading { color: var(--bda-heading); }
+.bda-muted { color: var(--bda-muted); }

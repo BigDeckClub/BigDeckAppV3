@@ -204,7 +204,7 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
                       setShowImportArchidekt(!showImportArchidekt);
                       setShowImportDecklist(false);
                     }}
-                    className={`px-3 sm:px-4 py-2 rounded-lg flex items-center justify-center sm:justify-start gap-2 transition-colors text-white text-sm ${
+                    className={`px-3 sm:px-4 py-2 rounded-lg flex items-center justify-center sm:justify-start gap-2 transition-colors text-[var(--bda-primary-foreground)] text-sm ${
                       showImportArchidekt
                         ? 'bg-blue-500 shadow-lg shadow-blue-500/50'
                         : 'bg-blue-600 hover:bg-blue-700'
@@ -219,7 +219,7 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
                       setShowImportDecklist(!showImportDecklist);
                       setShowImportArchidekt(false);
                     }}
-                    className={`px-3 sm:px-4 py-2 rounded-lg flex items-center justify-center sm:justify-start gap-2 transition-colors text-white text-sm ${
+                    className={`px-3 sm:px-4 py-2 rounded-lg flex items-center justify-center sm:justify-start gap-2 transition-colors text-[var(--bda-primary-foreground)] text-sm ${
                       showImportDecklist
                         ? 'bg-purple-500 shadow-lg shadow-purple-500/50'
                         : 'bg-purple-600 hover:bg-purple-700'
@@ -241,7 +241,7 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
                       setSelectedDeckIds([]);
                     }
                   }}
-                  className={`px-3 sm:px-4 py-2 rounded-lg flex items-center gap-2 transition-colors text-white text-sm font-semibold ${
+                  className={`px-3 sm:px-4 py-2 rounded-lg flex items-center gap-2 transition-colors text-[var(--bda-primary-foreground)] text-sm font-semibold ${
                     showAnalysis
                       ? 'bg-teal-500 shadow-lg shadow-teal-500/50'
                       : 'bg-teal-600 hover:bg-teal-700'
@@ -280,16 +280,16 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
           {decks.length === 0 ? (
             <div className="text-center py-12">
               <BookOpen className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-              <p className="text-slate-400">No decks yet. Create your first deck to get started!</p>
+              <p className="text-[var(--text-muted)]">No decks yet. Create your first deck to get started!</p>
             </div>
           ) : showAnalysis ? (
             <>
               {/* Selection Controls */}
-              <div className="bg-slate-800/50 rounded-lg border border-slate-600 p-4 mb-4">
+              <div className="bg-[var(--surface)] rounded-lg border border-[var(--border)] p-4 mb-4">
                 <div className="flex items-center justify-between flex-wrap gap-3">
                   <button
                     onClick={toggleSelectAll}
-                    className="flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg transition-colors font-medium"
+                    className="flex items-center gap-2 px-4 py-2 bg-[var(--muted-surface)] hover:bg-slate-600 text-slate-200 rounded-lg transition-colors font-medium"
                   >
                     {selectedDeckIds.length === decks.length ? (
                       <>
@@ -304,7 +304,7 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
                     )}
                   </button>
                   {selectedDeckIds.length > 0 && (
-                    <span className="text-slate-400">
+                    <span className="text-[var(--text-muted)]">
                       {selectedDeckIds.length} deck{selectedDeckIds.length !== 1 ? 's' : ''} selected
                     </span>
                   )}
@@ -322,7 +322,7 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
                       className={`cursor-pointer rounded-lg border-2 p-4 transition-all ${
                         isSelected
                           ? 'border-teal-500 bg-teal-900/20 ring-2 ring-teal-500/30'
-                          : 'border-slate-600 bg-slate-800 hover:border-slate-500'
+                          : 'border-[var(--border)] bg-[var(--surface)] hover:border-slate-500'
                       }`}
                     >
                       <div className="flex items-start justify-between mb-2">
@@ -331,11 +331,11 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
                           {isSelected ? (
                             <CheckSquare className="w-5 h-5 text-teal-400" />
                           ) : (
-                            <Square className="w-5 h-5 text-slate-400" />
+                            <Square className="w-5 h-5 text-[var(--text-muted)]" />
                           )}
                         </div>
                       </div>
-                      <p className="text-sm text-slate-400">
+                      <p className="text-sm text-[var(--text-muted)]">
                         {(deck.cards && deck.cards.length) || 0} cards • {deck.format}
                       </p>
                     </div>

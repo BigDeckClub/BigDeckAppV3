@@ -83,7 +83,7 @@ export function Skeleton({
  */
 export function CardSkeleton({ className = '' }) {
   return (
-    <div className={`bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 rounded-lg p-4 ${className}`}>
+    <div className={`bg-gradient-to-br from-slate-800 to-slate-900 border border-[var(--border)] rounded-lg p-4 ${className}`}>
       <Skeleton variant="text" width="70%" className="mb-3" />
       <Skeleton variant="rectangular" height={80} className="mb-3" />
       <div className="grid grid-cols-3 gap-2">
@@ -100,7 +100,7 @@ export function CardSkeleton({ className = '' }) {
  */
 export function ListItemSkeleton({ className = '' }) {
   return (
-    <div className={`bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 rounded-lg p-4 flex items-center gap-4 ${className}`}>
+    <div className={`bg-gradient-to-br from-slate-800 to-slate-900 border border-[var(--border)] rounded-lg p-4 flex items-center gap-4 ${className}`}>
       <Skeleton variant="avatar" />
       <div className="flex-1">
         <Skeleton variant="text" width="40%" className="mb-2" />

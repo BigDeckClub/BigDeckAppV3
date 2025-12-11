@@ -114,27 +114,27 @@ export const SortControls = memo(function SortControls({
 
   return (
     <div className="relative" ref={dropdownRef} onKeyDown={handleKeyDown}>
-      <div className="flex items-center gap-1 bg-slate-800/50 rounded-lg p-1.5 border border-slate-700">
+      <div className="flex items-center gap-1 bg-[var(--surface)] rounded-lg p-1.5 border border-[var(--border)]">
         {/* Sort Field Dropdown Button */}
         <button
           ref={buttonRef}
           onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-slate-300 hover:text-slate-100 hover:bg-slate-700/30 transition-all duration-300"
+          className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-[var(--text-muted)] hover:text-slate-100 hover:bg-[var(--muted-surface)] transition-all duration-300"
           title="Select sort field"
           aria-expanded={isOpen}
           aria-haspopup="listbox"
           aria-label={`Sort by ${currentOption.label}`}
         >
-          <ArrowUpDown className="w-4 h-4 text-slate-400" />
+          <ArrowUpDown className="w-4 h-4 text-[var(--text-muted)]" />
           <span className="hidden sm:inline">{currentOption.label}</span>
-          <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+          <ChevronDown className={`w-3 h-3 text-[var(--text-muted)] transition-transform ${isOpen ? 'rotate-180' : ''}`} />
         </button>
 
         {/* Sort Direction Toggle */}
         <button
           onClick={toggleDirection}
           className={`p-2 rounded-lg transition-all duration-300 ${
-            'text-slate-400 hover:text-slate-200 hover:bg-slate-700/30'
+            'text-[var(--text-muted)] hover:text-slate-200 hover:bg-[var(--muted-surface)]'
           }`}
           title={sortDirection === 'asc' ? 'Ascending (click to reverse)' : 'Descending (click to reverse)'}
           aria-label={sortDirection === 'asc' ? 'Sort ascending, click to sort descending' : 'Sort descending, click to sort ascending'}
@@ -146,7 +146,7 @@ export const SortControls = memo(function SortControls({
       {/* Dropdown Menu */}
       {isOpen && (
         <div 
-          className="absolute right-0 mt-2 w-44 bg-slate-800 border border-slate-600 rounded-lg shadow-xl shadow-black/30 z-50 overflow-hidden"
+          className="absolute right-0 mt-2 w-44 bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-xl shadow-black/30 z-50 overflow-hidden"
           role="listbox"
           aria-label="Sort field options"
           aria-activedescendant={focusedIndex >= 0 ? `sort-option-${SORT_OPTIONS[focusedIndex].value}` : undefined}
@@ -165,8 +165,8 @@ export const SortControls = memo(function SortControls({
                   sortField === option.value
                     ? 'bg-teal-600/30 text-teal-300 font-medium'
                     : focusedIndex === index
-                    ? 'bg-slate-700/70 text-slate-100'
-                    : 'text-slate-300 hover:bg-slate-700/50 hover:text-slate-100'
+                    ? 'bg-[var(--muted-surface)] text-slate-100'
+                    : 'text-[var(--text-muted)] hover:bg-[var(--muted-surface)] hover:text-slate-100'
                 }`}
               >
                 {option.label}

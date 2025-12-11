@@ -1,0 +1,109 @@
+/* Theme palettes - synchronized with community-theme.css
+   Uses --bda-* variables as the single source of truth */
+
+:root {
+  /* Map legacy variables to BDA variables for backward compatibility */
+  --bg-page: var(--bda-bg);
+  --surface: var(--bda-surface);
+  --muted-surface: var(--input-bg);
+  --text-primary: var(--bda-text);
+  --text-muted: var(--bda-muted);
+  --accent: var(--bda-primary);
+  --accent-600: #0D9488;
+  --success: #16A34A;
+  --warning: #F59E0B;
+  --danger: #EF4444;
+  --card-radius: 8px;
+  --card-shadow: var(--bda-elevation-1);
+  --border: var(--bda-border);
+
+  /* MTG color variables for theme mapping */
+  --mtg-W: #F9FAF4;
+  --mtg-W-dark: #F8E7B9;
+  --mtg-W-text: #1a1a1a;
+  --mtg-U: #0E68AB;
+  --mtg-U-dark: #0A4E82;
+  --mtg-U-text: #ffffff;
+  --mtg-B: #150B00;
+  --mtg-B-dark: #2D2D2D;
+  --mtg-B-text: #ffffff;
+  --mtg-R: #D3202A;
+  --mtg-R-dark: #A31A22;
+  --mtg-R-text: #ffffff;
+  --mtg-G: #00733E;
+  --mtg-G-dark: #005C32;
+  --mtg-G-text: #ffffff;
+  --mtg-C: #CBC2BF;
+  --mtg-C-dark: #9E9E9E;
+  --mtg-C-text: #1a1a1a;
+
+  /* Chart color variables */
+  --chart-teal: #14b8a6;
+  --chart-teal-fill: rgba(20, 184, 166, 0.1);
+  --chart-blue: #3b82f6;
+  --chart-blue-fill: rgba(59, 130, 246, 0.1);
+  --chart-purple: #a855f7;
+  --chart-purple-fill: rgba(168, 85, 247, 0.1);
+  --chart-amber: #f59e0b;
+  --chart-amber-fill: rgba(245, 158, 11, 0.1);
+  --chart-emerald: #10b981;
+  --chart-emerald-fill: rgba(16, 185, 129, 0.1);
+  --chart-red: #ef4444;
+  --chart-red-fill: rgba(239, 68, 68, 0.1);
+
+  /* Slider/track variables for themeable controls */
+  --slider-track-start: #334155;
+  --slider-track-end: #475569;
+  --slider-track-hover-start: #3b4a5a;
+  --slider-track-hover-end: #5a6a7a;
+
+  --thumb-yellow-start: #fbbf24;
+  --thumb-yellow-end: #f59e0b;
+
+  --thumb-green-start: #4ade80;
+  --thumb-green-end: #22c55e;
+
+  --thumb-blue-start: #60a5fa;
+  --thumb-blue-end: #3b82f6;
+}
+
+:root {
+  --overlay: rgba(0,0,0,0.7);
+  --overlay-50: rgba(0,0,0,0.5);
+}
+
+/* Map common Tailwind utilities to CSS variables for theme support */
+.text-white { color: var(--text-primary) !important; }
+.bg-teal-600 { background-color: var(--accent) !important; }
+.hover\:bg-teal-500:hover { background-color: var(--accent) !important; }
+.bg-red-600 { background-color: var(--danger) !important; }
+.bg-amber-600 { background-color: var(--warning) !important; }
+.bg-black\/70 { background-color: var(--overlay) !important; }
+.bg-black\/50 { background-color: var(--overlay-50) !important; }
+.text-emerald-400 { color: var(--chart-emerald) !important; }
+.text-red-400 { color: var(--chart-red) !important; }
+
+/* Gradient color overrides */
+.from-teal-600 { --tw-gradient-from: var(--accent); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, rgba(255,255,255,0)); }
+.to-teal-700 { --tw-gradient-to: var(--accent); }
+
+/* Ensure high-contrast foreground for colored buttons in themeable contexts */
+.bg-teal-600.text-white,
+.bg-blue-600.text-white,
+.bg-purple-600.text-white,
+.bg-amber-600.text-white,
+.bg-red-600.text-white,
+.bg-green-600.text-white,
+.bg-mtg-U.text-white,
+.bg-mtg-R.text-white,
+.bg-mtg-G.text-white,
+.from-teal-600.text-white,
+.from-purple-600.text-white,
+.from-blue-600.text-white,
+.from-amber-600.text-white,
+.from-red-600.text-white {
+  color: var(--bda-primary-foreground) !important;
+}
+
+/* Fallback: ensure any explicit text-white is readable in parchment */
+.text-white { color: var(--text-primary) !important; }

@@ -160,7 +160,7 @@ class ErrorBoundary extends React.Component {
             </h1>
 
             {/* Message */}
-            <p className="text-slate-400 mb-8">
+            <p className="text-[var(--text-muted)] mb-8">
               {errorDetails.message}
             </p>
 
@@ -176,7 +176,7 @@ class ErrorBoundary extends React.Component {
 
               <button
                 onClick={this.handleRefresh}
-                className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-slate-700 hover:bg-slate-600 text-white font-semibold rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 focus:ring-offset-slate-900"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-[var(--muted-surface)] hover:bg-slate-600 text-white font-semibold rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 focus:ring-offset-slate-900"
               >
                 <RefreshCw className="w-5 h-5" />
                 Refresh Page
@@ -184,7 +184,7 @@ class ErrorBoundary extends React.Component {
 
               <button
                 onClick={this.handleGoHome}
-                className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-slate-700 hover:bg-slate-600 text-white font-semibold rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 focus:ring-offset-slate-900"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-[var(--muted-surface)] hover:bg-slate-600 text-white font-semibold rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 focus:ring-offset-slate-900"
               >
                 <Home className="w-5 h-5" />
                 Go Home
@@ -192,18 +192,18 @@ class ErrorBoundary extends React.Component {
             </div>
 
             {/* Error Details Toggle */}
-            <div className="border-t border-slate-700 pt-6">
+            <div className="border-t border-[var(--border)] pt-6">
               <button
                 onClick={this.handleToggleDetails}
-                className="text-sm text-slate-500 hover:text-slate-400 transition-colors"
+                className="text-sm text-[var(--text-muted)] hover:text-[var(--text-muted)] transition-colors"
               >
                 {showDetails ? 'Hide technical details' : 'Show technical details'}
               </button>
 
               {showDetails && (
                 <div className="mt-4 text-left">
-                  <div className="bg-slate-900 rounded-lg border border-slate-700 p-4 overflow-auto max-h-64">
-                    <p className="text-xs text-slate-500 mb-2">
+                  <div className="bg-[var(--bg-page)] rounded-lg border border-[var(--border)] p-4 overflow-auto max-h-64">
+                    <p className="text-xs text-[var(--text-muted)] mb-2">
                       <strong>Error:</strong> {error?.name || 'Unknown'}
                     </p>
                     <p className="text-xs text-red-400 mb-4 break-words">
@@ -220,7 +220,7 @@ class ErrorBoundary extends React.Component {
                   <div className="mt-4 flex justify-center">
                     <button
                       onClick={this.handleCopyReport}
-                      className="inline-flex items-center gap-2 px-4 py-2 text-sm text-slate-400 hover:text-slate-300 border border-slate-700 hover:border-slate-600 rounded-lg transition-colors"
+                      className="inline-flex items-center gap-2 px-4 py-2 text-sm text-[var(--text-muted)] hover:text-[var(--text-muted)] border border-[var(--border)] hover:border-[var(--border)] rounded-lg transition-colors"
                     >
                       <Bug className="w-4 h-4" />
                       {reportCopied ? 'Copied to clipboard!' : 'Copy error report'}

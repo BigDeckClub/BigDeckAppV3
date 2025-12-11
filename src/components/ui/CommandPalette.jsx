@@ -73,13 +73,13 @@ const CommandItem = memo(function CommandItem({ command, isSelected, onClick, on
         w-full flex items-center gap-3 px-4 py-3 text-left transition-colors duration-100
         ${isSelected
           ? 'bg-teal-500/10 text-teal-400'
-          : 'text-slate-300 hover:bg-slate-800/50'
+          : 'text-[var(--text-muted)] hover:bg-[var(--surface)]'
         }
       `}
       role="option"
       aria-selected={isSelected}
     >
-      <Icon className={`w-5 h-5 ${isSelected ? 'text-teal-400' : 'text-slate-500'}`} />
+      <Icon className={`w-5 h-5 ${isSelected ? 'text-teal-400' : 'text-[var(--text-muted)]'}`} />
       <span className="flex-1 font-medium">{command.label}</span>
       {isSelected && (
         <ArrowRight className="w-4 h-4 text-teal-400" />
@@ -249,12 +249,12 @@ export const CommandPalette = memo(function CommandPalette({
 
       {/* Palette */}
       <div
-        className="relative w-full max-w-xl bg-slate-900 rounded-xl border border-slate-700 shadow-2xl shadow-slate-950/50 overflow-hidden animate-scale-in"
+        className="relative w-full max-w-xl bg-[var(--bg-page)] rounded-xl border border-[var(--border)] shadow-2xl shadow-slate-950/50 overflow-hidden animate-scale-in"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Search Input */}
         <div className="flex items-center gap-3 px-4 py-4 border-b border-slate-800">
-          <Search className="w-5 h-5 text-slate-500" />
+          <Search className="w-5 h-5 text-[var(--text-muted)]" />
           <input
             ref={inputRef}
             type="text"
@@ -270,7 +270,7 @@ export const CommandPalette = memo(function CommandPalette({
             aria-controls="command-list"
             aria-activedescendant={filteredCommands[selectedIndex]?.id}
           />
-          <kbd className="hidden sm:flex items-center gap-0.5 px-2 py-1 text-xs font-mono text-slate-500 bg-slate-800 border border-slate-700 rounded">
+          <kbd className="hidden sm:flex items-center gap-0.5 px-2 py-1 text-xs font-mono text-[var(--text-muted)] bg-[var(--surface)] border border-[var(--border)] rounded">
             ESC
           </kbd>
         </div>
@@ -283,13 +283,13 @@ export const CommandPalette = memo(function CommandPalette({
           role="listbox"
         >
           {filteredCommands.length === 0 ? (
-            <div className="px-4 py-8 text-center text-slate-500">
+            <div className="px-4 py-8 text-center text-[var(--text-muted)]">
               No commands found for "{query}"
             </div>
           ) : (
             groupedCommands.map((group) => (
               <div key={group.key}>
-                <div className="px-4 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wider bg-slate-800/30">
+                <div className="px-4 py-2 text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider bg-[var(--surface)]">
                   {group.label}
                 </div>
                 {group.items.map((command) => {
@@ -310,20 +310,20 @@ export const CommandPalette = memo(function CommandPalette({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between px-4 py-3 border-t border-slate-800 bg-slate-800/30 text-xs text-slate-500">
+        <div className="flex items-center justify-between px-4 py-3 border-t border-slate-800 bg-[var(--surface)] text-xs text-[var(--text-muted)]">
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 bg-slate-700 rounded text-slate-400">↑</kbd>
-              <kbd className="px-1.5 py-0.5 bg-slate-700 rounded text-slate-400">↓</kbd>
+              <kbd className="px-1.5 py-0.5 bg-[var(--muted-surface)] rounded text-[var(--text-muted)]">↑</kbd>
+              <kbd className="px-1.5 py-0.5 bg-[var(--muted-surface)] rounded text-[var(--text-muted)]">↓</kbd>
               <span className="ml-1">navigate</span>
             </span>
             <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 bg-slate-700 rounded text-slate-400">↵</kbd>
+              <kbd className="px-1.5 py-0.5 bg-[var(--muted-surface)] rounded text-[var(--text-muted)]">↵</kbd>
               <span className="ml-1">select</span>
             </span>
           </div>
           <span className="flex items-center gap-1">
-            <kbd className="px-1.5 py-0.5 bg-slate-700 rounded text-slate-400">esc</kbd>
+            <kbd className="px-1.5 py-0.5 bg-[var(--muted-surface)] rounded text-[var(--text-muted)]">esc</kbd>
             <span className="ml-1">close</span>
           </span>
         </div>

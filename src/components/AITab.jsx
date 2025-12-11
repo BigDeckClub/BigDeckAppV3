@@ -32,7 +32,7 @@ const ChatMessage = memo(function ChatMessage({ message }) {
         <div className={`inline-block rounded-lg px-4 py-2 ${
           isUser 
             ? 'bg-teal-600/20 border border-teal-500/30 text-white' 
-            : 'bg-slate-700/50 border border-slate-600/30 text-slate-100'
+            : 'bg-[var(--muted-surface)] border border-[var(--border)] text-slate-100'
         }`}>
           <p className="text-sm whitespace-pre-wrap">{message.content}</p>
         </div>
@@ -48,7 +48,7 @@ const ChatMessage = memo(function ChatMessage({ message }) {
             ))}
           </div>
         )}
-        <p className="text-xs text-slate-500 mt-1">
+        <p className="text-xs text-[var(--text-muted)] mt-1">
           {new Date(message.timestamp).toLocaleTimeString()}
         </p>
       </div>
@@ -75,7 +75,7 @@ const TypingIndicator = memo(function TypingIndicator() {
       <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-purple-600">
         <Bot className="w-4 h-4 text-white" />
       </div>
-      <div className="bg-slate-700/50 border border-slate-600/30 rounded-lg px-4 py-2">
+      <div className="bg-[var(--muted-surface)] border border-[var(--border)] rounded-lg px-4 py-2">
         <div className="flex gap-1">
           <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
           <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -103,7 +103,7 @@ const WelcomeMessage = memo(function WelcomeMessage({ onSuggestionClick }) {
         <Sparkles className="w-8 h-8 text-white" />
       </div>
       <h2 className="text-xl font-semibold text-white mb-2">Welcome to BigDeckAI</h2>
-      <p className="text-slate-400 max-w-md mb-6">
+      <p className="text-[var(--text-muted)] max-w-md mb-6">
         Your AI-powered deck building assistant. Ask me about deck building strategies, 
         card recommendations, format legality, or get help analyzing your decklists.
       </p>
@@ -112,7 +112,7 @@ const WelcomeMessage = memo(function WelcomeMessage({ onSuggestionClick }) {
           <button
             key={index}
             onClick={() => onSuggestionClick(suggestion)}
-            className="text-left text-sm bg-slate-800/50 hover:bg-slate-700/50 border border-slate-700 hover:border-teal-500/50 rounded-lg px-4 py-3 text-slate-300 hover:text-white transition-all"
+            className="text-left text-sm bg-[var(--surface)] hover:bg-[var(--muted-surface)] border border-[var(--border)] hover:border-teal-500/50 rounded-lg px-4 py-3 text-[var(--text-muted)] hover:text-white transition-all"
           >
             {suggestion}
           </button>

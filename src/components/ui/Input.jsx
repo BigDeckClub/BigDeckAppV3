@@ -47,7 +47,7 @@ export const Input = forwardRef(function Input({
   const helperId = `${inputId}-helper`;
   const baseClasses = `
     w-full bg-gradient-to-br from-slate-800 to-slate-900 
-    border border-slate-600 hover:border-teal-500 
+    border border-[var(--border)] hover:border-teal-500 
     backdrop-blur rounded-xl 
     text-white placeholder-slate-500 
     focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-500 focus:ring-opacity-30 
@@ -80,13 +80,13 @@ export const Input = forwardRef(function Input({
   return (
     <div className={`${fullWidth ? 'w-full' : ''} ${containerClassName}`}>
       {label && (
-        <label htmlFor={inputId} className="block text-sm font-medium text-slate-300 mb-2">
+        <label htmlFor={inputId} className="block text-sm font-medium text-[var(--text-muted)] mb-2">
           {label}
         </label>
       )}
       <div className="relative">
         {iconLeft && (
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none">
             {iconLeft}
           </span>
         )}
@@ -100,7 +100,7 @@ export const Input = forwardRef(function Input({
           {...props}
         />
         {iconRight && (
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none">
             {iconRight}
           </span>
         )}
@@ -111,7 +111,7 @@ export const Input = forwardRef(function Input({
         </p>
       )}
       {helperText && !error && (
-        <p id={helperId} className="mt-1.5 text-sm text-slate-400">
+        <p id={helperId} className="mt-1.5 text-sm text-[var(--text-muted)]">
           {helperText}
         </p>
       )}

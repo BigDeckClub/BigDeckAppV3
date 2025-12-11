@@ -35,7 +35,7 @@ export function EmptyState({
   return (
     <div className={`flex flex-col items-center justify-center py-12 px-6 text-center ${className}`}>
       {icon && React.isValidElement(icon) && (
-        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-slate-700/50 to-slate-800/50 border border-slate-600/50 flex items-center justify-center mb-4 text-slate-400">
+        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-slate-700/50 to-slate-800/50 border border-[var(--border)] flex items-center justify-center mb-4 text-[var(--text-muted)]">
           <span className="w-8 h-8 flex items-center justify-center">
             {icon}
           </span>
@@ -47,7 +47,7 @@ export function EmptyState({
         </h3>
       )}
       {description && (
-        <p className="text-sm text-slate-400 max-w-md mb-6">
+        <p className="text-sm text-[var(--text-muted)] max-w-md mb-6">
           {description}
         </p>
       )}

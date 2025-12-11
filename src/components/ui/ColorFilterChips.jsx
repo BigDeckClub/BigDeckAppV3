@@ -126,7 +126,7 @@ const FilterChip = memo(function FilterChip({
         ${sizeClasses[size]}
         ${isSelected
           ? 'bg-teal-600 border-teal-500 text-white shadow-md'
-          : 'bg-slate-700 border-slate-600 text-slate-300 hover:bg-slate-600 hover:border-slate-500'
+          : 'bg-[var(--muted-surface)] border-[var(--border)] text-[var(--text-muted)] hover:bg-slate-600 hover:border-slate-500'
         }
       `}
     >
@@ -157,7 +157,7 @@ FilterChip.propTypes = {
 const FilterSection = memo(function FilterSection({ title, filters, selectedIds, onToggle, size }) {
   return (
     <div className="space-y-2">
-      <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider px-1">
+      <h4 className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider px-1">
         {title}
       </h4>
       <div className="flex flex-wrap gap-2">
@@ -252,7 +252,7 @@ export const ColorFilterChips = memo(function ColorFilterChips({
       <div className={`relative ${className}`}>
         <div className="flex items-center gap-2 flex-wrap">
           {showLabel && (
-            <span className="text-sm text-slate-400 flex items-center gap-1">
+            <span className="text-sm text-[var(--text-muted)] flex items-center gap-1">
               <Filter className="w-4 h-4" aria-hidden="true" />
               Colors:
             </span>
@@ -279,7 +279,7 @@ export const ColorFilterChips = memo(function ColorFilterChips({
             aria-label="Add color filter"
             className={`
               inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs
-              bg-slate-700 border border-slate-600 text-slate-300
+              bg-[var(--muted-surface)] border border-[var(--border)] text-[var(--text-muted)]
               hover:bg-slate-600 hover:border-slate-500
               focus:outline-none focus:ring-2 focus:ring-teal-400 focus:ring-offset-2 focus:ring-offset-slate-800
               transition-colors
@@ -297,7 +297,7 @@ export const ColorFilterChips = memo(function ColorFilterChips({
               type="button"
               onClick={onClearFilters}
               aria-label="Clear all color filters"
-              className="text-xs text-slate-400 hover:text-slate-200 underline"
+              className="text-xs text-[var(--text-muted)] hover:text-slate-200 underline"
             >
               Clear
             </button>
@@ -309,7 +309,7 @@ export const ColorFilterChips = memo(function ColorFilterChips({
           <div
             ref={dropdownRef}
             role="menu"
-            className="absolute z-50 mt-2 p-4 bg-slate-800 border border-slate-600 rounded-lg shadow-xl min-w-[320px] max-h-[400px] overflow-y-auto"
+            className="absolute z-50 mt-2 p-4 bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-xl min-w-[320px] max-h-[400px] overflow-y-auto"
           >
             <div className="space-y-4">
               <FilterSection title="Colorless" filters={colorlessFilter} selectedIds={selectedIds} onToggle={handleToggle} size="sm" />
@@ -335,7 +335,7 @@ export const ColorFilterChips = memo(function ColorFilterChips({
           aria-haspopup="true"
           className={`
             inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm
-            bg-slate-700 border border-slate-600 text-slate-200
+            bg-[var(--muted-surface)] border border-[var(--border)] text-slate-200
             hover:bg-slate-600 hover:border-slate-500
             focus:outline-none focus:ring-2 focus:ring-teal-400 focus:ring-offset-2 focus:ring-offset-slate-800
             transition-colors
@@ -357,7 +357,7 @@ export const ColorFilterChips = memo(function ColorFilterChips({
           <div
             ref={dropdownRef}
             role="menu"
-            className="absolute z-50 mt-2 p-4 bg-slate-800 border border-slate-600 rounded-lg shadow-xl min-w-[360px] max-h-[450px] overflow-y-auto"
+            className="absolute z-50 mt-2 p-4 bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-xl min-w-[360px] max-h-[450px] overflow-y-auto"
           >
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold text-slate-200">Filter by Color Identity</h3>
@@ -389,10 +389,10 @@ export const ColorFilterChips = memo(function ColorFilterChips({
     <div className={`space-y-3 ${className}`}>
       {showLabel && (
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-slate-300 flex items-center gap-2">
+          <span className="text-sm font-medium text-[var(--text-muted)] flex items-center gap-2">
             <Filter className="w-4 h-4" aria-hidden="true" />
             Filter by Color Identity
-            {isLoading && <span className="text-xs text-slate-500">(loading...)</span>}
+            {isLoading && <span className="text-xs text-[var(--text-muted)]">(loading...)</span>}
           </span>
           {selectedFilters.length > 0 && (
             <button

@@ -22,8 +22,8 @@ import { ColorFilterChips } from './ColorFilterChips';
 const RARITY_OPTIONS = [
   { id: 'mythic', label: 'Mythic', color: 'text-orange-400 bg-orange-400/10' },
   { id: 'rare', label: 'Rare', color: 'text-yellow-400 bg-yellow-400/10' },
-  { id: 'uncommon', label: 'Uncommon', color: 'text-slate-300 bg-slate-300/10' },
-  { id: 'common', label: 'Common', color: 'text-slate-500 bg-slate-500/10' },
+  { id: 'uncommon', label: 'Uncommon', color: 'text-[var(--text-muted)] bg-slate-300/10' },
+  { id: 'common', label: 'Common', color: 'text-[var(--text-muted)] bg-slate-500/10' },
 ];
 
 /**
@@ -38,7 +38,7 @@ const FilterChip = memo(function FilterChip({ label, isActive, onClick, color })
         focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50
         ${isActive
           ? `${color || 'bg-teal-500/20 text-teal-400'} ring-1 ring-current`
-          : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'
+          : 'bg-[var(--surface)] text-[var(--text-muted)] hover:text-white hover:bg-[var(--muted-surface)]'
         }
       `}
       aria-pressed={isActive}
@@ -90,7 +90,7 @@ const PresetDropdown = memo(function PresetDropdown({
           flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors
           ${activePreset
             ? 'bg-accent/20 text-accent'
-            : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'
+            : 'bg-[var(--surface)] text-[var(--text-muted)] hover:text-white hover:bg-[var(--muted-surface)]'
           }
         `}
         aria-expanded={isOpen}
@@ -102,11 +102,11 @@ const PresetDropdown = memo(function PresetDropdown({
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 mt-2 w-56 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 py-1 animate-slide-down">
+        <div className="absolute top-full left-0 mt-2 w-56 bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-xl z-50 py-1 animate-slide-down">
           {/* Save current preset */}
           <button
             onClick={onSavePreset}
-            className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white"
+            className="w-full flex items-center gap-2 px-4 py-2 text-sm text-[var(--text-muted)] hover:bg-[var(--muted-surface)] hover:text-white"
           >
             <BookmarkPlus className="w-4 h-4" />
             <span>Save current filters...</span>
@@ -114,18 +114,18 @@ const PresetDropdown = memo(function PresetDropdown({
 
           {presets.length > 0 && (
             <>
-              <div className="my-1 border-t border-slate-700" />
+              <div className="my-1 border-t border-[var(--border)]" />
               {presets.map((preset) => (
                 <div
                   key={preset.id}
                   className={`
                     flex items-center justify-between px-4 py-2 cursor-pointer
-                    hover:bg-slate-700 transition-colors
+                    hover:bg-[var(--muted-surface)] transition-colors
                     ${activePreset?.id === preset.id ? 'bg-accent/10' : ''}
                   `}
                   onClick={() => onSelectPreset(preset)}
                 >
-                  <span className={`text-sm ${activePreset?.id === preset.id ? 'text-accent' : 'text-slate-300'}`}>
+                  <span className={`text-sm ${activePreset?.id === preset.id ? 'text-accent' : 'text-[var(--text-muted)]'}`}>
                     {preset.name}
                   </span>
                   <button
@@ -133,7 +133,7 @@ const PresetDropdown = memo(function PresetDropdown({
                       e.stopPropagation();
                       onDeletePreset(preset.id);
                     }}
-                    className="p-1 text-slate-500 hover:text-red-400 rounded"
+                    className="p-1 text-[var(--text-muted)] hover:text-red-400 rounded"
                     aria-label={`Delete ${preset.name}`}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -145,10 +145,10 @@ const PresetDropdown = memo(function PresetDropdown({
 
           {activePreset && (
             <>
-              <div className="my-1 border-t border-slate-700" />
+              <div className="my-1 border-t border-[var(--border)]" />
               <button
                 onClick={() => onSelectPreset(null)}
-                className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-400 hover:bg-slate-700 hover:text-white"
+                className="w-full flex items-center gap-2 px-4 py-2 text-sm text-[var(--text-muted)] hover:bg-[var(--muted-surface)] hover:text-white"
               >
                 <X className="w-4 h-4" />
                 <span>Clear preset</span>
@@ -233,20 +233,20 @@ export const FilterBar = memo(function FilterBar({
       <div className="flex items-center gap-3 flex-wrap">
         {/* Search input */}
         <div className="relative flex-1 min-w-[200px] max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => onSearchChange?.(e.target.value)}
             placeholder="Search cards..."
-            className="w-full pl-10 pr-10 py-2 bg-slate-800/50 border border-slate-700 rounded-lg
-                       text-white placeholder:text-slate-500
+            className="w-full pl-10 pr-10 py-2 bg-[var(--surface)] border border-[var(--border)] rounded-lg
+                       text-white placeholder:text-[var(--text-muted)]
                        focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-transparent"
           />
           {searchQuery && (
             <button
               onClick={() => onSearchChange?.('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-white"
               aria-label="Clear search"
             >
               <X className="w-4 h-4" />
@@ -271,7 +271,7 @@ export const FilterBar = memo(function FilterBar({
               flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors
               ${showAdvanced
                 ? 'bg-accent/20 text-accent'
-                : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'
+                : 'bg-[var(--surface)] text-[var(--text-muted)] hover:text-white hover:bg-[var(--muted-surface)]'
               }
             `}
             aria-expanded={showAdvanced}
@@ -305,7 +305,7 @@ export const FilterBar = memo(function FilterBar({
           <button
             onClick={onClearAll}
             className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium
-                       text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                       text-[var(--text-muted)] hover:text-white hover:bg-[var(--surface)] transition-colors"
           >
             <X className="w-4 h-4" />
             <span>Clear all</span>
@@ -315,11 +315,11 @@ export const FilterBar = memo(function FilterBar({
 
       {/* Advanced filters panel */}
       {showAdvanced && (
-        <div className="p-4 bg-slate-800/30 border border-slate-700 rounded-lg space-y-4 animate-slide-down">
+        <div className="p-4 bg-[var(--surface)] border border-[var(--border)] rounded-lg space-y-4 animate-slide-down">
           {/* Rarity filter */}
           {onRarityChange && (
             <div className="space-y-2">
-              <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+              <label className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">
                 Rarity
               </label>
               <div className="flex flex-wrap gap-2">
@@ -339,15 +339,15 @@ export const FilterBar = memo(function FilterBar({
           {/* Set filter */}
           {onSetChange && availableSets.length > 0 && (
             <div className="space-y-2">
-              <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+              <label className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">
                 Sets
               </label>
               <div className="relative" ref={setDropdownRef}>
                 <button
                   onClick={() => setSetDropdownOpen(!setDropdownOpen)}
                   className="flex items-center justify-between w-full max-w-xs px-3 py-2
-                             bg-slate-800 border border-slate-700 rounded-lg text-sm
-                             text-slate-300 hover:border-slate-600 transition-colors"
+                             bg-[var(--surface)] border border-[var(--border)] rounded-lg text-sm
+                             text-[var(--text-muted)] hover:border-[var(--border)] transition-colors"
                   aria-expanded={setDropdownOpen}
                 >
                   <span>
@@ -361,21 +361,21 @@ export const FilterBar = memo(function FilterBar({
 
                 {setDropdownOpen && (
                   <div className="absolute top-full left-0 mt-2 w-full max-w-xs max-h-60 overflow-y-auto
-                                  bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 py-1">
+                                  bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-xl z-50 py-1">
                     {availableSets.map((set) => (
                       <label
                         key={set.code}
-                        className="flex items-center gap-2 px-4 py-2 cursor-pointer hover:bg-slate-700"
+                        className="flex items-center gap-2 px-4 py-2 cursor-pointer hover:bg-[var(--muted-surface)]"
                       >
                         <input
                           type="checkbox"
                           checked={selectedSets.includes(set.code)}
                           onChange={() => handleSetToggle(set.code)}
-                          className="w-4 h-4 rounded border-slate-600 bg-slate-900 text-teal-500
+                          className="w-4 h-4 rounded border-[var(--border)] bg-[var(--bg-page)] text-teal-500
                                      focus:ring-teal-500/50 focus:ring-offset-0"
                         />
-                        <span className="text-sm text-slate-300">{set.name}</span>
-                        <span className="text-xs text-slate-500 ml-auto">{set.code}</span>
+                        <span className="text-sm text-[var(--text-muted)]">{set.name}</span>
+                        <span className="text-xs text-[var(--text-muted)] ml-auto">{set.code}</span>
                       </label>
                     ))}
                   </div>
@@ -390,12 +390,12 @@ export const FilterBar = memo(function FilterBar({
                     return (
                       <span
                         key={setCode}
-                        className="inline-flex items-center gap-1 px-2 py-1 bg-slate-700 rounded text-sm text-slate-300"
+                        className="inline-flex items-center gap-1 px-2 py-1 bg-[var(--muted-surface)] rounded text-sm text-[var(--text-muted)]"
                       >
                         {set?.name || setCode}
                         <button
                           onClick={() => handleSetToggle(setCode)}
-                          className="text-slate-500 hover:text-white"
+                          className="text-[var(--text-muted)] hover:text-white"
                           aria-label={`Remove ${set?.name || setCode}`}
                         >
                           <X className="w-3 h-3" />

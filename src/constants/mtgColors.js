@@ -5,18 +5,18 @@
 
 // The five colors of Magic in WUBRG order
 export const MTG_COLORS = {
-  W: { code: 'W', name: 'White', hex: '#F9FAF4', darkHex: '#F8E7B9' },
-  U: { code: 'U', name: 'Blue', hex: '#0E68AB', darkHex: '#0A4E82' },
-  B: { code: 'B', name: 'Black', hex: '#150B00', darkHex: '#2D2D2D' },
-  R: { code: 'R', name: 'Red', hex: '#D3202A', darkHex: '#A31A22' },
-  G: { code: 'G', name: 'Green', hex: '#00733E', darkHex: '#005C32' },
+  W: { code: 'W', name: 'White', hex: 'var(--mtg-W)', darkHex: 'var(--mtg-W-dark)' },
+  U: { code: 'U', name: 'Blue', hex: 'var(--mtg-U)', darkHex: 'var(--mtg-U-dark)' },
+  B: { code: 'B', name: 'Black', hex: 'var(--mtg-B)', darkHex: 'var(--mtg-B-dark)' },
+  R: { code: 'R', name: 'Red', hex: 'var(--mtg-R)', darkHex: 'var(--mtg-R-dark)' },
+  G: { code: 'G', name: 'Green', hex: 'var(--mtg-G)', darkHex: 'var(--mtg-G-dark)' },
 };
 
 // Color order for consistent sorting (WUBRG)
 export const COLOR_ORDER = ['W', 'U', 'B', 'R', 'G'];
 
 // Colorless definition
-export const COLORLESS = { code: 'C', name: 'Colorless', hex: '#CBC2BF', darkHex: '#9E9E9E' };
+export const COLORLESS = { code: 'C', name: 'Colorless', hex: 'var(--mtg-C)', darkHex: 'var(--mtg-C-dark)' };
 
 // Guild/Shard names for multi-color combinations
 export const COLOR_PAIR_NAMES = {

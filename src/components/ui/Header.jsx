@@ -63,7 +63,7 @@ const CommandPaletteTrigger = memo(function CommandPaletteTrigger({ onClick }) {
       aria-label="Open command palette (Cmd+K)"
     >
       <Search className="w-4 h-4" />
-      <span className="hidden md:inline text-slate-500">Search...</span>
+      <span className="hidden md:inline text-[var(--text-muted)]">Search...</span>
       <kbd className="hidden md:flex items-center gap-0.5 px-1.5 py-0.5 text-xs font-mono text-ui-muted bg-ui-surface border border-ui-border rounded">
         <Command className="w-3 h-3" />
         <span>K</span>
@@ -200,13 +200,13 @@ export const Header = memo(function Header({
       </header>
 
       {/* Mobile Header (top bar with logo + search) */}
-      <header className="md:hidden sticky top-0 z-50 bg-slate-900/95 backdrop-blur-xl border-b border-slate-800 safe-area-top">
+      <header className="md:hidden sticky top-0 z-50 bg-ui-surface backdrop-blur-xl border-b border-ui-border safe-area-top">
         <div className="flex items-center justify-between px-4 h-14">
           <Logo />
           <div className="flex items-center gap-2">
             <button
               onClick={onOpenCommandPalette}
-              className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800/50"
+              className="p-2 text-[var(--text-muted)] hover:text-white rounded-lg hover:bg-[var(--surface)]"
               aria-label="Open search"
             >
               <Search className="w-5 h-5" />
@@ -219,7 +219,7 @@ export const Header = memo(function Header({
 
       {/* Mobile Bottom Navigation */}
       <nav
-        className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur-xl border-t border-slate-800 safe-area-bottom"
+        className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-ui-surface backdrop-blur-xl border-t border-ui-border safe-area-bottom"
         role="navigation"
         aria-label="Mobile navigation"
       >

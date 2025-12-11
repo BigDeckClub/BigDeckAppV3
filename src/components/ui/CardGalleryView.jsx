@@ -86,7 +86,7 @@ const CardTile = memo(function CardTile({
             checked={isSelected}
             onChange={handleSelect}
             onClick={(e) => e.stopPropagation()}
-            className="w-4 h-4 rounded border-slate-600 bg-slate-800/80 text-teal-500
+            className="w-4 h-4 rounded border-[var(--border)] bg-[var(--surface)] text-teal-500
                        focus:ring-teal-500/50 focus:ring-offset-0 cursor-pointer
                        opacity-0 group-hover:opacity-100 checked:opacity-100 transition-opacity"
             aria-label={`Select ${card.name}`}
@@ -95,7 +95,7 @@ const CardTile = memo(function CardTile({
       )}
 
       {/* Card image */}
-      <div className="aspect-[488/680] bg-slate-800 relative">
+      <div className="aspect-[488/680] bg-[var(--surface)] relative">
         {imageUrl ? (
           <img
             src={imageUrl}
@@ -104,7 +104,7 @@ const CardTile = memo(function CardTile({
             loading="lazy"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-slate-500">
+          <div className="w-full h-full flex items-center justify-center text-[var(--text-muted)]">
             <span className="text-xs text-center px-2">{card.name}</span>
           </div>
         )}
@@ -113,8 +113,8 @@ const CardTile = memo(function CardTile({
         {quantity > 1 && (
           <div className="absolute top-2 right-2 z-10">
             <span className="inline-flex items-center justify-center min-w-[24px] h-6 px-1.5
-                           text-sm font-bold text-white bg-slate-900/90 rounded-full
-                           border border-slate-700">
+                           text-sm font-bold text-white bg-[var(--bg-page)] rounded-full
+                           border border-[var(--border)]">
               ×{quantity}
             </span>
           </div>
@@ -131,8 +131,8 @@ const CardTile = memo(function CardTile({
               <div className="flex items-center gap-1">
                 <button
                   onClick={(e) => handleQuantityClick(e, -1)}
-                  className="p-1.5 rounded-full bg-slate-800/80 text-slate-300 hover:text-white
-                             hover:bg-slate-700 transition-colors"
+                  className="p-1.5 rounded-full bg-[var(--surface)] text-[var(--text-muted)] hover:text-white
+                             hover:bg-[var(--muted-surface)] transition-colors"
                   aria-label="Decrease quantity"
                 >
                   <Minus className="w-3.5 h-3.5" />
@@ -142,8 +142,8 @@ const CardTile = memo(function CardTile({
                 </span>
                 <button
                   onClick={(e) => handleQuantityClick(e, 1)}
-                  className="p-1.5 rounded-full bg-slate-800/80 text-slate-300 hover:text-white
-                             hover:bg-slate-700 transition-colors"
+                  className="p-1.5 rounded-full bg-[var(--surface)] text-[var(--text-muted)] hover:text-white
+                             hover:bg-[var(--muted-surface)] transition-colors"
                   aria-label="Increase quantity"
                 >
                   <Plus className="w-3.5 h-3.5" />
@@ -158,8 +158,8 @@ const CardTile = memo(function CardTile({
                   e.stopPropagation();
                   onContextMenu(card, e);
                 }}
-                className="p-1.5 rounded-full bg-slate-800/80 text-slate-300 hover:text-white
-                           hover:bg-slate-700 transition-colors"
+                className="p-1.5 rounded-full bg-[var(--surface)] text-[var(--text-muted)] hover:text-white
+                           hover:bg-[var(--muted-surface)] transition-colors"
                 aria-label="More options"
               >
                 <MoreVertical className="w-3.5 h-3.5" />
@@ -170,13 +170,13 @@ const CardTile = memo(function CardTile({
       </div>
 
       {/* Card info footer */}
-      <div className="p-2 bg-slate-800/80 backdrop-blur-sm">
+      <div className="p-2 bg-[var(--surface)] backdrop-blur-sm">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
             <h3 className="text-sm font-medium text-white truncate" title={card.name}>
               {card.name}
             </h3>
-            <p className="text-xs text-slate-400">{getSetDisplayName(card.set)}</p>
+            <p className="text-xs text-[var(--text-muted)]">{getSetDisplayName(card.set)}</p>
           </div>
           {showPrice && (
             <div className="flex items-center gap-1 text-sm font-medium text-emerald-400">
@@ -226,7 +226,7 @@ export const CardGalleryView = memo(function CardGalleryView({
 }) {
   if (!cards || cards.length === 0) {
     return (
-      <div className={`flex flex-col items-center justify-center py-16 text-slate-400 ${className}`}>
+      <div className={`flex flex-col items-center justify-center py-16 text-[var(--text-muted)] ${className}`}>
         <p className="text-lg">{emptyMessage}</p>
       </div>
     );

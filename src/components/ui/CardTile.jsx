@@ -9,7 +9,7 @@ import Card from './Card';
 export default function CardTile({ title, qty, unique, cost, coverUrl }) {
   return (
     <Card className="flex items-start gap-3">
-      <div style={{ width: 72, height: 96, borderRadius: 6, overflow: 'hidden', backgroundColor: '#0a0f13' }}>
+      <div style={{ width: 72, height: 96, borderRadius: 6, overflow: 'hidden', backgroundColor: 'var(--card-bg)' }}>
         {coverUrl ? (
           <img src={coverUrl} alt={title || 'card image'} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
         ) : null}

@@ -27,9 +27,9 @@ const getBarColor = (index) => {
  * Mana cost label
  */
 const ManaLabel = memo(function ManaLabel({ cmc }) {
-  if (cmc === 0) return <span className="text-slate-500">0</span>;
-  if (cmc >= 7) return <span className="text-slate-400">7+</span>;
-  return <span className="text-slate-400">{cmc}</span>;
+  if (cmc === 0) return <span className="text-[var(--text-muted)]">0</span>;
+  if (cmc >= 7) return <span className="text-[var(--text-muted)]">7+</span>;
+  return <span className="text-[var(--text-muted)]">{cmc}</span>;
 });
 
 ManaLabel.propTypes = {
@@ -59,7 +59,7 @@ const CurveBar = memo(function CurveBar({
       )}
 
       {/* Bar container */}
-      <div className="w-full h-32 bg-slate-800/50 rounded-t-lg relative flex items-end">
+      <div className="w-full h-32 bg-[var(--surface)] rounded-t-lg relative flex items-end">
         <div
           className={`
             w-full rounded-t-lg bg-gradient-to-t ${barColor}
@@ -70,7 +70,7 @@ const CurveBar = memo(function CurveBar({
       </div>
 
       {/* CMC label */}
-      <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-sm font-medium">
+      <div className="w-8 h-8 rounded-lg bg-[var(--surface)] flex items-center justify-center text-sm font-medium">
         <ManaLabel cmc={cmc} />
       </div>
     </div>
@@ -90,18 +90,18 @@ CurveBar.propTypes = {
  */
 const CurveStats = memo(function CurveStats({ totalCards, averageCmc, landCount }) {
   return (
-    <div className="grid grid-cols-3 gap-4 pt-4 border-t border-slate-700">
+    <div className="grid grid-cols-3 gap-4 pt-4 border-t border-[var(--border)]">
       <div className="text-center">
         <div className="text-lg font-bold text-teal-400">{totalCards}</div>
-        <div className="text-xs text-slate-500">Non-land cards</div>
+        <div className="text-xs text-[var(--text-muted)]">Non-land cards</div>
       </div>
       <div className="text-center">
         <div className="text-lg font-bold text-purple-400">{averageCmc.toFixed(2)}</div>
-        <div className="text-xs text-slate-500">Average CMC</div>
+        <div className="text-xs text-[var(--text-muted)]">Average CMC</div>
       </div>
       <div className="text-center">
         <div className="text-lg font-bold text-amber-400">{landCount}</div>
-        <div className="text-xs text-slate-500">Lands</div>
+        <div className="text-xs text-[var(--text-muted)]">Lands</div>
       </div>
     </div>
   );
@@ -192,10 +192,10 @@ export const ManaCurveChart = memo(function ManaCurveChart({
   ];
 
   return (
-    <div className={`bg-slate-800/50 rounded-xl border border-slate-700 p-4 ${className}`}>
+    <div className={`bg-[var(--surface)] rounded-xl border border-[var(--border)] p-4 ${className}`}>
       {/* Title */}
       {title && (
-        <h3 className="text-sm font-medium text-slate-300 mb-4">{title}</h3>
+        <h3 className="text-sm font-medium text-[var(--text-muted)] mb-4">{title}</h3>
       )}
 
       {/* Chart */}

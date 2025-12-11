@@ -41,11 +41,11 @@ export function DeckDetailsView({
         Back to Decks
       </button>
 
-      <div className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 rounded-lg p-6">
+      <div className="bg-gradient-to-br from-slate-800 to-slate-900 border border-[var(--border)] rounded-lg p-6">
         <div className="flex justify-between items-start mb-4">
           <div>
             <h2 className="text-2xl font-bold text-teal-300">{deck.name}</h2>
-            <p className="text-slate-400 mt-1">
+            <p className="text-[var(--text-muted)] mt-1">
               {deck.format} • {(deck.cards && deck.cards.length) || 0} cards
               {totalMissing > 0 && (
                 <span className="ml-2 text-red-400 font-semibold">• {totalMissing} missing</span>
@@ -85,7 +85,7 @@ export function DeckDetailsView({
             )}
             <button
               onClick={() => onDelete(deck.id)}
-              className="text-slate-400 hover:text-red-400 transition-colors"
+              className="text-[var(--text-muted)] hover:text-red-400 transition-colors"
               title="Delete"
             >
               <Trash2 className="w-5 h-5" />
@@ -132,22 +132,22 @@ export function DeckDetailsView({
         })()}
 
         <div className="mb-4">
-          <label className="block text-sm text-slate-400 mb-2">Description</label>
+          <label className="block text-sm text-[var(--text-muted)] mb-2">Description</label>
           <textarea
             value={deck.description || ''}
             onChange={(e) => onUpdateDescription(deck.id, e.target.value)}
             placeholder="Add deck notes, strategy, etc."
-            className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white placeholder-slate-500 resize-none"
+            className="w-full bg-[var(--muted-surface)] border border-[var(--border)] rounded px-3 py-2 text-white placeholder-slate-500 resize-none"
             rows="3"
           />
         </div>
 
         {(!deck.cards || deck.cards.length === 0) ? (
           <div className="text-center py-8">
-            <p className="text-slate-400">No cards in this deck yet. Add cards from your inventory!</p>
+            <p className="text-[var(--text-muted)]">No cards in this deck yet. Add cards from your inventory!</p>
           </div>
         ) : (
-          <div className="bg-slate-900 rounded p-4 max-h-96 overflow-y-auto">
+          <div className="bg-[var(--bg-page)] rounded p-4 max-h-96 overflow-y-auto">
             <h3 className="text-teal-300 font-semibold mb-3">Deck Cards</h3>
             <div className="space-y-2">
               {deck.cards.map((card, idx) => {
@@ -161,14 +161,14 @@ export function DeckDetailsView({
                     className={`flex justify-between text-sm p-2 rounded ${
                       isMissing
                         ? 'bg-red-900/40 text-red-200 border border-red-700/30'
-                        : 'bg-slate-800 text-slate-300'
+                        : 'bg-[var(--surface)] text-[var(--text-muted)]'
                     }`}
                   >
                     <span>
                       {card.quantity}x {card.name}
                       {isMissing && <span className="ml-2 text-xs text-red-300">(need {needed})</span>}
                     </span>
-                    <span className="text-slate-500">{getSetDisplayName(card.set, true)}</span>
+                    <span className="text-[var(--text-muted)]">{getSetDisplayName(card.set, true)}</span>
                   </div>
                 );
               })}
@@ -186,7 +186,7 @@ export function DeckDetailsView({
               <ChevronDown className={`w-5 h-5 transition-transform ${showMissing ? 'rotate-180' : ''}`} />
             </button>
             {showMissing && (
-              <div className="mt-2 bg-slate-900 rounded-lg p-3 max-h-48 overflow-y-auto border border-red-700/20">
+              <div className="mt-2 bg-[var(--bg-page)] rounded-lg p-3 max-h-48 overflow-y-auto border border-red-700/20">
                 {missingEntries.map((m, i) => (
                   <div key={i} className="flex justify-between items-center text-sm bg-red-900/40 text-red-200 rounded px-3 py-2 mb-1">
                     <div className="flex-1">
@@ -201,7 +201,7 @@ export function DeckDetailsView({
           </div>
         )}
 
-        <p className="text-xs text-slate-500 mt-4">
+        <p className="text-xs text-[var(--text-muted)] mt-4">
           Created: {new Date(deck.created_at).toLocaleDateString()}
         </p>
       </div>

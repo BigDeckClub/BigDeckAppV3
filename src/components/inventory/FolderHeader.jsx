@@ -23,7 +23,7 @@ export const FolderHeader = memo(function FolderHeader({
   isUnsorted
 }) {
   return (
-    <div className="bg-slate-800 rounded-lg border border-slate-600 p-4 mb-4">
+    <div className="bg-[var(--surface)] rounded-lg border border-[var(--border)] p-4 mb-4">
       <div className="flex justify-between items-start">
         <div className="flex-1">
           <h2 className="text-2xl font-bold text-teal-300">{folderName === 'Uncategorized' ? 'Unsorted' : folderName}</h2>
@@ -43,7 +43,7 @@ export const FolderHeader = memo(function FolderHeader({
                 }
               }}
               placeholder="Add folder description..."
-              className="w-full mt-1 px-2 py-1 bg-slate-700 border border-slate-600 rounded text-slate-300 placeholder-slate-500 focus:outline-none focus:border-teal-400"
+              className="w-full mt-1 px-2 py-1 bg-[var(--muted-surface)] border border-[var(--border)] rounded text-[var(--text-muted)] placeholder-slate-500 focus:outline-none focus:border-teal-400"
               autoFocus
             />
           ) : (
@@ -52,22 +52,22 @@ export const FolderHeader = memo(function FolderHeader({
                 setEditingFolderName(folderName);
                 setEditingFolderDesc(folderDesc);
               }}
-              className="text-sm text-slate-400 mt-1 cursor-pointer hover:text-slate-300 transition-colors"
+              className="text-sm text-[var(--text-muted)] mt-1 cursor-pointer hover:text-[var(--text-muted)] transition-colors"
             >
               {folderDesc || 'Click to add description...'}
             </p>
           )}
           <div className="flex gap-4 mt-3 text-sm">
             <div>
-              <span className="text-slate-400">Cards: </span>
+              <span className="text-[var(--text-muted)]">Cards: </span>
               <span className="font-semibold text-slate-200">{totalCards}</span>
             </div>
             <div>
-              <span className="text-slate-400">Unique: </span>
+              <span className="text-[var(--text-muted)]">Unique: </span>
               <span className="font-semibold text-slate-200">{uniqueCards}</span>
             </div>
             <div>
-              <span className="text-slate-400">Total Cost: </span>
+              <span className="text-[var(--text-muted)]">Total Cost: </span>
               <span className="font-semibold text-green-400">${totalCost.toFixed(2)}</span>
             </div>
           </div>

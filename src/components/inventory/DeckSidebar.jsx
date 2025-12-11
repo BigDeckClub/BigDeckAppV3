@@ -20,7 +20,7 @@ export const DeckSidebar = memo(function DeckSidebar({
   }
 
   return (
-    <div className="pt-3 border-t border-slate-700 mt-3">
+    <div className="pt-3 border-t border-[var(--border)] mt-3">
       <h3 className="text-sm font-semibold text-teal-300 mb-2">🎴 Decks</h3>
       {deckInstances.map((deck) => {
         const isDeckOpen = openDecks.includes(deck.id);

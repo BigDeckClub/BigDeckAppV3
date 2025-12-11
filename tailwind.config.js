@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: 'class',
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
@@ -108,6 +109,12 @@ export default {
           accent: 'var(--bda-accent)',
           ring: 'var(--bda-ring)',
         },
+        page: 'var(--bg-page)',
+        surface: 'var(--surface)',
+        'muted-surface': 'var(--muted-surface)',
+        'text-primary': 'var(--text-primary)',
+        'text-muted': 'var(--text-muted)',
+        accent: 'var(--accent)',
       },
       // Typography
       fontFamily: {

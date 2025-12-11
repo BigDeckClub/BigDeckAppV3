@@ -303,7 +303,7 @@ export function FolderView({
                   <select
                     value={targetFolder}
                     onChange={(e) => setTargetFolder(e.target.value)}
-                    className="px-3 py-1.5 bg-slate-700 border border-slate-600 text-slate-200 rounded-md text-sm focus:outline-none focus:border-teal-400"
+                    className="px-3 py-1.5 bg-[var(--muted-surface)] border border-[var(--border)] text-slate-200 rounded-md text-sm focus:outline-none focus:border-teal-400"
                   >
                     <option value="">Select folder...</option>
                     {availableFolders.map(folder => (
@@ -313,7 +313,7 @@ export function FolderView({
                   <button
                     onClick={handleBulkMove}
                     disabled={!targetFolder}
-                    className="px-3 py-1.5 bg-teal-600 hover:bg-teal-500 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded-md transition-colors text-sm font-medium"
+                    className="px-3 py-1.5 bg-teal-600 hover:bg-teal-500 disabled:bg-[var(--muted-surface)] disabled:text-[var(--text-muted)] text-white rounded-md transition-colors text-sm font-medium"
                   >
                     Move
                   </button>
@@ -322,7 +322,7 @@ export function FolderView({
                       setShowBulkMove(false);
                       setTargetFolder('');
                     }}
-                    className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-md transition-colors text-sm"
+                    className="px-3 py-1.5 bg-[var(--muted-surface)] hover:bg-slate-600 text-[var(--text-muted)] rounded-md transition-colors text-sm"
                   >
                     Cancel
                   </button>
@@ -341,7 +341,7 @@ export function FolderView({
           setSelectedCardIds={setSelectedCardIds}
         />
       ) : (
-        <p className="text-slate-400 text-center py-12">No cards in this folder.</p>
+        <p className="text-[var(--text-muted)] text-center py-12">No cards in this folder.</p>
       )}
     </>
   );

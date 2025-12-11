@@ -40,8 +40,8 @@ export function RapidEntryRow({
         relative rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-teal-400/50
         ${row.status === 'added' ? 'bg-emerald-900/20 border-emerald-500/50' : ''}
         ${row.status === 'pending' ? 'bg-amber-900/20 border-amber-500/50' : ''}
-        ${row.status === 'valid' ? 'bg-slate-800/50 border-teal-500/50' : ''}
-        ${row.status === 'editing' ? 'bg-slate-800/30 border-slate-600' : ''}
+        ${row.status === 'valid' ? 'bg-[var(--surface)] border-teal-500/50' : ''}
+        ${row.status === 'editing' ? 'bg-[var(--surface)] border-[var(--border)]' : ''}
         ${row.status === 'error' ? 'bg-red-900/20 border-red-500/50' : ''}
         ${activeRowIndex === rowIndex ? 'ring-1 ring-teal-400/30' : ''}
         ${shakeRowIndex === rowIndex ? 'animate-shake' : ''}
@@ -50,7 +50,7 @@ export function RapidEntryRow({
       <div className="grid grid-cols-1 md:grid-cols-12 gap-2 p-3">
         {/* Card Name with Autocomplete */}
         <div className="md:col-span-3 relative" ref={activeRowIndex === rowIndex ? dropdownRef : null}>
-          <label className="md:hidden text-xs text-slate-400 mb-1 block">Card Name</label>
+          <label className="md:hidden text-xs text-[var(--text-muted)] mb-1 block">Card Name</label>
           <div className="flex gap-2">
             {row.imageUrl && row.status !== 'editing' && (
               <img 
@@ -74,9 +74,9 @@ export function RapidEntryRow({
               onKeyDown={(e) => handleKeyDown(e, rowIndex, 'name')}
               disabled={row.status === 'added'}
               className={`
-                flex-1 bg-slate-900/50 border rounded px-3 py-2 text-sm text-white 
-                placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-teal-400
-                ${row.status === 'valid' ? 'border-teal-500' : 'border-slate-600'}
+                flex-1 bg-[var(--muted-surface)] border rounded px-3 py-2 text-sm text-[var(--text-primary)] 
+                placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-[var(--accent-600)]
+                ${row.status === 'valid' ? 'border-teal-500' : 'border-[var(--border)]'}
                 ${row.status === 'added' ? 'opacity-60' : ''}
               `}
             />
@@ -84,9 +84,9 @@ export function RapidEntryRow({
           
           {/* Search Dropdown */}
           {showDropdown && activeRowIndex === rowIndex && searchResults.length > 0 && row.status !== 'added' && (
-            <div className="absolute top-full left-0 right-0 mt-1 bg-slate-900 border border-slate-600 rounded-lg shadow-xl max-h-60 overflow-y-auto z-30">
+            <div className="absolute top-full left-0 right-0 mt-1 bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-xl max-h-60 overflow-y-auto z-30">
               {searchIsLoading && (
-                <div className="px-4 py-3 text-sm text-slate-400">Searching...</div>
+                <div className="px-4 py-3 text-sm text-[var(--text-muted)]">Searching...</div>
               )}
               {(() => {
                 const seen = new Set();
@@ -102,9 +102,9 @@ export function RapidEntryRow({
                       key={`${card.name}-${idx}`}
                       onClick={() => handleSelectCard(rowIndex, card)}
                       className={`
-                        px-4 py-2 cursor-pointer border-b border-slate-700 last:border-b-0
+                        px-4 py-2 cursor-pointer border-b border-[var(--border)] last:border-b-0
                         flex items-center gap-3
-                        ${idx === highlightedResult ? 'bg-teal-600/30' : 'hover:bg-teal-600/20'}
+                        ${idx === highlightedResult ? 'bg-[var(--accent)]/30' : 'hover:bg-[var(--accent)]/20'}
                       `}
                     >
                       {card.imageUrl && (
@@ -120,13 +120,13 @@ export function RapidEntryRow({
 
         {/* Set Dropdown */}
         <div className="md:col-span-2">
-          <label className="md:hidden text-xs text-slate-400 mb-1 block">Set</label>
+          <label className="md:hidden text-xs text-[var(--text-muted)] mb-1 block">Set</label>
           <select
             value={row.set}
             onChange={(e) => handleSetChange(rowIndex, e.target.value)}
             onKeyDown={(e) => handleKeyDown(e, rowIndex, 'set')}
             disabled={!row.selectedCard || row.status === 'added'}
-            className="w-full bg-slate-900/50 border border-slate-600 rounded px-2 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-teal-400 disabled:opacity-50"
+            className="w-full bg-[var(--bg-page)] border border-[var(--border)] rounded px-2 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-teal-400 disabled:opacity-50"
           >
             {row.availableSets.length > 0 ? (
               row.availableSets.map(s => (
@@ -140,7 +140,7 @@ export function RapidEntryRow({
 
         {/* Quantity */}
         <div className="md:col-span-1">
-          <label className="md:hidden text-xs text-slate-400 mb-1 block">Qty</label>
+          <label className="md:hidden text-xs text-[var(--text-muted)] mb-1 block">Qty</label>
           <input
             ref={el => inputRefs.current[`qty-${rowIndex}`] = el}
             type="number"
@@ -152,15 +152,15 @@ export function RapidEntryRow({
             }}
             onKeyDown={(e) => handleKeyDown(e, rowIndex, 'qty')}
             disabled={row.status === 'added'}
-            className="w-full bg-slate-900/50 border border-slate-600 rounded px-2 py-2 text-sm text-white text-center focus:outline-none focus:ring-1 focus:ring-teal-400 disabled:opacity-50"
+            className="w-full bg-[var(--muted-surface)] border border-[var(--border)] rounded px-2 py-2 text-sm text-[var(--text-primary)] text-center focus:outline-none focus:ring-2 focus:ring-[var(--accent-600)] disabled:opacity-50"
           />
         </div>
 
         {/* Price */}
         <div className="md:col-span-1">
-          <label className="md:hidden text-xs text-slate-400 mb-1 block">Price</label>
+          <label className="md:hidden text-xs text-[var(--text-muted)] mb-1 block">Price</label>
           <div className="relative">
-            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
+            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[var(--text-muted)] text-sm">$</span>
             <input
               type="number"
               step="0.01"
@@ -170,7 +170,7 @@ export function RapidEntryRow({
               onChange={(e) => updateRowField(rowIndex, 'price', e.target.value)}
               onKeyDown={(e) => handleKeyDown(e, rowIndex, 'price')}
               disabled={row.status === 'added' || lotModeEnabled}
-              className={`w-full bg-slate-900/50 border border-slate-600 rounded pl-5 pr-2 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-teal-400 disabled:opacity-50 ${lotModeEnabled ? 'cursor-not-allowed' : ''}`}
+              className={`w-full bg-[var(--muted-surface)] border border-[var(--border)] rounded pl-5 pr-2 py-2 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-600)] disabled:opacity-50 ${lotModeEnabled ? 'cursor-not-allowed' : ''}`}
               title={lotModeEnabled ? 'Price is calculated from lot total' : ''}
             />
           </div>
@@ -178,7 +178,7 @@ export function RapidEntryRow({
 
         {/* Foil Checkbox */}
         <div className="md:col-span-1 flex items-center">
-          <label className="md:hidden text-xs text-slate-400 mr-2">Foil</label>
+          <label className="md:hidden text-xs text-[var(--text-muted)] mr-2">Foil</label>
           <label className="flex items-center justify-center cursor-pointer w-full">
             <input
               type="checkbox"
@@ -186,20 +186,20 @@ export function RapidEntryRow({
               onChange={(e) => updateRowField(rowIndex, 'foil', e.target.checked)}
               onKeyDown={(e) => handleKeyDown(e, rowIndex, 'foil')}
               disabled={row.status === 'added'}
-              className="w-5 h-5 rounded border-slate-600 bg-slate-900/50 text-teal-500 focus:ring-teal-400 focus:ring-offset-0 disabled:opacity-50"
+              className="w-5 h-5 rounded border-[var(--border)] bg-[var(--bg-page)] text-teal-500 focus:ring-teal-400 focus:ring-offset-0 disabled:opacity-50"
             />
           </label>
         </div>
 
         {/* Quality Dropdown */}
         <div className="md:col-span-1">
-          <label className="md:hidden text-xs text-slate-400 mb-1 block">Quality</label>
+          <label className="md:hidden text-xs text-[var(--text-muted)] mb-1 block">Quality</label>
           <select
             value={row.quality}
             onChange={(e) => updateRowField(rowIndex, 'quality', e.target.value)}
             onKeyDown={(e) => handleKeyDown(e, rowIndex, 'quality')}
             disabled={row.status === 'added'}
-            className="w-full bg-slate-900/50 border border-slate-600 rounded px-2 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-teal-400 disabled:opacity-50"
+            className="w-full bg-[var(--bg-page)] border border-[var(--border)] rounded px-2 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-teal-400 disabled:opacity-50"
           >
             {QUALITY_OPTIONS.map(q => (
               <option key={q} value={q}>{q}</option>
@@ -209,13 +209,13 @@ export function RapidEntryRow({
 
         {/* Folder Dropdown */}
         <div className="md:col-span-2">
-          <label className="md:hidden text-xs text-slate-400 mb-1 block">Folder</label>
+          <label className="md:hidden text-xs text-[var(--text-muted)] mb-1 block">Folder</label>
           <select
             value={row.folder}
             onChange={(e) => updateRowField(rowIndex, 'folder', e.target.value)}
             onKeyDown={(e) => handleKeyDown(e, rowIndex, 'folder')}
             disabled={row.status === 'added'}
-            className="w-full bg-slate-900/50 border border-slate-600 rounded px-2 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-teal-400 disabled:opacity-50"
+            className="w-full bg-[var(--bg-page)] border border-[var(--border)] rounded px-2 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-teal-400 disabled:opacity-50"
           >
             {allFolders.map(f => (
               <option key={f} value={f}>{f === 'Uncategorized' ? 'Unsorted' : f}</option>
@@ -240,8 +240,8 @@ export function RapidEntryRow({
               onClick={() => handleAddCardToInventory(rowIndex)}
               className={`p-1.5 rounded text-white transition-colors ${
                 lotModeEnabled 
-                  ? 'bg-amber-600 hover:bg-amber-500' 
-                  : 'bg-teal-600 hover:bg-teal-500'
+                  ? 'bg-[var(--warning)] hover:bg-[var(--warning)]/90' 
+                  : 'bg-[var(--accent-600)] hover:bg-[var(--accent)]'
               }`}
               title={lotModeEnabled ? "Add to lot (Shift+Enter)" : "Add to inventory (Shift+Enter)"}
             >
@@ -253,7 +253,7 @@ export function RapidEntryRow({
               {rowIndex > 0 && rows[rowIndex - 1].selectedCard && (
                 <button
                   onClick={() => handleDuplicatePrevious(rowIndex)}
-                  className="p-1.5 rounded bg-slate-700 hover:bg-slate-600 text-slate-300 transition-colors"
+                  className="p-1.5 rounded bg-[var(--muted-surface)] hover:bg-slate-600 text-[var(--text-muted)] transition-colors"
                   title="Duplicate previous row (Ctrl+D)"
                 >
                   <Copy className="w-4 h-4" />
@@ -261,7 +261,7 @@ export function RapidEntryRow({
               )}
               <button
                 onClick={() => handleClearRow(rowIndex)}
-                className="p-1.5 rounded bg-slate-700 hover:bg-slate-600 text-slate-300 transition-colors"
+                className="p-1.5 rounded bg-[var(--muted-surface)] hover:bg-slate-600 text-[var(--text-muted)] transition-colors"
                 title="Clear row (Escape)"
               >
                 <X className="w-4 h-4" />

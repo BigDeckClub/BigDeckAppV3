@@ -127,7 +127,7 @@ describe('FilterChip', () => {
       <FilterChip filter={mockFilter} isSelected={false} onToggle={mockOnToggle} />
     );
     const button = screen.getByRole('checkbox');
-    expect(button).toHaveClass('bg-slate-700');
+    expect(button).toHaveClass('bg-[var(--muted-surface)]');
 
     rerender(<FilterChip filter={mockFilter} isSelected={true} onToggle={mockOnToggle} />);
     expect(button).toHaveClass('bg-teal-600');
