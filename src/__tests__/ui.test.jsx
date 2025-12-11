@@ -300,7 +300,7 @@ describe('Card Component', () => {
     expect(container.firstChild.className).toContain('rounded-md');
 
     rerender(<Card variant="stat">Stat</Card>);
-    expect(container.firstChild.className).toContain('hover:shadow-lg');
+    expect(container.firstChild.className).toContain('bg-ui-surface');
   });
 });
 
