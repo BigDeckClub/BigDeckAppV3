@@ -204,7 +204,7 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
                       setShowImportArchidekt(!showImportArchidekt);
                       setShowImportDecklist(false);
                     }}
-                    className={`px-3 sm:px-4 py-2 rounded-lg flex items-center justify-center sm:justify-start gap-2 transition-colors text-white text-sm ${
+                    className={`px-3 sm:px-4 py-2 rounded-lg flex items-center justify-center sm:justify-start gap-2 transition-colors text-[var(--bda-primary-foreground)] text-sm ${
                       showImportArchidekt
                         ? 'bg-blue-500 shadow-lg shadow-blue-500/50'
                         : 'bg-blue-600 hover:bg-blue-700'
@@ -219,7 +219,7 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
                       setShowImportDecklist(!showImportDecklist);
                       setShowImportArchidekt(false);
                     }}
-                    className={`px-3 sm:px-4 py-2 rounded-lg flex items-center justify-center sm:justify-start gap-2 transition-colors text-white text-sm ${
+                    className={`px-3 sm:px-4 py-2 rounded-lg flex items-center justify-center sm:justify-start gap-2 transition-colors text-[var(--bda-primary-foreground)] text-sm ${
                       showImportDecklist
                         ? 'bg-purple-500 shadow-lg shadow-purple-500/50'
                         : 'bg-purple-600 hover:bg-purple-700'
@@ -241,7 +241,7 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
                       setSelectedDeckIds([]);
                     }
                   }}
-                  className={`px-3 sm:px-4 py-2 rounded-lg flex items-center gap-2 transition-colors text-white text-sm font-semibold ${
+                  className={`px-3 sm:px-4 py-2 rounded-lg flex items-center gap-2 transition-colors text-[var(--bda-primary-foreground)] text-sm font-semibold ${
                     showAnalysis
                       ? 'bg-teal-500 shadow-lg shadow-teal-500/50'
                       : 'bg-teal-600 hover:bg-teal-700'

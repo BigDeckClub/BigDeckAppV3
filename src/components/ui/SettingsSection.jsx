@@ -21,7 +21,7 @@ const SettingItem = memo(function SettingItem({
       `}
     >
       <div className="flex-1 min-w-0">
-        <div className="text-sm font-medium text-slate-200">
+        <div className="text-sm font-medium text-[var(--text-primary)]">
           {label}
         </div>
         {description && (
@@ -144,7 +144,7 @@ export const SettingsSection = memo(function SettingsSection({
         {/* Title & Description */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <h3 className="text-base font-semibold text-white">
+            <h3 className="text-base font-semibold text-[var(--text-primary)]">
               {title}
             </h3>
             {badge && (
@@ -221,7 +221,7 @@ export const SettingsCard = memo(function SettingsCard({
             )}
             <div>
               {title && (
-                <h3 className="text-base font-semibold text-white">
+                <h3 className="text-base font-semibold text-[var(--text-primary)]">
                   {title}
                 </h3>
               )}

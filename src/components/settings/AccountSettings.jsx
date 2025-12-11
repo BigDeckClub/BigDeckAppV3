@@ -110,7 +110,7 @@ export const AccountSettings = () => {
       >
         <div className="space-y-4">
           <div className="bg-[var(--bg-page)] rounded-lg p-4 border border-[var(--border)]">
-            <h3 className="text-base font-semibold text-slate-200 mb-2">
+            <h3 className="text-base font-semibold text-[var(--text-primary)] mb-2">
               Update Price Data
             </h3>
             <p className="text-[var(--text-muted)] text-sm mb-4">
@@ -124,7 +124,7 @@ export const AccountSettings = () => {
               className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
                 isBackfilling
                   ? 'bg-[var(--muted-surface)] text-[var(--text-muted)] cursor-not-allowed'
-                  : 'bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-400 hover:to-cyan-400 text-white shadow-lg shadow-teal-500/25'
+                  : 'bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-400 hover:to-cyan-400 text-[var(--text-primary)] shadow-lg shadow-teal-500/25'
               }`}
             >
               {isBackfilling ? (

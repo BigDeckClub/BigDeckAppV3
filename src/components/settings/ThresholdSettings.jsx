@@ -162,15 +162,15 @@ export const ThresholdSettings = ({
   }, [inventory, salesHistory, thresholdSettings, showToast]);
 
   return (
-    <div className="bg-gradient-to-br from-slate-800/90 to-slate-900/70 rounded-2xl p-6 space-y-6 border border-[var(--border)] shadow-xl">
+    <div className="bg-[var(--surface)] rounded-2xl p-6 space-y-6 border border-[var(--border)] shadow-xl">
       {/* Header with icon, title, description, and quick stats badge */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div className="flex items-start gap-3">
           <div className="p-2 bg-gradient-to-br from-purple-500 to-purple-700 rounded-xl shadow-lg">
-            <Settings className="w-6 h-6 text-white" />
+            <Settings className="w-6 h-6 text-[var(--text-primary)]" />
           </div>
           <div>
-            <h3 className="text-xl font-bold text-white flex items-center gap-2">
+            <h3 className="text-xl font-bold text-[var(--text-primary)] flex items-center gap-2">
               Smart Threshold Settings
               {/* Auto-save status indicator */}
               {saveStatus === 'saving' && (
@@ -194,7 +194,7 @@ export const ThresholdSettings = ({
         <div className="bg-[var(--muted-surface)] px-3 py-1.5 rounded-full border border-[var(--border)]">
           <span className="text-xs text-[var(--text-muted)] flex items-center gap-1">
             <Package className="w-3 h-3" />
-            <span className="font-semibold text-white">{inventory?.length || 0}</span> items in inventory
+            <span className="font-semibold text-[var(--text-primary)]">{inventory?.length || 0}</span> items in inventory
           </span>
         </div>
       </div>
@@ -212,7 +212,7 @@ export const ThresholdSettings = ({
                 className="px-3 py-2.5 bg-[var(--muted-surface)] hover:bg-slate-600/70 border border-[var(--border)] hover:border-purple-500/50 rounded-lg text-xs text-left transition-all duration-200 hover:shadow-lg hover:shadow-purple-500/10 group"
                 aria-label={`Apply ${preset.label} preset: ${preset.description}`}
               >
-                <span className="flex items-center gap-2 font-semibold text-white group-hover:text-purple-300 transition-colors">
+                <span className="flex items-center gap-2 font-semibold text-[var(--text-primary)] group-hover:text-purple-300 transition-colors">
                   {IconComponent && <IconComponent className="w-4 h-4 text-purple-400 group-hover:text-purple-300" />}
                   {preset.label}
                 </span>
@@ -229,7 +229,7 @@ export const ThresholdSettings = ({
         <div className="bg-[var(--muted-surface)] rounded-xl p-4 border border-[var(--border)] hover:border-yellow-500/30 transition-colors">
           <div className="flex items-center gap-2 mb-3">
             <Package className="w-5 h-5 text-yellow-400" />
-            <label className="text-sm font-medium text-white">Base Stock Level</label>
+            <label className="text-sm font-medium text-[var(--text-primary)]">Base Stock Level</label>
           </div>
           <div className="flex items-center justify-between mb-2">
             <span className="text-2xl font-bold text-yellow-400">{thresholdSettings.baseStock}</span>
@@ -253,7 +253,7 @@ export const ThresholdSettings = ({
         <div className="bg-[var(--muted-surface)] rounded-xl p-4 border border-[var(--border)] hover:border-green-500/30 transition-colors">
           <div className="flex items-center gap-2 mb-3">
             <Mountain className="w-5 h-5 text-green-400" />
-            <label className="text-sm font-medium text-white">Land Multiplier</label>
+            <label className="text-sm font-medium text-[var(--text-primary)]">Land Multiplier</label>
           </div>
           <div className="flex items-center justify-between mb-2">
             <span className="text-2xl font-bold text-green-400">{thresholdSettings.landMultiplier}x</span>
@@ -277,7 +277,7 @@ export const ThresholdSettings = ({
         <div className="bg-[var(--muted-surface)] rounded-xl p-4 border border-[var(--border)] hover:border-blue-500/30 transition-colors">
           <div className="flex items-center gap-2 mb-3">
             <TrendingUp className="w-5 h-5 text-blue-400" />
-            <label className="text-sm font-medium text-white">Sales Buffer</label>
+            <label className="text-sm font-medium text-[var(--text-primary)]">Sales Buffer</label>
           </div>
           <div className="flex items-center justify-between mb-2">
             <span className="text-2xl font-bold text-blue-400">{thresholdSettings.velocityWeeks}</span>
@@ -356,7 +356,7 @@ export const ThresholdSettings = ({
         </h4>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
           <div className="bg-[var(--muted-surface)] rounded-lg p-2">
-            <p className="text-xl font-bold text-white">{summaryStats.total}</p>
+            <p className="text-xl font-bold text-[var(--text-primary)]">{summaryStats.total}</p>
             <p className="text-xs text-[var(--text-muted)]">Total Items</p>
           </div>
           <div className="bg-[var(--muted-surface)] rounded-lg p-2">
@@ -417,7 +417,7 @@ export const ThresholdSettings = ({
         <button
           onClick={handleApplySmartThresholds}
           disabled={applying}
-          className="flex-1 px-4 py-3 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 disabled:from-slate-600 disabled:to-slate-700 text-white font-semibold rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-purple-500/30 hover:scale-[1.02] active:scale-[0.98] disabled:hover:scale-100"
+          className="flex-1 px-4 py-3 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 disabled:from-slate-600 disabled:to-slate-700 text-[var(--bda-primary-foreground)] font-semibold rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-purple-500/30 hover:scale-[1.02] active:scale-[0.98] disabled:hover:scale-100"
         >
           {applying ? (
             <span className="flex items-center justify-center gap-2">
@@ -448,7 +448,7 @@ export const ThresholdSettings = ({
         <div className="flex items-start gap-3">
           <HelpCircle className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
           <div>
-            <h4 className="font-semibold text-blue-300 mb-1">How Threshold Calculation Works</h4>
+            <h4 className="font-semibold text-[var(--text-primary)] mb-1">How Threshold Calculation Works</h4>
             <ul className="text-sm text-[var(--text-muted)] space-y-1">
               <li>• <strong className="text-[var(--text-muted)]">Basic Lands</strong> use Base Stock × Land Multiplier for high-demand staples</li>
               <li>• <strong className="text-[var(--text-muted)]">Fast Sellers</strong> calculate threshold based on weekly sales velocity × buffer weeks</li>

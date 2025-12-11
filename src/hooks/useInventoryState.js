@@ -17,7 +17,7 @@ export function useInventoryState({
   const [createdFolders, setCreatedFolders] = useState([]);
   const [selectedFolder, setSelectedFolder] = useState(null);
   const [activeTab, setActiveTab] = useState('all');
-  const [viewMode, setViewMode] = useState('card');
+  const [viewMode, setViewMode] = useState('image');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [deckInstances, setDeckInstances] = useState([]);
   const [openDecks, setOpenDecks] = useState([]);

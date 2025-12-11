@@ -166,12 +166,12 @@ export const TrendChart = memo(function TrendChart({
 
   // Color configurations
   const colors = {
-    teal: { stroke: '#14b8a6', fill: 'rgba(20, 184, 166, 0.1)', dot: '#14b8a6' },
-    blue: { stroke: '#3b82f6', fill: 'rgba(59, 130, 246, 0.1)', dot: '#3b82f6' },
-    purple: { stroke: '#a855f7', fill: 'rgba(168, 85, 247, 0.1)', dot: '#a855f7' },
-    amber: { stroke: '#f59e0b', fill: 'rgba(245, 158, 11, 0.1)', dot: '#f59e0b' },
-    emerald: { stroke: '#10b981', fill: 'rgba(16, 185, 129, 0.1)', dot: '#10b981' },
-    red: { stroke: '#ef4444', fill: 'rgba(239, 68, 68, 0.1)', dot: '#ef4444' },
+    teal: { stroke: 'var(--chart-teal)', fill: 'var(--chart-teal-fill)', dot: 'var(--chart-teal)' },
+    blue: { stroke: 'var(--chart-blue)', fill: 'var(--chart-blue-fill)', dot: 'var(--chart-blue)' },
+    purple: { stroke: 'var(--chart-purple)', fill: 'var(--chart-purple-fill)', dot: 'var(--chart-purple)' },
+    amber: { stroke: 'var(--chart-amber)', fill: 'var(--chart-amber-fill)', dot: 'var(--chart-amber)' },
+    emerald: { stroke: 'var(--chart-emerald)', fill: 'var(--chart-emerald-fill)', dot: 'var(--chart-emerald)' },
+    red: { stroke: 'var(--chart-red)', fill: 'var(--chart-red-fill)', dot: 'var(--chart-red)' },
   };
 
   const colorConfig = colors[color] || colors.teal;
@@ -279,8 +279,8 @@ export const TrendChart = memo(function TrendChart({
           {showArea && pathData.area && (
             <path
               d={pathData.area}
-              fill={colorConfig.fill}
               className={animate ? 'animate-fade-in' : ''}
+              style={{ fill: colorConfig.fill }}
             />
           )}
 
@@ -315,8 +315,8 @@ export const TrendChart = memo(function TrendChart({
                 cx={point.x}
                 cy={point.y}
                 r={hoveredIndex === index ? 5 : 3}
-                fill={colorConfig.dot}
                 className="transition-all duration-150"
+                style={{ fill: colorConfig.dot }}
               />
             </g>
           ))}

@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 
 const ThemeContext = createContext();
 
-const THEMES = ['dark', 'light', 'parchment'];
+const THEMES = ['dark', 'parchment'];
 const THEME_STORAGE_KEY = 'bigdeck-theme';
 const LEGACY_STORAGE_KEY = 'theme';
 
@@ -17,7 +17,7 @@ export const ThemeProvider = ({ children }) => {
         }
       }
       if (saved && THEMES.includes(saved)) return saved;
-      return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'parchment';
     } catch (e) {
       return 'dark';
     }

@@ -10,12 +10,12 @@ import PropTypes from 'prop-types';
  * MTG color configurations
  */
 const MTG_COLORS = {
-  W: { name: 'White', color: '#F9FAF4', dark: '#F8E7B9', textColor: '#1a1a1a' },
-  U: { name: 'Blue', color: '#0E68AB', dark: '#0A4E82', textColor: '#ffffff' },
-  B: { name: 'Black', color: '#150B00', dark: '#2D2D2D', textColor: '#ffffff' },
-  R: { name: 'Red', color: '#D3202A', dark: '#A31A22', textColor: '#ffffff' },
-  G: { name: 'Green', color: '#00733E', dark: '#005C32', textColor: '#ffffff' },
-  C: { name: 'Colorless', color: '#9CA3AF', dark: '#6B7280', textColor: '#1a1a1a' },
+  W: { name: 'White', color: 'var(--mtg-W)', dark: 'var(--mtg-W-dark)', textColor: 'var(--mtg-W-text)' },
+  U: { name: 'Blue', color: 'var(--mtg-U)', dark: 'var(--mtg-U-dark)', textColor: 'var(--mtg-U-text)' },
+  B: { name: 'Black', color: 'var(--mtg-B)', dark: 'var(--mtg-B-dark)', textColor: 'var(--mtg-B-text)' },
+  R: { name: 'Red', color: 'var(--mtg-R)', dark: 'var(--mtg-R-dark)', textColor: 'var(--mtg-R-text)' },
+  G: { name: 'Green', color: 'var(--mtg-G)', dark: 'var(--mtg-G-dark)', textColor: 'var(--mtg-G-text)' },
+  C: { name: 'Colorless', color: 'var(--mtg-C)', dark: 'var(--mtg-C-dark)', textColor: 'var(--mtg-C-text)' },
 };
 
 /**
@@ -62,11 +62,11 @@ const PieSegment = memo(function PieSegment({
   return (
     <path
       d={path}
-      fill={config.color}
-      stroke="#1e293b"
+      stroke="var(--bda-border)"
       strokeWidth="1"
       className="transition-all duration-200 cursor-pointer"
       style={{
+        fill: config.color,
         filter: isHovered ? `drop-shadow(0 0 8px ${config.color})` : undefined,
       }}
       onMouseEnter={() => onHover?.(color)}

@@ -36,23 +36,7 @@
   --card-hover: rgba(255, 255, 255, 0.04);
 }
 
-.theme-light {
-  --bda-bg: #F6F1E8;
-  --bda-surface: #FFF9F2;
-  --bda-card: rgba(255, 249, 242, 0.95);
-  --bda-text: #172126;
-  --bda-heading: #0f172a;
-  --bda-muted: #4A453F;
-  --bda-border: rgba(23,33,38,0.12);
-  --bda-primary: #14B8A6;
-  --bda-primary-foreground: #FFFFFF;
-  --bda-accent: #14B8A6;
-  --bda-ring: 0 0 0 3px rgba(20, 184, 166, 0.15);
-  
-  --header-bg: rgba(255, 249, 242, 0.95);
-  --input-bg: #F1E9E1;
-  --card-hover: rgba(23, 33, 38, 0.06);
-}
+
 
 .theme-parchment {
   --bda-bg: #F5F0E1;

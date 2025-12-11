@@ -54,7 +54,7 @@ export const InventoryTab = ({
   
   // UI State
   const [activeTab, setActiveTab] = useState('all');
-  const [viewMode, setViewMode] = useState('card');
+  const [viewMode, setViewMode] = useState('image');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [draggedTabData, setDraggedTabData] = useState(null);
   const [inventorySearch, setInventorySearch] = useState('');

@@ -10,7 +10,7 @@
 
 /* Let app container be transparent so body provides unified page background */
 .theme-dark .app-container, .theme-dark .page-wrapper { background: transparent; }
-.theme-light .app-container, .theme-light .page-wrapper { background: transparent; }
+.theme-parchment .app-container, .theme-parchment .page-wrapper { background: transparent; }
 .theme-parchment .app-container, .theme-parchment .page-wrapper { background: transparent; }
 
 /* Basic wiring */
@@ -269,7 +269,7 @@ body {
 /* Missing cards list scrollbar - more visible */
 .missing-cards-scroll {
   scrollbar-width: auto;
-  scrollbar-color: #ef4444 #334155;
+  scrollbar-color: var(--danger) var(--bda-surface);
 }
 
 .missing-cards-scroll::-webkit-scrollbar {
@@ -277,18 +277,18 @@ body {
 }
 
 .missing-cards-scroll::-webkit-scrollbar-track {
-  background: #334155;
+  background: var(--bda-surface);
   border-radius: 8px;
 }
 
 .missing-cards-scroll::-webkit-scrollbar-thumb {
-  background: linear-gradient(to bottom, #ef4444, #dc2626);
+  background: linear-gradient(to bottom, var(--danger), var(--danger));
   border-radius: 8px;
-  border: 2px solid #334155;
+  border: 2px solid var(--bda-surface);
 }
 
 .missing-cards-scroll::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(to bottom, #f87171, #ef4444);
+  background: linear-gradient(to bottom, var(--danger), var(--danger));
 }
 
 /* Utility classes */
@@ -658,13 +658,13 @@ body {
   appearance: none;
   height: 8px;
   border-radius: 4px;
-  background: linear-gradient(to right, #334155, #475569);
+  background: linear-gradient(to right, var(--slider-track-start), var(--slider-track-end));
   outline: none;
   transition: all 0.2s ease;
 }
 
 .threshold-slider:hover {
-  background: linear-gradient(to right, #3b4a5a, #5a6a7a);
+  background: linear-gradient(to right, var(--slider-track-hover-start), var(--slider-track-hover-end));
 }
 
 .threshold-slider::-webkit-slider-thumb {
@@ -703,11 +703,11 @@ body {
 
 /* Yellow variant (Base Stock) */
 .threshold-slider-yellow::-webkit-slider-thumb {
-  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  background: linear-gradient(135deg, var(--thumb-yellow-start), var(--thumb-yellow-end));
 }
 
 .threshold-slider-yellow::-moz-range-thumb {
-  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  background: linear-gradient(135deg, var(--thumb-yellow-start), var(--thumb-yellow-end));
 }
 
 .threshold-slider-yellow:focus::-webkit-slider-thumb {
@@ -720,11 +720,11 @@ body {
 
 /* Green variant (Land Multiplier) */
 .threshold-slider-green::-webkit-slider-thumb {
-  background: linear-gradient(135deg, #4ade80, #22c55e);
+  background: linear-gradient(135deg, var(--thumb-green-start), var(--thumb-green-end));
 }
 
 .threshold-slider-green::-moz-range-thumb {
-  background: linear-gradient(135deg, #4ade80, #22c55e);
+  background: linear-gradient(135deg, var(--thumb-green-start), var(--thumb-green-end));
 }
 
 .threshold-slider-green:focus::-webkit-slider-thumb {
@@ -737,11 +737,11 @@ body {
 
 /* Blue variant (Sales Buffer) */
 .threshold-slider-blue::-webkit-slider-thumb {
-  background: linear-gradient(135deg, #60a5fa, #3b82f6);
+  background: linear-gradient(135deg, var(--thumb-blue-start), var(--thumb-blue-end));
 }
 
 .threshold-slider-blue::-moz-range-thumb {
-  background: linear-gradient(135deg, #60a5fa, #3b82f6);
+  background: linear-gradient(135deg, var(--thumb-blue-start), var(--thumb-blue-end));
 }
 
 .threshold-slider-blue:focus::-webkit-slider-thumb {

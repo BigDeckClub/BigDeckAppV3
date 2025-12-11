@@ -161,7 +161,7 @@ export const PresetManager = ({
     <div className="bg-[var(--surface)] rounded-lg border border-[var(--border)] p-6">
       <div className="flex items-center gap-3 mb-6">
         <Zap className="w-6 h-6 text-teal-400" />
-        <h2 className="text-xl font-bold text-slate-100">Threshold Presets</h2>
+        <h2 className="text-xl font-bold text-[var(--text-primary)]">Threshold Presets</h2>
       </div>
       
       {/* Success/Error Message */}
@@ -177,7 +177,7 @@ export const PresetManager = ({
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="w-full bg-[var(--muted-surface)] border border-[var(--border)] rounded px-3 py-2 text-white focus:outline-none focus:border-teal-500"
+            className="w-full bg-[var(--muted-surface)] border border-[var(--border)] rounded px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:border-teal-500"
           >
             {Object.entries(THRESHOLD_PRESETS).map(([cat, preset]) => (
               <option key={cat} value={cat}>
@@ -247,7 +247,7 @@ export const PresetManager = ({
             onClick={() => setPresetMode('single')}
             className={`flex-1 px-3 py-2 rounded text-sm font-semibold transition-colors ${
               presetMode === 'single'
-                ? 'bg-teal-600 text-white'
+                ? 'bg-teal-600 text-[var(--bda-primary-foreground)]'
                 : 'bg-[var(--muted-surface)] text-[var(--text-muted)] hover:bg-slate-600'
             }`}
           >
@@ -257,7 +257,7 @@ export const PresetManager = ({
             onClick={() => setPresetMode('bulk')}
             className={`flex-1 px-3 py-2 rounded text-sm font-semibold transition-colors ${
               presetMode === 'bulk'
-                ? 'bg-teal-600 text-white'
+                ? 'bg-teal-600 text-[var(--bda-primary-foreground)]'
                 : 'bg-[var(--muted-surface)] text-[var(--text-muted)] hover:bg-slate-600'
             }`}
           >
@@ -268,7 +268,7 @@ export const PresetManager = ({
         <button
           onClick={handleApplyPreset}
           disabled={saving || (presetMode === 'single' && selectedCards.length === 0)}
-          className="w-full px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full px-4 py-2 bg-teal-600 hover:bg-teal-700 text-[var(--bda-primary-foreground)] rounded font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {saving ? 'Applying...' : `Apply ${selectedCategory} Preset`}
         </button>

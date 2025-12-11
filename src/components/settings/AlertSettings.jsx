@@ -161,7 +161,7 @@ export const AlertSettings = ({ inventory = [] }) => {
     <div className="bg-[var(--surface)] rounded-lg border border-[var(--border)] p-6">
       <div className="flex items-center gap-3 mb-6">
         <Bell className="w-6 h-6 text-yellow-400" />
-        <h2 className="text-xl font-bold text-slate-100">Low Inventory Alerts</h2>
+        <h2 className="text-xl font-bold text-[var(--text-primary)]">Low Inventory Alerts</h2>
       </div>
 
       {/* Success/Error Message */}
@@ -214,7 +214,7 @@ export const AlertSettings = ({ inventory = [] }) => {
         <div className="space-y-4">
           {Object.entries(cardsWithAlerts).map(([cardName, items]) => (
             <div key={cardName} className="bg-[var(--muted-surface)] rounded-lg p-4 border border-[var(--border)]">
-              <h3 className="font-semibold text-slate-100 mb-3">{cardName}</h3>
+              <h3 className="font-semibold text-[var(--text-primary)] mb-3">{cardName}</h3>
               <div className="space-y-2">
                 {items.map(item => (
                   <div key={item.id}>
@@ -264,7 +264,7 @@ export const AlertSettings = ({ inventory = [] }) => {
                             }
                           }}
                           disabled={saving[item.id]}
-                          className="w-16 bg-slate-600 border border-slate-500 rounded px-2 py-1 text-white text-sm text-center focus:outline-none focus:border-teal-500"
+                          className="w-16 bg-slate-600 border border-slate-500 rounded px-2 py-1 text-[var(--text-primary)] text-sm text-center focus:outline-none focus:border-teal-500"
                         />
                       </div>
                       <button
@@ -309,7 +309,7 @@ export const AlertSettings = ({ inventory = [] }) => {
 
       {/* Settings Info */}
       <div className="bg-[var(--muted-surface)] rounded-lg border border-[var(--border)] p-4 mt-6">
-        <h3 className="font-semibold text-slate-100 mb-2">How to Use Low Inventory Alerts</h3>
+        <h3 className="font-semibold text-[var(--text-primary)] mb-2">How to Use Low Inventory Alerts</h3>
         <ul className="text-sm text-[var(--text-muted)] space-y-2 list-disc list-inside">
           <li>Go to the <strong>Inventory</strong> tab and click the bell icon on any card SKU</li>
           <li>Set a quantity threshold (e.g., 2, 5, 10) for when you want to be alerted</li>
