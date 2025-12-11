@@ -20,19 +20,19 @@ describe('Button Component', () => {
   it('applies primary variant by default', () => {
     render(<Button>Primary</Button>);
     const button = screen.getByRole('button');
-    expect(button).toHaveClass('from-teal-500');
+    expect(button).toHaveClass('bg-ui-primary');
   });
 
   it('applies secondary variant', () => {
     render(<Button variant="secondary">Secondary</Button>);
     const button = screen.getByRole('button');
-    expect(button).toHaveClass('from-slate-700');
+    expect(button).toHaveClass('bg-ui-card');
   });
 
   it('applies danger variant', () => {
     render(<Button variant="danger">Delete</Button>);
     const button = screen.getByRole('button');
-    expect(button).toHaveClass('from-red-600');
+    expect(button).toHaveClass('bg-mtg-R');
   });
 
   it('shows loading spinner when loading', () => {
@@ -172,13 +172,16 @@ describe('Alert Component', () => {
   it('applies success variant styles', () => {
     render(<Alert variant="success">Success!</Alert>);
     const alert = screen.getByRole('alert');
-    expect(alert).toHaveClass('from-green-900/70');
+    // icon should use green tone for success
+    const icon = alert.querySelector('svg');
+    expect(icon.className.baseVal || icon.className).toContain('text-green-400');
   });
 
   it('applies error variant styles', () => {
     render(<Alert variant="error">Error!</Alert>);
     const alert = screen.getByRole('alert');
-    expect(alert).toHaveClass('from-red-900/70');
+    const icon = alert.querySelector('svg');
+    expect(icon.className.baseVal || icon.className).toContain('text-red-400');
   });
 });
 
@@ -190,13 +193,16 @@ describe('Badge Component', () => {
 
   it('applies different variants', () => {
     const { rerender } = render(<Badge variant="success">Success</Badge>);
-    expect(screen.getByText('Success')).toHaveClass('from-green-900/70');
+    const successBadge = screen.getByText('Success');
+    expect(successBadge).toHaveClass('text-green-100');
 
     rerender(<Badge variant="danger">Danger</Badge>);
-    expect(screen.getByText('Danger')).toHaveClass('from-red-900/70');
+    const dangerBadge = screen.getByText('Danger');
+    expect(dangerBadge).toHaveClass('text-red-100');
 
     rerender(<Badge variant="mythic">Mythic</Badge>);
-    expect(screen.getByText('Mythic')).toHaveClass('from-orange-600/70');
+    const mythicBadge = screen.getByText('Mythic');
+    expect(mythicBadge).toHaveClass('text-orange-100');
   });
 
   it('applies size classes', () => {
@@ -286,12 +292,12 @@ describe('Card Component', () => {
   it('applies hoverable class when prop is true', () => {
     const { container } = render(<Card hoverable>Content</Card>);
     const card = container.firstChild;
-    expect(card.className).toContain('hover:shadow-teal-500/30');
+    expect(card.className).toContain('hover:border-ui-primary');
   });
 
   it('applies different variants', () => {
     const { container, rerender } = render(<Card variant="compact">Compact</Card>);
-    expect(container.firstChild.className).toContain('rounded-xl');
+    expect(container.firstChild.className).toContain('rounded-md');
 
     rerender(<Card variant="stat">Stat</Card>);
     expect(container.firstChild.className).toContain('hover:shadow-lg');

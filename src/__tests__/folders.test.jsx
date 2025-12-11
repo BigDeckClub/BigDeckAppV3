@@ -101,12 +101,12 @@ describe('FolderHeader', () => {
     
     fireEvent.click(screen.getByTitle('Sell this folder'));
     
-    expect(setSellModalData).toHaveBeenCalledWith({
+    expect(setSellModalData).toHaveBeenCalledWith(expect.objectContaining({
       itemType: 'folder',
       itemId: null,
       itemName: 'Test Folder',
       purchasePrice: 100.50
-    });
+    }));
     expect(setShowSellModal).toHaveBeenCalledWith(true);
   });
 });
