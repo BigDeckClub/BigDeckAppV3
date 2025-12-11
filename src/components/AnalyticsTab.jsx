@@ -230,18 +230,18 @@ export const AnalyticsTab = ({ inventory }) => {
 
       {/* Cards by Folder */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <div className="bg-[var(--surface)] border border-[var(--border)] rounded-lg p-4">
-          <h3 className="text-lg font-semibold text-slate-100 mb-4 flex items-center gap-2">
-            <Package className="w-4 h-4 text-teal-300" />
+        <div className="bg-[var(--bda-surface)] border border-[var(--bda-border)] rounded-lg p-4">
+          <h3 className="text-lg font-semibold text-[var(--bda-heading)] mb-4 flex items-center gap-2">
+            <Package className="w-4 h-4 text-[var(--bda-primary)]" />
             By Folder
           </h3>
           <div className="space-y-2">
             {Object.entries(byFolder).map(([folder, data]) => (
-              <div key={folder} className="flex justify-between items-center text-sm p-2 bg-[var(--muted-surface)] rounded">
-                <span className="text-[var(--text-muted)]">{folder}</span>
+              <div key={folder} className="flex justify-between items-center text-sm p-2 bg-[var(--input-bg)] rounded">
+                <span className="text-[var(--bda-muted)]">{folder}</span>
                 <div className="flex gap-3">
-                  <span className="text-teal-300 font-semibold">{data.count} cards</span>
-                  <span className="text-amber-300">${data.value.toFixed(2)}</span>
+                  <span className="text-[var(--bda-primary)] font-semibold">{data.count} cards</span>
+                  <span className="text-[var(--bda-text)]">${data.value.toFixed(2)}</span>
                 </div>
               </div>
             ))}
@@ -249,16 +249,16 @@ export const AnalyticsTab = ({ inventory }) => {
         </div>
 
         {/* Top Cards */}
-        <div className="bg-[var(--surface)] border border-[var(--border)] rounded-lg p-4">
-          <h3 className="text-lg font-semibold text-slate-100 mb-4 flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-green-300" />
+        <div className="bg-[var(--bda-surface)] border border-[var(--bda-border)] rounded-lg p-4">
+          <h3 className="text-lg font-semibold text-[var(--bda-heading)] mb-4 flex items-center gap-2">
+            <TrendingUp className="w-4 h-4 text-[var(--bda-primary)]" />
             Top 5 Valuable
           </h3>
           <div className="space-y-2">
             {topCards.map((card, idx) => (
-              <div key={card.id} className="flex justify-between items-center text-sm p-2 bg-[var(--muted-surface)] rounded">
-                <span className="text-[var(--text-muted)]">{idx + 1}. {card.name}</span>
-                <div className="text-amber-300 font-semibold">${((card.quantity || 0) * (parseFloat(card.purchase_price) || 0)).toFixed(2)}</div>
+              <div key={card.id} className="flex justify-between items-center text-sm p-2 bg-[var(--input-bg)] rounded">
+                <span className="text-[var(--bda-muted)]">{idx + 1}. {card.name}</span>
+                <div className="text-[var(--bda-text)] font-semibold">${((card.quantity || 0) * (parseFloat(card.purchase_price) || 0)).toFixed(2)}</div>
               </div>
             ))}
           </div>
@@ -266,18 +266,18 @@ export const AnalyticsTab = ({ inventory }) => {
       </div>
 
       {/* Value by Set */}
-      <div className="bg-[var(--surface)] border border-[var(--border)] rounded-lg p-4">
-        <h3 className="text-lg font-semibold text-slate-100 mb-4 flex items-center gap-2">
-          <DollarSign className="w-4 h-4 text-blue-300" />
+      <div className="bg-[var(--bda-surface)] border border-[var(--bda-border)] rounded-lg p-4">
+        <h3 className="text-lg font-semibold text-[var(--bda-heading)] mb-4 flex items-center gap-2">
+          <DollarSign className="w-4 h-4 text-[var(--bda-primary)]" />
           Value by Set
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
           {Object.entries(bySet)
             .sort((a, b) => b[1].value - a[1].value)
             .map(([set, data]) => (
-              <div key={set} className="p-2 bg-[var(--muted-surface)] rounded text-sm">
-                <div className="font-semibold text-slate-100">{set}</div>
-                <div className="text-xs text-[var(--text-muted)]">{data.count} cards • ${data.value.toFixed(2)}</div>
+              <div key={set} className="p-2 bg-[var(--input-bg)] rounded text-sm">
+                <div className="font-semibold text-[var(--bda-heading)]">{set}</div>
+                <div className="text-xs text-[var(--bda-muted)]">{data.count} cards • ${data.value.toFixed(2)}</div>
               </div>
             ))}
         </div>

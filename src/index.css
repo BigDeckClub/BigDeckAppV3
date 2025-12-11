@@ -239,22 +239,27 @@ body {
 
 /* Scrollbar styling */
 ::-webkit-scrollbar {
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-transparent;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-gradient-to-b from-teal-600 to-cyan-600 rounded-lg hover:from-teal-500 hover:to-cyan-500 shadow-lg transition-colors;
+  background: var(--bda-muted);
+  border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--bda-primary);
 }
 
 /* Firefox scrollbar */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #0d9488 transparent;
+  scrollbar-color: var(--bda-muted) transparent;
 }
 
 /* Missing cards list scrollbar - more visible */
@@ -318,7 +323,7 @@ body {
 
 .close-btn:hover {
   color: var(--bda-primary);
-  background: rgba(20, 184, 166, 0.1);
+  background: var(--card-hover);
 }
 
 .close-btn:active {
