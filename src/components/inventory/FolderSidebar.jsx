@@ -37,11 +37,11 @@ export const FolderSidebar = memo(function FolderSidebar({
 }) {
   const { confirm } = useConfirm();
   return (
-    <div className={`fixed md:static left-0 w-64 flex-shrink-0 space-y-4 h-full overflow-y-auto bg-slate-900 md:bg-transparent z-30 transition-transform duration-300 md:px-0 px-4 md:pl-8 md:pt-16 pt-20 ${
+    <div className={`fixed md:static left-0 w-64 flex-shrink-0 space-y-4 h-full overflow-y-auto bg-surface md:bg-transparent z-30 transition-transform duration-300 md:px-0 px-4 md:pl-8 md:pt-16 pt-20 ${
       sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
     }`}>
       {/* Folder List */}
-      <div className="rounded-lg p-4 border-2 border-teal-500/40 bg-gradient-to-br from-slate-800/60 to-slate-900/40 space-y-3 max-h-[calc(100vh-220px)] overflow-y-auto scrollbar-thumb-rounded shadow-xl shadow-slate-900/50">
+      <div className="rounded-lg p-4 border-2 border-[var(--accent)] bg-surface space-y-3 max-h-[calc(100vh-220px)] overflow-y-auto scrollbar-thumb-rounded shadow-xl shadow-slate-900/50">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-semibold text-teal-300 flex items-center gap-1.5">
             <Folder className="w-4 h-4" />
@@ -170,8 +170,8 @@ export const FolderSidebar = memo(function FolderSidebar({
                 }}
                 className={`w-full text-left p-3 rounded-t-lg transition-colors flex-1 ${
                   isSelected
-                    ? 'bg-teal-600/40 border-l-4 border-teal-400'
-                    : 'bg-slate-800 border-l-4 border-transparent hover:bg-slate-700'
+                    ? 'bg-surface border-l-4 border-[var(--accent)]'
+                    : 'bg-surface border-l-4 border-transparent hover:bg-[var(--muted-surface)]'
                 }`}
               >
                 <div className="font-medium text-sm text-slate-100">Unsorted</div>
@@ -237,8 +237,8 @@ export const FolderSidebar = memo(function FolderSidebar({
                 }}
                 className={`w-full text-left p-3 rounded-t-lg transition-colors flex-1 ${
                   isSelected
-                    ? 'bg-teal-600/40 border-l-4 border-teal-400'
-                    : 'bg-slate-800 border-l-4 border-transparent hover:bg-slate-700'
+                    ? 'bg-surface border-l-4 border-[var(--accent)]'
+                    : 'bg-surface border-l-4 border-transparent hover:bg-[var(--muted-surface)]'
                 }`}
               >
                 <div className="font-medium text-sm text-slate-100">{folderName}</div>
@@ -296,7 +296,7 @@ export const FolderSidebar = memo(function FolderSidebar({
                   }}
                   className={`w-full text-left p-3 rounded-lg transition-all duration-300 border-l-4 ${
                     isSelected
-                      ? 'bg-gradient-to-r from-teal-600/50 to-cyan-600/30 border-l-teal-400 shadow-md shadow-teal-500/10'
+                      ? 'bg-surface border-l-4 border-[var(--accent)] shadow-md shadow-[var(--accent)]/10'
                       : 'bg-gradient-to-r from-slate-700/50 to-slate-800/50 border-l-transparent hover:from-slate-600/50 hover:to-slate-700/50 hover:shadow-md hover:shadow-slate-600/20'
                   }`}
                 >
