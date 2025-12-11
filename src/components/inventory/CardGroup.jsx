@@ -241,7 +241,7 @@ export const CardGroup = memo(function CardGroup({
         }}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        className={`relative ${allItemsSelected ? 'border-ui-primary ring-2 ring-ui-primary shadow-lg' : 'border border-ui-border hover:border-ui-primary'} bg-ui-card rounded-lg p-3 md:p-4 transition-all duration-300 flex flex-col h-32 sm:h-36 md:h-40 hover:shadow-2xl hover:-translate-y-1 cursor-grab active:cursor-grabbing group active:scale-95`}
+        className={`relative ${allItemsSelected ? 'border-ui-primary ring-2 ring-ui-primary shadow-lg' : 'border border-ui-border hover:border-ui-primary'} surface rounded-lg p-3 md:p-4 transition-all duration-300 flex flex-col h-32 sm:h-36 md:h-40 hover:shadow-2xl hover:-translate-y-1 cursor-grab active:cursor-grabbing group active:scale-95`}
         onClick={handleOpenModal}
       >
         {/* Selection Checkbox (when selection mode enabled) */}
@@ -293,7 +293,7 @@ export const CardGroup = memo(function CardGroup({
           <X className="w-5 h-5" />
         </button>
         <div className="text-center px-1 cursor-pointer flex items-center justify-center gap-1 mb-1">
-          <h3 className={`text-xs md:text-sm font-semibold ${isTrashView ? 'text-ui-accent' : 'text-ui-text'} line-clamp-2 break-words flex-1`}>
+          <h3 style={{ color: isTrashView ? 'var(--accent)' : 'var(--text-primary)' }} className="text-xs md:text-sm font-semibold line-clamp-2 break-words flex-1">
             {cardName.split('//')[0].trim()}
           </h3>
         </div>
@@ -301,7 +301,7 @@ export const CardGroup = memo(function CardGroup({
         <div className="flex-1 flex items-center justify-center min-h-0 py-2">
           <div className="text-center">
             <div className={`${isTrashView ? 'text-ui-accent' : 'text-ui-muted'} text-[9px] md:text-xs font-semibold uppercase tracking-wider mb-1`}>{isTrashView ? 'In Trash' : 'Available'}</div>
-            <div className={`text-2xl md:text-3xl font-bold ${isTrashView ? 'text-ui-accent' : 'text-ui-primary'} leading-tight`}>{available}</div>
+            <div style={{ color: isTrashView ? 'var(--accent)' : 'var(--text-primary)' }} className="text-2xl md:text-3xl font-bold leading-tight">{available}</div>
           </div>
         </div>
         

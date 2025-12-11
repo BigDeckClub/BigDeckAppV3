@@ -64,7 +64,7 @@ export function DeckCard({
   return (
     <>
     <div
-      className="relative overflow-hidden bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 hover:border-teal-500 rounded-lg p-4 pt-6 cursor-pointer transition-all hover:shadow-lg hover:shadow-teal-500/20"
+      className="relative overflow-hidden surface border border-[var(--border)] rounded-lg p-4 pt-6 cursor-pointer transition-all hover:shadow-card"
       onClick={() => onSelect(deck)}
     >
       {/* Absolute top gradient strip - ensure parent is relative + overflow-hidden */}
@@ -77,8 +77,8 @@ export function DeckCard({
       />
       <div className="flex justify-between items-start mb-3">
         <div className="flex-1 min-w-0">
-          <h3 className="text-lg font-bold text-teal-300 break-words">{deck.name}</h3>
-          <p className="text-xs text-slate-400 mt-1">{deck.format}</p>
+          <h3 style={{ color: 'var(--text-primary)' }} className="text-lg font-bold break-words">{deck.name}</h3>
+          <p style={{ color: 'var(--text-muted)' }} className="text-xs mt-1">{deck.format}</p>
         </div>
         <div className="flex gap-2 flex-shrink-0 ml-2">
           <button

@@ -152,7 +152,7 @@ export function RapidEntryRow({
             }}
             onKeyDown={(e) => handleKeyDown(e, rowIndex, 'qty')}
             disabled={row.status === 'added'}
-            className="w-full bg-slate-900/50 border border-slate-600 rounded px-2 py-2 text-sm text-white text-center focus:outline-none focus:ring-1 focus:ring-teal-400 disabled:opacity-50"
+            className="w-full bg-[var(--muted-surface)] border border-[var(--border)] rounded px-2 py-2 text-sm text-[var(--text-primary)] text-center focus:outline-none focus:ring-2 focus:ring-[var(--accent-600)] disabled:opacity-50"
           />
         </div>
 
@@ -170,7 +170,7 @@ export function RapidEntryRow({
               onChange={(e) => updateRowField(rowIndex, 'price', e.target.value)}
               onKeyDown={(e) => handleKeyDown(e, rowIndex, 'price')}
               disabled={row.status === 'added' || lotModeEnabled}
-              className={`w-full bg-slate-900/50 border border-slate-600 rounded pl-5 pr-2 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-teal-400 disabled:opacity-50 ${lotModeEnabled ? 'cursor-not-allowed' : ''}`}
+              className={`w-full bg-[var(--muted-surface)] border border-[var(--border)] rounded pl-5 pr-2 py-2 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-600)] disabled:opacity-50 ${lotModeEnabled ? 'cursor-not-allowed' : ''}`}
               title={lotModeEnabled ? 'Price is calculated from lot total' : ''}
             />
           </div>
@@ -240,8 +240,8 @@ export function RapidEntryRow({
               onClick={() => handleAddCardToInventory(rowIndex)}
               className={`p-1.5 rounded text-white transition-colors ${
                 lotModeEnabled 
-                  ? 'bg-amber-600 hover:bg-amber-500' 
-                  : 'bg-teal-600 hover:bg-teal-500'
+                  ? 'bg-[var(--warning)] hover:bg-[var(--warning)]/90' 
+                  : 'bg-[var(--accent-600)] hover:bg-[var(--accent)]'
               }`}
               title={lotModeEnabled ? "Add to lot (Shift+Enter)" : "Add to inventory (Shift+Enter)"}
             >
