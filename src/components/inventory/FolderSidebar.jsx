@@ -37,20 +37,20 @@ export const FolderSidebar = memo(function FolderSidebar({
 }) {
   const { confirm } = useConfirm();
   return (
-    <div className={`fixed md:static left-0 w-64 flex-shrink-0 space-y-4 h-full overflow-y-auto bg-ui-surface md:bg-transparent z-30 transition-transform duration-300 md:px-0 px-4 md:pl-8 md:pt-16 pt-20 ${
+    <div className={`fixed md:static left-0 w-64 flex-shrink-0 space-y-4 h-full overflow-y-auto bg-slate-900 md:bg-transparent z-30 transition-transform duration-300 md:px-0 px-4 md:pl-8 md:pt-16 pt-20 ${
       sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
     }`}>
       {/* Folder List */}
-      <div className="rounded-lg p-4 border border-ui-border bg-ui-card space-y-3 max-h-[calc(100vh-220px)] overflow-y-auto scrollbar-thumb-rounded shadow-xl">
+      <div className="rounded-lg p-4 border-2 border-teal-500/40 bg-gradient-to-br from-slate-800/60 to-slate-900/40 space-y-3 max-h-[calc(100vh-220px)] overflow-y-auto scrollbar-thumb-rounded shadow-xl shadow-slate-900/50">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-ui-primary flex items-center gap-1.5">
+          <h3 className="text-sm font-semibold text-teal-300 flex items-center gap-1.5">
             <Folder className="w-4 h-4" />
             Folders
           </h3>
           {!showCreateFolder && (
             <button
               onClick={() => setShowCreateFolder(true)}
-              className="text-ui-primary hover:text-ui-primary-foreground transition-colors"
+              className="text-teal-300 hover:text-teal-200 transition-colors"
               title="New Folder"
             >
               <Plus className="w-4 h-4" />
@@ -59,13 +59,13 @@ export const FolderSidebar = memo(function FolderSidebar({
         </div>
 
         {showCreateFolder && (
-          <div className="flex flex-col gap-2 pb-3 border-b border-ui-border">
+          <div className="flex flex-col gap-2 pb-3 border-b border-slate-700">
             <input
               type="text"
               placeholder="Folder name"
               value={newFolderName}
               onChange={(e) => setNewFolderName(e.target.value)}
-              className="w-full bg-ui-card border border-ui-primary rounded px-3 py-2 text-ui-text placeholder-ui-muted text-sm"
+              className="w-full bg-slate-800 border border-teal-600 rounded px-3 py-2 text-white placeholder-gray-400 text-sm"
               autoFocus
               onKeyDown={async (e) => {
                 if (e.key === 'Enter' && newFolderName.trim()) {
@@ -96,7 +96,7 @@ export const FolderSidebar = memo(function FolderSidebar({
                     }
                   }
                 }}
-                className="flex-1 bg-ui-primary hover:bg-ui-primary/90 text-ui-primary-foreground px-3 py-1 rounded text-xs font-semibold transition-colors"
+                className="flex-1 bg-teal-600 hover:bg-teal-700 text-white px-3 py-1 rounded text-xs font-semibold transition-colors"
               >
                 Create
               </button>
@@ -105,7 +105,7 @@ export const FolderSidebar = memo(function FolderSidebar({
                   setNewFolderName('');
                   setShowCreateFolder(false);
                 }}
-                className="bg-ui-surface hover:bg-ui-surface/90 text-ui-text px-2 py-1 rounded text-xs transition-colors"
+                className="bg-slate-700 hover:bg-slate-600 text-white px-2 py-1 rounded text-xs transition-colors"
               >
                 <X className="w-3 h-3" />
               </button>
@@ -146,15 +146,15 @@ export const FolderSidebar = memo(function FolderSidebar({
                 }}
                 onDragOver={(e) => {
                   e.preventDefault();
-                  e.currentTarget.classList.add('bg-ui-primary/60', 'border-ui-primary');
+                  e.currentTarget.classList.add('bg-teal-700/60', 'border-teal-300');
                 }}
                 onDragLeave={(e) => {
-                  e.currentTarget.classList.remove('bg-ui-primary/60', 'border-ui-primary');
+                  e.currentTarget.classList.remove('bg-teal-700/60', 'border-teal-300');
                 }}
                 onDrop={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  e.currentTarget.classList.remove('bg-ui-primary/60', 'border-ui-primary');
+                  e.currentTarget.classList.remove('bg-teal-700/60', 'border-teal-300');
                   const inventoryItemId = e.dataTransfer.getData('inventoryItemId');
                   const cardName = e.dataTransfer.getData('cardName');
                   const deckCardDataStr = e.dataTransfer.getData('deckCardData');
@@ -170,12 +170,12 @@ export const FolderSidebar = memo(function FolderSidebar({
                 }}
                 className={`w-full text-left p-3 rounded-t-lg transition-colors flex-1 ${
                   isSelected
-                    ? 'bg-ui-primary/40 border-l-4 border-ui-primary'
-                    : 'bg-ui-surface border-l-4 border-transparent hover:bg-ui-surface/60'
+                    ? 'bg-teal-600/40 border-l-4 border-teal-400'
+                    : 'bg-slate-800 border-l-4 border-transparent hover:bg-slate-700'
                 }`}
               >
                 <div className="font-medium text-sm text-slate-100">Unsorted</div>
-                <div className="text-xs text-ui-primary">{totalAvailableCards} available • {uniqueCards} unique {uniqueCards === 1 ? 'card' : 'cards'}</div>
+                <div className="text-xs text-teal-300">{totalAvailableCards} available • {uniqueCards} unique {uniqueCards === 1 ? 'card' : 'cards'}</div>
               </button>
             </div>
           );
@@ -213,15 +213,15 @@ export const FolderSidebar = memo(function FolderSidebar({
                 }}
                 onDragOver={(e) => {
                   e.preventDefault();
-                  e.currentTarget.classList.add('bg-ui-primary/60', 'border-ui-primary');
+                  e.currentTarget.classList.add('bg-teal-700/60', 'border-teal-300');
                 }}
                 onDragLeave={(e) => {
-                  e.currentTarget.classList.remove('bg-ui-primary/60', 'border-ui-primary');
+                  e.currentTarget.classList.remove('bg-teal-700/60', 'border-teal-300');
                 }}
                 onDrop={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  e.currentTarget.classList.remove('bg-ui-primary/60', 'border-ui-primary');
+                  e.currentTarget.classList.remove('bg-teal-700/60', 'border-teal-300');
                   const inventoryItemId = e.dataTransfer.getData('inventoryItemId');
                   const cardName = e.dataTransfer.getData('cardName');
                   const deckCardDataStr = e.dataTransfer.getData('deckCardData');
@@ -237,12 +237,12 @@ export const FolderSidebar = memo(function FolderSidebar({
                 }}
                 className={`w-full text-left p-3 rounded-t-lg transition-colors flex-1 ${
                   isSelected
-                    ? 'bg-ui-primary/40 border-l-4 border-ui-primary'
-                    : 'bg-ui-surface border-l-4 border-transparent hover:bg-ui-surface/60'
+                    ? 'bg-teal-600/40 border-l-4 border-teal-400'
+                    : 'bg-slate-800 border-l-4 border-transparent hover:bg-slate-700'
                 }`}
               >
                 <div className="font-medium text-sm text-slate-100">{folderName}</div>
-                <div className="text-xs text-ui-primary">{totalAvailableCards} available • {uniqueCards} {uniqueCards === 1 ? 'unique' : 'unique'}</div>
+                <div className="text-xs text-teal-300">{totalAvailableCards} available • {uniqueCards} {uniqueCards === 1 ? 'unique' : 'unique'}</div>
               </button>
             </div>
           );
@@ -272,15 +272,15 @@ export const FolderSidebar = memo(function FolderSidebar({
                   }}
                   onDragOver={(e) => {
                     e.preventDefault();
-                    e.currentTarget.classList.add('bg-ui-primary/60', 'border-ui-primary');
+                    e.currentTarget.classList.add('bg-teal-700/60', 'border-teal-300');
                   }}
                   onDragLeave={(e) => {
-                    e.currentTarget.classList.remove('bg-ui-primary/60', 'border-ui-primary');
+                    e.currentTarget.classList.remove('bg-teal-700/60', 'border-teal-300');
                   }}
                   onDrop={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    e.currentTarget.classList.remove('bg-ui-primary/60', 'border-ui-primary');
+                    e.currentTarget.classList.remove('bg-teal-700/60', 'border-teal-300');
                     const inventoryItemId = e.dataTransfer.getData('inventoryItemId');
                     const cardName = e.dataTransfer.getData('cardName');
                     const deckCardDataStr = e.dataTransfer.getData('deckCardData');
@@ -296,12 +296,12 @@ export const FolderSidebar = memo(function FolderSidebar({
                   }}
                   className={`w-full text-left p-3 rounded-lg transition-all duration-300 border-l-4 ${
                     isSelected
-                      ? 'bg-ui-primary/50 border-l-ui-primary shadow-md'
-                      : 'bg-ui-surface border-l-transparent hover:bg-ui-surface/60 hover:shadow-md'
+                      ? 'bg-gradient-to-r from-teal-600/50 to-cyan-600/30 border-l-teal-400 shadow-md shadow-teal-500/10'
+                      : 'bg-gradient-to-r from-slate-700/50 to-slate-800/50 border-l-transparent hover:from-slate-600/50 hover:to-slate-700/50 hover:shadow-md hover:shadow-slate-600/20'
                   }`}
                 >
                   <div className="font-medium text-sm text-slate-100">{folder}</div>
-                  <div className="text-xs text-ui-primary">{folderInStockCards.length} {folderInStockCards.length === 1 ? 'card' : 'cards'}</div>
+                  <div className="text-xs text-teal-300">{folderInStockCards.length} {folderInStockCards.length === 1 ? 'card' : 'cards'}</div>
                 </button>
               </div>
             );
@@ -339,7 +339,7 @@ export const FolderSidebar = memo(function FolderSidebar({
           };
 
           return (
-            <div key="Trash" className="mt-4 pt-4 border-t border-ui-border">
+            <div key="Trash" className="mt-4 pt-4 border-t border-slate-700">
               <button
                 onClick={() => {
                   if (isSelected) {
@@ -350,17 +350,17 @@ export const FolderSidebar = memo(function FolderSidebar({
                   }
                   setSidebarOpen(false);
                 }}
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    e.currentTarget.classList.add('bg-ui-accent/60', 'border-ui-accent');
-                  }}
-                  onDragLeave={(e) => {
-                    e.currentTarget.classList.remove('bg-ui-accent/60', 'border-ui-accent');
-                  }}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    e.currentTarget.classList.remove('bg-ui-accent/60', 'border-ui-accent');
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.currentTarget.classList.add('bg-red-700/60', 'border-red-300');
+                }}
+                onDragLeave={(e) => {
+                  e.currentTarget.classList.remove('bg-red-700/60', 'border-red-300');
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  e.currentTarget.classList.remove('bg-red-700/60', 'border-red-300');
                   const inventoryItemId = e.dataTransfer.getData('inventoryItemId');
                   const cardName = e.dataTransfer.getData('cardName');
                   const deckCardDataStr = e.dataTransfer.getData('deckCardData');
@@ -376,26 +376,26 @@ export const FolderSidebar = memo(function FolderSidebar({
                 }}
                 className={`w-full text-left p-3 rounded-lg transition-colors flex-1 ${
                   isSelected
-                    ? 'bg-ui-accent/40 border-l-4 border-ui-accent'
-                    : 'bg-ui-surface border-l-4 border-transparent hover:bg-ui-accent/20'
+                    ? 'bg-red-600/40 border-l-4 border-red-400'
+                    : 'bg-gradient-to-r from-red-900/30 to-slate-800/50 border-l-4 border-transparent hover:from-red-800/40 hover:to-slate-700/50'
                 }`}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Trash2 className="w-4 h-4 text-ui-accent" />
-                    <span className="font-medium text-sm text-ui-accent">Trash</span>
+                    <Trash2 className="w-4 h-4 text-red-400" />
+                    <span className="font-medium text-sm text-red-200">Trash</span>
                   </div>
                   {totalTrashCards > 0 && (
                     <button
                       onClick={handleEmptyTrash}
-                      className="text-xs px-2 py-1 bg-ui-accent/50 hover:bg-ui-accent text-ui-accent-foreground rounded transition-colors"
+                      className="text-xs px-2 py-1 bg-red-600/50 hover:bg-red-600 text-red-100 rounded transition-colors"
                       title="Empty Trash"
                     >
                       Empty
                     </button>
                   )}
                 </div>
-                <div className="text-xs text-ui-accent mt-1">{totalTrashCards} {totalTrashCards === 1 ? 'card' : 'cards'} • {uniqueCards} unique</div>
+                <div className="text-xs text-red-300 mt-1">{totalTrashCards} {totalTrashCards === 1 ? 'card' : 'cards'} • {uniqueCards} unique</div>
               </button>
             </div>
           );

@@ -79,32 +79,40 @@ async function getColorIdentityMap(cardNames) {
     // Cards table doesn't exist or query failed - fall through to Scryfall
   }
 
-  // For any names still not found, fetch from Scryfall
+  // For any names still not found, fetch from Scryfall in background (don't block)
   const stillMissing = uncachedNames.filter(name => !colorMap.has(name));
   if (stillMissing.length > 0) {
-    try {
-      // Build identifiers for batch resolve (name only)
-      const identifiers = stillMissing.map(name => ({ name }));
-      const resolved = await scryfallServerClient.batchResolve(identifiers);
+    // Set empty placeholders immediately so we don't block
+    for (const name of stillMissing) {
+      colorMap.set(name, []);
+    }
 
-      // Process results - batchResolve returns map keyed by `${name}|${set}`
-      for (const name of stillMissing) {
-        const key = `${name}|`;
-        const card = resolved[key];
-        const ci = card?.color_identity || [];
-        colorMap.set(name, ci);
-        colorIdentityCache.set(name, ci);
-      }
-    } catch (err) {
-      console.warn('[DECKS] Scryfall color identity lookup failed:', err.message);
-      // Set empty arrays for missing names to prevent repeated lookups
-      for (const name of stillMissing) {
-        if (!colorMap.has(name)) {
-          colorMap.set(name, []);
-          colorIdentityCache.set(name, []);
+    // Fire off Scryfall lookup in background (non-blocking)
+    // Results will be cached for next request
+    setImmediate(async () => {
+      try {
+        // Build identifiers for batch resolve (name only)
+        const identifiers = stillMissing.map(name => ({ name }));
+        const resolved = await scryfallServerClient.batchResolve(identifiers);
+
+        // Process results - batchResolve returns map keyed by `${name}|${set}`
+        for (const name of stillMissing) {
+          const key = `${name}|`;
+          const card = resolved[key];
+          const ci = card?.color_identity || [];
+          colorIdentityCache.set(name, ci);
+        }
+        console.log(`[DECKS] Cached color identity for ${stillMissing.length} cards from Scryfall`);
+      } catch (err) {
+        console.warn('[DECKS] Background Scryfall color identity lookup failed:', err.message);
+        // Set empty arrays for missing names to prevent repeated lookups
+        for (const name of stillMissing) {
+          if (!colorIdentityCache.has(name)) {
+            colorIdentityCache.set(name, []);
+          }
         }
       }
-    }
+    });
   }
 
   return colorMap;

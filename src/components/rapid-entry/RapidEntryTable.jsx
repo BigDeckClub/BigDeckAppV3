@@ -123,17 +123,12 @@ export function RapidEntryTable({
       return;
     }
     
-    // Shift+Enter to submit/add this card (and add a new row)
+    // Shift+Enter to add new row (queue card for batch submit)
     if (e.key === 'Enter' && e.shiftKey) {
       e.preventDefault();
       e.stopPropagation();
       if (row.status === 'valid' || row.selectedCard) {
-        // If lot mode is enabled, add to lot; otherwise add to inventory
-        if (lotModeEnabled) {
-          handleAddCardToLot(rowIndex);
-        } else {
-          handleAddCardToInventory(rowIndex);
-        }
+        handleAddNewRow(rowIndex);
       } else {
         // Visual feedback when Shift+Enter fails (card not selected)
         setShakeRowIndex(rowIndex);
@@ -276,11 +271,11 @@ export function RapidEntryTable({
       {/* Keyboard Shortcuts Help */}
       <div className="text-xs text-slate-500 flex flex-wrap gap-x-4 gap-y-1">
         <span><kbd className="px-1.5 py-0.5 bg-slate-700 rounded">Enter</kbd> Select card</span>
-        <span><kbd className="px-1.5 py-0.5 bg-slate-700 rounded">Shift+Enter</kbd> Add & new row</span>
+        <span><kbd className="px-1.5 py-0.5 bg-slate-700 rounded">Shift+Enter</kbd> Add row</span>
         <span><kbd className="px-1.5 py-0.5 bg-slate-700 rounded">Ctrl+Shift+Enter</kbd> Submit all</span>
         <span><kbd className="px-1.5 py-0.5 bg-slate-700 rounded">Tab</kbd> Next field</span>
         <span><kbd className="px-1.5 py-0.5 bg-slate-700 rounded">Esc</kbd> Clear row</span>
-        <span><kbd className="px-1.5 py-0.5 bg-slate-700 rounded">Ctrl+D</kbd> Duplicate previous</span>
+        <span><kbd className="px-1.5 py-0.5 bg-slate-700 rounded">Ctrl+D</kbd> Duplicate</span>
       </div>
     </div>
   );

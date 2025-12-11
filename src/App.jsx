@@ -152,7 +152,7 @@ function MTGInventoryTrackerContent() {
   }
 
   return (
-    <div className="min-h-screen bg-ui-bg text-ui-text">
+    <div className="min-h-screen bda-bg text-[var(--bda-text)]">
       <Navigation
         activeTab={activeTab}
         setActiveTab={setActiveTab}
