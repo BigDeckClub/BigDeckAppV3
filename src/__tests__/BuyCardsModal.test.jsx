@@ -132,13 +132,13 @@ describe('BuyCardsModal', () => {
       
       const checkboxes = getCardCheckboxes();
       
-      // Initially should have teal background (selected)
-      expect(checkboxes[0]).toHaveClass('bg-teal-600');
+      // Initially should have primary background (selected)
+      expect(checkboxes[0]).toHaveClass('bg-ui-primary');
       
       fireEvent.click(checkboxes[0]);
       
-      // Should now have slate background (deselected)
-      expect(checkboxes[0]).toHaveClass('bg-slate-700');
+      // Should now have surface background (deselected)
+      expect(checkboxes[0]).toHaveClass('bg-ui-surface');
     });
 
     it('should deselect all cards when Deselect All is clicked', () => {
@@ -150,7 +150,7 @@ describe('BuyCardsModal', () => {
       
       const checkboxes = getCardCheckboxes();
       checkboxes.forEach(checkbox => {
-        expect(checkbox).toHaveClass('bg-slate-700');
+        expect(checkbox).toHaveClass('bg-ui-surface');
       });
     });
 
@@ -167,7 +167,7 @@ describe('BuyCardsModal', () => {
       
       const checkboxes = getCardCheckboxes();
       checkboxes.forEach(checkbox => {
-        expect(checkbox).toHaveClass('bg-teal-600');
+        expect(checkbox).toHaveClass('bg-ui-primary');
       });
     });
   });
