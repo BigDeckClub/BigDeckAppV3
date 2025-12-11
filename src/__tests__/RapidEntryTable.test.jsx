@@ -40,7 +40,7 @@ describe('RapidEntryTable Component', () => {
     expect(screen.getByText('Add row')).toBeInTheDocument();
     expect(screen.getByText('Next field')).toBeInTheDocument();
     expect(screen.getByText('Clear row')).toBeInTheDocument();
-    expect(screen.getByText('Duplicate previous')).toBeInTheDocument();
+    expect(screen.getByText('Duplicate')).toBeInTheDocument();
   });
 
   it('triggers search when typing in card name', async () => {
