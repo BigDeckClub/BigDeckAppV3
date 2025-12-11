@@ -90,6 +90,11 @@ app.use(cors({
       return callback(null, true);
     }
 
+    // Allow Replit proxy domains
+    if (origin.includes('.replit.dev') || origin.includes('.repl.co')) {
+      return callback(null, true);
+    }
+
     // Allow local https dev
     if (origin === 'https://localhost:5000') {
       return callback(null, true);
