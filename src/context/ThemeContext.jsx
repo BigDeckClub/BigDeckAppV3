@@ -1,45 +1,33 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import PropTypes from 'prop-types';
 
 const ThemeContext = createContext();
 
-export const useTheme = () => useContext(ThemeContext);
-
-export function ThemeProvider({ children }) {
+export const ThemeProvider = ({ children }) => {
   const [theme, setTheme] = useState(() => {
     try {
-      return localStorage.getItem('bda-theme') || 'default';
-    } catch (err) {
-      return 'default';
+      const saved = localStorage.getItem('theme');
+      if (saved) return saved;
+      return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    } catch (e) {
+      return 'light';
     }
   });
 
   useEffect(() => {
-    const root = document.documentElement || document.body;
-    // remove any previous theme- classes we control
-    root.classList.remove('theme-parchment');
-    root.classList.remove('theme-default');
-    if (theme && theme !== 'default') {
-      root.classList.add(`theme-${theme}`);
-    }
-    try {
-      localStorage.setItem('bda-theme', theme);
-    } catch (err) {
-      // ignore
-    }
+    const root = document.documentElement;
+    if (theme === 'dark') root.classList.add('dark');
+    else root.classList.remove('dark');
+    try { localStorage.setItem('theme', theme); } catch (e) {}
   }, [theme]);
 
-  const toggleTheme = () => {
-    setTheme((prevTheme) => (prevTheme === 'parchment' ? 'default' : 'parchment'));
-  };
+  const toggle = () => setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme, setTheme }}>
+    <ThemeContext.Provider value={{ theme, setTheme, toggle }}>
       {children}
     </ThemeContext.Provider>
   );
-}
-
-ThemeProvider.propTypes = {
-  children: PropTypes.node.isRequired,
 };
+
+export const useTheme = () => useContext(ThemeContext);
+export default ThemeContext;
