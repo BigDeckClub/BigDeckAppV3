@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import { AlertTriangle, RefreshCw, Home, Bug } from 'lucide-react';
 
 /**
@@ -103,6 +104,9 @@ class ErrorBoundary extends React.Component {
 
   componentDidCatch(error, errorInfo) {
     this.setState({ errorInfo });
+    // Log error with component stack for debugging
+    console.error('[ErrorBoundary] Caught an error:', error);
+    console.error('[ErrorBoundary] Component stack:', errorInfo?.componentStack);
     reportError(error, errorInfo);
   }
 
@@ -237,5 +241,9 @@ class ErrorBoundary extends React.Component {
     return this.props.children;
   }
 }
+
+ErrorBoundary.propTypes = {
+  children: PropTypes.node.isRequired,
+};
 
 export default ErrorBoundary;
