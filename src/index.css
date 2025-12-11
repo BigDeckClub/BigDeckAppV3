@@ -1,50 +1,22 @@
 @import "./styles/community-theme.css";
 @import "./styles/design-tokens.css";
+@import "./styles/palettes.css";
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ===== DESIGN SYSTEM TOKENS ===== */
-:root{
-  --bg-page: #F6F1E8;
-  --surface: #FFF9F2;
-  --muted-surface: #F1E9E1;
-  --text-primary: #172126;
-  --text-muted: #7A6F66;
-  --accent: #14B8A6;
-  --accent-600: #0D9488;
-  --success: #16A34A;
-  --warning: #F59E0B;
-  --danger: #EF4444;
-  --card-radius: 8px;
-  --card-shadow: 0 1px 4px rgba(23, 33, 38, 0.06);
-  --border: rgba(23,33,38,0.06);
-}
+/* ===== UNIFIED THEME SYSTEM ===== */
 
-.dark{
-  --bg-page: #0B1220;
-  --surface: #0F1722;
-  --muted-surface: #121823;
-  --text-primary: #E6EEF6;
-  --text-muted: #A9B3C2;
-  --accent: #14B8A6;
-  --accent-600: #0D9488;
-  --success: #16A34A;
-  --warning: #F59E0B;
-  --danger: #EF4444;
-  --card-radius: 8px;
-  --card-shadow: 0 2px 6px rgba(3,7,18,0.6);
-  --border: rgba(255,255,255,0.06);
-}
-
-/* Let app container be transparent in dark mode so body provides unified page background */
-.dark .app-container, .dark .page-wrapper { background: transparent; }
+/* Let app container be transparent so body provides unified page background */
+.theme-dark .app-container, .theme-dark .page-wrapper { background: transparent; }
+.theme-light .app-container, .theme-light .page-wrapper { background: transparent; }
+.theme-parchment .app-container, .theme-parchment .page-wrapper { background: transparent; }
 
 /* Basic wiring */
 body {
-  background: var(--bg-page);
-  color: var(--text-primary);
+  background: var(--bda-bg);
+  color: var(--bda-text);
 }
 
 /* utility examples */
@@ -119,14 +91,19 @@ body {
 }
 
 .nav-tab.active {
-  background: var(--accent);
-  color: #fff;
-  border: 1px solid var(--border);
+  background: var(--bda-primary);
+  color: var(--bda-primary-foreground);
+  border: 1px solid var(--bda-border);
   box-shadow: none;
 }
 
 .nav-tab.inactive {
-  @apply text-slate-300 hover:text-white hover:bg-slate-700/50 hover:shadow-md hover:border-slate-600 hover:shadow-slate-600/20;
+  color: var(--bda-muted);
+}
+.nav-tab.inactive:hover {
+  color: var(--bda-text);
+  background: var(--card-hover);
+  border-color: var(--bda-border);
 }
 
 /* Folder Item Styling */
@@ -329,7 +306,10 @@ body {
 }
 
 .close-btn {
-  @apply text-slate-400 hover:text-cyan-300 p-1 rounded-md transition-all duration-200;
+  color: var(--bda-muted);
+  padding: 0.25rem;
+  border-radius: 0.375rem;
+  transition: all 200ms ease;
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -337,9 +317,8 @@ body {
 }
 
 .close-btn:hover {
-  @apply bg-cyan-500/10;
-  animation: icon-glow 1.5s ease-in-out;
-  text-shadow: 0 0 12px rgba(34, 211, 238, 0.6);
+  color: var(--bda-primary);
+  background: rgba(20, 184, 166, 0.1);
 }
 
 .close-btn:active {
@@ -389,8 +368,8 @@ body {
 }
 
 .mobile-nav-item.active {
-  color: #06f5d8;
-  background: rgba(6, 245, 216, 0.2);
+  color: var(--bda-primary);
+  background: rgba(20, 184, 166, 0.15);
   border-radius: 8px;
 }
 
@@ -402,7 +381,7 @@ body {
   transform: translateX(-50%);
   width: 24px;
   height: 3px;
-  background: #06f5d8;
+  background: var(--bda-primary);
   border-radius: 2px 2px 0 0;
 }
 
@@ -411,12 +390,12 @@ body {
 }
 
 .mobile-nav-item.active .mobile-nav-label {
-  color: #06f5d8;
+  color: var(--bda-primary);
   font-weight: 700;
 }
 
 .mobile-nav-item.inactive {
-  color: #64748b;
+  color: var(--bda-muted);
 }
 
 .mobile-nav-item:active {

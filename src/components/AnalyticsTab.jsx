@@ -102,7 +102,7 @@ export const AnalyticsTab = ({ inventory }) => {
   return (
     <div className="flex-1 p-6 bg-[var(--bg-page)] overflow-y-auto">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-teal-300 flex items-center gap-2">
+        <h2 className="text-2xl font-bold text-[var(--bda-primary)] flex items-center gap-2">
           <BarChart3 className="w-6 h-6" />
           Analytics
         </h2>
@@ -132,8 +132,8 @@ export const AnalyticsTab = ({ inventory }) => {
                   onClick={() => setHistoryTab(tab.id)}
                   className={`flex-1 px-4 py-2.5 rounded-md font-medium text-sm flex items-center justify-center gap-2 transition-all ${
                     historyTab === tab.id
-                      ? 'bg-teal-600 text-white shadow-md'
-                      : 'text-[var(--text-muted)] hover:text-white hover:bg-[var(--muted-surface)]'
+                      ? 'bg-[var(--bda-primary)] text-[var(--bda-primary-foreground)] shadow-md'
+                      : 'text-[var(--bda-muted)] hover:text-[var(--bda-text)] hover:bg-[var(--card-hover)]'
                   }`}
                 >
                   <IconComponent className="w-4 h-4" />
@@ -144,8 +144,8 @@ export const AnalyticsTab = ({ inventory }) => {
           </div>
 
           {/* Sub-tab Content */}
-          <div className="bg-gradient-to-r from-teal-900/30 to-cyan-900/30 border border-teal-600/30 rounded-lg p-4">
-            <h3 className="text-xl font-bold text-teal-300 mb-4 flex items-center gap-2">
+          <div className="bg-[var(--bda-surface)] border border-[var(--bda-border)] rounded-lg p-4">
+            <h3 className="text-xl font-bold text-[var(--bda-heading)] mb-4 flex items-center gap-2">
               {historyTabs.find(t => t.id === historyTab)?.icon && 
                 React.createElement(historyTabs.find(t => t.id === historyTab).icon, { className: "w-5 h-5" })}
               {historyTabs.find(t => t.id === historyTab)?.label}

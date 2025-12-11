@@ -1,96 +1,19 @@
-/* Theme palettes
-
-Three suggested light/dark palette pairs.
-
-1) Teal (recommended for CTAs)
-   - Accent: #14B8A6 (teal)
-   - Accent-600: #0D9488
-
-2) Indigo
-   - Accent: #6366F1
-   - Accent-600: #4F46E5
-
-3) Warm Amber
-   - Accent: #D97706
-   - Accent-600: #B45309
-
-Active palette applied below (Teal).
-*/
+/* Theme palettes - synchronized with community-theme.css
+   Uses --bda-* variables as the single source of truth */
 
 :root {
-  /* Teal - Light */
-  --bg-page: #F6F1E8;
-  --surface: #FFF9F2;
-  --muted-surface: #F1E9E1;
-  --text-primary: #172126;
-  --text-muted: #7A6F66;
-  --accent: #14B8A6;
+  /* Map legacy variables to BDA variables for backward compatibility */
+  --bg-page: var(--bda-bg);
+  --surface: var(--bda-surface);
+  --muted-surface: var(--input-bg);
+  --text-primary: var(--bda-text);
+  --text-muted: var(--bda-muted);
+  --accent: var(--bda-primary);
   --accent-600: #0D9488;
   --success: #16A34A;
   --warning: #F59E0B;
   --danger: #EF4444;
   --card-radius: 8px;
-  --card-shadow: 0 1px 4px rgba(23, 33, 38, 0.06);
-  --border: rgba(23,33,38,0.06);
+  --card-shadow: var(--bda-elevation-1);
+  --border: var(--bda-border);
 }
-
-/* Dark variant for Teal palette */
-.dark {
-  --bg-page: #0B1220;
-  --surface: #0F1722;
-  --muted-surface: #121823;
-  --text-primary: #E6EEF6;
-  --text-muted: #A9B3C2;
-  --accent: #14B8A6;
-  --accent-600: #0D9488;
-  --success: #16A34A;
-  --warning: #F59E0B;
-  --danger: #EF4444;
-  --card-radius: 8px;
-  --card-shadow: 0 2px 6px rgba(3,7,18,0.6);
-  --border: rgba(255,255,255,0.06);
-}
-
-/* ----- Alternate palettes (examples) -----
-
-/* Indigo palette (example values)
-:root.indigo-light {
-  --bg-page: #F5F7FF;
-  --surface: #FFFFFF;
-  --muted-surface: #EEF2FF;
-  --text-primary: #0F172A;
-  --text-muted: #6B7280;
-  --accent: #6366F1;
-  --accent-600: #4F46E5;
-}
-.dark.indigo-dark {
-  --bg-page: #071024;
-  --surface: #0F1724;
-  --muted-surface: #121827;
-  --text-primary: #E6EEF6;
-  --text-muted: #9CA3AF;
-  --accent: #6366F1;
-  --accent-600: #4F46E5;
-}
-
-/* Warm Amber palette (example values)
-:root.warm-light {
-  --bg-page: #FFF8F1;
-  --surface: #FFF5E6;
-  --muted-surface: #F6EBDD;
-  --text-primary: #2A240F;
-  --text-muted: #7A6F56;
-  --accent: #D97706;
-  --accent-600: #B45309;
-}
-.dark.warm-dark {
-  --bg-page: #0E0B07;
-  --surface: #1A1410;
-  --muted-surface: #221815;
-  --text-primary: #FFF8F1;
-  --text-muted: #D6CAB7;
-  --accent: #D97706;
-  --accent-600: #B45309;
-}
-
-*/
