@@ -54,9 +54,9 @@ const getRarityColor = (rarity) => {
   switch (rarity?.toLowerCase()) {
     case 'mythic': return 'text-orange-400';
     case 'rare': return 'text-yellow-400';
-    case 'uncommon': return 'text-slate-300';
-    case 'common': return 'text-slate-500';
-    default: return 'text-slate-400';
+    case 'uncommon': return 'text-[var(--text-muted)]';
+    case 'common': return 'text-[var(--text-muted)]';
+    default: return 'text-[var(--text-muted)]';
   }
 };
 
@@ -125,7 +125,7 @@ const TableHeaderCell = memo(function TableHeaderCell({
   return (
     <th
       className={`
-        px-3 py-2 text-left text-xs font-medium text-slate-400 uppercase tracking-wider
+        px-3 py-2 text-left text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider
         ${column.width}
         ${column.align === 'center' ? 'text-center' : ''}
         ${column.align === 'right' ? 'text-right' : ''}
@@ -181,7 +181,7 @@ const TableRow = memo(function TableRow({
     <tr
       className={`
         group cursor-pointer transition-colors
-        hover:bg-slate-800/60
+        hover:bg-[var(--surface)]
         ${isSelected ? 'bg-teal-500/10' : ''}
       `}
       onClick={() => onCardClick?.(card)}
@@ -196,7 +196,7 @@ const TableRow = memo(function TableRow({
             checked={isSelected}
             onChange={handleSelect}
             onClick={(e) => e.stopPropagation()}
-            className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-teal-500
+            className="w-4 h-4 rounded border-[var(--border)] bg-[var(--surface)] text-teal-500
                        focus:ring-teal-500/50 focus:ring-offset-0 cursor-pointer"
             aria-label={`Select ${card.name}`}
           />
@@ -220,7 +220,7 @@ const TableRow = memo(function TableRow({
       </td>
 
       {/* Set */}
-      <td className="px-3 py-2 w-24 text-sm text-slate-400">
+      <td className="px-3 py-2 w-24 text-sm text-[var(--text-muted)]">
         {getSetDisplayName(card.set)}
       </td>
 
@@ -235,7 +235,7 @@ const TableRow = memo(function TableRow({
           <div className="flex items-center justify-center gap-1">
             <button
               onClick={(e) => handleQuantityClick(e, -1)}
-              className="p-0.5 rounded text-slate-500 hover:text-white hover:bg-slate-700
+              className="p-0.5 rounded text-[var(--text-muted)] hover:text-white hover:bg-[var(--muted-surface)]
                          opacity-0 group-hover:opacity-100 transition-all"
               aria-label="Decrease quantity"
             >
@@ -246,7 +246,7 @@ const TableRow = memo(function TableRow({
             </span>
             <button
               onClick={(e) => handleQuantityClick(e, 1)}
-              className="p-0.5 rounded text-slate-500 hover:text-white hover:bg-slate-700
+              className="p-0.5 rounded text-[var(--text-muted)] hover:text-white hover:bg-[var(--muted-surface)]
                          opacity-0 group-hover:opacity-100 transition-all"
               aria-label="Increase quantity"
             >
@@ -368,7 +368,7 @@ export const CardTableView = memo(function CardTableView({
 
   if (!cards || cards.length === 0) {
     return (
-      <div className={`flex flex-col items-center justify-center py-16 text-slate-400 ${className}`}>
+      <div className={`flex flex-col items-center justify-center py-16 text-[var(--text-muted)] ${className}`}>
         <p className="text-lg">{emptyMessage}</p>
       </div>
     );
@@ -377,7 +377,7 @@ export const CardTableView = memo(function CardTableView({
   return (
     <div className={`overflow-x-auto ${className}`}>
       <table className="w-full min-w-[700px]" role="grid">
-        <thead className="bg-slate-800/50 sticky top-0 z-10">
+        <thead className="bg-[var(--surface)] sticky top-0 z-10">
           <tr>
             {/* Select all checkbox */}
             {onSelectAll && (
@@ -389,7 +389,7 @@ export const CardTableView = memo(function CardTableView({
                     if (el) el.indeterminate = someSelected && !allSelected;
                   }}
                   onChange={handleSelectAll}
-                  className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-teal-500
+                  className="w-4 h-4 rounded border-[var(--border)] bg-[var(--surface)] text-teal-500
                              focus:ring-teal-500/50 focus:ring-offset-0 cursor-pointer"
                   aria-label="Select all cards"
                 />
@@ -420,10 +420,10 @@ export const CardTableView = memo(function CardTableView({
         </tbody>
         {/* Footer with totals */}
         {showPrice && (
-          <tfoot className="bg-slate-800/30 border-t border-slate-700">
+          <tfoot className="bg-[var(--surface)] border-t border-[var(--border)]">
             <tr>
               {onSelectAll && <td className="px-3 py-2" />}
-              <td className="px-3 py-2 text-sm font-medium text-slate-300" colSpan={3}>
+              <td className="px-3 py-2 text-sm font-medium text-[var(--text-muted)]" colSpan={3}>
                 {cards.length} unique cards
               </td>
               <td className="px-3 py-2 text-sm text-center font-medium text-white">

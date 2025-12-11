@@ -27,7 +27,7 @@ const formatValue = (value, format) => {
  */
 const PeriodSelector = memo(function PeriodSelector({ periods, activePeriod, onChange }) {
   return (
-    <div className="flex items-center gap-1 bg-slate-800 rounded-lg p-1">
+    <div className="flex items-center gap-1 bg-[var(--surface)] rounded-lg p-1">
       {periods.map((period) => (
         <button
           key={period.id}
@@ -36,7 +36,7 @@ const PeriodSelector = memo(function PeriodSelector({ periods, activePeriod, onC
             px-3 py-1.5 rounded-md text-xs font-medium transition-all
             ${activePeriod === period.id
               ? 'bg-teal-600 text-white'
-              : 'text-slate-400 hover:text-white hover:bg-slate-700'
+              : 'text-[var(--text-muted)] hover:text-white hover:bg-[var(--muted-surface)]'
             }
           `}
         >
@@ -59,14 +59,14 @@ PeriodSelector.propTypes = {
 const ChartTooltip = memo(function ChartTooltip({ x, y, label, value, format }) {
   return (
     <div
-      className="absolute z-10 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 shadow-xl pointer-events-none"
+      className="absolute z-10 bg-[var(--bg-page)] border border-[var(--border)] rounded-lg px-3 py-2 shadow-xl pointer-events-none"
       style={{
         left: x,
         top: y - 60,
         transform: 'translateX(-50%)',
       }}
     >
-      <p className="text-xs text-slate-400 mb-0.5">{label}</p>
+      <p className="text-xs text-[var(--text-muted)] mb-0.5">{label}</p>
       <p className="text-sm font-bold text-white">{formatValue(value, format)}</p>
     </div>
   );
@@ -201,8 +201,8 @@ export const TrendChart = memo(function TrendChart({
 
   if (data.length === 0) {
     return (
-      <div className={`bg-slate-800/50 rounded-xl border border-slate-700 p-6 ${className}`}>
-        <div className="flex items-center justify-center h-40 text-slate-500">
+      <div className={`bg-[var(--surface)] rounded-xl border border-[var(--border)] p-6 ${className}`}>
+        <div className="flex items-center justify-center h-40 text-[var(--text-muted)]">
           <p>No data available</p>
         </div>
       </div>
@@ -210,12 +210,12 @@ export const TrendChart = memo(function TrendChart({
   }
 
   return (
-    <div className={`bg-slate-800/50 rounded-xl border border-slate-700 ${className}`}>
+    <div className={`bg-[var(--surface)] rounded-xl border border-[var(--border)] ${className}`}>
       {/* Header */}
-      <div className="flex items-start justify-between p-4 border-b border-slate-700">
+      <div className="flex items-start justify-between p-4 border-b border-[var(--border)]">
         <div>
           {title && <h3 className="text-sm font-medium text-white">{title}</h3>}
-          {subtitle && <p className="text-xs text-slate-400 mt-0.5">{subtitle}</p>}
+          {subtitle && <p className="text-xs text-[var(--text-muted)] mt-0.5">{subtitle}</p>}
 
           {/* Current value and trend */}
           <div className="flex items-center gap-3 mt-2">
@@ -334,7 +334,7 @@ export const TrendChart = memo(function TrendChart({
         )}
 
         {/* Y-axis labels */}
-        <div className="absolute left-0 top-0 bottom-0 flex flex-col justify-between py-5 text-xs text-slate-500">
+        <div className="absolute left-0 top-0 bottom-0 flex flex-col justify-between py-5 text-xs text-[var(--text-muted)]">
           <span>{formatValue(chartData.max, format)}</span>
           <span>{formatValue((chartData.max + chartData.min) / 2, format)}</span>
           <span>{formatValue(chartData.min, format)}</span>
@@ -342,7 +342,7 @@ export const TrendChart = memo(function TrendChart({
       </div>
 
       {/* X-axis labels */}
-      <div className="flex justify-between px-4 pb-4 text-xs text-slate-500">
+      <div className="flex justify-between px-4 pb-4 text-xs text-[var(--text-muted)]">
         {data.length > 0 && (
           <>
             <span className="flex items-center gap-1">

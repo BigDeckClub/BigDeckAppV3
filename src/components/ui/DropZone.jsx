@@ -189,7 +189,7 @@ export const DropZone = memo(function DropZone({
               ? 'border-emerald-500/50 bg-emerald-500/5'
               : hasFile
                 ? 'border-teal-500/50 bg-teal-500/5'
-                : 'border-slate-600 hover:border-slate-500 hover:bg-slate-800/30'
+                : 'border-[var(--border)] hover:border-slate-500 hover:bg-[var(--surface)]'
         }
         ${disabled || isLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
         ${className}
@@ -219,7 +219,7 @@ export const DropZone = memo(function DropZone({
         {isLoading && (
           <>
             <div className="w-12 h-12 rounded-full border-2 border-teal-400 border-t-transparent animate-spin mb-4" />
-            <p className="text-slate-300 font-medium">Processing file...</p>
+            <p className="text-[var(--text-muted)] font-medium">Processing file...</p>
           </>
         )}
 
@@ -234,7 +234,7 @@ export const DropZone = memo(function DropZone({
             </p>
             <button
               onClick={handleClear}
-              className="text-sm text-slate-400 hover:text-white underline"
+              className="text-sm text-[var(--text-muted)] hover:text-white underline"
             >
               Try again
             </button>
@@ -258,13 +258,13 @@ export const DropZone = memo(function DropZone({
               <FileText className="w-6 h-6 text-teal-400" />
             </div>
             <p className="text-white font-medium mb-1">{selectedFile.name}</p>
-            <p className="text-sm text-slate-400 mb-3">
+            <p className="text-sm text-[var(--text-muted)] mb-3">
               {formatFileSize(selectedFile.size)}
             </p>
             {onClearFile && (
               <button
                 onClick={handleClear}
-                className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-red-400 transition-colors"
+                className="flex items-center gap-1.5 text-sm text-[var(--text-muted)] hover:text-red-400 transition-colors"
               >
                 <X className="w-4 h-4" />
                 Remove file
@@ -280,16 +280,16 @@ export const DropZone = memo(function DropZone({
               w-14 h-14 rounded-full flex items-center justify-center mb-4 transition-colors
               ${isDragging
                 ? 'bg-accent/20'
-                : 'bg-slate-800'
+                : 'bg-[var(--surface)]'
               }
             `}>
-              <Upload className={`w-7 h-7 ${isDragging ? 'text-accent' : 'text-slate-400'}`} />
+              <Upload className={`w-7 h-7 ${isDragging ? 'text-accent' : 'text-[var(--text-muted)]'}`} />
             </div>
             <p className={`font-medium mb-1 ${isDragging ? 'text-accent' : 'text-white'}`}>
               {isDragging ? 'Drop to upload' : title}
             </p>
-            <p className="text-sm text-slate-400 mb-3">{subtitle}</p>
-            <div className="flex items-center gap-2 text-xs text-slate-500">
+            <p className="text-sm text-[var(--text-muted)] mb-3">{subtitle}</p>
+            <div className="flex items-center gap-2 text-xs text-[var(--text-muted)]">
               <span>Supported: {formatLabels}</span>
               <span>•</span>
               <span>Max {formatFileSize(maxSize)}</span>

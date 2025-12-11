@@ -47,7 +47,7 @@ const CopyButton = memo(function CopyButton({ text }) {
   return (
     <button
       onClick={handleCopy}
-      className="p-1 text-slate-500 hover:text-slate-300 transition-colors"
+      className="p-1 text-[var(--text-muted)] hover:text-[var(--text-muted)] transition-colors"
       title={copied ? 'Copied!' : 'Copy message'}
     >
       {copied ? (
@@ -103,7 +103,7 @@ const ChatMessage = memo(function ChatMessage({ message, onRetry }) {
               ? 'bg-gradient-to-r from-teal-600/30 to-cyan-600/30 border border-teal-500/30 text-white rounded-br-md'
               : isError
                 ? 'bg-red-900/20 border border-red-500/30 text-red-200 rounded-bl-md'
-                : 'bg-slate-800/80 border border-slate-700 text-slate-100 rounded-bl-md'
+                : 'bg-[var(--surface)] border border-[var(--border)] text-slate-100 rounded-bl-md'
             }
           `}
         >
@@ -113,7 +113,7 @@ const ChatMessage = memo(function ChatMessage({ message, onRetry }) {
         {/* Message metadata and actions */}
         <div
           className={`
-            flex items-center gap-2 mt-1.5 text-xs text-slate-500
+            flex items-center gap-2 mt-1.5 text-xs text-[var(--text-muted)]
             ${isUser ? 'justify-end' : ''}
             opacity-0 group-hover:opacity-100 transition-opacity
           `}
@@ -125,7 +125,7 @@ const ChatMessage = memo(function ChatMessage({ message, onRetry }) {
               {isError && onRetry && (
                 <button
                   onClick={() => onRetry(message)}
-                  className="p-1 text-slate-500 hover:text-amber-400 transition-colors"
+                  className="p-1 text-[var(--text-muted)] hover:text-amber-400 transition-colors"
                   title="Retry"
                 >
                   <RefreshCw className="w-3.5 h-3.5" />
@@ -174,7 +174,7 @@ const TypingIndicator = memo(function TypingIndicator() {
       <div className="flex-shrink-0 w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center">
         <Bot className="w-4 h-4 text-white" />
       </div>
-      <div className="bg-slate-800/80 border border-slate-700 rounded-2xl rounded-bl-md px-4 py-3">
+      <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl rounded-bl-md px-4 py-3">
         <div className="flex gap-1.5">
           <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
           <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -194,15 +194,15 @@ const SuggestionButton = memo(function SuggestionButton({ suggestion, onClick })
       onClick={() => onClick(suggestion)}
       className="
         group flex items-start gap-3 w-full text-left p-4 rounded-xl
-        bg-slate-800/50 border border-slate-700
-        hover:bg-slate-800 hover:border-accent/30 hover:shadow-lg hover:shadow-accent/5
+        bg-[var(--surface)] border border-[var(--border)]
+        hover:bg-[var(--surface)] hover:border-accent/30 hover:shadow-lg hover:shadow-accent/5
         transition-all duration-200
       "
     >
       <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center group-hover:bg-accent/20 transition-colors">
         <Lightbulb className="w-4 h-4 text-accent" />
       </div>
-      <span className="text-sm text-slate-300 group-hover:text-white transition-colors">
+      <span className="text-sm text-[var(--text-muted)] group-hover:text-white transition-colors">
         {suggestion}
       </span>
     </button>
@@ -232,7 +232,7 @@ const WelcomeScreen = memo(function WelcomeScreen({ onSuggestionClick, suggestio
 
       {/* Title and description */}
       <h2 className="text-2xl font-bold text-white mb-2">Welcome to BigDeckAI</h2>
-      <p className="text-slate-400 text-center max-w-md mb-8">
+      <p className="text-[var(--text-muted)] text-center max-w-md mb-8">
         Your AI-powered deck building assistant. Ask about deck strategies,
         card recommendations, format legality, or get help analyzing your collection.
       </p>
@@ -268,8 +268,8 @@ const ScrollButton = memo(function ScrollButton({ onClick, visible }) {
       className="
         absolute bottom-24 left-1/2 -translate-x-1/2 z-10
         flex items-center gap-1.5 px-3 py-1.5 rounded-full
-        bg-slate-800 border border-slate-700 text-slate-300
-        hover:bg-slate-700 hover:text-white transition-all
+        bg-[var(--surface)] border border-[var(--border)] text-[var(--text-muted)]
+        hover:bg-[var(--muted-surface)] hover:text-white transition-all
         shadow-lg animate-fade-in
       "
     >
@@ -364,25 +364,25 @@ export const AIChatPanel = memo(function AIChatPanel({
   return (
     <div
       className={`
-        flex flex-col h-full bg-slate-900/50 rounded-xl border border-slate-700 overflow-hidden
+        flex flex-col h-full bg-[var(--bg-page)] rounded-xl border border-[var(--border)] overflow-hidden
         ${className}
       `}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700 bg-slate-800/50 backdrop-blur-sm">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)] bg-[var(--surface)] backdrop-blur-sm">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-purple-500/20">
             <Bot className="w-5 h-5 text-white" />
           </div>
           <div>
             <h2 className="font-semibold text-white">{title}</h2>
-            <p className="text-xs text-slate-400">{subtitle}</p>
+            <p className="text-xs text-[var(--text-muted)]">{subtitle}</p>
           </div>
         </div>
         {messages.length > 0 && (
           <button
             onClick={onClearConversation}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-slate-400 hover:text-red-400 hover:bg-red-900/20 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-[var(--text-muted)] hover:text-red-400 hover:bg-red-900/20 transition-colors"
             title="Clear conversation"
           >
             <Trash2 className="w-4 h-4" />
@@ -417,7 +417,7 @@ export const AIChatPanel = memo(function AIChatPanel({
       </div>
 
       {/* Input area */}
-      <form onSubmit={handleSubmit} className="p-4 border-t border-slate-700 bg-slate-800/30">
+      <form onSubmit={handleSubmit} className="p-4 border-t border-[var(--border)] bg-[var(--surface)]">
         <div className="flex gap-3">
           <div className="flex-1 relative">
             <input
@@ -429,7 +429,7 @@ export const AIChatPanel = memo(function AIChatPanel({
               placeholder={placeholder}
               disabled={isLoading || isTyping}
               className="
-                w-full bg-slate-900/80 border border-slate-600 rounded-xl
+                w-full bg-[var(--bg-page)] border border-[var(--border)] rounded-xl
                 pl-4 pr-12 py-3 text-white placeholder-slate-500
                 focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-transparent
                 disabled:opacity-50 disabled:cursor-not-allowed
@@ -440,7 +440,7 @@ export const AIChatPanel = memo(function AIChatPanel({
               <button
                 type="button"
                 onClick={() => setInputValue('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-500 hover:text-white"
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-[var(--text-muted)] hover:text-white"
               >
                 <span className="sr-only">Clear input</span>
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -454,7 +454,7 @@ export const AIChatPanel = memo(function AIChatPanel({
             disabled={!inputValue.trim() || isLoading || isTyping}
             className="
               flex items-center justify-center w-12 h-12 rounded-xl
-              bg-accent hover:bg-accent/90 disabled:bg-slate-700 disabled:cursor-not-allowed
+              bg-accent hover:bg-accent/90 disabled:bg-[var(--muted-surface)] disabled:cursor-not-allowed
               text-white transition-colors
             "
           >
@@ -465,7 +465,7 @@ export const AIChatPanel = memo(function AIChatPanel({
             )}
           </button>
         </div>
-        <p className="text-xs text-slate-500 mt-2 text-center">
+        <p className="text-xs text-[var(--text-muted)] mt-2 text-center">
           Press Enter to send • Shift+Enter for new line
         </p>
       </form>

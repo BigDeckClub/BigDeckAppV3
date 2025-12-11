@@ -7,32 +7,32 @@ import PropTypes from 'prop-types';
 export function CardSkeleton({ className = '' }) {
   return (
     <div
-      className={`bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700 rounded-lg p-4 h-36 md:h-40 animate-pulse ${className}`}
+      className={`bg-gradient-to-br from-slate-800 to-slate-900 border border-[var(--border)] rounded-lg p-4 h-36 md:h-40 animate-pulse ${className}`}
     >
       {/* Title skeleton */}
-      <div className="h-4 bg-slate-700 rounded w-3/4 mx-auto mb-4" />
+      <div className="h-4 bg-[var(--muted-surface)] rounded w-3/4 mx-auto mb-4" />
       
       {/* Main content skeleton */}
       <div className="flex-1 flex items-center justify-center py-4">
         <div className="text-center">
-          <div className="h-3 bg-slate-700 rounded w-16 mx-auto mb-2" />
-          <div className="h-8 bg-slate-700 rounded w-12 mx-auto" />
+          <div className="h-3 bg-[var(--muted-surface)] rounded w-16 mx-auto mb-2" />
+          <div className="h-8 bg-[var(--muted-surface)] rounded w-12 mx-auto" />
         </div>
       </div>
       
       {/* Stats skeleton */}
-      <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-700/50">
+      <div className="grid grid-cols-3 gap-2 pt-2 border-t border-[var(--border)]">
         <div className="space-y-1">
-          <div className="h-2 bg-slate-700 rounded w-8 mx-auto" />
-          <div className="h-3 bg-slate-700 rounded w-6 mx-auto" />
+          <div className="h-2 bg-[var(--muted-surface)] rounded w-8 mx-auto" />
+          <div className="h-3 bg-[var(--muted-surface)] rounded w-6 mx-auto" />
         </div>
         <div className="space-y-1">
-          <div className="h-2 bg-slate-700 rounded w-8 mx-auto" />
-          <div className="h-3 bg-slate-700 rounded w-10 mx-auto" />
+          <div className="h-2 bg-[var(--muted-surface)] rounded w-8 mx-auto" />
+          <div className="h-3 bg-[var(--muted-surface)] rounded w-10 mx-auto" />
         </div>
         <div className="space-y-1">
-          <div className="h-2 bg-slate-700 rounded w-8 mx-auto" />
-          <div className="h-3 bg-slate-700 rounded w-10 mx-auto" />
+          <div className="h-2 bg-[var(--muted-surface)] rounded w-8 mx-auto" />
+          <div className="h-3 bg-[var(--muted-surface)] rounded w-10 mx-auto" />
         </div>
       </div>
     </div>
@@ -52,21 +52,21 @@ export function ListSkeleton({ rows = 5, className = '' }) {
       {Array.from({ length: rows }).map((_, index) => (
         <div
           key={index}
-          className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700 rounded-lg p-4 animate-pulse"
+          className="bg-gradient-to-br from-slate-800 to-slate-900 border border-[var(--border)] rounded-lg p-4 animate-pulse"
         >
           <div className="flex items-center justify-between gap-4">
             <div className="flex-1 min-w-0">
               {/* Title */}
-              <div className="h-4 bg-slate-700 rounded w-1/3 mb-2" />
+              <div className="h-4 bg-[var(--muted-surface)] rounded w-1/3 mb-2" />
               {/* Subtitle */}
               <div className="flex gap-4">
-                <div className="h-3 bg-slate-700 rounded w-16" />
-                <div className="h-3 bg-slate-700 rounded w-20" />
-                <div className="h-3 bg-slate-700 rounded w-16" />
+                <div className="h-3 bg-[var(--muted-surface)] rounded w-16" />
+                <div className="h-3 bg-[var(--muted-surface)] rounded w-20" />
+                <div className="h-3 bg-[var(--muted-surface)] rounded w-16" />
               </div>
             </div>
             {/* Action indicator */}
-            <div className="h-4 w-4 bg-slate-700 rounded" />
+            <div className="h-4 w-4 bg-[var(--muted-surface)] rounded" />
           </div>
         </div>
       ))}
@@ -84,14 +84,14 @@ ListSkeleton.propTypes = {
  */
 export function TableSkeleton({ rows = 5, columns = 4, className = '' }) {
   return (
-    <div className={`overflow-hidden rounded-lg border border-slate-700 ${className}`}>
+    <div className={`overflow-hidden rounded-lg border border-[var(--border)] ${className}`}>
       {/* Header */}
-      <div className="bg-slate-800 p-4 border-b border-slate-700">
+      <div className="bg-[var(--surface)] p-4 border-b border-[var(--border)]">
         <div className="flex gap-4">
           {Array.from({ length: columns }).map((_, index) => (
             <div
               key={index}
-              className="h-4 bg-slate-700 rounded animate-pulse"
+              className="h-4 bg-[var(--muted-surface)] rounded animate-pulse"
               style={{ width: `${100 / columns - 2}%` }}
             />
           ))}
@@ -102,13 +102,13 @@ export function TableSkeleton({ rows = 5, columns = 4, className = '' }) {
       {Array.from({ length: rows }).map((_, rowIndex) => (
         <div
           key={rowIndex}
-          className="bg-slate-900 p-4 border-b border-slate-700/50 last:border-b-0"
+          className="bg-[var(--bg-page)] p-4 border-b border-[var(--border)] last:border-b-0"
         >
           <div className="flex gap-4">
             {Array.from({ length: columns }).map((_, colIndex) => (
               <div
                 key={colIndex}
-                className="h-4 bg-slate-800 rounded animate-pulse"
+                className="h-4 bg-[var(--surface)] rounded animate-pulse"
                 style={{ 
                   width: `${100 / columns - 2}%`,
                   animationDelay: `${(rowIndex * columns + colIndex) * 50}ms`
@@ -136,7 +136,7 @@ export function PageLoader({ message = 'Loading...' }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm">
       <div className="text-center">
         <div className="w-12 h-12 mx-auto mb-4 border-4 border-teal-400 border-t-transparent rounded-full animate-spin" />
-        <p className="text-slate-300 text-sm font-medium">{message}</p>
+        <p className="text-[var(--text-muted)] text-sm font-medium">{message}</p>
       </div>
     </div>
   );
@@ -197,10 +197,10 @@ export function SidebarSkeleton({ items = 4, className = '' }) {
       {Array.from({ length: items }).map((_, index) => (
         <div
           key={index}
-          className="bg-slate-800 rounded-lg p-3 animate-pulse"
+          className="bg-[var(--surface)] rounded-lg p-3 animate-pulse"
         >
-          <div className="h-4 bg-slate-700 rounded w-2/3 mb-2" />
-          <div className="h-3 bg-slate-700 rounded w-1/2" />
+          <div className="h-4 bg-[var(--muted-surface)] rounded w-2/3 mb-2" />
+          <div className="h-3 bg-[var(--muted-surface)] rounded w-1/2" />
         </div>
       ))}
     </div>

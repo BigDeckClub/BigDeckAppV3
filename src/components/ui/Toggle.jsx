@@ -104,13 +104,13 @@ export const Toggle = memo(function Toggle({
       `}
     >
       {labelPosition === 'left' && (
-        <span className={`${sizeConfig.label} text-slate-300 ${disabled ? 'opacity-50' : ''}`}>
+        <span className={`${sizeConfig.label} text-[var(--text-muted)] ${disabled ? 'opacity-50' : ''}`}>
           {label}
         </span>
       )}
       {toggleElement}
       {labelPosition === 'right' && (
-        <span className={`${sizeConfig.label} text-slate-300 ${disabled ? 'opacity-50' : ''}`}>
+        <span className={`${sizeConfig.label} text-[var(--text-muted)] ${disabled ? 'opacity-50' : ''}`}>
           {label}
         </span>
       )}
@@ -160,7 +160,7 @@ export const ToggleGroup = memo(function ToggleGroup({
               {option.label}
             </div>
             {option.description && (
-              <div className="text-xs text-slate-400 mt-0.5">
+              <div className="text-xs text-[var(--text-muted)] mt-0.5">
                 {option.description}
               </div>
             )}
@@ -216,7 +216,7 @@ export const RadioToggle = memo(function RadioToggle({
     <div
       role="radiogroup"
       className={`
-        inline-flex rounded-lg bg-slate-700/50 p-1
+        inline-flex rounded-lg bg-[var(--muted-surface)] p-1
         ${disabled ? 'opacity-50' : ''}
         ${className}
       `}
@@ -236,7 +236,7 @@ export const RadioToggle = memo(function RadioToggle({
               rounded-md font-medium transition-all duration-200
               ${isSelected
                 ? 'bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-md'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-600/50'
+                : 'text-[var(--text-muted)] hover:text-slate-200 hover:bg-slate-600/50'
               }
               ${(disabled || option.disabled) ? 'cursor-not-allowed' : 'cursor-pointer'}
               focus:outline-none focus:ring-2 focus:ring-teal-500/50

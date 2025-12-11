@@ -197,7 +197,7 @@ const SkuRow = memo(function SkuRow({
           className={`p-2 rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center ${
             item.low_inventory_alert 
               ? 'bg-yellow-600/30 text-yellow-400 hover:bg-yellow-600/50' 
-              : 'bg-slate-600/50 text-slate-400 hover:bg-slate-600 hover:text-yellow-400'
+              : 'bg-slate-600/50 text-[var(--text-muted)] hover:bg-slate-600 hover:text-yellow-400'
           }`}
           title={item.low_inventory_alert ? 'Low inventory alert enabled' : 'Enable low inventory alert'}
           disabled={togglingId === item.id}
@@ -711,7 +711,7 @@ export const CardDetailModal = memo(function CardDetailModal({
           
           {/* SKU List Section */}
           <div>
-            <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wide mb-3 flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-[var(--text-muted)] uppercase tracking-wide mb-3 flex items-center gap-2">
               <Package className="w-4 h-4" />
               Individual SKUs
             </h3>

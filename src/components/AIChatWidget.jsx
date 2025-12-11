@@ -20,7 +20,7 @@ function ChatMessage({ message }) {
         className={`max-w-[85%] rounded-lg px-3 py-2.5 sm:py-2 ${
           isUser
             ? 'bg-teal-600 text-white'
-            : 'bg-slate-700 text-slate-100'
+            : 'bg-[var(--muted-surface)] text-slate-100'
         }`}
       >
         {!isUser && (
@@ -125,18 +125,18 @@ export function AIChatWidget({ isAuthenticated }) {
       {/* Chat Window - Full screen on mobile, floating on desktop */}
       {isOpen && (
         <div
-          className={`fixed z-50 bg-slate-800 border border-slate-600 shadow-2xl transition-all duration-300 flex flex-col ${
+          className={`fixed z-50 bg-[var(--surface)] border border-[var(--border)] shadow-2xl transition-all duration-300 flex flex-col ${
             isMinimized 
               ? 'bottom-4 right-4 w-72 h-12 rounded-xl' 
               : 'inset-0 sm:inset-auto sm:bottom-4 sm:right-4 sm:w-96 sm:h-[500px] sm:max-h-[80vh] sm:rounded-xl rounded-none'
           }`}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 sm:py-3 bg-gradient-to-r from-slate-700 to-slate-800 sm:rounded-t-xl border-b border-slate-600 safe-area-top">
+          <div className="flex items-center justify-between px-4 py-3 sm:py-3 bg-gradient-to-r from-slate-700 to-slate-800 sm:rounded-t-xl border-b border-[var(--border)] safe-area-top">
             <div className="flex items-center gap-2">
               <Bot className="w-5 h-5 text-teal-400" />
               <span className="font-semibold text-white">Big Deck Daddy</span>
-              <span className="text-xs text-slate-400 hidden sm:inline">MTG Assistant</span>
+              <span className="text-xs text-[var(--text-muted)] hidden sm:inline">MTG Assistant</span>
             </div>
             <div className="flex items-center gap-1">
               {/* Only show minimize on desktop */}
@@ -146,9 +146,9 @@ export function AIChatWidget({ isAuthenticated }) {
                 title={isMinimized ? 'Expand' : 'Minimize'}
               >
                 {isMinimized ? (
-                  <Maximize2 className="w-4 h-4 text-slate-300" />
+                  <Maximize2 className="w-4 h-4 text-[var(--text-muted)]" />
                 ) : (
-                  <Minimize2 className="w-4 h-4 text-slate-300" />
+                  <Minimize2 className="w-4 h-4 text-[var(--text-muted)]" />
                 )}
               </button>
               <button
@@ -156,7 +156,7 @@ export function AIChatWidget({ isAuthenticated }) {
                 className="p-1.5 hover:bg-slate-600 rounded-lg transition-colors"
                 title="Close"
               >
-                <X className="w-5 h-5 sm:w-4 sm:h-4 text-slate-300" />
+                <X className="w-5 h-5 sm:w-4 sm:h-4 text-[var(--text-muted)]" />
               </button>
             </div>
           </div>
@@ -167,7 +167,7 @@ export function AIChatWidget({ isAuthenticated }) {
               {/* Messages Area */}
               <div className="flex-1 overflow-y-auto p-4 sm:p-4 space-y-1 overscroll-contain">
                 {messages.length === 0 ? (
-                  <div className="text-center text-slate-400 py-8 sm:py-8">
+                  <div className="text-center text-[var(--text-muted)] py-8 sm:py-8">
                     <Bot className="w-16 h-16 sm:w-12 sm:h-12 mx-auto mb-3 text-teal-500 opacity-50" />
                     <p className="text-base sm:text-sm">Hi! I&apos;m BigDeckAI.</p>
                     <p className="text-sm sm:text-xs mt-1">Ask me about deck building, card analysis, or MTG strategy!</p>
@@ -180,7 +180,7 @@ export function AIChatWidget({ isAuthenticated }) {
                 
                 {isLoading && (
                   <div className="flex justify-start mb-3">
-                    <div className="bg-slate-700 rounded-lg px-3 py-2">
+                    <div className="bg-[var(--muted-surface)] rounded-lg px-3 py-2">
                       <div className="flex items-center gap-2 text-teal-400">
                         <Loader2 className="w-4 h-4 animate-spin" />
                         <span className="text-sm">Thinking...</span>
@@ -205,7 +205,7 @@ export function AIChatWidget({ isAuthenticated }) {
               </div>
 
               {/* Input Area */}
-              <form onSubmit={handleSubmit} className="p-3 sm:p-3 border-t border-slate-600 safe-area-bottom bg-slate-800">
+              <form onSubmit={handleSubmit} className="p-3 sm:p-3 border-t border-[var(--border)] safe-area-bottom bg-[var(--surface)]">
                 <div className="flex gap-2">
                   <input
                     ref={inputRef}
@@ -214,7 +214,7 @@ export function AIChatWidget({ isAuthenticated }) {
                     onChange={(e) => setInputValue(e.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder="Ask about deck building..."
-                    className="flex-1 bg-slate-700 border border-slate-600 rounded-lg px-3 py-2.5 sm:py-2 text-base sm:text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    className="flex-1 bg-[var(--muted-surface)] border border-[var(--border)] rounded-lg px-3 py-2.5 sm:py-2 text-base sm:text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                     disabled={isLoading}
                   />
                   <button

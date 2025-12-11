@@ -25,7 +25,7 @@ const SettingItem = memo(function SettingItem({
           {label}
         </div>
         {description && (
-          <div className="text-xs text-slate-400 mt-0.5">
+          <div className="text-xs text-[var(--text-muted)] mt-0.5">
             {description}
           </div>
         )}
@@ -56,7 +56,7 @@ const SettingsGroup = memo(function SettingsGroup({
   return (
     <div className={`space-y-1 ${className}`}>
       {title && (
-        <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+        <div className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-2">
           {title}
         </div>
       )}
@@ -115,7 +115,7 @@ export const SettingsSection = memo(function SettingsSection({
   return (
     <div
       className={`
-        bg-slate-800/50 rounded-xl border border-slate-700/50
+        bg-[var(--surface)] rounded-xl border border-[var(--border)]
         ${disabled ? 'opacity-50' : ''}
         ${className}
       `}
@@ -129,7 +129,7 @@ export const SettingsSection = memo(function SettingsSection({
         onKeyDown={handleKeyDown}
         className={`
           flex items-center gap-3 p-4
-          ${collapsible && !disabled ? 'cursor-pointer hover:bg-slate-700/30' : ''}
+          ${collapsible && !disabled ? 'cursor-pointer hover:bg-[var(--muted-surface)]' : ''}
           ${collapsible ? 'select-none' : ''}
           rounded-t-xl transition-colors
         `}
@@ -154,7 +154,7 @@ export const SettingsSection = memo(function SettingsSection({
             )}
           </div>
           {description && (
-            <p className="text-sm text-slate-400 mt-0.5">
+            <p className="text-sm text-[var(--text-muted)] mt-0.5">
               {description}
             </p>
           )}
@@ -164,9 +164,9 @@ export const SettingsSection = memo(function SettingsSection({
         {collapsible && (
           <div className="flex-shrink-0">
             {isExpanded ? (
-              <ChevronDown className="w-5 h-5 text-slate-400" />
+              <ChevronDown className="w-5 h-5 text-[var(--text-muted)]" />
             ) : (
-              <ChevronRight className="w-5 h-5 text-slate-400" />
+              <ChevronRight className="w-5 h-5 text-[var(--text-muted)]" />
             )}
           </div>
         )}
@@ -174,7 +174,7 @@ export const SettingsSection = memo(function SettingsSection({
 
       {/* Content */}
       {isExpanded && (
-        <div className="px-4 pb-4 border-t border-slate-700/50">
+        <div className="px-4 pb-4 border-t border-[var(--border)]">
           <div className="pt-4">
             {children}
           </div>
@@ -209,10 +209,10 @@ export const SettingsCard = memo(function SettingsCard({
   className = '',
 }) {
   return (
-    <div className={`bg-slate-800/50 rounded-xl border border-slate-700/50 ${className}`}>
+    <div className={`bg-[var(--surface)] rounded-xl border border-[var(--border)] ${className}`}>
       {/* Header */}
       {(title || Icon) && (
-        <div className="flex items-center justify-between gap-3 p-4 border-b border-slate-700/50">
+        <div className="flex items-center justify-between gap-3 p-4 border-b border-[var(--border)]">
           <div className="flex items-center gap-3">
             {Icon && (
               <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gradient-to-br from-teal-500/20 to-cyan-500/20 flex items-center justify-center">
@@ -226,7 +226,7 @@ export const SettingsCard = memo(function SettingsCard({
                 </h3>
               )}
               {description && (
-                <p className="text-sm text-slate-400 mt-0.5">
+                <p className="text-sm text-[var(--text-muted)] mt-0.5">
                   {description}
                 </p>
               )}

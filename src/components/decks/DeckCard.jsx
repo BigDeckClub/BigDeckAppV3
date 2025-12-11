@@ -86,7 +86,7 @@ export function DeckCard({
               e.stopPropagation();
               onCopy(deck);
             }}
-            className="text-slate-300 hover:text-green-400 hover:bg-green-600/20 px-2.5 py-1.5 rounded text-xs font-semibold transition-colors flex items-center gap-1.5"
+            className="text-[var(--text-muted)] hover:text-green-400 hover:bg-green-600/20 px-2.5 py-1.5 rounded text-xs font-semibold transition-colors flex items-center gap-1.5"
             title="Copy to Inventory - Name your deck instance"
           >
             <Download className="w-4 h-4" />
@@ -97,7 +97,7 @@ export function DeckCard({
               e.stopPropagation();
               onEdit(deck.id);
             }}
-            className="text-slate-400 hover:text-teal-400 transition-colors bg-slate-700 hover:bg-slate-600 p-1.5 rounded"
+            className="text-[var(--text-muted)] hover:text-teal-400 transition-colors bg-[var(--muted-surface)] hover:bg-slate-600 p-1.5 rounded"
             title="Edit deck name"
           >
             <Edit2 className="w-4 h-4" />
@@ -107,7 +107,7 @@ export function DeckCard({
               e.stopPropagation();
               onDelete(deck.id);
             }}
-            className="text-slate-400 hover:text-red-400 transition-colors"
+            className="text-[var(--text-muted)] hover:text-red-400 transition-colors"
             title="Delete"
           >
             <Trash2 className="w-4 h-4" />
@@ -120,7 +120,7 @@ export function DeckCard({
           type="text"
           defaultValue={deck.name}
           placeholder="Deck name"
-          className="w-full bg-slate-700 border border-teal-600 rounded px-2 py-1 text-white text-sm mb-2"
+          className="w-full bg-[var(--muted-surface)] border border-teal-600 rounded px-2 py-1 text-white text-sm mb-2"
           onBlur={(e) => {
             onUpdateName(deck.id, e.target.value);
           }}
@@ -140,18 +140,18 @@ export function DeckCard({
 
       <div className="space-y-2">
         <div className="flex justify-between text-sm">
-          <span className="text-slate-400">Cards:</span>
+          <span className="text-[var(--text-muted)]">Cards:</span>
           <span className="text-teal-300 font-semibold">{(deck.cards && deck.cards.length) || 0}</span>
         </div>
-        <div className="text-xs text-slate-500">
+        <div className="text-xs text-[var(--text-muted)]">
           Created: {new Date(deck.created_at).toLocaleDateString()}
         </div>
         {deck.description && (
-          <p className="text-xs text-slate-400 italic mt-2">{deck.description}</p>
+          <p className="text-xs text-[var(--text-muted)] italic mt-2">{deck.description}</p>
         )}
         {process.env.NODE_ENV !== 'production' && (
-          <div className="mt-2 text-xs text-slate-400 bg-slate-900/30 p-2 rounded">
-            <div className="text-slate-300 font-semibold">Dev:</div>
+          <div className="mt-2 text-xs text-[var(--text-muted)] bg-[var(--bg-page)] p-2 rounded">
+            <div className="text-[var(--text-muted)] font-semibold">Dev:</div>
             <div className="mt-1">Colors: {(derivedColorKeys && derivedColorKeys.length) ? derivedColorKeys.join(', ') : 'none'}</div>
             <div className="mt-1">Curve: {Object.keys(manaCurveCounts).length ? JSON.stringify(manaCurveCounts) : '{}'} </div>
           </div>
@@ -168,7 +168,7 @@ export function DeckCard({
             <span className="text-xs text-red-200">{showMissing ? '▲' : '▼'}</span>
           </button>
           {showMissing && (
-            <div className="mt-2 bg-slate-900 rounded p-2 max-h-40 overflow-y-auto border border-red-700/20">
+            <div className="mt-2 bg-[var(--bg-page)] rounded p-2 max-h-40 overflow-y-auto border border-red-700/20">
               <div className="flex justify-end mb-2">
                 <button
                   onClick={(e) => { e.stopPropagation(); setShowBuyModal(true); }}
@@ -196,7 +196,7 @@ export function DeckCard({
 
       <button
         onClick={() => onSelect(deck)}
-        className="w-full mt-4 bg-slate-700 hover:bg-teal-600 text-white px-3 py-1 rounded text-sm transition-colors"
+        className="w-full mt-4 bg-[var(--muted-surface)] hover:bg-teal-600 text-white px-3 py-1 rounded text-sm transition-colors"
       >
         View Details
       </button>

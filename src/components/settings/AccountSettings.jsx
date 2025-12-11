@@ -55,7 +55,7 @@ export const AccountSettings = () => {
         icon={User}
         collapsible={false}
       >
-        <p className="text-slate-500 text-sm">More account options coming soon...</p>
+        <p className="text-[var(--text-muted)] text-sm">More account options coming soon...</p>
       </SettingsSection>
 
       {/* Notifications Section */}
@@ -109,11 +109,11 @@ export const AccountSettings = () => {
         icon={Database}
       >
         <div className="space-y-4">
-          <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
+          <div className="bg-[var(--bg-page)] rounded-lg p-4 border border-[var(--border)]">
             <h3 className="text-base font-semibold text-slate-200 mb-2">
               Update Price Data
             </h3>
-            <p className="text-slate-400 text-sm mb-4">
+            <p className="text-[var(--text-muted)] text-sm mb-4">
               Populate Scryfall IDs for cards missing them. This enables CardKingdom and TCGPlayer
               price tracking in the Analytics tab.
             </p>
@@ -123,7 +123,7 @@ export const AccountSettings = () => {
               disabled={isBackfilling}
               className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
                 isBackfilling
-                  ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
+                  ? 'bg-[var(--muted-surface)] text-[var(--text-muted)] cursor-not-allowed'
                   : 'bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-400 hover:to-cyan-400 text-white shadow-lg shadow-teal-500/25'
               }`}
             >
@@ -186,7 +186,7 @@ export const AccountSettings = () => {
         icon={Shield}
         defaultExpanded={false}
       >
-        <p className="text-slate-500 text-sm">Security options coming soon...</p>
+        <p className="text-[var(--text-muted)] text-sm">Security options coming soon...</p>
       </SettingsSection>
     </div>
   );

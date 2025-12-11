@@ -62,7 +62,7 @@ const getFieldColorClass = (field) => {
     quality: 'text-amber-400',
     foil: 'text-pink-400'
   };
-  return colors[field] || 'text-slate-400';
+  return colors[field] || 'text-[var(--text-muted)]';
 };
 
 export const ChangeLogTab = () => {
@@ -108,11 +108,11 @@ export const ChangeLogTab = () => {
       {/* Filters */}
       <div className="flex flex-col md:flex-row gap-3 items-start md:items-end">
         <div className="flex-1">
-          <label className="block text-sm text-slate-400 mb-2">Filter by Change Type</label>
+          <label className="block text-sm text-[var(--text-muted)] mb-2">Filter by Change Type</label>
           <select 
             value={filterType} 
             onChange={(e) => setFilterType(e.target.value)}
-            className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-white text-sm hover:border-teal-500 transition-colors"
+            className="w-full bg-[var(--surface)] border border-[var(--border)] rounded px-3 py-2 text-white text-sm hover:border-teal-500 transition-colors"
           >
             {fieldTypeOptions.map(option => (
               <option key={option.value} value={option.value}>
@@ -124,7 +124,7 @@ export const ChangeLogTab = () => {
         <button
           onClick={loadChanges}
           disabled={loading}
-          className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50"
+          className="px-4 py-2 bg-[var(--muted-surface)] hover:bg-slate-600 text-white rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50"
         >
           <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           Refresh
@@ -132,7 +132,7 @@ export const ChangeLogTab = () => {
       </div>
 
       {/* Results count */}
-      <div className="text-sm text-slate-400">
+      <div className="text-sm text-[var(--text-muted)]">
         {loading ? 'Loading...' : `${total} change${total !== 1 ? 's' : ''} recorded`}
       </div>
 
@@ -142,7 +142,7 @@ export const ChangeLogTab = () => {
           {changes.map((change) => (
             <div 
               key={change.id}
-              className="bg-gradient-to-r from-slate-800 to-slate-900 border border-slate-600 rounded-lg p-4 hover:border-teal-500 transition-colors"
+              className="bg-gradient-to-r from-slate-800 to-slate-900 border border-[var(--border)] rounded-lg p-4 hover:border-teal-500 transition-colors"
             >
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                 <div className="flex-1">
@@ -154,7 +154,7 @@ export const ChangeLogTab = () => {
                     <span className="text-red-400 line-through">
                       {formatValue(change.field_changed, change.old_value)}
                     </span>
-                    <ArrowRight className="w-4 h-4 text-slate-500" />
+                    <ArrowRight className="w-4 h-4 text-[var(--text-muted)]" />
                     <span className="text-green-400 font-semibold">
                       {formatValue(change.field_changed, change.new_value)}
                     </span>
@@ -163,7 +163,7 @@ export const ChangeLogTab = () => {
                 
                 <div className="md:text-right shrink-0">
                   <div className="text-sm text-amber-400">{getRelativeTime(change.changed_at)}</div>
-                  <div className="text-xs text-slate-500">
+                  <div className="text-xs text-[var(--text-muted)]">
                     {new Date(change.changed_at).toLocaleString()}
                   </div>
                 </div>
@@ -172,10 +172,10 @@ export const ChangeLogTab = () => {
           ))}
         </div>
       ) : !loading ? (
-        <div className="bg-slate-800 border border-slate-600 rounded-lg p-8 text-center">
-          <Filter className="w-12 h-12 text-slate-500 mx-auto mb-4" />
-          <p className="text-slate-400">No changes recorded yet.</p>
-          <p className="text-slate-500 text-sm mt-2">
+        <div className="bg-[var(--surface)] border border-[var(--border)] rounded-lg p-8 text-center">
+          <Filter className="w-12 h-12 text-[var(--text-muted)] mx-auto mb-4" />
+          <p className="text-[var(--text-muted)]">No changes recorded yet.</p>
+          <p className="text-[var(--text-muted)] text-sm mt-2">
             Start editing cards to see their change history here!
           </p>
         </div>

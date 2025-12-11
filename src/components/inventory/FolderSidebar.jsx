@@ -59,13 +59,13 @@ export const FolderSidebar = memo(function FolderSidebar({
         </div>
 
         {showCreateFolder && (
-          <div className="flex flex-col gap-2 pb-3 border-b border-slate-700">
+          <div className="flex flex-col gap-2 pb-3 border-b border-[var(--border)]">
             <input
               type="text"
               placeholder="Folder name"
               value={newFolderName}
               onChange={(e) => setNewFolderName(e.target.value)}
-              className="w-full bg-slate-800 border border-teal-600 rounded px-3 py-2 text-white placeholder-gray-400 text-sm"
+              className="w-full bg-[var(--surface)] border border-teal-600 rounded px-3 py-2 text-white placeholder-gray-400 text-sm"
               autoFocus
               onKeyDown={async (e) => {
                 if (e.key === 'Enter' && newFolderName.trim()) {
@@ -105,7 +105,7 @@ export const FolderSidebar = memo(function FolderSidebar({
                   setNewFolderName('');
                   setShowCreateFolder(false);
                 }}
-                className="bg-slate-700 hover:bg-slate-600 text-white px-2 py-1 rounded text-xs transition-colors"
+                className="bg-[var(--muted-surface)] hover:bg-slate-600 text-white px-2 py-1 rounded text-xs transition-colors"
               >
                 <X className="w-3 h-3" />
               </button>
@@ -339,7 +339,7 @@ export const FolderSidebar = memo(function FolderSidebar({
           };
 
           return (
-            <div key="Trash" className="mt-4 pt-4 border-t border-slate-700">
+            <div key="Trash" className="mt-4 pt-4 border-t border-[var(--border)]">
               <button
                 onClick={() => {
                   if (isSelected) {

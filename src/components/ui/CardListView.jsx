@@ -38,9 +38,9 @@ const getRarityColor = (rarity) => {
   switch (rarity?.toLowerCase()) {
     case 'mythic': return 'text-orange-400';
     case 'rare': return 'text-yellow-400';
-    case 'uncommon': return 'text-slate-300';
-    case 'common': return 'text-slate-500';
-    default: return 'text-slate-400';
+    case 'uncommon': return 'text-[var(--text-muted)]';
+    case 'common': return 'text-[var(--text-muted)]';
+    default: return 'text-[var(--text-muted)]';
   }
 };
 
@@ -82,7 +82,7 @@ const CardRow = memo(function CardRow({
       className={`
         group flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer
         transition-all duration-150 ease-out
-        hover:bg-slate-800/60
+        hover:bg-[var(--surface)]
         ${isSelected ? 'bg-teal-500/10 ring-1 ring-teal-500/30' : ''}
       `}
       onClick={() => onCardClick?.(card)}
@@ -100,7 +100,7 @@ const CardRow = memo(function CardRow({
             checked={isSelected}
             onChange={handleSelect}
             onClick={(e) => e.stopPropagation()}
-            className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-teal-500
+            className="w-4 h-4 rounded border-[var(--border)] bg-[var(--surface)] text-teal-500
                        focus:ring-teal-500/50 focus:ring-offset-0 cursor-pointer"
             aria-label={`Select ${card.name}`}
           />
@@ -109,7 +109,7 @@ const CardRow = memo(function CardRow({
 
       {/* Thumbnail */}
       {showThumbnail && (
-        <div className="flex-shrink-0 w-10 h-14 rounded overflow-hidden bg-slate-800">
+        <div className="flex-shrink-0 w-10 h-14 rounded overflow-hidden bg-[var(--surface)]">
           {thumbnailUrl ? (
             <img
               src={thumbnailUrl}
@@ -139,7 +139,7 @@ const CardRow = memo(function CardRow({
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2 text-xs text-slate-400">
+        <div className="flex items-center gap-2 text-xs text-[var(--text-muted)]">
           <span>{getSetDisplayName(card.set)}</span>
           <span className="text-slate-600">•</span>
           <span className={getRarityColor(card.rarity)}>
@@ -159,8 +159,8 @@ const CardRow = memo(function CardRow({
         <div className="flex-shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
           <button
             onClick={(e) => handleQuantityClick(e, -1)}
-            className="p-1 rounded bg-slate-700/50 text-slate-400 hover:text-white
-                       hover:bg-slate-700 transition-colors"
+            className="p-1 rounded bg-[var(--muted-surface)] text-[var(--text-muted)] hover:text-white
+                       hover:bg-[var(--muted-surface)] transition-colors"
             aria-label="Decrease quantity"
           >
             <Minus className="w-3 h-3" />
@@ -170,8 +170,8 @@ const CardRow = memo(function CardRow({
           </span>
           <button
             onClick={(e) => handleQuantityClick(e, 1)}
-            className="p-1 rounded bg-slate-700/50 text-slate-400 hover:text-white
-                       hover:bg-slate-700 transition-colors"
+            className="p-1 rounded bg-[var(--muted-surface)] text-[var(--text-muted)] hover:text-white
+                       hover:bg-[var(--muted-surface)] transition-colors"
             aria-label="Increase quantity"
           >
             <Plus className="w-3 h-3" />
@@ -182,7 +182,7 @@ const CardRow = memo(function CardRow({
       {/* Static quantity display when no controls */}
       {!onQuantityChange && quantity > 1 && (
         <div className="flex-shrink-0">
-          <span className="px-2 py-1 text-sm font-medium text-slate-300 bg-slate-800 rounded">
+          <span className="px-2 py-1 text-sm font-medium text-[var(--text-muted)] bg-[var(--surface)] rounded">
             ×{quantity}
           </span>
         </div>
@@ -195,7 +195,7 @@ const CardRow = memo(function CardRow({
             {formatPrice(price)}
           </div>
           {quantity > 1 && totalPrice !== null && (
-            <div className="text-xs text-slate-500">
+            <div className="text-xs text-[var(--text-muted)]">
               {formatPrice(totalPrice)} total
             </div>
           )}
@@ -210,15 +210,15 @@ const CardRow = memo(function CardRow({
               e.stopPropagation();
               onContextMenu(card, e);
             }}
-            className="p-1.5 rounded text-slate-500 hover:text-white
-                       hover:bg-slate-700 transition-colors
+            className="p-1.5 rounded text-[var(--text-muted)] hover:text-white
+                       hover:bg-[var(--muted-surface)] transition-colors
                        opacity-0 group-hover:opacity-100"
             aria-label="More options"
           >
             <MoreVertical className="w-4 h-4" />
           </button>
         )}
-        <ChevronRight className="w-4 h-4 text-slate-600 group-hover:text-slate-400 transition-colors" />
+        <ChevronRight className="w-4 h-4 text-slate-600 group-hover:text-[var(--text-muted)] transition-colors" />
       </div>
     </div>
   );
@@ -273,7 +273,7 @@ export const CardListView = memo(function CardListView({
 
   if (!cards || cards.length === 0) {
     return (
-      <div className={`flex flex-col items-center justify-center py-16 text-slate-400 ${className}`}>
+      <div className={`flex flex-col items-center justify-center py-16 text-[var(--text-muted)] ${className}`}>
         <p className="text-lg">{emptyMessage}</p>
       </div>
     );
@@ -283,7 +283,7 @@ export const CardListView = memo(function CardListView({
     <div className={`flex flex-col ${className}`} role="grid" aria-label="Card list">
       {/* Header with select all */}
       {onSelectAll && (
-        <div className="flex items-center gap-3 px-3 py-2 border-b border-slate-700/50 sticky top-0 bg-slate-900/95 backdrop-blur-sm z-10">
+        <div className="flex items-center gap-3 px-3 py-2 border-b border-[var(--border)] sticky top-0 bg-[var(--bg-page)] backdrop-blur-sm z-10">
           <input
             type="checkbox"
             checked={allSelected}
@@ -291,11 +291,11 @@ export const CardListView = memo(function CardListView({
               if (el) el.indeterminate = someSelected && !allSelected;
             }}
             onChange={handleSelectAll}
-            className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-teal-500
+            className="w-4 h-4 rounded border-[var(--border)] bg-[var(--surface)] text-teal-500
                        focus:ring-teal-500/50 focus:ring-offset-0 cursor-pointer"
             aria-label="Select all cards"
           />
-          <span className="text-sm text-slate-400">
+          <span className="text-sm text-[var(--text-muted)]">
             {selectedCards.size > 0
               ? `${selectedCards.size} of ${cards.length} selected`
               : `${cards.length} cards`

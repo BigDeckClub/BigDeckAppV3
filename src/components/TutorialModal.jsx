@@ -132,7 +132,7 @@ export function TutorialModal({ isOpen, onClose }) {
       </div>
       <div>
         <h2 className="text-2xl font-bold text-white">{step.title}</h2>
-        <p className="text-slate-400 text-sm mt-1">{step.description}</p>
+        <p className="text-[var(--text-muted)] text-sm mt-1">{step.description}</p>
       </div>
     </div>
   );
@@ -150,7 +150,7 @@ export function TutorialModal({ isOpen, onClose }) {
       </Button>
 
       <div className="flex items-center gap-2">
-        <div className="text-sm text-slate-400">
+        <div className="text-sm text-[var(--text-muted)]">
           Step <span className="font-semibold text-white">{currentStep + 1}</span> of <span className="font-semibold text-white">{tutorialSteps.length}</span>
         </div>
         <div className="flex gap-1">
@@ -193,7 +193,7 @@ export function TutorialModal({ isOpen, onClose }) {
             <div className="w-6 h-6 rounded-full bg-teal-500/20 border border-teal-500/40 flex items-center justify-center flex-shrink-0 mt-0.5">
               <span className="text-xs font-semibold text-teal-400">{index + 1}</span>
             </div>
-            <span className="text-slate-300 leading-relaxed">{detail}</span>
+            <span className="text-[var(--text-muted)] leading-relaxed">{detail}</span>
           </li>
         ))}
       </ul>

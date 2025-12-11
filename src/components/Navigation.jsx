@@ -96,12 +96,12 @@ export function Navigation({ activeTab, setActiveTab, onShowTutorial }) {
   return (
     <>
       {/* Desktop Navigation */}
-      <nav className="bg-gradient-to-r from-slate-900 to-slate-800 border-b border-slate-700 sticky top-0 z-50 shadow-xl shadow-slate-900/50">
+      <nav className="bg-gradient-to-r from-slate-900 to-slate-800 border-b border-[var(--border)] sticky top-0 z-50 shadow-xl shadow-slate-900/50">
         <div className="max-w-7xl mx-auto px-4 py-4 app-header flex items-center justify-between">
           <div className="desktop-nav flex gap-2 items-center">
             <button
               onClick={onShowTutorial}
-              className="px-3 py-2 text-slate-400 hover:text-teal-400 text-sm font-medium transition"
+              className="px-3 py-2 text-[var(--text-muted)] hover:text-teal-400 text-sm font-medium transition"
               title="View tutorial"
             >
               ?

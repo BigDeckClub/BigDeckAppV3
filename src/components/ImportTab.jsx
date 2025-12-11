@@ -51,7 +51,7 @@ export const ImportTab = ({
   return (
     <div className="space-y-6">
       {/* Rapid Entry Section */}
-      <div className="card rounded-lg p-4 sm:p-6 border border-slate-700">
+      <div className="card rounded-lg p-4 sm:p-6 border border-[var(--border)]">
         <div className="flex items-center gap-3 mb-4">
           <Layers className="w-6 h-6 text-teal-400" />
           <h2 className="text-lg sm:text-xl font-bold">Rapid Card Entry</h2>
@@ -69,12 +69,12 @@ export const ImportTab = ({
       </div>
 
       {/* Bulk File Import Section */}
-      <div className="card rounded-lg p-4 sm:p-6 border border-slate-700">
+      <div className="card rounded-lg p-4 sm:p-6 border border-[var(--border)]">
         <div className="flex items-center gap-3 mb-4">
           <Upload className="w-6 h-6 text-cyan-400" />
           <h2 className="text-lg sm:text-xl font-bold">Bulk Import from File</h2>
         </div>
-        <p className="text-sm text-slate-400 mb-4">
+        <p className="text-sm text-[var(--text-muted)] mb-4">
           Import cards from CSV or text files. Supports Moxfield, Deckbox, TCGPlayer, Archidekt, Manabox, and simple text formats.
         </p>
         <FileImportSection

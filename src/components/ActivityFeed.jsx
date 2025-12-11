@@ -50,7 +50,7 @@ const getActivityColor = (activityType) => {
     folder_created: 'text-amber-400 bg-amber-400/10',
     trash_operation: 'text-red-400 bg-red-400/10'
   };
-  return colors[activityType] || 'text-slate-400 bg-slate-400/10';
+  return colors[activityType] || 'text-[var(--text-muted)] bg-slate-400/10';
 };
 
 export const ActivityFeed = () => {
@@ -95,11 +95,11 @@ export const ActivityFeed = () => {
       {/* Filters */}
       <div className="flex flex-col md:flex-row gap-3 items-start md:items-end">
         <div className="flex-1">
-          <label className="block text-sm text-slate-400 mb-2">Filter by Activity Type</label>
+          <label className="block text-sm text-[var(--text-muted)] mb-2">Filter by Activity Type</label>
           <select 
             value={filterType} 
             onChange={(e) => setFilterType(e.target.value)}
-            className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-white text-sm hover:border-teal-500 transition-colors"
+            className="w-full bg-[var(--surface)] border border-[var(--border)] rounded px-3 py-2 text-white text-sm hover:border-teal-500 transition-colors"
           >
             {activityTypeOptions.map(option => (
               <option key={option.value} value={option.value}>
@@ -111,7 +111,7 @@ export const ActivityFeed = () => {
         <button
           onClick={loadActivities}
           disabled={loading}
-          className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50"
+          className="px-4 py-2 bg-[var(--muted-surface)] hover:bg-slate-600 text-white rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50"
         >
           <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           Refresh
@@ -119,7 +119,7 @@ export const ActivityFeed = () => {
       </div>
 
       {/* Results count */}
-      <div className="text-sm text-slate-400">
+      <div className="text-sm text-[var(--text-muted)]">
         {loading ? 'Loading...' : `${total} activit${total !== 1 ? 'ies' : 'y'} recorded`}
       </div>
 
@@ -133,7 +133,7 @@ export const ActivityFeed = () => {
             return (
               <div 
                 key={activity.id}
-                className="flex items-start gap-4 p-4 bg-gradient-to-r from-slate-800 to-slate-900 border border-slate-600 rounded-lg hover:border-teal-500 transition-colors"
+                className="flex items-start gap-4 p-4 bg-gradient-to-r from-slate-800 to-slate-900 border border-[var(--border)] rounded-lg hover:border-teal-500 transition-colors"
               >
                 <div className={`p-2 rounded-lg shrink-0 ${colorClass}`}>
                   <IconComponent className="w-5 h-5" />
@@ -142,7 +142,7 @@ export const ActivityFeed = () => {
                 <div className="flex-1 min-w-0">
                   <div className="font-semibold text-white truncate">{activity.title}</div>
                   {activity.description && (
-                    <div className="text-sm text-slate-400 mt-1">{activity.description}</div>
+                    <div className="text-sm text-[var(--text-muted)] mt-1">{activity.description}</div>
                   )}
                 </div>
                 
@@ -154,10 +154,10 @@ export const ActivityFeed = () => {
           })}
         </div>
       ) : !loading ? (
-        <div className="bg-slate-800 border border-slate-600 rounded-lg p-8 text-center">
-          <Activity className="w-12 h-12 text-slate-500 mx-auto mb-4" />
-          <p className="text-slate-400">No recent activity.</p>
-          <p className="text-slate-500 text-sm mt-2">
+        <div className="bg-[var(--surface)] border border-[var(--border)] rounded-lg p-8 text-center">
+          <Activity className="w-12 h-12 text-[var(--text-muted)] mx-auto mb-4" />
+          <p className="text-[var(--text-muted)]">No recent activity.</p>
+          <p className="text-[var(--text-muted)] text-sm mt-2">
             Your activity will appear here as you use the app.
           </p>
         </div>

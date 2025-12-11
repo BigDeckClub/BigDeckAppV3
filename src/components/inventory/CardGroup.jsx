@@ -326,21 +326,21 @@ export const CardGroup = memo(function CardGroup({
           </div>
         )}
 
-        <div className="grid grid-cols-3 gap-2 text-center pt-2 border-t border-slate-700/50">
+        <div className="grid grid-cols-3 gap-2 text-center pt-2 border-t border-[var(--border)]">
           <div className="space-y-1">
-            <div className="text-slate-500 text-[7px] md:text-[9px] font-semibold uppercase">Qty</div>
+            <div className="text-[var(--text-muted)] text-[7px] md:text-[9px] font-semibold uppercase">Qty</div>
             <div className="h-4 flex items-center justify-center">
-              <div className={`font-bold leading-none ${getStatFontSize(totalQty)} ${totalQty === 0 ? 'text-slate-500' : 'text-teal-300'}`}>{totalQty}</div>
+              <div className={`font-bold leading-none ${getStatFontSize(totalQty)} ${totalQty === 0 ? 'text-[var(--text-muted)]' : 'text-teal-300'}`}>{totalQty}</div>
             </div>
           </div>
           <div className="space-y-1">
-            <div className="text-slate-500 text-[7px] md:text-[9px] font-semibold uppercase">Cost</div>
+            <div className="text-[var(--text-muted)] text-[7px] md:text-[9px] font-semibold uppercase">Cost</div>
             <div className="h-4 flex items-center justify-center">
               <div className={`font-bold leading-none text-blue-300 ${getStatFontSize(avgPrice.toFixed(2))}`}>${avgPrice.toFixed(2)}</div>
             </div>
           </div>
           <div className="space-y-1">
-            <div className="text-slate-500 text-[7px] md:text-[9px] font-semibold uppercase">Total</div>
+            <div className="text-[var(--text-muted)] text-[7px] md:text-[9px] font-semibold uppercase">Total</div>
             <div className="h-4 flex items-center justify-center">
               <div className={`font-bold leading-none text-amber-400 ${getStatFontSize(formatTotal(totalValue))}`}>${formatTotal(totalValue)}</div>
             </div>
@@ -360,15 +360,15 @@ export const CardGroup = memo(function CardGroup({
             e.dataTransfer.setData('skuData', JSON.stringify(items[0]));
           }
         }}
-        className={`relative rounded-xl overflow-hidden border ${allItemsSelected ? 'border-teal-500 ring-2 ring-teal-500/50 shadow-lg shadow-teal-500/30' : 'border-slate-600 hover:border-teal-400'} transition-all duration-300 cursor-grab active:cursor-grabbing group hover:shadow-2xl hover:shadow-teal-500/30 hover:-translate-y-1 active:scale-95`}
+        className={`relative rounded-xl overflow-hidden border ${allItemsSelected ? 'border-teal-500 ring-2 ring-teal-500/50 shadow-lg shadow-teal-500/30' : 'border-[var(--border)] hover:border-teal-400'} transition-all duration-300 cursor-grab active:cursor-grabbing group hover:shadow-2xl hover:shadow-teal-500/30 hover:-translate-y-1 active:scale-95`}
         onClick={handleOpenModal}
       >
         {/* Card Image */}
-        <div className="aspect-[5/7] bg-slate-800 relative">
+        <div className="aspect-[5/7] bg-[var(--surface)] relative">
           {/* Loading skeleton */}
           {imageLoading && !imageError && (
-            <div className="absolute inset-0 bg-slate-700 animate-pulse flex items-center justify-center">
-              <div className="text-slate-500 text-xs">Loading...</div>
+            <div className="absolute inset-0 bg-[var(--muted-surface)] animate-pulse flex items-center justify-center">
+              <div className="text-[var(--text-muted)] text-xs">Loading...</div>
             </div>
           )}
           
@@ -405,7 +405,7 @@ export const CardGroup = memo(function CardGroup({
               );
             })()
           ) : (
-            <div className="absolute inset-0 bg-slate-800 flex flex-col items-center justify-center text-slate-400 p-4">
+            <div className="absolute inset-0 bg-[var(--surface)] flex flex-col items-center justify-center text-[var(--text-muted)] p-4">
               <ImageOff className="w-10 h-10 mb-2" />
               <span className="text-xs text-center line-clamp-2">{cardName}</span>
             </div>
@@ -415,8 +415,8 @@ export const CardGroup = memo(function CardGroup({
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3">
             <h3 className="text-white text-sm font-semibold line-clamp-2">{cardName}</h3>
             <div className="flex items-center gap-2 mt-1">
-              <Eye className="w-3 h-3 text-slate-300" />
-              <span className="text-slate-300 text-xs">Click for details</span>
+              <Eye className="w-3 h-3 text-[var(--text-muted)]" />
+              <span className="text-[var(--text-muted)] text-xs">Click for details</span>
             </div>
           </div>
           
@@ -433,7 +433,7 @@ export const CardGroup = memo(function CardGroup({
               className={`absolute top-2 left-2 p-1.5 rounded transition-all z-30 ${
                 allItemsSelected 
                   ? 'bg-teal-600 text-white' 
-                  : 'bg-black/50 text-slate-300 hover:bg-slate-600'
+                  : 'bg-black/50 text-[var(--text-muted)] hover:bg-slate-600'
               }`}
               title={allItemsSelected ? "Deselect" : "Select"}
             >
@@ -447,7 +447,7 @@ export const CardGroup = memo(function CardGroup({
               e.stopPropagation();
               items.forEach(item => deleteInventoryItem(item.id));
             }}
-            className="absolute top-2 right-2 p-1.5 bg-black/50 hover:bg-red-600/80 text-slate-300 hover:text-white rounded-lg transition-all opacity-0 group-hover:opacity-100 z-20"
+            className="absolute top-2 right-2 p-1.5 bg-black/50 hover:bg-red-600/80 text-[var(--text-muted)] hover:text-white rounded-lg transition-all opacity-0 group-hover:opacity-100 z-20"
             title="Delete all copies"
           >
             <X className="w-4 h-4" />
@@ -489,7 +489,7 @@ export const CardGroup = memo(function CardGroup({
           }}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
-          className="relative bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 hover:border-teal-400 rounded-lg p-4 transition-all duration-300 cursor-grab active:cursor-grabbing hover:shadow-2xl hover:shadow-teal-500/30 group"
+          className="relative bg-gradient-to-br from-slate-800 to-slate-900 border border-[var(--border)] hover:border-teal-400 rounded-lg p-4 transition-all duration-300 cursor-grab active:cursor-grabbing hover:shadow-2xl hover:shadow-teal-500/30 group"
           onClick={handleOpenModal}
         >
           <button
@@ -497,7 +497,7 @@ export const CardGroup = memo(function CardGroup({
               e.stopPropagation();
               items.forEach(item => deleteInventoryItem(item.id));
             }}
-            className="absolute top-3 right-3 p-1.5 bg-slate-700/60 hover:bg-slate-600 text-slate-300 hover:text-red-400 rounded-lg transition-all opacity-0 group-hover:opacity-100 z-20 min-w-[36px] min-h-[36px] flex items-center justify-center"
+            className="absolute top-3 right-3 p-1.5 bg-[var(--muted-surface)] hover:bg-slate-600 text-[var(--text-muted)] hover:text-red-400 rounded-lg transition-all opacity-0 group-hover:opacity-100 z-20 min-w-[36px] min-h-[36px] flex items-center justify-center"
             title="Delete all copies"
           >
             <X className="w-5 h-5" />
@@ -513,10 +513,10 @@ export const CardGroup = memo(function CardGroup({
                 )}
               </div>
               <div className="flex gap-4 md:gap-6 text-xs mt-2 flex-wrap">
-                <div><span className="text-slate-400">Qty:</span> <span className={`ml-1 font-semibold ${totalQty === 0 ? 'text-slate-500' : 'text-teal-300'}`}>{totalQty} copies</span></div>
-                <div><span className="text-slate-400">Available:</span> <span className="ml-1 text-green-400 font-semibold">{available}</span></div>
-                <div><span className="text-slate-400">Cost/ea:</span> <span className="ml-1 text-blue-300 font-semibold">${avgPrice.toFixed(2)}</span></div>
-                <div><span className="text-slate-400">Total:</span> <span className="ml-1 text-amber-400 font-semibold">${formatTotal(totalValue)}</span></div>
+                <div><span className="text-[var(--text-muted)]">Qty:</span> <span className={`ml-1 font-semibold ${totalQty === 0 ? 'text-[var(--text-muted)]' : 'text-teal-300'}`}>{totalQty} copies</span></div>
+                <div><span className="text-[var(--text-muted)]">Available:</span> <span className="ml-1 text-green-400 font-semibold">{available}</span></div>
+                <div><span className="text-[var(--text-muted)]">Cost/ea:</span> <span className="ml-1 text-blue-300 font-semibold">${avgPrice.toFixed(2)}</span></div>
+                <div><span className="text-[var(--text-muted)]">Total:</span> <span className="ml-1 text-amber-400 font-semibold">${formatTotal(totalValue)}</span></div>
               </div>
             </div>
             <div className="flex items-center gap-2 text-teal-400 text-sm flex-shrink-0">

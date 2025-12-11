@@ -23,7 +23,7 @@ export function LotModeSection({
   handleRemoveCardFromLot,
 }) {
   return (
-    <div className="rounded-lg border border-slate-700 bg-slate-800/30 p-4">
+    <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <Package className="w-5 h-5 text-amber-400" />
@@ -39,9 +39,9 @@ export function LotModeSection({
           {lotModeEnabled ? (
             <ToggleRight className="w-8 h-8 text-amber-400" />
           ) : (
-            <ToggleLeft className="w-8 h-8 text-slate-500" />
+            <ToggleLeft className="w-8 h-8 text-[var(--text-muted)]" />
           )}
-          <span className={lotModeEnabled ? 'text-amber-400' : 'text-slate-500'}>
+          <span className={lotModeEnabled ? 'text-amber-400' : 'text-[var(--text-muted)]'}>
             {lotModeEnabled ? 'ON' : 'OFF'}
           </span>
         </button>
@@ -52,20 +52,20 @@ export function LotModeSection({
           {/* Lot Details */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="lot-name-input" className="text-xs text-slate-400 mb-1 block">Lot Name</label>
+              <label htmlFor="lot-name-input" className="text-xs text-[var(--text-muted)] mb-1 block">Lot Name</label>
               <input
                 id="lot-name-input"
                 type="text"
                 placeholder="e.g., Mystery Booster Box, Commander Masters Pack"
                 value={lotName}
                 onChange={(e) => setLotName(e.target.value)}
-                className="w-full bg-slate-900/50 border border-slate-600 rounded px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-amber-400"
+                className="w-full bg-[var(--bg-page)] border border-[var(--border)] rounded px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-amber-400"
               />
             </div>
             <div>
-              <label htmlFor="lot-total-cost-input" className="text-xs text-slate-400 mb-1 block">Total Lot Cost</label>
+              <label htmlFor="lot-total-cost-input" className="text-xs text-[var(--text-muted)] mb-1 block">Total Lot Cost</label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] text-sm">$</span>
                 <input
                   id="lot-total-cost-input"
                   type="number"
@@ -74,7 +74,7 @@ export function LotModeSection({
                   placeholder="0.00"
                   value={lotTotalCost}
                   onChange={(e) => setLotTotalCost(e.target.value)}
-                  className="w-full bg-slate-900/50 border border-slate-600 rounded pl-7 pr-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-amber-400"
+                  className="w-full bg-[var(--bg-page)] border border-[var(--border)] rounded pl-7 pr-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-amber-400"
                 />
               </div>
             </div>
@@ -82,19 +82,19 @@ export function LotModeSection({
           
           {/* Cards in Lot */}
           {lotCards.length > 0 && (
-            <div className="border-t border-slate-700 pt-4">
-              <h4 className="text-sm font-medium text-slate-300 mb-2">Cards in this lot:</h4>
+            <div className="border-t border-[var(--border)] pt-4">
+              <h4 className="text-sm font-medium text-[var(--text-muted)] mb-2">Cards in this lot:</h4>
               <div className="space-y-1 max-h-40 overflow-y-auto">
                 {lotCards.map((card, index) => (
-                  <div key={index} className="flex items-center justify-between text-sm bg-slate-900/30 rounded px-3 py-1.5">
+                  <div key={index} className="flex items-center justify-between text-sm bg-[var(--bg-page)] rounded px-3 py-1.5">
                     <div className="flex items-center gap-2">
                       <span className="text-amber-400">{card.quantity}x</span>
                       <span className="text-white">{card.name}</span>
-                      <span className="text-slate-500">({getSetDisplayName(card.set, true)})</span>
+                      <span className="text-[var(--text-muted)]">({getSetDisplayName(card.set, true)})</span>
                     </div>
                     <button
                       onClick={() => handleRemoveCardFromLot(index)}
-                      className="text-slate-500 hover:text-red-400 transition-colors"
+                      className="text-[var(--text-muted)] hover:text-red-400 transition-colors"
                       type="button"
                       aria-label="Remove card from lot"
                     >
@@ -107,14 +107,14 @@ export function LotModeSection({
           )}
           
           {/* Lot Summary */}
-          <div className="flex flex-wrap items-center justify-between gap-4 border-t border-slate-700 pt-4">
+          <div className="flex flex-wrap items-center justify-between gap-4 border-t border-[var(--border)] pt-4">
             <div className="flex gap-6">
               <div className="text-sm">
-                <span className="text-slate-400">Total Cards: </span>
+                <span className="text-[var(--text-muted)]">Total Cards: </span>
                 <span className="font-semibold text-white">{lotTotalCards}</span>
               </div>
               <div className="text-sm">
-                <span className="text-slate-400">Cost Per Card: </span>
+                <span className="text-[var(--text-muted)]">Cost Per Card: </span>
                 <span className="font-semibold text-amber-400">
                   ${lotPerCardCost.toFixed(2)}
                 </span>
@@ -127,7 +127,7 @@ export function LotModeSection({
                 flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all
                 ${lotCards.length > 0 && !lotSubmitting
                   ? 'bg-amber-600 hover:bg-amber-500 text-white'
-                  : 'bg-slate-700 text-slate-500 cursor-not-allowed'
+                  : 'bg-[var(--muted-surface)] text-[var(--text-muted)] cursor-not-allowed'
                 }
               `}
               type="button"

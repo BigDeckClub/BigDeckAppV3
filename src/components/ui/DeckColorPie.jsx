@@ -95,18 +95,18 @@ const LegendItem = memo(function LegendItem({ color, count, percentage, isHovere
     <div
       className={`
         flex items-center gap-2 px-2 py-1 rounded transition-all
-        ${isHovered ? 'bg-slate-700/50' : ''}
+        ${isHovered ? 'bg-[var(--muted-surface)]' : ''}
       `}
       onMouseEnter={() => onHover?.(color)}
       onMouseLeave={() => onHover?.(null)}
     >
       <div
-        className="w-4 h-4 rounded-full border-2 border-slate-700"
+        className="w-4 h-4 rounded-full border-2 border-[var(--border)]"
         style={{ backgroundColor: config.color }}
       />
-      <span className="text-sm text-slate-300 min-w-[60px]">{config.name}</span>
+      <span className="text-sm text-[var(--text-muted)] min-w-[60px]">{config.name}</span>
       <span className="text-sm font-medium text-white">{count}</span>
-      <span className="text-xs text-slate-500">({percentage.toFixed(0)}%)</span>
+      <span className="text-xs text-[var(--text-muted)]">({percentage.toFixed(0)}%)</span>
     </div>
   );
 });
@@ -132,7 +132,7 @@ const ColorIdentity = memo(function ColorIdentity({ colors }) {
         return (
           <div
             key={color}
-            className="w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold border-2 border-slate-600"
+            className="w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold border-2 border-[var(--border)]"
             style={{ backgroundColor: config.color, color: config.textColor }}
           >
             {color}
@@ -231,18 +231,18 @@ export const DeckColorPie = memo(function DeckColorPie({
 
   if (segments.length === 0) {
     return (
-      <div className={`bg-slate-800/50 rounded-xl border border-slate-700 p-4 ${className}`}>
-        {title && <h3 className="text-sm font-medium text-slate-300 mb-4">{title}</h3>}
-        <div className="text-center py-8 text-slate-500">No color data available</div>
+      <div className={`bg-[var(--surface)] rounded-xl border border-[var(--border)] p-4 ${className}`}>
+        {title && <h3 className="text-sm font-medium text-[var(--text-muted)] mb-4">{title}</h3>}
+        <div className="text-center py-8 text-[var(--text-muted)]">No color data available</div>
       </div>
     );
   }
 
   return (
-    <div className={`bg-slate-800/50 rounded-xl border border-slate-700 p-4 ${className}`}>
+    <div className={`bg-[var(--surface)] rounded-xl border border-[var(--border)] p-4 ${className}`}>
       {/* Title */}
       {title && (
-        <h3 className="text-sm font-medium text-slate-300 mb-4">{title}</h3>
+        <h3 className="text-sm font-medium text-[var(--text-muted)] mb-4">{title}</h3>
       )}
 
       <div className="flex flex-col sm:flex-row items-center gap-6">
@@ -285,11 +285,11 @@ export const DeckColorPie = memo(function DeckColorPie({
 
           {/* Hover tooltip */}
           {hoveredColor && (
-            <div className="absolute -top-2 left-1/2 -translate-x-1/2 -translate-y-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 shadow-xl z-10 whitespace-nowrap">
+            <div className="absolute -top-2 left-1/2 -translate-x-1/2 -translate-y-full bg-[var(--bg-page)] border border-[var(--border)] rounded-lg px-3 py-1.5 shadow-xl z-10 whitespace-nowrap">
               <div className="text-sm font-medium text-white">
                 {MTG_COLORS[hoveredColor]?.name || hoveredColor}
               </div>
-              <div className="text-xs text-slate-400">
+              <div className="text-xs text-[var(--text-muted)]">
                 {segments.find((s) => s.color === hoveredColor)?.count || 0} cards
               </div>
             </div>
@@ -315,8 +315,8 @@ export const DeckColorPie = memo(function DeckColorPie({
 
       {/* Color identity */}
       {showIdentity && colorIdentity.length > 0 && (
-        <div className="mt-4 pt-4 border-t border-slate-700">
-          <div className="text-xs text-slate-500 text-center mb-2">Color Identity</div>
+        <div className="mt-4 pt-4 border-t border-[var(--border)]">
+          <div className="text-xs text-[var(--text-muted)] text-center mb-2">Color Identity</div>
           <ColorIdentity colors={colorIdentity} />
         </div>
       )}

@@ -158,7 +158,7 @@ export const AlertSettings = ({ inventory = [] }) => {
   }, [put]);
 
   return (
-    <div className="bg-slate-800 rounded-lg border border-slate-600 p-6">
+    <div className="bg-[var(--surface)] rounded-lg border border-[var(--border)] p-6">
       <div className="flex items-center gap-3 mb-6">
         <Bell className="w-6 h-6 text-yellow-400" />
         <h2 className="text-xl font-bold text-slate-100">Low Inventory Alerts</h2>
@@ -173,7 +173,7 @@ export const AlertSettings = ({ inventory = [] }) => {
 
       {/* Filter Toggle - only show when alerts exist */}
       {totalAlertsCount > 0 && (
-        <div className="flex items-center justify-between mb-4 p-3 bg-slate-700/50 rounded-lg">
+        <div className="flex items-center justify-between mb-4 p-3 bg-[var(--muted-surface)] rounded-lg">
           <div className="flex items-center gap-2">
             <input
               type="checkbox"
@@ -183,14 +183,14 @@ export const AlertSettings = ({ inventory = [] }) => {
               disabled={loadingDeckCards}
               className="rounded border-slate-500 bg-slate-600 text-teal-500 focus:ring-teal-500"
             />
-            <label htmlFor="deckCardsOnly" className="text-sm text-slate-300">
+            <label htmlFor="deckCardsOnly" className="text-sm text-[var(--text-muted)]">
               Show only cards in deck templates
             </label>
             {loadingDeckCards && (
-              <span className="text-xs text-slate-400 ml-2">Loading...</span>
+              <span className="text-xs text-[var(--text-muted)] ml-2">Loading...</span>
             )}
           </div>
-          <span className="text-xs text-slate-400">
+          <span className="text-xs text-[var(--text-muted)]">
             {deckCardsOnly ? `${filteredCount} of ${totalAlertsCount} cards` : `${totalAlertsCount} cards`}
           </span>
         </div>
@@ -200,20 +200,20 @@ export const AlertSettings = ({ inventory = [] }) => {
         <div className="text-center py-8">
           {deckCardsOnly && totalAlertsCount > 0 ? (
             <>
-              <p className="text-slate-400">No alerts match cards in your deck templates</p>
-              <p className="text-slate-500 text-sm mt-2">Try turning off the deck filter or add cards from your deck templates to alerts</p>
+              <p className="text-[var(--text-muted)]">No alerts match cards in your deck templates</p>
+              <p className="text-[var(--text-muted)] text-sm mt-2">Try turning off the deck filter or add cards from your deck templates to alerts</p>
             </>
           ) : (
             <>
-              <p className="text-slate-400">No low inventory alerts enabled yet</p>
-              <p className="text-slate-500 text-sm mt-2">Go to Inventory tab and click the bell icon to enable alerts for specific cards</p>
+              <p className="text-[var(--text-muted)]">No low inventory alerts enabled yet</p>
+              <p className="text-[var(--text-muted)] text-sm mt-2">Go to Inventory tab and click the bell icon to enable alerts for specific cards</p>
             </>
           )}
         </div>
       ) : (
         <div className="space-y-4">
           {Object.entries(cardsWithAlerts).map(([cardName, items]) => (
-            <div key={cardName} className="bg-slate-700 rounded-lg p-4 border border-slate-600">
+            <div key={cardName} className="bg-[var(--muted-surface)] rounded-lg p-4 border border-[var(--border)]">
               <h3 className="font-semibold text-slate-100 mb-3">{cardName}</h3>
               <div className="space-y-2">
                 {items.map(item => (
@@ -221,7 +221,7 @@ export const AlertSettings = ({ inventory = [] }) => {
                     <div className="flex items-center gap-3 bg-slate-600/50 p-3 rounded">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 text-sm">
-                          <span className="text-slate-300">
+                          <span className="text-[var(--text-muted)]">
                             {item.set ? `${item.set.toUpperCase()}` : 'Unknown Set'}
                           </span>
                           {item.foil && (
@@ -230,11 +230,11 @@ export const AlertSettings = ({ inventory = [] }) => {
                             </span>
                           )}
                           {item.quality && item.quality !== 'NM' && (
-                            <span className="text-xs bg-slate-700 text-slate-300 px-2 py-0.5 rounded">
+                            <span className="text-xs bg-[var(--muted-surface)] text-[var(--text-muted)] px-2 py-0.5 rounded">
                               {item.quality}
                             </span>
                           )}
-                          <span className="text-xs text-slate-400">
+                          <span className="text-xs text-[var(--text-muted)]">
                             Qty: {item._totalQuantity || item.quantity || 0}
                           </span>
                           {item._mergedCount > 1 && (
@@ -249,7 +249,7 @@ export const AlertSettings = ({ inventory = [] }) => {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <label className="text-sm text-slate-400">Threshold:</label>
+                        <label className="text-sm text-[var(--text-muted)]">Threshold:</label>
                         <input
                           type="number"
                           min="0"
@@ -285,10 +285,10 @@ export const AlertSettings = ({ inventory = [] }) => {
                     
                     {/* Expanded dropdown showing individual entries */}
                     {item._mergedCount > 1 && expandedMerged[item.id] && (
-                      <div className="ml-6 mt-2 space-y-1 bg-slate-700/30 rounded p-2 border-l-2 border-teal-500/30">
+                      <div className="ml-6 mt-2 space-y-1 bg-[var(--muted-surface)] rounded p-2 border-l-2 border-teal-500/30">
                         {item._mergedItems.map((subItem, idx) => (
-                          <div key={subItem.id} className="flex items-center gap-2 text-xs text-slate-400 py-1">
-                            <span className="text-slate-500">#{idx + 1}</span>
+                          <div key={subItem.id} className="flex items-center gap-2 text-xs text-[var(--text-muted)] py-1">
+                            <span className="text-[var(--text-muted)]">#{idx + 1}</span>
                             <span>ID: {subItem.id}</span>
                             <span>Qty: {subItem.quantity || 0}</span>
                             <span>Threshold: {subItem.low_inventory_threshold || 0}</span>
@@ -308,9 +308,9 @@ export const AlertSettings = ({ inventory = [] }) => {
       )}
 
       {/* Settings Info */}
-      <div className="bg-slate-700/50 rounded-lg border border-slate-600 p-4 mt-6">
+      <div className="bg-[var(--muted-surface)] rounded-lg border border-[var(--border)] p-4 mt-6">
         <h3 className="font-semibold text-slate-100 mb-2">How to Use Low Inventory Alerts</h3>
-        <ul className="text-sm text-slate-400 space-y-2 list-disc list-inside">
+        <ul className="text-sm text-[var(--text-muted)] space-y-2 list-disc list-inside">
           <li>Go to the <strong>Inventory</strong> tab and click the bell icon on any card SKU</li>
           <li>Set a quantity threshold (e.g., 2, 5, 10) for when you want to be alerted</li>
           <li>Alerts can be customized per card type to track deck staples differently than bulk inventory</li>

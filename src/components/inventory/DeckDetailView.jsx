@@ -131,7 +131,7 @@ export const DeckDetailView = memo(function DeckDetailView({
             </div>
           </div>
           
-          <div className="grid grid-cols-3 gap-2 text-center pt-2 border-t border-slate-700/50">
+          <div className="grid grid-cols-3 gap-2 text-center pt-2 border-t border-[var(--border)]">
             <div className="space-y-1">
               <div className="text-ui-muted text-[7px] md:text-[9px] font-semibold uppercase">Reserved</div>
               <div className="h-4 flex items-center justify-center">
@@ -139,13 +139,13 @@ export const DeckDetailView = memo(function DeckDetailView({
               </div>
             </div>
             <div className="space-y-1">
-              <div className="text-slate-500 text-[7px] md:text-[9px] font-semibold uppercase">Cost</div>
+              <div className="text-[var(--text-muted)] text-[7px] md:text-[9px] font-semibold uppercase">Cost</div>
               <div className="h-4 flex items-center justify-center">
                 <div className={`font-bold leading-none text-ui-accent ${getStatFontSize(avgPrice.toFixed(2))}`}>${avgPrice.toFixed(2)}</div>
               </div>
             </div>
             <div className="space-y-1">
-              <div className="text-slate-500 text-[7px] md:text-[9px] font-semibold uppercase">Total</div>
+              <div className="text-[var(--text-muted)] text-[7px] md:text-[9px] font-semibold uppercase">Total</div>
               <div className="h-4 flex items-center justify-center">
                 <div className={`font-bold leading-none text-ui-accent ${getStatFontSize(formatTotal(totalValue))}`}>${formatTotal(totalValue)}</div>
               </div>
@@ -173,7 +173,7 @@ export const DeckDetailView = memo(function DeckDetailView({
                 e.stopPropagation();
                 items.forEach(item => removeCardFromDeck(deckId, item.id, item.quantity_reserved));
               }}
-              className="absolute top-3 right-3 p-1.5 bg-slate-700/60 hover:bg-slate-600 text-slate-300 hover:text-red-400 rounded-lg transition-all opacity-0 group-hover:opacity-100 z-20"
+              className="absolute top-3 right-3 p-1.5 bg-[var(--muted-surface)] hover:bg-slate-600 text-[var(--text-muted)] hover:text-red-400 rounded-lg transition-all opacity-0 group-hover:opacity-100 z-20"
               title="Remove all from deck"
             >
               <X className="w-5 h-5" />
@@ -184,9 +184,9 @@ export const DeckDetailView = memo(function DeckDetailView({
                   <h3 className="text-sm font-semibold text-slate-50 break-words">{cardName}</h3>
                 </div>
                 <div className="flex gap-6 text-xs mt-2">
-                  <div><span className="text-slate-400">Reserved:</span> <span className="ml-1 font-semibold text-green-400">{totalQty}</span></div>
-                  <div><span className="text-slate-400">Cost/ea:</span> <span className="ml-1 text-blue-300 font-semibold">${avgPrice.toFixed(2)}</span></div>
-                  <div><span className="text-slate-400">Total:</span> <span className="ml-1 text-amber-400 font-semibold">${formatTotal(totalValue)}</span></div>
+                  <div><span className="text-[var(--text-muted)]">Reserved:</span> <span className="ml-1 font-semibold text-green-400">{totalQty}</span></div>
+                  <div><span className="text-[var(--text-muted)]">Cost/ea:</span> <span className="ml-1 text-blue-300 font-semibold">${avgPrice.toFixed(2)}</span></div>
+                  <div><span className="text-[var(--text-muted)]">Total:</span> <span className="ml-1 text-amber-400 font-semibold">${formatTotal(totalValue)}</span></div>
                 </div>
               </div>
               <div className="text-green-400 text-sm flex-shrink-0 cursor-pointer">
@@ -246,10 +246,10 @@ export const DeckDetailView = memo(function DeckDetailView({
                         };
                         e.dataTransfer.setData('deckCardData', JSON.stringify(deckCardData));
                       }}
-                      className="text-[9px] text-slate-300 bg-slate-600/50 rounded px-1.5 py-0.5 flex justify-between items-center group hover:bg-slate-600 transition-colors cursor-grab active:cursor-grabbing">
+                      className="text-[9px] text-[var(--text-muted)] bg-slate-600/50 rounded px-1.5 py-0.5 flex justify-between items-center group hover:bg-slate-600 transition-colors cursor-grab active:cursor-grabbing">
                       <span>{item.quantity_reserved}x @ ${parseFloat(item.purchase_price || 0).toFixed(2)}</span>
                       <div className="flex items-center gap-1">
-                        <span className="text-slate-400">{item.original_folder}</span>
+                        <span className="text-[var(--text-muted)]">{item.original_folder}</span>
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -295,7 +295,7 @@ export const DeckDetailView = memo(function DeckDetailView({
         }}
       >
         {/* Deck Header */}
-        <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/50 rounded-lg border border-slate-600 hover:border-green-500/50 p-3 transition-all duration-300 shadow-lg shadow-slate-900/50">
+        <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/50 rounded-lg border border-[var(--border)] hover:border-green-500/50 p-3 transition-all duration-300 shadow-lg shadow-slate-900/50">
           <div className="flex justify-between items-start gap-3">
             <div className="flex-1">
               <div className="flex items-baseline gap-3 mb-1.5 flex-wrap">
@@ -311,7 +311,7 @@ export const DeckDetailView = memo(function DeckDetailView({
                 {deckDetails.totalCost > 0 && (
                   <span className="text-green-400 font-semibold">💰 ${deckDetails.totalCost?.toFixed(2) || '0.00'}</span>
                 )}
-                <span className="text-slate-400">
+                <span className="text-[var(--text-muted)]">
                   ✅ {deckDetails.reservedCount} reserved
                   {deckDetails.extraCount > 0 && <span className="text-blue-400"> • +{deckDetails.extraCount} extra</span>}
                   {deckDetails.missingCount > 0 && <span className="text-yellow-400"> • {deckDetails.missingCount} missing</span>}
@@ -353,7 +353,7 @@ export const DeckDetailView = memo(function DeckDetailView({
               </button>
               <button
                 onClick={() => releaseDeck(deck.id)}
-                className="bg-gradient-to-br from-slate-700 to-slate-800 hover:from-red-600 hover:to-red-700 text-slate-300 hover:text-white p-2 rounded-lg transition-all duration-200 hover:shadow-lg hover:shadow-red-500/30 flex items-center"
+                className="bg-gradient-to-br from-slate-700 to-slate-800 hover:from-red-600 hover:to-red-700 text-[var(--text-muted)] hover:text-white p-2 rounded-lg transition-all duration-200 hover:shadow-lg hover:shadow-red-500/30 flex items-center"
                 title="Delete deck and return cards to unsorted"
               >
                 <Trash2 className="w-5 h-5" />
@@ -392,8 +392,8 @@ export const DeckDetailView = memo(function DeckDetailView({
               <ChevronDown className={`w-5 h-5 text-yellow-400 transition-transform ${expandedMissingCards[deckId] ? 'rotate-180' : ''}`} />
             </button>
             {expandedMissingCards[deckId] && (
-              <div className="bg-slate-900 rounded-b-lg p-3 space-y-2 max-h-48 overflow-y-auto mt-2">
-                <div className="text-sm text-slate-300 p-2">
+              <div className="bg-[var(--bg-page)] rounded-b-lg p-3 space-y-2 max-h-48 overflow-y-auto mt-2">
+                <div className="text-sm text-[var(--text-muted)] p-2">
                   <div className="mb-2 font-semibold text-teal-300">Cards needed to complete this deck:</div>
                   {(deck.cards || []).map((card, idx) => {
                     // Find how many of this card are reserved
@@ -405,10 +405,10 @@ export const DeckDetailView = memo(function DeckDetailView({
                     const matchesSearch = inventorySearch === '' || card.name.toLowerCase().includes(inventorySearch.toLowerCase());
                     if (!matchesSearch) return null;
                     return (
-                      <div key={idx} className="flex justify-between items-center text-sm bg-slate-800 p-2 rounded mb-1">
+                      <div key={idx} className="flex justify-between items-center text-sm bg-[var(--surface)] p-2 rounded mb-1">
                         <div className="flex-1">
                           <span className="text-white">{needed}x {card.name}</span>
-                          <span className="text-xs text-slate-500 ml-2">{getSetDisplayName(card.set, true)}</span>
+                          <span className="text-xs text-[var(--text-muted)] ml-2">{getSetDisplayName(card.set, true)}</span>
                         </div>
                         <div className="flex items-center gap-1">
                           <BuyButton card={card} quantity={needed} size="sm" />

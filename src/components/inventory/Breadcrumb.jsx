@@ -39,7 +39,7 @@ export const Breadcrumb = memo(function Breadcrumb({
   return (
     <nav 
       aria-label="Breadcrumb"
-      className="bg-slate-800/50 rounded-lg px-3 py-2 mb-4 border border-slate-700 overflow-x-auto"
+      className="bg-[var(--surface)] rounded-lg px-3 py-2 mb-4 border border-[var(--border)] overflow-x-auto"
     >
       <ol className="flex items-center gap-1 min-w-0 text-sm">
         {navigationPath.map((segment, index) => {
@@ -51,7 +51,7 @@ export const Breadcrumb = memo(function Breadcrumb({
               {/* Separator (except for first item) */}
               {!isFirst && (
                 <ChevronRight 
-                  className="w-4 h-4 text-slate-500 flex-shrink-0" 
+                  className="w-4 h-4 text-[var(--text-muted)] flex-shrink-0" 
                   aria-hidden="true"
                 />
               )}
@@ -59,7 +59,7 @@ export const Breadcrumb = memo(function Breadcrumb({
               {isLast ? (
                 /* Current page - not clickable */
                 <span 
-                  className="flex items-center gap-1.5 text-slate-300 truncate"
+                  className="flex items-center gap-1.5 text-[var(--text-muted)] truncate"
                   aria-current="page"
                 >
                   {getSegmentIcon(segment, isFirst)}

@@ -53,7 +53,7 @@ const getActionColor = (actionType) => {
     folder_created: 'text-amber-400 bg-amber-400/10 border-amber-400/30',
     bulk_folder_move: 'text-amber-400 bg-amber-400/10 border-amber-400/30'
   };
-  return colors[actionType] || 'text-slate-400 bg-slate-400/10 border-slate-400/30';
+  return colors[actionType] || 'text-[var(--text-muted)] bg-slate-400/10 border-slate-400/30';
 };
 
 /**
@@ -96,13 +96,13 @@ const AuditEntry = ({ entry }) => {
         
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs font-medium px-2 py-0.5 rounded bg-slate-700/50 text-slate-300">
+            <span className="text-xs font-medium px-2 py-0.5 rounded bg-[var(--muted-surface)] text-[var(--text-muted)]">
               {formatActionType(entry.action_type)}
             </span>
           </div>
           <div className="font-medium text-white mt-1">{entry.description || 'No description'}</div>
           {entry.entity_type && (
-            <div className="text-xs text-slate-500 mt-1">
+            <div className="text-xs text-[var(--text-muted)] mt-1">
               {entry.entity_type.charAt(0).toUpperCase() + entry.entity_type.slice(1)}
               {entry.entity_id && ` #${entry.entity_id}`}
             </div>
@@ -112,12 +112,12 @@ const AuditEntry = ({ entry }) => {
         <div className="flex items-center gap-2 shrink-0">
           <div className="text-right">
             <div className="text-sm text-amber-400">{getRelativeTime(entry.created_at)}</div>
-            <div className="text-xs text-slate-500">
+            <div className="text-xs text-[var(--text-muted)]">
               {new Date(entry.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </div>
           </div>
           {hasMetadata && (
-            <div className="text-slate-500">
+            <div className="text-[var(--text-muted)]">
               {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
             </div>
           )}
@@ -125,13 +125,13 @@ const AuditEntry = ({ entry }) => {
       </div>
       
       {expanded && hasMetadata && (
-        <div className="border-t border-slate-700 bg-slate-900/50 p-4">
-          <div className="text-xs text-slate-400 font-medium mb-2">Details</div>
+        <div className="border-t border-[var(--border)] bg-[var(--bg-page)] p-4">
+          <div className="text-xs text-[var(--text-muted)] font-medium mb-2">Details</div>
           <div className="space-y-1">
             {Object.entries(metadata).map(([key, value]) => (
               <div key={key} className="flex gap-2 text-sm">
-                <span className="text-slate-500">{key.replace(/_/g, ' ')}:</span>
-                <span className="text-slate-300">
+                <span className="text-[var(--text-muted)]">{key.replace(/_/g, ' ')}:</span>
+                <span className="text-[var(--text-muted)]">
                   {typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value)}
                 </span>
               </div>
@@ -197,11 +197,11 @@ export const AuditLog = () => {
       {/* Filters */}
       <div className="flex flex-col md:flex-row gap-3 items-start md:items-end">
         <div className="flex-1">
-          <label className="block text-sm text-slate-400 mb-2">Filter by Action Type</label>
+          <label className="block text-sm text-[var(--text-muted)] mb-2">Filter by Action Type</label>
           <select 
             value={filterType} 
             onChange={(e) => setFilterType(e.target.value)}
-            className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-white text-sm hover:border-teal-500 transition-colors"
+            className="w-full bg-[var(--surface)] border border-[var(--border)] rounded px-3 py-2 text-white text-sm hover:border-teal-500 transition-colors"
           >
             {actionTypeOptions.map(option => (
               <option key={option.value} value={option.value}>
@@ -213,7 +213,7 @@ export const AuditLog = () => {
         <button
           onClick={loadEntries}
           disabled={loading}
-          className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50"
+          className="px-4 py-2 bg-[var(--muted-surface)] hover:bg-slate-600 text-white rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50"
         >
           <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           Refresh
@@ -221,7 +221,7 @@ export const AuditLog = () => {
       </div>
 
       {/* Results count */}
-      <div className="text-sm text-slate-400">
+      <div className="text-sm text-[var(--text-muted)]">
         {loading ? 'Loading...' : `${total} audit entr${total !== 1 ? 'ies' : 'y'} recorded`}
       </div>
 
@@ -233,10 +233,10 @@ export const AuditLog = () => {
           ))}
         </div>
       ) : !loading ? (
-        <div className="bg-slate-800 border border-slate-600 rounded-lg p-8 text-center">
-          <Shield className="w-12 h-12 text-slate-500 mx-auto mb-4" />
-          <p className="text-slate-400">No audit entries recorded.</p>
-          <p className="text-slate-500 text-sm mt-2">
+        <div className="bg-[var(--surface)] border border-[var(--border)] rounded-lg p-8 text-center">
+          <Shield className="w-12 h-12 text-[var(--text-muted)] mx-auto mb-4" />
+          <p className="text-[var(--text-muted)]">No audit entries recorded.</p>
+          <p className="text-[var(--text-muted)] text-sm mt-2">
             System actions will be logged here for your reference.
           </p>
         </div>

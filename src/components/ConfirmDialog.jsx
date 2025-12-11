@@ -69,7 +69,7 @@ export function ConfirmDialog() {
       {/* Dialog */}
       <div
         ref={dialogRef}
-        className="relative bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl border border-slate-600 shadow-2xl max-w-md w-full mx-4 overflow-hidden animate-scale-in"
+        className="relative bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl border border-[var(--border)] shadow-2xl max-w-md w-full mx-4 overflow-hidden animate-scale-in"
       >
         <div className="p-6">
           {/* Header */}
@@ -88,7 +88,7 @@ export function ConfirmDialog() {
               </h3>
               <p
                 id="confirm-dialog-description"
-                className="mt-2 text-sm text-slate-300"
+                className="mt-2 text-sm text-[var(--text-muted)]"
               >
                 {options.message}
               </p>
@@ -99,7 +99,7 @@ export function ConfirmDialog() {
           <div className="mt-6 flex gap-3 justify-end">
             <button
               onClick={handleCancel}
-              className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 focus:ring-offset-slate-800"
+              className="px-4 py-2 text-sm font-medium text-[var(--text-muted)] bg-[var(--muted-surface)] hover:bg-slate-600 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 focus:ring-offset-slate-800"
             >
               {options.cancelText}
             </button>

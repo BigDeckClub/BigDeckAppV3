@@ -77,7 +77,7 @@ export function TrashView({
       {trashCards.length > 0 ? (
         <CardGrid cards={trashCards} {...cardGridProps} isTrashView={true} />
       ) : (
-        <p className="text-slate-400 text-center py-12">Trash is empty.</p>
+        <p className="text-[var(--text-muted)] text-center py-12">Trash is empty.</p>
       )}
     </>
   );
