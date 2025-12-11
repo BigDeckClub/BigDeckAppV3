@@ -1,26 +1,18 @@
 import React from 'react';
-import { Sun, Moon } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 
-export const ThemeToggle = ({ className = '' }) => {
-  const { theme, toggleTheme } = useTheme();
-
-  const isParchment = theme === 'parchment';
+export default function ThemeToggle({ className = '' }) {
+  const { theme, toggle } = useTheme();
 
   return (
     <button
-      onClick={toggleTheme}
-      title={isParchment ? 'Switch to default theme' : 'Switch to parchment theme'}
-      className={`p-2 rounded-lg hover:bg-ui-surface transition-colors ${className}`}
-      aria-label="Toggle theme"
+      aria-pressed={theme === 'dark'}
+      onClick={toggle}
+      className={`p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 ${className}`}
+      title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
     >
-      {isParchment ? (
-        <Sun className="w-5 h-5 text-ui-accent-foreground" />
-      ) : (
-        <Moon className="w-5 h-5 text-ui-muted" />
-      )}
+      <span aria-hidden>{theme === 'dark' ? '🌙' : '☀️'}</span>
+      <span className="sr-only">Toggle theme</span>
     </button>
   );
-};
-
-export default ThemeToggle;
+}
