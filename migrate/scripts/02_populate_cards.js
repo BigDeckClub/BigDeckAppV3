@@ -12,6 +12,7 @@ import pkg from 'pg';
 import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
+import { scryfallServerClient } from '../../server/utils/scryfallClient.server.js';
 import { fileURLToPath } from 'url';
 
 dotenv.config();
@@ -124,96 +125,94 @@ async function main() {
     let skipped = 0;
     let failed = 0;
 
-    for (let i = 0; i < uniqueCards.length; i++) {
-      const cardName = uniqueCards[i].name;
-      const normalizedName = normalizeCardName(cardName);
-      
-      process.stdout.write(`\r[${i + 1}/${uniqueCards.length}] Processing: ${cardName.substring(0, 40).padEnd(40)}`);
+    // Process unique cards in batches using Scryfall /cards/collection
+    const CHUNK = 75;
+    const names = uniqueCards.map(r => r.name);
 
-      // Check if card already exists (by normalized name)
-      const { rows: existing } = await client.query(
-        `SELECT id FROM cards WHERE normalized_name = $1`,
-        [normalizedName]
-      );
+    for (let i = 0; i < names.length; i += CHUNK) {
+      const chunk = names.slice(i, i + CHUNK);
+      process.stdout.write(`\r[${i + 1}/${names.length}] Resolving batch ${i + 1}..${Math.min(i + CHUNK, names.length)}`);
 
-      if (existing.length > 0) {
-        skipped++;
-        mappings.push({
-          original_name: cardName,
-          card_id: existing[0].id,
-          status: 'existing'
-        });
-        continue;
+      // Build identifiers for batchResolve (name only)
+      const identifiers = chunk.map(n => ({ name: n }));
+      let resolved = {};
+      try {
+        resolved = await scryfallServerClient.batchResolve(identifiers);
+      } catch (err) {
+        console.error('\n[POPULATE_CARDS] batchResolve failed:', err.message);
+        resolved = {};
       }
 
-      // Fetch from Scryfall
-      await sleep(SCRYFALL_DELAY);
-      const scryfallCard = await fetchCardFromScryfall(cardName);
+      // Iterate through chunk and insert/skip as before
+      for (let j = 0; j < chunk.length; j++) {
+        const idx = i + j;
+        const cardName = chunk[j];
+        const normalizedName = normalizeCardName(cardName);
+        process.stdout.write(`\r[${idx + 1}/${names.length}] Processing: ${cardName.substring(0, 40).padEnd(40)}`);
 
-      if (!scryfallCard || !scryfallCard.oracle_id) {
-        failed++;
-        unmapped.push({
-          original_name: cardName,
-          reason: 'Not found in Scryfall'
-        });
-        continue;
-      }
+        // Check if card already exists (by normalized name)
+        const { rows: existing } = await client.query(
+          `SELECT id FROM cards WHERE normalized_name = $1`,
+          [normalizedName]
+        );
 
-      // Check if card exists by oracle_id
-      const { rows: existingByOracle } = await client.query(
-        `SELECT id FROM cards WHERE oracle_id = $1`,
-        [scryfallCard.oracle_id]
-      );
+        if (existing.length > 0) {
+          skipped++;
+          mappings.push({ original_name: cardName, card_id: existing[0].id, status: 'existing' });
+          continue;
+        }
 
-      if (existingByOracle.length > 0) {
-        skipped++;
-        mappings.push({
-          original_name: cardName,
-          card_id: existingByOracle[0].id,
-          oracle_id: scryfallCard.oracle_id,
-          status: 'existing_oracle'
-        });
-        continue;
-      }
+        const key = `${(cardName||'').toLowerCase().trim()}|`.toLowerCase();
+        // batchResolve returned map keyed by name|set (set empty here)
+        const cardResolved = resolved[`${(cardName||'').toLowerCase().trim()}|`];
 
-      // Insert new card
-      if (!DRY_RUN) {
-        const { rows: inserted } = await client.query(`
-          INSERT INTO cards (
-            oracle_id, name, normalized_name, type_line, mana_cost, cmc,
-            colors, color_identity, keywords, oracle_text
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-          RETURNING id
-        `, [
-          scryfallCard.oracle_id,
-          scryfallCard.name,
-          normalizeCardName(scryfallCard.name),
-          scryfallCard.type_line || null,
-          scryfallCard.mana_cost || null,
-          scryfallCard.cmc || null,
-          scryfallCard.colors || [],
-          scryfallCard.color_identity || [],
-          scryfallCard.keywords || [],
-          scryfallCard.oracle_text || null
-        ]);
+        if (!cardResolved || !cardResolved.oracle_id) {
+          failed++;
+          unmapped.push({ original_name: cardName, reason: 'Not found in Scryfall' });
+          continue;
+        }
 
-        mappings.push({
-          original_name: cardName,
-          card_id: inserted[0].id,
-          oracle_id: scryfallCard.oracle_id,
-          scryfall_name: scryfallCard.name,
-          status: 'created'
-        });
+        const scryfallCard = cardResolved;
 
-        created++;
-      } else {
-        mappings.push({
-          original_name: cardName,
-          oracle_id: scryfallCard.oracle_id,
-          scryfall_name: scryfallCard.name,
-          status: 'would_create'
-        });
-        created++;
+        // Check if card exists by oracle_id
+        const { rows: existingByOracle } = await client.query(
+          `SELECT id FROM cards WHERE oracle_id = $1`,
+          [scryfallCard.oracle_id]
+        );
+
+        if (existingByOracle.length > 0) {
+          skipped++;
+          mappings.push({ original_name: cardName, card_id: existingByOracle[0].id, oracle_id: scryfallCard.oracle_id, status: 'existing_oracle' });
+          continue;
+        }
+
+        // Insert new card
+        if (!DRY_RUN) {
+          const { rows: inserted } = await client.query(`
+            INSERT INTO cards (
+              oracle_id, name, normalized_name, type_line, mana_cost, cmc,
+              colors, color_identity, keywords, oracle_text
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+            RETURNING id
+          `, [
+            scryfallCard.oracle_id,
+            scryfallCard.name,
+            normalizeCardName(scryfallCard.name),
+            scryfallCard.type_line || null,
+            scryfallCard.mana_cost || null,
+            scryfallCard.cmc || null,
+            scryfallCard.colors || [],
+            scryfallCard.color_identity || [],
+            scryfallCard.keywords || [],
+            scryfallCard.oracle_text || null
+          ]);
+
+          mappings.push({ original_name: cardName, card_id: inserted[0].id, oracle_id: scryfallCard.oracle_id, scryfall_name: scryfallCard.name, status: 'created' });
+          created++;
+        } else {
+          mappings.push({ original_name: cardName, oracle_id: scryfallCard.oracle_id, scryfall_name: scryfallCard.name, status: 'would_create' });
+          created++;
+        }
       }
     }
 

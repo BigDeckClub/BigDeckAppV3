@@ -94,11 +94,25 @@ export default {
           900: '#18181B',
           950: '#09090B',
         },
+        // UI tokens mapped to CSS variables so runtime themes can drive Tailwind styles
+        ui: {
+          bg: 'var(--bda-bg)',
+          surface: 'var(--bda-surface)',
+          card: 'var(--bda-card)',
+          text: 'var(--bda-text)',
+          heading: 'var(--bda-heading)',
+          muted: 'var(--bda-muted)',
+          border: 'var(--bda-border)',
+          primary: 'var(--bda-primary)',
+          'primary-foreground': 'var(--bda-primary-foreground)',
+          accent: 'var(--bda-accent)',
+          ring: 'var(--bda-ring)',
+        },
       },
       // Typography
       fontFamily: {
-        display: ['Inter', 'system-ui', 'sans-serif'],
-        body: ['Inter', 'system-ui', 'sans-serif'],
+        display: ['Cinzel', 'serif'],
+        body: ['Lora', 'Georgia', 'serif'],
         mono: ['JetBrains Mono', 'Menlo', 'monospace'],
       },
       fontWeight: {
@@ -119,6 +133,7 @@ export default {
       },
       // Box shadows with MTG color variants
       boxShadow: {
+        'inner-sm': 'inset 0 1px 2px 0 rgba(0, 0, 0, 0.05)',
         'glow-W': '0 0 20px rgba(249, 250, 244, 0.3)',
         'glow-U': '0 0 20px rgba(14, 104, 171, 0.4)',
         'glow-B': '0 0 20px rgba(21, 11, 0, 0.5)',

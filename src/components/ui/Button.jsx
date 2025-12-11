@@ -3,24 +3,12 @@ import PropTypes from 'prop-types';
 
 /**
  * Button component with multiple variants, sizes, and states.
- * 
+ *
  * @example
  * // Primary button
  * <Button variant="primary">Click me</Button>
- * 
- * @example
- * // Loading button with icon
- * <Button variant="secondary" loading iconLeft={<SaveIcon />}>
- *   Saving...
- * </Button>
- * 
- * @example
- * // Small danger button
- * <Button variant="danger" size="sm" onClick={handleDelete}>
- *   Delete
- * </Button>
  */
-export function Button({
+export default function Button({
   children,
   variant = 'primary',
   size = 'md',
@@ -31,17 +19,18 @@ export function Button({
   className = '',
   type = 'button',
   fullWidth = false,
+  ariaLabel, // accept camelCase and map to aria-label
   ...props
 }) {
   const baseClasses = 'inline-flex items-center justify-center font-semibold transition-all duration-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 active:scale-95';
 
   const variantClasses = {
-    primary: 'bg-gradient-to-br from-teal-500 to-cyan-500 hover:from-teal-400 hover:to-cyan-400 text-slate-900 font-bold hover:shadow-2xl hover:shadow-teal-500/40 hover:-translate-y-0.5 focus:ring-teal-500',
-    secondary: 'bg-gradient-to-br from-slate-700 to-slate-800 backdrop-blur hover:from-slate-600 hover:to-slate-700 text-white border border-slate-600/50 hover:border-slate-500 hover:shadow-xl hover:shadow-slate-600/40 hover:-translate-y-0.5 focus:ring-slate-500',
-    danger: 'bg-gradient-to-br from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white hover:shadow-lg hover:shadow-red-500/40 hover:-translate-y-0.5 focus:ring-red-500',
-    ghost: 'bg-transparent hover:bg-slate-700/50 text-slate-300 hover:text-white border border-transparent hover:border-slate-600 focus:ring-slate-500',
-    accent: 'bg-gradient-to-br from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-bold hover:shadow-2xl hover:shadow-amber-500/40 hover:-translate-y-0.5 focus:ring-amber-500',
-    success: 'bg-gradient-to-br from-green-600 to-green-700 hover:from-green-500 hover:to-green-600 text-white hover:shadow-lg hover:shadow-green-500/40 hover:-translate-y-0.5 focus:ring-green-500',
+    primary: 'bg-ui-primary text-ui-primary-foreground hover:bg-ui-primary/90 focus:ring-ui-primary',
+    secondary: 'bg-ui-card text-ui-text border border-ui-border hover:bg-ui-surface focus:ring-ui-primary',
+    danger: 'bg-mtg-R text-white hover:bg-mtg-R/90 focus:ring-mtg-R',
+    ghost: 'bg-transparent text-ui-text hover:bg-ui-card focus:ring-ui-primary',
+    accent: 'bg-ui-accent text-white hover:bg-ui-accent/90 focus:ring-ui-accent',
+    success: 'bg-mtg-G text-white hover:bg-mtg-G/90 focus:ring-mtg-G',
   };
 
   const sizeClasses = {
@@ -66,6 +55,7 @@ export function Button({
       type={type}
       className={classes}
       disabled={isDisabled}
+      aria-label={ariaLabel}
       {...props}
     >
       {loading && (
@@ -120,4 +110,6 @@ Button.propTypes = {
   fullWidth: PropTypes.bool,
 };
 
-export default Button;
+// Export named for tests that import `{ Button }`
+export { Button };
+

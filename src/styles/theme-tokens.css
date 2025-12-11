@@ -1,0 +1,42 @@
+:root {
+  /* Page / paper */
+  --bda-bg: #F6F1E6;        /* page background */
+  --bda-surface: #EFE8DA;   /* main panels / container */
+  --bda-card: #F3ECE0;      /* cards & tiles */
+  --bda-muted: #D7C9B2;     /* borders and muted elements */
+
+  /* Typography */
+  --bda-text: #2E2A24;      /* body text */
+  --bda-heading: #2B1F17;   /* headings */
+  --bda-muted-text: #6E6258;/* secondary text */
+
+  /* Accents */
+  --bda-accent: #8B5A2B;    /* primary CTA / gold */
+  --bda-accent-2: #A63A2A;  /* alert red (muted) */
+  --bda-accent-3: #0F6F64;  /* teal accent (muted) */
+
+  /* Alerts */
+  --bda-alert-bg: #F6D7D6;
+  --bda-alert-text: #8A3332;
+
+  /* Borders / focus */
+  --bda-border: #E3D9C8;
+  --bda-ring: 2px solid rgba(139,90,43,0.12);
+
+  /* Primary button pair (foreground/background) */
+  --bda-primary: var(--bda-accent);
+  --bda-primary-foreground: #ffffff;
+
+  /* Shadows */
+  --bda-shadow-1: 0 2px 6px rgba(16,15,13,0.04);
+  --bda-shadow-2: 0 6px 18px rgba(16,15,13,0.06);
+}
+
+/* Helper utility classes usable with existing markup */
+.bda-bg { background: var(--bda-bg); color: var(--bda-text); }
+.bda-surface { background: var(--bda-surface); color: var(--bda-text); }
+.bda-card { background: var(--bda-card); color: var(--bda-text); border: 1px solid var(--bda-border); box-shadow: var(--bda-shadow-1); }
+.bda-heading { color: var(--bda-heading); font-family: 'Cinzel', serif; font-weight: 600; }
+.bda-text-muted { color: var(--bda-muted-text); }
+.bda-cta { background: var(--bda-accent); color: var(--bda-primary-foreground); }
+.bda-alert { background: var(--bda-alert-bg); color: var(--bda-alert-text); border-top: 1px solid rgba(0,0,0,0.02); }

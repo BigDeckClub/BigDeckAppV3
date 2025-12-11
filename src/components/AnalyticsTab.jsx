@@ -9,6 +9,14 @@ import { fetchWithAuth } from '../utils/apiClient';
 import { StatsCard, TrendChart } from './ui';
 
 export const AnalyticsTab = ({ inventory }) => {
+  const formatNumber = (v) => {
+    if (v === null || v === undefined) return '—';
+    try {
+      return Number(v).toLocaleString();
+    } catch (e) {
+      return String(v);
+    }
+  };
   const [marketValues, setMarketValues] = useState({ cardkingdom: 0, tcgplayer: 0 });
   const [cardMetrics, setCardMetrics] = useState({
     totalCards: 0,
@@ -157,37 +165,37 @@ export const AnalyticsTab = ({ inventory }) => {
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
               <StatsCard
                 title="Total Cards"
-                value={cardMetrics.totalCards.toLocaleString()}
+                value={formatNumber((cardMetrics && cardMetrics.totalCards) ?? 0)}
                 icon={Layers}
                 color="teal"
               />
               <StatsCard
                 title="Available"
-                value={totalAvailable.toLocaleString()}
+                value={formatNumber(totalAvailable ?? 0)}
                 icon={Package}
                 color="blue"
               />
               <StatsCard
                 title="Unique Cards"
-                value={cardMetrics.uniqueCards.toLocaleString()}
+                value={formatNumber((cardMetrics && cardMetrics.uniqueCards) ?? 0)}
                 icon={CreditCard}
                 color="slate"
               />
               <StatsCard
                 title="Sold (60d)"
-                value={cardMetrics.totalSoldLast60d.toLocaleString()}
+                value={formatNumber((cardMetrics && cardMetrics.totalSoldLast60d) ?? 0)}
                 icon={ShoppingCart}
                 color="red"
               />
               <StatsCard
                 title="Purchased (60d)"
-                value={cardMetrics.totalPurchasedLast60d.toLocaleString()}
+                value={formatNumber((cardMetrics && cardMetrics.totalPurchasedLast60d) ?? 0)}
                 icon={TrendingUp}
                 color="emerald"
               />
               <StatsCard
                 title="Lifetime Sold"
-                value={cardMetrics.lifetimeTotalCards.toLocaleString()}
+                value={formatNumber((cardMetrics && cardMetrics.lifetimeTotalCards) ?? 0)}
                 icon={BarChart3}
                 color="amber"
               />
@@ -205,14 +213,14 @@ export const AnalyticsTab = ({ inventory }) => {
               />
               <StatsCard
                 title="Card Kingdom"
-                value={`$${marketValues.cardkingdom.toFixed(2)}`}
+                value={`$${(marketValues?.cardkingdom ?? 0).toFixed(2)}`}
                 icon={DollarSign}
                 color="purple"
                 subtitle="Current market value"
               />
               <StatsCard
                 title="TCGPlayer"
-                value={`$${marketValues.tcgplayer.toFixed(2)}`}
+                value={`$${(marketValues?.tcgplayer ?? 0).toFixed(2)}`}
                 icon={DollarSign}
                 color="amber"
                 subtitle="Current market value"

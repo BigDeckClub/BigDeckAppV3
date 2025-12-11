@@ -143,8 +143,20 @@ router.post('/lots/:id/cards', authenticate, validateId, async (req, res) => {
       try {
         let scryfallRes = null;
         
-        if (card.set && card.set.length > 0) {
-          const exactUrl = `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(card.name)}&set=${card.set.toLowerCase()}`;
+        // Normalize set value and avoid sending 'unknown' to Scryfall
+        let normalizedSet = null;
+        if (card.set) {
+          if (typeof card.set === 'string') {
+            const s = card.set.trim().toLowerCase();
+            if (s && s !== 'unknown') normalizedSet = s;
+          } else if (typeof card.set === 'object') {
+            const s = (card.set.editioncode || card.set.mtgoCode || '').toString().trim().toLowerCase();
+            if (s && s !== 'unknown') normalizedSet = s;
+          }
+        }
+
+        if (normalizedSet) {
+          const exactUrl = `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(card.name)}&set=${normalizedSet}`;
           scryfallRes = await fetchRetry(exactUrl);
           if (!scryfallRes?.ok) scryfallRes = null;
         }

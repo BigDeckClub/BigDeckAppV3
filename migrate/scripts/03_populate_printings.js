@@ -13,6 +13,7 @@ import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { scryfallServerClient } from '../../server/utils/scryfallClient.server.js';
 
 dotenv.config();
 
@@ -156,119 +157,105 @@ async function main() {
     let skipped = 0;
     let failed = 0;
 
-    for (let i = 0; i < uniquePrintings.length; i++) {
-      const { name: cardName, set_code: setCode } = uniquePrintings[i];
-      
-      process.stdout.write(`\r[${i + 1}/${uniquePrintings.length}] Processing: ${cardName.substring(0, 30).padEnd(30)} (${setCode})`);
+    // Process unique printings in batches using Scryfall /cards/collection (name+set)
+    const CHUNK = 75;
+    const pairs = uniquePrintings.map(r => ({ name: r.name, set: r.set_code }));
 
-      // Check if printing already exists (by set_code and card name match)
-      const { rows: existing } = await client.query(`
-        SELECT p.id, p.scryfall_id 
-        FROM printings p
-        JOIN cards c ON p.card_id = c.id
-        WHERE p.set_code = $1 AND c.normalized_name = $2
-      `, [setCode, normalizeCardName(cardName)]);
+    for (let i = 0; i < pairs.length; i += CHUNK) {
+      const chunk = pairs.slice(i, i + CHUNK);
+      process.stdout.write(`\r[${i + 1}/${pairs.length}] Resolving batch ${i + 1}..${Math.min(i + CHUNK, pairs.length)}`);
 
-      if (existing.length > 0) {
-        skipped++;
-        mappings.push({
-          original_name: cardName,
-          set_code: setCode,
-          printing_id: existing[0].id,
-          status: 'existing'
-        });
-        continue;
+      const identifiers = chunk.map(p => ({ name: p.name, set: p.set }));
+      let resolved = {};
+      try {
+        resolved = await scryfallServerClient.batchResolve(identifiers);
+      } catch (err) {
+        console.error('\n[POPULATE_PRINTINGS] batchResolve failed:', err.message);
+        resolved = {};
       }
 
-      // Find the card in our cards table
-      const { rows: cardRows } = await client.query(`
-        SELECT id, oracle_id FROM cards WHERE normalized_name = $1
-      `, [normalizeCardName(cardName)]);
+      for (let j = 0; j < chunk.length; j++) {
+        const idx = i + j;
+        const { name: cardName, set: setCode } = chunk[j];
+        process.stdout.write(`\r[${idx + 1}/${pairs.length}] Processing: ${cardName.substring(0, 30).padEnd(30)} (${setCode})`);
 
-      if (cardRows.length === 0) {
-        failed++;
-        unmapped.push({
-          original_name: cardName,
-          set_code: setCode,
-          reason: 'Card not found in cards table'
-        });
-        continue;
-      }
+        // Check if printing already exists (by set_code and card name match)
+        const { rows: existing } = await client.query(`
+          SELECT p.id, p.scryfall_id 
+          FROM printings p
+          JOIN cards c ON p.card_id = c.id
+          WHERE p.set_code = $1 AND c.normalized_name = $2
+        `, [setCode, normalizeCardName(cardName)]);
 
-      const card = cardRows[0];
+        if (existing.length > 0) {
+          skipped++;
+          mappings.push({ original_name: cardName, set_code: setCode, printing_id: existing[0].id, status: 'existing' });
+          continue;
+        }
 
-      // Fetch from Scryfall
-      await sleep(SCRYFALL_DELAY);
-      const scryfallCard = await fetchPrintingFromScryfall(cardName, setCode);
+        // Find the card in our cards table
+        const { rows: cardRows } = await client.query(`
+          SELECT id, oracle_id FROM cards WHERE normalized_name = $1
+        `, [normalizeCardName(cardName)]);
 
-      if (!scryfallCard || !scryfallCard.id) {
-        failed++;
-        unmapped.push({
-          original_name: cardName,
-          set_code: setCode,
-          reason: 'Not found in Scryfall for this set'
-        });
-        continue;
-      }
+        if (cardRows.length === 0) {
+          failed++;
+          unmapped.push({ original_name: cardName, set_code: setCode, reason: 'Card not found in cards table' });
+          continue;
+        }
 
-      // Check if printing exists by scryfall_id
-      const { rows: existingByScryfall } = await client.query(
-        `SELECT id FROM printings WHERE scryfall_id = $1`,
-        [scryfallCard.id]
-      );
+        const card = cardRows[0];
 
-      if (existingByScryfall.length > 0) {
-        skipped++;
-        mappings.push({
-          original_name: cardName,
-          set_code: setCode,
-          printing_id: existingByScryfall[0].id,
-          scryfall_id: scryfallCard.id,
-          status: 'existing_scryfall'
-        });
-        continue;
-      }
+        const key = `${(cardName||'').toLowerCase().trim()}|${(setCode||'').toLowerCase().trim()}`;
+        const scryfallCard = resolved[key];
 
-      // Insert new printing
-      if (!DRY_RUN) {
-        const imageUris = scryfallCard.image_uris || {};
-        
-        const { rows: inserted } = await client.query(`
-          INSERT INTO printings (
-            card_id, scryfall_id, set_code, set_name, collector_number,
-            rarity, finish, image_uri_small, image_uri_normal, image_uri_large
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-          RETURNING id
-        `, [
-          card.id,
-          scryfallCard.id,
-          scryfallCard.set.toUpperCase(),
-          scryfallCard.set_name,
-          scryfallCard.collector_number || null,
-          scryfallCard.rarity || null,
-          scryfallCard.finishes?.[0] || 'normal',
-          imageUris.small || null,
-          imageUris.normal || null,
-          imageUris.large || null
-        ]);
+        if (!scryfallCard || !scryfallCard.id) {
+          failed++;
+          unmapped.push({ original_name: cardName, set_code: setCode, reason: 'Not found in Scryfall for this set' });
+          continue;
+        }
 
-        mappings.push({
-          original_name: cardName,
-          set_code: setCode,
-          printing_id: inserted[0].id,
-          scryfall_id: scryfallCard.id,
-          status: 'created'
-        });
+        // Check if printing exists by scryfall_id
+        const { rows: existingByScryfall } = await client.query(
+          `SELECT id FROM printings WHERE scryfall_id = $1`,
+          [scryfallCard.id]
+        );
 
-        created++;
-      } else {
-        mappings.push({
-          original_name: cardName,
-          set_code: setCode,
-          scryfall_id: scryfallCard.id,
-          status: 'would_create'
-        });
-        created++;
+        if (existingByScryfall.length > 0) {
+          skipped++;
+          mappings.push({ original_name: cardName, set_code: setCode, printing_id: existingByScryfall[0].id, scryfall_id: scryfallCard.id, status: 'existing_scryfall' });
+          continue;
+        }
+
+        // Insert new printing
+        if (!DRY_RUN) {
+          const imageUris = scryfallCard.image_uris || {};
+          
+          const { rows: inserted } = await client.query(`
+            INSERT INTO printings (
+              card_id, scryfall_id, set_code, set_name, collector_number,
+              rarity, finish, image_uri_small, image_uri_normal, image_uri_large
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+            RETURNING id
+          `, [
+            card.id,
+            scryfallCard.id,
+            scryfallCard.set.toUpperCase(),
+            scryfallCard.set_name,
+            scryfallCard.collector_number || null,
+            scryfallCard.rarity || null,
+            scryfallCard.finishes?.[0] || 'normal',
+            imageUris.small || null,
+            imageUris.normal || null,
+            imageUris.large || null
+          ]);
+
+          mappings.push({ original_name: cardName, set_code: setCode, printing_id: inserted[0].id, scryfall_id: scryfallCard.id, status: 'created' });
+          created++;
+        } else {
+          mappings.push({ original_name: cardName, set_code: setCode, scryfall_id: scryfallCard.id, status: 'would_create' });
+          created++;
+        }
       }
     }
 

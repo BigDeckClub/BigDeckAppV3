@@ -22,7 +22,6 @@ import {
   Copy,
 } from 'lucide-react';
 import DeckColorGradientBar from '../decks/DeckColorGradientBar';
-import { ensureCardMetadata, getCachedMetadata } from '../../hooks/useScryfallCache';
 
 /**
  * Format date for display
@@ -61,12 +60,12 @@ const getCompletionBg = (percentage) => {
  */
 const ManaSymbol = memo(function ManaSymbol({ symbol, size = 'sm' }) {
   const colors = {
-    W: 'bg-mtg-W-dark text-slate-900',
+    W: 'bg-mtg-W-dark text-ui-text',
     U: 'bg-mtg-U text-white',
     B: 'bg-mtg-B-light text-white',
     R: 'bg-mtg-R text-white',
     G: 'bg-mtg-G text-white',
-    C: 'bg-mtg-C text-slate-900',
+    C: 'bg-mtg-C text-ui-text',
   };
 
   const sizes = {
@@ -78,7 +77,7 @@ const ManaSymbol = memo(function ManaSymbol({ symbol, size = 'sm' }) {
     <span
       className={`
         inline-flex items-center justify-center rounded-full font-bold
-        ${colors[symbol] || 'bg-slate-600 text-white'}
+        ${colors[symbol] || 'bg-ui-surface text-ui-text'}
         ${sizes[size]}
       `}
     >
@@ -103,11 +102,11 @@ const ActionButton = memo(function ActionButton({
   disabled = false,
 }) {
   const variants = {
-    default: 'bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white',
-    primary: 'bg-teal-600 hover:bg-teal-500 text-white',
-    secondary: 'bg-purple-600 hover:bg-purple-500 text-white',
-    danger: 'bg-red-600/20 hover:bg-red-600/40 text-red-400 hover:text-red-300',
-    warning: 'bg-amber-600 hover:bg-amber-500 text-white',
+    default: 'bg-ui-surface text-ui-text hover:bg-ui-card border border-ui-border',
+    primary: 'bg-ui-primary text-ui-primary-foreground hover:opacity-95',
+    secondary: 'bg-ui-card text-ui-text hover:bg-ui-surface',
+    danger: 'bg-ui-surface text-ui-accent hover:bg-ui-card',
+    warning: 'bg-ui-primary text-ui-primary-foreground',
   };
 
   return (
@@ -144,18 +143,18 @@ const MissingCardRow = memo(function MissingCardRow({ card, onBuy }) {
     : card.set?.editioncode || card.set?.editionname || '';
 
   return (
-    <div className="flex items-center justify-between py-2 px-3 bg-red-900/20 rounded-lg">
+    <div className="flex items-center justify-between py-2 px-3 bg-ui-surface rounded-lg border border-ui-border">
       <div className="flex-1 min-w-0">
-        <span className="text-red-300 font-medium">{card.quantity}×</span>
-        <span className="text-slate-200 ml-2 truncate">{card.name}</span>
+        <span className="text-ui-accent font-medium">{card.quantity}×</span>
+        <span className="text-ui-text ml-2 truncate">{card.name}</span>
         {setDisplay && (
-          <span className="text-slate-500 text-xs ml-2">[{setDisplay}]</span>
+          <span className="text-ui-muted text-xs ml-2">[{setDisplay}]</span>
         )}
       </div>
       {onBuy && (
         <button
           onClick={() => onBuy(card)}
-          className="p-1.5 text-amber-400 hover:text-amber-300 hover:bg-amber-900/30 rounded transition-colors"
+          className="p-1.5 text-ui-accent hover:text-ui-primary hover:bg-ui-card rounded transition-colors"
           title="Buy this card"
         >
           <ShoppingCart className="w-4 h-4" />
@@ -191,15 +190,23 @@ export const DeckCardTile = memo(function DeckCardTile({
   onCancelEdit,
   className = '',
 }) {
-  // Listen for enrichment events to force re-render when client-side metadata is fetched
-  const [, setTick] = React.useState(0);
-  React.useEffect(() => {
-    const onEnriched = (e) => setTick(t => t + 1);
-    window.addEventListener('deck-enriched', onEnriched);
-    return () => window.removeEventListener('deck-enriched', onEnriched);
-  }, []);
   const [showMissing, setShowMissing] = useState(false);
   const [showActions, setShowActions] = useState(false);
+  const actionsRef = React.useRef(null);
+
+  // Close dropdown when clicking outside
+  React.useEffect(() => {
+    if (!showActions) return;
+
+    const handleClickOutside = (e) => {
+      if (actionsRef.current && !actionsRef.current.contains(e.target)) {
+        setShowActions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showActions]);
 
   const cardCount = deck.cards?.length || 0;
   const totalCards = deck.cards?.reduce((sum, c) => sum + (c.quantity || 1), 0) || 0;
@@ -219,11 +226,11 @@ export const DeckCardTile = memo(function DeckCardTile({
   return (
     <div
       className={`
-        group relative bg-gradient-to-br from-slate-800 to-slate-900
-        border border-slate-700 hover:border-teal-500/50
+        group relative bg-ui-card
+        border border-ui-border hover:border-ui-primary
         rounded-xl overflow-hidden cursor-pointer
         transition-all duration-200
-        hover:shadow-lg hover:shadow-teal-500/10
+        hover:shadow-card
         ${className}
       `}
       onClick={() => onSelect?.(deck)}
@@ -231,42 +238,24 @@ export const DeckCardTile = memo(function DeckCardTile({
       {/* Top color gradient strip (deck color pie) */}
       <div className="absolute top-0 left-0 right-0 z-20">
         {(() => {
-          // Compute color keys: prefer provided colorIdentity, otherwise derive from cards
-          let keys = (colorIdentity && colorIdentity.length > 0) ? colorIdentity.slice() : [];
+          // Compute color keys: prefer provided colorIdentity (from server), then deck.colorIdentity, otherwise derive from cards
+          let keys = (colorIdentity && colorIdentity.length > 0)
+            ? colorIdentity.slice()
+            : (deck.colorIdentity && deck.colorIdentity.length > 0)
+              ? deck.colorIdentity.slice()
+              : [];
+
+          // Fallback: derive from card color_identity if still empty
           if ((!keys || keys.length === 0) && Array.isArray(deck.cards)) {
             const set = new Set();
             deck.cards.forEach((c) => {
-              const cardColors = c.color_identity || c.colors || [];
+              const cardColors = c.color_identity || c.colorIdentity || c.colors || [];
               (cardColors || []).forEach((ch) => set.add(String(ch).toUpperCase()));
             });
             keys = Array.from(set);
           }
-          // If still empty, try to enrich via client-side Scryfall cache (async)
-          if ((!keys || keys.length === 0) && Array.isArray(deck.cards) && deck.cards.length > 0) {
-            (async () => {
-              try {
-                const unique = deck.cards.map(c => ({ name: c.name, set: c.set })).slice(0, 20);
-                const metaMap = await ensureCardMetadata(unique);
-                const sset = new Set();
-                deck.cards.forEach(c => {
-                  const key = `${(c.name||'').toLowerCase().trim()}|${(c.set||'').toLowerCase().trim()}`;
-                  const meta = metaMap[key] || getCachedMetadata(c.name, c.set);
-                  (meta?.color_identity || []).forEach(ci => sset.add(String(ci).toUpperCase()));
-                });
-                const newKeys = Array.from(sset);
-                if (newKeys.length > 0) {
-                  // Force re-render by updating a dummy state via a custom event on deck
-                  // Note: using a small trick: set a property and trigger a reflow by dispatching an event
-                  // Better approach is to lift state; this is minimal to avoid broad refactors.
-                  deck.__scryfall_enriched = true;
-                  const ev = new CustomEvent('deck-enriched', { detail: { deckId: deck.id } });
-                  window.dispatchEvent(ev);
-                }
-              } catch (e) {
-                // ignore
-              }
-            })();
-          }
+
+          // Default to colorless if no colors found
           if (!keys || keys.length === 0) keys = ['C'];
 
           // Map single-letter mana symbols to pie token keys expected by the gradient bar
@@ -278,26 +267,18 @@ export const DeckCardTile = memo(function DeckCardTile({
           });
 
           return (
-            <>
-              <DeckColorGradientBar
-                colors={mapped}
-                height={process.env.NODE_ENV !== 'production' ? 12 : 6}
-                radius={12}
-                debug={process.env.NODE_ENV !== 'production'}
-                className="z-20"
-              />
-              {process.env.NODE_ENV !== 'production' && (
-                <div className="absolute top-3 left-3 text-[10px] text-slate-200 bg-black/30 px-2 py-0.5 rounded z-40">
-                  <div>Keys: {mapped.join(', ')}</div>
-                </div>
-              )}
-            </>
+            <DeckColorGradientBar
+              colors={mapped}
+              height={6}
+              radius={12}
+              className="z-20"
+            />
           );
         })()}
       </div>
 
       {/* Completion indicator bar */}
-      <div className="absolute top-0 left-0 right-0 h-1 bg-slate-700">
+      <div className="absolute top-0 left-0 right-0 h-1 bg-ui-border">
         <div
           className={`h-full bg-gradient-to-r ${getCompletionBg(completionPercentage)} to-transparent transition-all duration-500`}
           style={{ width: `${Math.min(100, completionPercentage)}%` }}
@@ -313,7 +294,7 @@ export const DeckCardTile = memo(function DeckCardTile({
                 type="text"
                 defaultValue={deck.name}
                 placeholder="Deck name"
-                className="w-full bg-slate-900 border border-teal-500 rounded-lg px-3 py-2 text-white font-semibold focus:outline-none focus:ring-2 focus:ring-teal-500/50"
+                className="w-full bg-ui-card border border-ui-accent rounded-lg px-3 py-2 text-ui-text font-semibold focus:outline-none focus:ring-2 ring-ui-accent/50"
                 onBlur={(e) => onUpdateName?.(deck.id, e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') onUpdateName?.(deck.id, e.currentTarget.value);
@@ -324,10 +305,10 @@ export const DeckCardTile = memo(function DeckCardTile({
               />
             ) : (
               <>
-                <h3 className="text-lg font-bold text-white truncate group-hover:text-teal-300 transition-colors">
+                <h3 className="text-lg font-bold text-ui-heading truncate group-hover:text-ui-accent transition-colors">
                   {deck.name}
                 </h3>
-                <p className="text-xs text-slate-400 mt-0.5">{deck.format || 'No format'}</p>
+                <p className="text-xs text-ui-muted mt-0.5">{deck.format || 'No format'}</p>
               </>
             )}
           </div>
@@ -339,25 +320,19 @@ export const DeckCardTile = memo(function DeckCardTile({
                 e.stopPropagation();
                 setShowActions(!showActions);
               }}
-              className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
+              className="p-2 text-ui-muted hover:text-ui-text hover:bg-ui-surface rounded-lg transition-colors"
             >
               <MoreVertical className="w-5 h-5" />
             </button>
 
             {showActions && (
-              <>
-                <div
-                  className="fixed inset-0 z-10"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowActions(false);
-                  }}
-                />
-                <div className="absolute right-0 top-full mt-1 z-20 w-48 bg-slate-800 border border-slate-700 rounded-lg shadow-xl py-1 animate-fade-in">
+              <div
+                ref={actionsRef}
+                className="absolute right-0 top-full mt-1 z-50 w-48 bg-ui-surface border border-ui-border rounded-lg shadow-xl py-1 animate-fade-in">
                   {onEdit && (
                     <button
                       onClick={handleAction(() => onEdit(deck.id))}
-                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white"
+                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-ui-muted hover:bg-ui-surface hover:text-ui-text"
                     >
                       <Edit2 className="w-4 h-4" />
                       Rename Deck
@@ -366,7 +341,7 @@ export const DeckCardTile = memo(function DeckCardTile({
                   {onEditCards && (
                     <button
                       onClick={handleAction(onEditCards)}
-                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white"
+                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-ui-muted hover:bg-ui-surface hover:text-ui-text"
                     >
                       <FileEdit className="w-4 h-4" />
                       Edit Cards
@@ -375,7 +350,7 @@ export const DeckCardTile = memo(function DeckCardTile({
                   {onCopy && (
                     <button
                       onClick={handleAction(onCopy)}
-                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white"
+                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-ui-muted hover:bg-ui-surface hover:text-ui-text"
                     >
                       <Copy className="w-4 h-4" />
                       Copy to Inventory
@@ -384,7 +359,7 @@ export const DeckCardTile = memo(function DeckCardTile({
                   {onArchidektSync && (
                     <button
                       onClick={handleAction(onArchidektSync)}
-                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white"
+                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-ui-muted hover:bg-ui-surface hover:text-ui-text"
                     >
                       <Link2 className="w-4 h-4" />
                       Archidekt Sync
@@ -392,7 +367,7 @@ export const DeckCardTile = memo(function DeckCardTile({
                   )}
                   {onDelete && (
                     <>
-                      <div className="my-1 border-t border-slate-700" />
+                      <div className="my-1 border-t border-ui-border" />
                       <button
                         onClick={handleAction(() => onDelete(deck.id))}
                         className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-400 hover:bg-red-900/30"
@@ -403,7 +378,6 @@ export const DeckCardTile = memo(function DeckCardTile({
                     </>
                   )}
                 </div>
-              </>
             )}
           </div>
         </div>
@@ -419,28 +393,28 @@ export const DeckCardTile = memo(function DeckCardTile({
       </div>
 
       {/* Stats */}
-      <div className="px-4 py-3 border-t border-slate-700/50 bg-slate-900/30">
+      <div className="px-4 py-3 border-t border-ui-border bg-ui-surface/30">
         <div className="grid grid-cols-3 gap-4 text-center">
           <div>
-            <div className="text-lg font-bold text-teal-300">{totalCards}</div>
-            <div className="text-xs text-slate-500">Cards</div>
+            <div className="text-lg font-bold text-ui-accent">{totalCards}</div>
+            <div className="text-xs text-ui-muted">Cards</div>
           </div>
           <div>
-            <div className="text-lg font-bold text-slate-300">{cardCount}</div>
-            <div className="text-xs text-slate-500">Unique</div>
+            <div className="text-lg font-bold text-ui-text">{cardCount}</div>
+            <div className="text-xs text-ui-muted">Unique</div>
           </div>
           <div>
             <div className={`text-lg font-bold ${getCompletionColor(completionPercentage)}`}>
               {completionPercentage.toFixed(0)}%
             </div>
-            <div className="text-xs text-slate-500">Complete</div>
+            <div className="text-xs text-ui-muted">Complete</div>
           </div>
         </div>
       </div>
 
       {/* Missing cards section */}
       {totalMissing > 0 && (
-        <div className="border-t border-slate-700/50">
+        <div className="border-t border-ui-border">
           <button
             onClick={handleToggleMissing}
             className="w-full flex items-center justify-between px-4 py-3 bg-red-900/10 hover:bg-red-900/20 transition-colors"
@@ -458,8 +432,8 @@ export const DeckCardTile = memo(function DeckCardTile({
             )}
           </button>
 
-          {showMissing && (
-            <div className="px-4 py-3 space-y-2 max-h-48 overflow-y-auto bg-slate-900/50">
+            {showMissing && (
+            <div className="px-4 py-3 space-y-2 max-h-48 overflow-y-auto bg-ui-surface/50">
               {onBuyMissing && (
                 <button
                   onClick={(e) => {
@@ -478,7 +452,7 @@ export const DeckCardTile = memo(function DeckCardTile({
                 <MissingCardRow key={idx} card={card} />
               ))}
               {missingCards.length > 10 && (
-                <p className="text-center text-xs text-slate-500 py-2">
+                <p className="text-center text-xs text-ui-muted py-2">
                   +{missingCards.length - 10} more missing cards
                 </p>
               )}
@@ -496,8 +470,8 @@ export const DeckCardTile = memo(function DeckCardTile({
       )}
 
       {/* Footer */}
-      <div className="px-4 py-3 border-t border-slate-700/50 flex items-center justify-between">
-        <div className="flex items-center gap-1 text-xs text-slate-500">
+      <div className="px-4 py-3 border-t border-ui-border flex items-center justify-between">
+        <div className="flex items-center gap-1 text-xs text-ui-muted">
           <Calendar className="w-3 h-3" />
           {formatDate(deck.created_at)}
         </div>
@@ -506,7 +480,7 @@ export const DeckCardTile = memo(function DeckCardTile({
             e.stopPropagation();
             onSelect?.(deck);
           }}
-          className="text-sm font-medium text-teal-400 hover:text-teal-300 transition-colors"
+          className="text-sm font-medium text-ui-accent hover:text-ui-accent/80 transition-colors"
         >
           View Details →
         </button>

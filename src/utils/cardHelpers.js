@@ -31,9 +31,18 @@ export const getSetDisplayName = (set, preferCode = false) => {
  */
 export const getSetCode = (set) => {
   if (!set) return '';
-  if (typeof set === 'string') return set.toUpperCase();
+  // Handle string codes and guard against literal 'unknown'
+  if (typeof set === 'string') {
+    const val = set.toString().trim();
+    if (!val) return '';
+    if (val.toLowerCase() === 'unknown') return '';
+    return val.toUpperCase();
+  }
   if (typeof set === 'object') {
-    return set.editioncode?.toUpperCase() || '';
+    const candidate = (set.editioncode || set.mtgoCode || '').toString().trim();
+    if (!candidate) return '';
+    if (candidate.toLowerCase() === 'unknown') return '';
+    return candidate.toUpperCase();
   }
   return '';
 };

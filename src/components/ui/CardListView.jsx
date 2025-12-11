@@ -6,21 +6,11 @@
 import React, { memo, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { Plus, Minus, MoreVertical, ChevronRight } from 'lucide-react';
+import scryfallClient from '../../utils/scryfallClient';
 
 /**
- * Get the appropriate thumbnail URL for a card
+ * Thumbnail selection delegated to centralized scryfallClient.getImageUrl
  */
-const getCardThumbnailUrl = (card) => {
-  if (card.image_uris?.small) return card.image_uris.small;
-  if (card.image_uris?.normal) return card.image_uris.normal;
-  if (card.card_faces?.[0]?.image_uris?.small) {
-    return card.card_faces[0].image_uris.small;
-  }
-  if (card.scryfall_id) {
-    return `https://api.scryfall.com/cards/${card.scryfall_id}?format=image&version=small`;
-  }
-  return null;
-};
 
 /**
  * Format price for display
@@ -67,7 +57,7 @@ const CardRow = memo(function CardRow({
   showPrice = true,
   showThumbnail = true,
 }) {
-  const thumbnailUrl = getCardThumbnailUrl(card);
+  const thumbnailUrl = scryfallClient.getImageUrl(card, { version: 'small' });
   const price = card.price ?? card.prices?.usd ?? null;
   const quantity = card.quantity ?? 1;
   const totalPrice = price ? (parseFloat(price) * quantity) : null;

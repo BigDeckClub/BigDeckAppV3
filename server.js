@@ -42,6 +42,13 @@ app.use(express.static(distPath, {
   etag: true,
 }));
 
+// Serve uploaded assets during development (uploads/)
+const uploadsPath = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsPath)) {
+  try { fs.mkdirSync(uploadsPath, { recursive: true }); } catch (e) { /* ignore */ }
+}
+app.use('/uploads', express.static(uploadsPath, { maxAge: '1d', etag: true }));
+
 // ========== SECURITY MIDDLEWARE ==========
 // Configure allowed origins from environment variable
 const allowedOrigins = process.env.ALLOWED_ORIGINS

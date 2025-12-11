@@ -1,3 +1,6 @@
+@import "./styles/community-theme.css";
+@import "./styles/design-tokens.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -59,47 +62,29 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-html, body {
-  @apply bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white min-h-screen;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  letter-spacing: -0.01em;
+/* Skip to content link styles */
+.skip-to-content {
+  position: absolute;
+  left: -999px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+.skip-to-content:focus {
+  left: 1rem;
+  top: 1rem;
+  width: auto;
+  height: auto;
+  padding: 0.5rem 1rem;
+  background: rgba(2,6,23,0.9);
+  color: white;
+  border-radius: 6px;
+  z-index: 9999;
 }
 
 body {
   @apply m-0 p-0 overflow-x-hidden;
-}
-
-/* Typography - Modern hierarchy */
-h1, h2, h3 {
-  @apply font-bold tracking-tight;
-}
-
-h1 {
-  @apply text-3xl font-black bg-gradient-to-r from-cyan-400 via-teal-400 to-cyan-300 bg-clip-text text-transparent;
-  letter-spacing: -0.02em;
-}
-
-h2 {
-  @apply text-2xl mb-6 font-bold text-slate-50;
-}
-
-h3 {
-  @apply font-semibold text-slate-100;
-}
-
-/* Main app container */
-#root {
-  @apply min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950;
-}
-
-/* Card styling - Modern glassmorphism */
-.card {
-  @apply bg-gradient-to-br from-slate-800/60 to-slate-900/40 backdrop-blur-2xl rounded-2xl border border-slate-600/30 shadow-2xl hover:shadow-teal-500/30 hover:border-teal-500/60 hover:bg-slate-800/70 transition-all duration-300 hover:-translate-y-1;
-  background: linear-gradient(135deg, rgba(30, 41, 59, 0.5) 0%, rgba(15, 23, 42, 0.3) 100%);
-  -webkit-backdrop-filter: blur(24px);
-  backdrop-filter: blur(24px);
 }
 
 /* Card Grid Spacing */
@@ -114,33 +99,7 @@ h3 {
   backdrop-filter: blur(20px);
 }
 
-/* Buttons - Modern design */
-.btn-primary {
-  @apply bg-gradient-to-br from-teal-500 to-cyan-500 hover:from-teal-400 hover:to-cyan-400 text-slate-900 font-bold py-2.5 md:py-2 px-4 rounded-xl transition-all duration-300 hover:shadow-2xl hover:shadow-teal-500/40 active:scale-95 active:shadow-lg uppercase text-sm tracking-wide hover:-translate-y-0.5 min-h-12 md:min-h-10;
-}
-
-.btn-secondary {
-  @apply bg-gradient-to-br from-slate-700 to-slate-800 backdrop-blur hover:from-slate-600 hover:to-slate-700 text-white font-semibold py-2.5 md:py-2 px-4 rounded-xl transition-all duration-300 hover:shadow-xl hover:shadow-slate-600/40 border border-slate-600/50 hover:border-slate-500 hover:-translate-y-0.5 min-h-12 md:min-h-10;
-}
-
-.btn-danger {
-  @apply bg-gradient-to-br from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-semibold py-1.5 md:py-1 px-3 rounded-lg transition-all duration-300 hover:shadow-lg hover:shadow-red-500/40 hover:-translate-y-0.5 min-h-10 md:min-h-8;
-}
-
-.btn-accent {
-  @apply bg-gradient-to-br from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-bold px-4 py-2.5 md:py-2 rounded-xl transition-all duration-300 hover:shadow-2xl hover:shadow-amber-500/40 hover:-translate-y-0.5 min-h-12 md:min-h-10;
-}
-
-/* Input styling - Modern with glassmorphism */
-input[type="text"],
-input[type="number"],
-input[type="date"],
-textarea,
-select {
-  @apply w-full bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 hover:border-teal-500 backdrop-blur rounded-xl px-4 py-2.5 md:py-2 text-white placeholder-slate-500 focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-500 focus:ring-opacity-30 transition-all duration-300 shadow-lg shadow-slate-900/30 text-base md:text-sm min-h-12 md:min-h-10;
-  -webkit-backdrop-filter: blur(16px);
-  backdrop-filter: blur(16px);
-}
+/* Folder Item Styling */
 
 /* Navigation */
 .nav-tab {

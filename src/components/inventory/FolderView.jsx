@@ -231,11 +231,11 @@ export function FolderView({
 
       {/* Bulk Selection Controls */}
       {folderCards.length > 0 && (
-        <div className="bg-slate-800/50 rounded-lg border border-slate-600 p-3 mb-4 flex flex-wrap items-center gap-3">
+        <div className="bg-ui-card rounded-lg border border-ui-border p-3 mb-4 flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2">
             <button
               onClick={isAllSelected ? handleDeselectAll : handleSelectAll}
-              className="flex items-center gap-2 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-md transition-colors text-sm font-medium"
+              className="flex items-center gap-2 px-3 py-1.5 bg-ui-surface hover:bg-ui-card text-ui-text rounded-md transition-colors text-sm font-medium"
             >
               {isAllSelected ? (
                 <>
@@ -250,7 +250,7 @@ export function FolderView({
               )}
             </button>
             {selectedCardIds.size > 0 && (
-              <span className="text-sm text-slate-400">
+              <span className="text-sm text-ui-muted">
                 {selectedCardIds.size} card{selectedCardIds.size === 1 ? '' : 's'} selected
               </span>
             )}
@@ -258,19 +258,19 @@ export function FolderView({
           
           {/* Decklist Filter */}
           {setDecklistFilter && (
-            <div className="flex items-center gap-2 ml-auto">
-              <ListFilter className="w-4 h-4 text-slate-400" />
+              <div className="flex items-center gap-2 ml-auto">
+              <ListFilter className="w-4 h-4 text-ui-muted" />
               <select
                 value={decklistFilter}
                 onChange={(e) => setDecklistFilter(e.target.value)}
-                className="px-3 py-1.5 bg-slate-700 border border-slate-600 text-slate-200 rounded-md text-sm focus:outline-none focus:border-teal-400"
+                className="px-3 py-1.5 bg-ui-surface border border-ui-border text-ui-text rounded-md text-sm focus:outline-none focus:border-ui-primary"
               >
                 <option value="all">All Cards</option>
                 <option value="in-decklist">In Decklists</option>
                 <option value="not-in-decklist">Not in Decklists</option>
               </select>
               {decklistFilter !== 'all' && (
-                <span className="text-xs text-teal-400">
+                <span className="text-xs text-ui-primary">
                   {folderCards.length} cards
                 </span>
               )}

@@ -6,27 +6,11 @@
 import React, { memo, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { Plus, Minus, MoreVertical, DollarSign } from 'lucide-react';
+import scryfallClient from '../../utils/scryfallClient';
 
 /**
- * Get the appropriate image URL for a card
+ * Card image selection delegated to centralized scryfallClient.getImageUrl
  */
-const getCardImageUrl = (card) => {
-  // Scryfall image
-  if (card.image_uris?.normal) return card.image_uris.normal;
-  if (card.image_uris?.small) return card.image_uris.small;
-
-  // Card faces (double-faced cards)
-  if (card.card_faces?.[0]?.image_uris?.normal) {
-    return card.card_faces[0].image_uris.normal;
-  }
-
-  // Fallback to Scryfall API URL
-  if (card.scryfall_id) {
-    return `https://api.scryfall.com/cards/${card.scryfall_id}?format=image&version=normal`;
-  }
-
-  return null;
-};
 
 /**
  * Format price for display
@@ -59,7 +43,7 @@ const CardTile = memo(function CardTile({
   onContextMenu,
   showPrice = true,
 }) {
-  const imageUrl = getCardImageUrl(card);
+  const imageUrl = scryfallClient.getImageUrl(card, { version: 'normal' });
   const price = card.price ?? card.prices?.usd ?? null;
   const quantity = card.quantity ?? 1;
 

@@ -3,29 +3,8 @@ import PropTypes from 'prop-types';
 
 /**
  * Card container component with glassmorphism styling matching the design system.
- * 
- * @example
- * // Basic card
- * <Card>
- *   <p>Card content goes here</p>
- * </Card>
- * 
- * @example
- * // Card with header and footer
- * <Card
- *   header={<h3>Card Title</h3>}
- *   footer={<Button>Action</Button>}
- * >
- *   <p>Card body content</p>
- * </Card>
- * 
- * @example
- * // Compact card with hover effect
- * <Card variant="compact" hoverable>
- *   <p>Compact card content</p>
- * </Card>
  */
-export function Card({
+export default function Card({
   children,
   header,
   footer,
@@ -33,25 +12,26 @@ export function Card({
   hoverable = false,
   padding = 'default',
   className = '',
+  ariaLabel, // accept camelCase prop and map to aria-label
   ...props
 }) {
   const baseClasses = `
-    bg-gradient-to-br from-slate-800/60 to-slate-900/40 
-    backdrop-blur-2xl 
-    rounded-2xl 
-    border border-slate-600/30 
-    shadow-2xl
+    bg-ui-card
+    rounded-lg
+    border border-ui-border
+    shadow-md
     transition-all duration-300
+    shadow-inner-sm
   `;
 
   const hoverClasses = hoverable
-    ? 'hover:shadow-teal-500/30 hover:border-teal-500/60 hover:bg-slate-800/70 hover:-translate-y-1 cursor-pointer'
+    ? 'hover:border-ui-primary hover:bg-ui-surface hover:-translate-y-1 cursor-pointer'
     : '';
 
   const variantClasses = {
     default: '',
-    compact: 'rounded-xl',
-    stat: 'bg-gradient-to-br from-slate-800/50 to-slate-900/40 hover:border-teal-500/50 hover:from-slate-800/60 hover:to-slate-900/50 hover:shadow-lg hover:shadow-teal-500/20',
+    compact: 'rounded-md',
+    stat: 'bg-ui-surface hover:border-ui-primary hover:bg-ui-surface',
   };
 
   const paddingClasses = {
@@ -70,9 +50,9 @@ export function Card({
   ].filter(Boolean).join(' ');
 
   return (
-    <div className={cardClasses} {...props}>
+    <div className={cardClasses} aria-label={ariaLabel} {...props}>
       {header && (
-        <div className={`border-b border-slate-700/50 ${paddingClasses[padding] || paddingClasses.default} pb-3`}>
+        <div className={`border-b border-ui-border ${paddingClasses[padding] || paddingClasses.default} pb-3`}>
           {header}
         </div>
       )}
@@ -80,7 +60,7 @@ export function Card({
         {children}
       </div>
       {footer && (
-        <div className={`border-t border-slate-700/50 ${paddingClasses[padding] || paddingClasses.default} pt-3`}>
+        <div className={`border-t border-ui-border ${paddingClasses[padding] || paddingClasses.default} pt-3`}>
           {footer}
         </div>
       )}
@@ -105,4 +85,5 @@ Card.propTypes = {
   className: PropTypes.string,
 };
 
-export default Card;
+// Export named for tests that import `{ Card }`
+export { Card };

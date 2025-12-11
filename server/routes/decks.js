@@ -2,17 +2,127 @@ import express from 'express';
 import { pool } from '../db/pool.js';
 import { validateId, authenticate, apiLimiter } from '../middleware/index.js';
 import { batchInsertReservations, batchInsertMissingCards } from '../utils/index.js';
+import { scryfallServerClient } from '../utils/scryfallClient.server.js';
 
 const router = express.Router();
 
 // Apply rate limiting to all deck routes to prevent abuse
 router.use(apiLimiter);
 
+/**
+ * In-memory cache for color identity data (persists for server lifetime)
+ * Maps card name (lowercase) -> color_identity array
+ */
+const colorIdentityCache = new Map();
+
+/**
+ * Normalize card name for database lookups (matches cards.normalized_name format)
+ */
+function normalizeCardName(name) {
+  return (name || '')
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '') // Remove diacritics
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, '') // Remove special chars
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Lookup color identity for card names.
+ * First tries the cards reference table (if it exists), then falls back to Scryfall API.
+ * Results are cached in memory for server lifetime.
+ * Returns a Map of normalized_name -> color_identity array
+ */
+async function getColorIdentityMap(cardNames) {
+  const colorMap = new Map();
+  if (!cardNames || cardNames.length === 0) return colorMap;
+
+  // Separate into cached and uncached names
+  const uncachedNames = [];
+  for (const name of cardNames) {
+    if (colorIdentityCache.has(name)) {
+      colorMap.set(name, colorIdentityCache.get(name));
+    } else {
+      uncachedNames.push(name);
+    }
+  }
+
+  // If all names were cached, return early
+  if (uncachedNames.length === 0) return colorMap;
+
+  // Try the cards reference table first
+  let foundInDb = false;
+  try {
+    const tableCheck = await pool.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables
+        WHERE table_name = 'cards'
+      )
+    `);
+
+    if (tableCheck.rows[0]?.exists) {
+      const result = await pool.query(`
+        SELECT normalized_name, color_identity
+        FROM cards
+        WHERE normalized_name = ANY($1::text[])
+      `, [uncachedNames]);
+
+      for (const row of result.rows) {
+        const ci = row.color_identity || [];
+        colorMap.set(row.normalized_name, ci);
+        colorIdentityCache.set(row.normalized_name, ci);
+      }
+      foundInDb = result.rows.length > 0;
+    }
+  } catch (err) {
+    // Cards table doesn't exist or query failed - fall through to Scryfall
+  }
+
+  // For any names still not found, fetch from Scryfall in background (don't block)
+  const stillMissing = uncachedNames.filter(name => !colorMap.has(name));
+  if (stillMissing.length > 0) {
+    // Set empty placeholders immediately so we don't block
+    for (const name of stillMissing) {
+      colorMap.set(name, []);
+    }
+
+    // Fire off Scryfall lookup in background (non-blocking)
+    // Results will be cached for next request
+    setImmediate(async () => {
+      try {
+        // Build identifiers for batch resolve (name only)
+        const identifiers = stillMissing.map(name => ({ name }));
+        const resolved = await scryfallServerClient.batchResolve(identifiers);
+
+        // Process results - batchResolve returns map keyed by `${name}|${set}`
+        for (const name of stillMissing) {
+          const key = `${name}|`;
+          const card = resolved[key];
+          const ci = card?.color_identity || [];
+          colorIdentityCache.set(name, ci);
+        }
+        console.log(`[DECKS] Cached color identity for ${stillMissing.length} cards from Scryfall`);
+      } catch (err) {
+        console.warn('[DECKS] Background Scryfall color identity lookup failed:', err.message);
+        // Set empty arrays for missing names to prevent repeated lookups
+        for (const name of stillMissing) {
+          if (!colorIdentityCache.has(name)) {
+            colorIdentityCache.set(name, []);
+          }
+        }
+      }
+    });
+  }
+
+  return colorMap;
+}
+
 // ========== DECKS ENDPOINTS ==========
 router.get('/decks', authenticate, async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT * FROM decks 
+      SELECT * FROM decks
       WHERE (is_deck_instance = FALSE OR is_deck_instance IS NULL)
         AND user_id = $1
       ORDER BY created_at DESC
@@ -22,45 +132,74 @@ router.get('/decks', authenticate, async (req, res) => {
     // Collect all unique normalized card names across all decks so we can fetch inventory availability in one query
     const normalizeKey = (name) => String(name || '').toLowerCase().trim();
     const allNamesSet = new Set();
+    const allNormalizedNamesSet = new Set(); // For color identity lookup
     decks.forEach(d => {
       if (d.cards && Array.isArray(d.cards) && d.cards.length > 0) {
-        d.cards.forEach(c => allNamesSet.add(normalizeKey(c.name)));
+        d.cards.forEach(c => {
+          allNamesSet.add(normalizeKey(c.name));
+          allNormalizedNamesSet.add(normalizeCardName(c.name));
+        });
       }
     });
 
     const allNames = Array.from(allNamesSet).filter(n => n.length > 0);
+    const allNormalizedNames = Array.from(allNormalizedNamesSet).filter(n => n.length > 0);
 
-    let availabilityMap = {};
-    if (allNames.length > 0) {
-      // Fetch aggregated available quantities for these names in a single query
-      const availRes = await pool.query(
-        `SELECT LOWER(TRIM(name)) AS name_key,
-          SUM(
-            GREATEST(COALESCE(quantity, 0) - COALESCE((SELECT SUM(dr.quantity_reserved) FROM deck_reservations dr WHERE dr.inventory_item_id = i.id), 0), 0)
-          ) AS available
-         FROM inventory i
-         WHERE LOWER(TRIM(i.name)) = ANY($1::text[])
-           AND i.user_id = $2
-         GROUP BY LOWER(TRIM(name))`,
-        [allNames, req.userId]
-      );
+    // Fetch color identity data from cards table in parallel with availability
+    const [availabilityMap, colorIdentityMap] = await Promise.all([
+      (async () => {
+        if (allNames.length === 0) return {};
+        // Fetch aggregated available quantities for these names in a single query
+        const availRes = await pool.query(
+          `SELECT LOWER(TRIM(name)) AS name_key,
+            SUM(
+              GREATEST(COALESCE(quantity, 0) - COALESCE((SELECT SUM(dr.quantity_reserved) FROM deck_reservations dr WHERE dr.inventory_item_id = i.id), 0), 0)
+            ) AS available
+           FROM inventory i
+           WHERE LOWER(TRIM(i.name)) = ANY($1::text[])
+             AND i.user_id = $2
+           GROUP BY LOWER(TRIM(name))`,
+          [allNames, req.userId]
+        );
 
-      availabilityMap = (availRes.rows || []).reduce((acc, r) => {
-        acc[String(r.name_key || '')] = parseInt(r.available || 0, 10);
-        return acc;
-      }, {});
-    }
+        return (availRes.rows || []).reduce((acc, r) => {
+          acc[String(r.name_key || '')] = parseInt(r.available || 0, 10);
+          return acc;
+        }, {});
+      })(),
+      getColorIdentityMap(allNormalizedNames)
+    ]);
 
-    // For each deck, calculate totalCards, totalMissing and completionPercentage using availabilityMap
+    // For each deck, calculate totalCards, totalMissing, completionPercentage, and colorIdentity
     const enriched = decks.map(deck => {
       const cards = Array.isArray(deck.cards) ? deck.cards : [];
       const neededByName = {};
       let totalCards = 0;
-      cards.forEach(c => {
+      const deckColorIdentitySet = new Set(); // Collect unique color identity letters for the deck
+
+      // Enrich each card with color_identity if not present
+      const enrichedCards = cards.map(c => {
         const q = parseInt(c.quantity || 1, 10) || 1;
         totalCards += q;
         const key = normalizeKey(c.name);
         neededByName[key] = (neededByName[key] || 0) + q;
+
+        // Get color identity from the reference table if card doesn't have it
+        let cardColorIdentity = c.color_identity || c.colorIdentity || c.colors || null;
+        if (!cardColorIdentity || cardColorIdentity.length === 0) {
+          const normalizedName = normalizeCardName(c.name);
+          cardColorIdentity = colorIdentityMap.get(normalizedName) || [];
+        }
+
+        // Add to deck's color identity
+        if (Array.isArray(cardColorIdentity)) {
+          cardColorIdentity.forEach(color => {
+            if (color) deckColorIdentitySet.add(String(color).toUpperCase());
+          });
+        }
+
+        // Return card with color_identity added
+        return cardColorIdentity.length > 0 ? { ...c, color_identity: cardColorIdentity } : c;
       });
 
       let totalMissing = 0;
@@ -74,7 +213,18 @@ router.get('/decks', authenticate, async (req, res) => {
       const ownedCount = Math.max(0, totalCards - totalMissing);
       const completionPercentage = totalCards > 0 ? Math.round((ownedCount / totalCards) * 10000) / 100 : 0; // keep two decimals if needed
 
-      return { ...deck, _computed_totalCards: totalCards, _computed_missing: totalMissing, completionPercentage };
+      // Convert color identity set to sorted array (WUBRG order)
+      const colorOrder = ['W', 'U', 'B', 'R', 'G'];
+      const deckColorIdentity = colorOrder.filter(c => deckColorIdentitySet.has(c));
+
+      return {
+        ...deck,
+        cards: enrichedCards,
+        colorIdentity: deckColorIdentity,
+        _computed_totalCards: totalCards,
+        _computed_missing: totalMissing,
+        completionPercentage
+      };
     });
 
     res.json(enriched);
