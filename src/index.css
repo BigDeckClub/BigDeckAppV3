@@ -6,61 +6,57 @@
 @tailwind utilities;
 
 /* ===== DESIGN SYSTEM TOKENS ===== */
-:root {
-  /* Legacy colors (for backward compatibility) */
-  --primary: #0f766e;
-  --primary-light: #14b8a6;
-  --primary-dark: #0d665d;
-  --accent: #f59e0b;
-  --accent-light: #fbbf24;
-  --success: #10b981;
-  --danger: #ef4444;
-  --bg-dark: #0f172a;
-  --bg-darker: #020617;
-  --bg-card: #1e293b;
-  --border: #334155;
-  --text-primary: #f1f5f9;
-  --text-secondary: #cbd5e1;
-  --text-muted: #94a3b8;
-  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
-
-  /* MTG Color Tokens */
-  --mtg-white: #F9FAF4;
-  --mtg-white-dark: #F8E7B9;
-  --mtg-blue: #0E68AB;
-  --mtg-blue-dark: #0A4E82;
-  --mtg-black: #150B00;
-  --mtg-black-light: #2D2D2D;
-  --mtg-red: #D3202A;
-  --mtg-red-dark: #A31A22;
-  --mtg-green: #00733E;
-  --mtg-green-dark: #005C32;
-  --mtg-colorless: #9CA3AF;
-  --mtg-gold: #C9A227;
-
-  /* Spacing scale (4px base) */
-  --space-1: 0.25rem;  /* 4px */
-  --space-2: 0.5rem;   /* 8px */
-  --space-3: 0.75rem;  /* 12px */
-  --space-4: 1rem;     /* 16px */
-  --space-6: 1.5rem;   /* 24px */
-  --space-8: 2rem;     /* 32px */
-  --space-12: 3rem;    /* 48px */
-
-  /* Typography */
-  --font-display: 'Inter', system-ui, sans-serif;
-  --font-body: 'Inter', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', Menlo, monospace;
-
-  /* Focus ring */
-  --focus-ring: 0 0 0 2px rgba(99, 102, 241, 0.5);
-  --focus-ring-offset: 0 0 0 4px rgba(99, 102, 241, 0.25);
+:root{
+  --bg-page: #F6F1E8;
+  --surface: #FFF9F2;
+  --muted-surface: #F1E9E1;
+  --text-primary: #172126;
+  --text-muted: #7A6F66;
+  --accent: #14B8A6;
+  --accent-600: #0D9488;
+  --success: #16A34A;
+  --warning: #F59E0B;
+  --danger: #EF4444;
+  --card-radius: 8px;
+  --card-shadow: 0 1px 4px rgba(23, 33, 38, 0.06);
+  --border: rgba(23,33,38,0.06);
 }
 
-* {
-  @apply transition-colors duration-200;
-  -webkit-tap-highlight-color: transparent;
+.dark{
+  --bg-page: #0B1220;
+  --surface: #0F1722;
+  --muted-surface: #121823;
+  --text-primary: #E6EEF6;
+  --text-muted: #A9B3C2;
+  --accent: #14B8A6;
+  --accent-600: #0D9488;
+  --success: #16A34A;
+  --warning: #F59E0B;
+  --danger: #EF4444;
+  --card-radius: 8px;
+  --card-shadow: 0 2px 6px rgba(3,7,18,0.6);
+  --border: rgba(255,255,255,0.06);
 }
+
+/* Basic wiring */
+body {
+  background: var(--bg-page);
+  color: var(--text-primary);
+}
+
+/* utility examples */
+.surface {
+  background: var(--surface);
+  box-shadow: var(--card-shadow);
+  border-radius: var(--card-radius);
+  border: 1px solid var(--border);
+}
+
+.btn-primary {
+  background-color: var(--accent);
+  color: white;
+}
+
 
 /* Skip to content link styles */
 .skip-to-content {
