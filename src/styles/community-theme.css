@@ -14,45 +14,48 @@
 }
 
 .theme-dark {
-  --bda-bg: #0b1120;
-  --bda-surface: #0f172a;
-  --bda-card: rgba(30, 41, 59, 0.7);
-  --bda-text: #e2e8f0;
-  --bda-heading: #f8fafc;
-  --bda-muted: #94a3b8;
-  --bda-border: rgba(148, 163, 184, 0.08);
-  --bda-primary: #14b8a6;
+  /* Teal dark */
+  --bda-bg: #0B1220;
+  --bda-surface: #0F1722;
+  --bda-card: rgba(15, 23, 34, 0.75);
+  --bda-text: #E6EEF6;
+  --bda-heading: #F1F7FB;
+  --bda-muted: #A9B3C2;
+  --bda-border: rgba(255,255,255,0.06);
+  --bda-primary: #14B8A6;
   --bda-primary-foreground: #042f2e;
-  --bda-accent: #f59e0b;
-  --bda-ring: 0 0 0 3px rgba(20, 184, 166, 0.15);
+  --bda-accent: #14B8A6;
+  --bda-ring: 0 0 0 3px rgba(20, 184, 166, 0.12);
 }
 
 .theme-light {
-  --bda-bg: #f8fafc;
-  --bda-surface: #ffffff;
-  --bda-card: rgba(241, 245, 249, 0.9);
-  --bda-text: #1e293b;
+  /* Teal light */
+  --bda-bg: #F6F1E8;
+  --bda-surface: #FFF9F2;
+  --bda-card: rgba(255, 249, 242, 0.95);
+  --bda-text: #172126;
   --bda-heading: #0f172a;
-  --bda-muted: #64748b;
-  --bda-border: rgba(15, 23, 42, 0.08);
-  --bda-primary: #0d9488;
-  --bda-primary-foreground: #ffffff;
-  --bda-accent: #d97706;
-  --bda-ring: 0 0 0 3px rgba(13, 148, 136, 0.15);
+  --bda-muted: #7A6F66;
+  --bda-border: rgba(23,33,38,0.06);
+  --bda-primary: #14B8A6;
+  --bda-primary-foreground: #FFFFFF;
+  --bda-accent: #14B8A6;
+  --bda-ring: 0 0 0 3px rgba(20, 184, 166, 0.12);
 }
 
 .theme-parchment {
-  --bda-bg: #f5f0e1;
-  --bda-surface: #ebe4d3;
-  --bda-card: rgba(255, 251, 240, 0.85);
-  --bda-text: #3d3424;
-  --bda-heading: #2c2417;
-  --bda-muted: #6b5d4d;
+  /* Warm parchment (amber) */
+  --bda-bg: #F5F0E1;
+  --bda-surface: #EBE4D3;
+  --bda-card: rgba(255, 251, 240, 0.95);
+  --bda-text: #3D3424;
+  --bda-heading: #2C2417;
+  --bda-muted: #6B5D4D;
   --bda-border: rgba(107, 93, 77, 0.12);
-  --bda-primary: #9a7b1e;
-  --bda-primary-foreground: #fffbf0;
-  --bda-accent: #a31a22;
-  --bda-ring: 0 0 0 3px rgba(154, 123, 30, 0.2);
+  --bda-primary: #D97706;
+  --bda-primary-foreground: #FFFFFF;
+  --bda-accent: #D97706;
+  --bda-ring: 0 0 0 3px rgba(217, 119, 6, 0.12);
 }
 
 .bda-bg { background-color: var(--bda-bg); }
