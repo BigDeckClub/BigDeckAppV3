@@ -1,20 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { Target, Zap, Settings } from 'lucide-react';
+import { Target, Zap, Settings, Palette } from 'lucide-react';
 import { useThresholdSettings } from '../hooks/useThresholdSettings';
-import { ThresholdSettings, PresetManager, AccountSettings } from './settings';
+import { ThresholdSettings, PresetManager, AccountSettings, AppearanceSettings } from './settings';
 import { api } from '../utils/apiClient';
 import { API_ENDPOINTS } from '../config/api';
 
-/**
- * SettingsTab component - Main settings page with tab navigation
- * Manages tab state and delegates to sub-components for each settings area
- */
 export const SettingsTab = ({ inventory = [] }) => {
-  // Tab navigation state
-  const [activeTab, setActiveTab] = useState('thresholds');
+  const [activeTab, setActiveTab] = useState('appearance');
   
-  // Shared threshold settings from custom hook
   const {
     thresholdSettings,
     saveStatus,
@@ -23,10 +17,8 @@ export const SettingsTab = ({ inventory = [] }) => {
     handleApplyQuickPreset
   } = useThresholdSettings();
   
-  // Sales history for threshold calculations
   const [salesHistory, setSalesHistory] = useState([]);
 
-  // Fetch sales history ONCE on mount
   useEffect(() => {
     const loadSales = async () => {
       try {
@@ -39,19 +31,26 @@ export const SettingsTab = ({ inventory = [] }) => {
     loadSales();
   }, []);
 
-  // Tab button styling helper
   const getTabClassName = (tabName, activeColor) => {
     const baseClasses = 'px-4 py-3 font-medium transition-all whitespace-nowrap';
-    const activeClasses = `border-b-2 ${activeColor} bg-slate-800/50`;
-    const inactiveClasses = 'text-slate-400 hover:text-slate-300';
+    const activeClasses = `border-b-2 ${activeColor} bg-ui-card/50`;
+    const inactiveClasses = 'text-ui-muted hover:text-ui-heading';
     
     return `${baseClasses} ${activeTab === tabName ? activeClasses : inactiveClasses}`;
   };
 
   return (
     <div className="space-y-6">
-      {/* Tab Navigation Bar */}
-      <div className="flex gap-2 border-b border-slate-600 pb-0 overflow-x-auto">
+      <div className="flex gap-2 border-b border-ui-border pb-0 overflow-x-auto">
+        <button 
+          onClick={() => setActiveTab('appearance')}
+          className={getTabClassName('appearance', 'border-ui-primary text-ui-primary')}
+        >
+          <span className="flex items-center gap-1.5">
+            <Palette className="w-4 h-4" />
+            Appearance
+          </span>
+        </button>
         <button 
           onClick={() => setActiveTab('thresholds')}
           className={getTabClassName('thresholds', 'border-purple-500 text-purple-400')}
@@ -81,7 +80,10 @@ export const SettingsTab = ({ inventory = [] }) => {
         </button>
       </div>
 
-      {/* Smart Threshold Settings Tab */}
+      {activeTab === 'appearance' && (
+        <AppearanceSettings />
+      )}
+
       {activeTab === 'thresholds' && (
         <ThresholdSettings
           inventory={inventory}
@@ -94,14 +96,12 @@ export const SettingsTab = ({ inventory = [] }) => {
         />
       )}
 
-      {/* Threshold Presets Tab */}
       {activeTab === 'presets' && (
         <PresetManager
           inventory={inventory}
         />
       )}
 
-      {/* Account Tab */}
       {activeTab === 'account' && (
         <AccountSettings />
       )}

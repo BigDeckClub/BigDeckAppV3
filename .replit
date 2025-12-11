@@ -33,5 +33,9 @@ outputType = "webview"
 localPort = 5000
 externalPort = 80
 
+[[ports]]
+localPort = 24678
+externalPort = 3000
+
 # Use the 'dev' script which builds the Vite app and starts the Express server.
 # Replit will run this when the workspace is started.
