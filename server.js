@@ -1,3 +1,10 @@
+// Log startup immediately to help debug Cloud Run issues
+console.log('[BOOT] Starting server initialization...');
+console.log('[BOOT] Node version:', process.version);
+console.log('[BOOT] PORT:', process.env.PORT);
+console.log('[BOOT] NODE_ENV:', process.env.NODE_ENV);
+console.log('[BOOT] DATABASE_URL set:', !!process.env.DATABASE_URL);
+
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
@@ -8,20 +15,30 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 
+console.log('[BOOT] Core imports loaded');
+
 // Database and initialization
 import { pool } from './server/db/pool.js';
 import { initializeDatabase } from './server/db/init.js';
 
+console.log('[BOOT] Database imports loaded');
+
 // Middleware
 import { errorHandler, requestId } from './server/middleware/index.js';
+
+console.log('[BOOT] Middleware imports loaded');
 
 // Routes
 import { registerRoutes } from './server/routes/index.js';
 // Import scryfall proxy to mount early for reliable matching
 import scryfallProxyRouter from './server/routes/scryfallProxy.js';
 
+console.log('[BOOT] Route imports loaded');
+
 // Services
 import { mtgjsonService } from './server/mtgjsonPriceService.js';
+
+console.log('[BOOT] All imports loaded successfully');
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
