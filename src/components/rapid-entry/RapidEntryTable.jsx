@@ -167,7 +167,7 @@ export function RapidEntryTable({
       />
 
       {/* Table Header */}
-      <div className="hidden md:grid md:grid-cols-12 gap-2 px-3 py-2 text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide border-b border-[var(--border)]">
+      <div className="hidden md:grid md:grid-cols-12 gap-2 px-3 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wide border-b border-slate-700">
         <div className="col-span-3">Card Name</div>
         <div className="col-span-2">Set</div>
         <div className="col-span-1">Qty</div>
@@ -212,12 +212,12 @@ export function RapidEntryTable({
       </div>
 
       {/* Running Totals and Submit All */}
-      <div className="flex flex-wrap justify-between items-center gap-4 px-3 py-3 bg-[var(--surface)] rounded-lg border border-[var(--border)]">
+      <div className="flex flex-wrap justify-between items-center gap-4 px-3 py-3 bg-slate-800/30 rounded-lg border border-slate-700">
         <div className="flex flex-wrap items-center gap-4 sm:gap-6">
-          <div className="text-sm text-[var(--text-muted)]">
+          <div className="text-sm text-slate-400">
             Running total: <span className="font-semibold text-white">{runningTotal.count} cards</span>
           </div>
-          <div className="text-sm text-[var(--text-muted)]">
+          <div className="text-sm text-slate-400">
             Total: <span className="font-semibold text-teal-400">${runningTotal.price.toFixed(2)}</span>
           </div>
           {pendingCount > 0 && (
@@ -236,7 +236,7 @@ export function RapidEntryTable({
               flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all
               ${pendingCount > 0 && !isSubmitting
                 ? 'bg-teal-600 hover:bg-teal-500 text-white shadow-lg shadow-teal-600/20'
-                : 'bg-[var(--muted-surface)] text-[var(--text-muted)] cursor-not-allowed'
+                : 'bg-slate-700 text-slate-500 cursor-not-allowed'
               }
             `}
           >
@@ -269,13 +269,13 @@ export function RapidEntryTable({
       )}
 
       {/* Keyboard Shortcuts Help */}
-      <div className="text-xs text-[var(--text-muted)] flex flex-wrap gap-x-4 gap-y-1">
-        <span><kbd className="px-1.5 py-0.5 bg-[var(--muted-surface)] rounded">Enter</kbd> Select card</span>
-        <span><kbd className="px-1.5 py-0.5 bg-[var(--muted-surface)] rounded">Shift+Enter</kbd> Add row</span>
-        <span><kbd className="px-1.5 py-0.5 bg-[var(--muted-surface)] rounded">Ctrl+Shift+Enter</kbd> Submit all</span>
-        <span><kbd className="px-1.5 py-0.5 bg-[var(--muted-surface)] rounded">Tab</kbd> Next field</span>
-        <span><kbd className="px-1.5 py-0.5 bg-[var(--muted-surface)] rounded">Esc</kbd> Clear row</span>
-        <span><kbd className="px-1.5 py-0.5 bg-[var(--muted-surface)] rounded">Ctrl+D</kbd> Duplicate</span>
+      <div className="text-xs text-slate-500 flex flex-wrap gap-x-4 gap-y-1">
+        <span><kbd className="px-1.5 py-0.5 bg-slate-700 rounded">Enter</kbd> Select card</span>
+        <span><kbd className="px-1.5 py-0.5 bg-slate-700 rounded">Shift+Enter</kbd> Add row</span>
+        <span><kbd className="px-1.5 py-0.5 bg-slate-700 rounded">Ctrl+Shift+Enter</kbd> Submit all</span>
+        <span><kbd className="px-1.5 py-0.5 bg-slate-700 rounded">Tab</kbd> Next field</span>
+        <span><kbd className="px-1.5 py-0.5 bg-slate-700 rounded">Esc</kbd> Clear row</span>
+        <span><kbd className="px-1.5 py-0.5 bg-slate-700 rounded">Ctrl+D</kbd> Duplicate</span>
       </div>
     </div>
   );

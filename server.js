@@ -30,28 +30,9 @@ const distPath = path.join(__dirname, 'dist');
 // Trust proxy for correct client IP handling in cloud environments
 app.set('trust proxy', 1);
 
-// ========== SERVE STATIC ASSETS FIRST ==========
-// Static files must be served before CORS/other middleware to avoid CORS issues
-// These are same-origin requests and don't need CORS headers
-if (!fs.existsSync(distPath)) {
-  console.error(`[STATIC] dist folder not found at ${distPath}. Assets will 500 until build runs.`);
-}
-
-app.use(express.static(distPath, {
-  maxAge: '1d',
-  etag: true,
-}));
-
-// Serve uploaded assets during development (uploads/)
-const uploadsPath = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadsPath)) {
-  try { fs.mkdirSync(uploadsPath, { recursive: true }); } catch (e) { /* ignore */ }
-}
-app.use('/uploads', express.static(uploadsPath, { maxAge: '1d', etag: true }));
-
 // ========== SECURITY MIDDLEWARE ==========
 // Configure allowed origins from environment variable
-const allowedOrigins = process.env.ALLOWED_ORIGINS
+const allowedOrigins = process.env.ALLOWED_ORIGINS 
   ? process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim())
   : ['http://localhost:5000', 'http://localhost:3000'];
 
@@ -67,10 +48,12 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
       scriptSrc: ["'self'", "'unsafe-inline'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
+      // Allow Google Fonts stylesheets in development/preview environments
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       imgSrc: ["'self'", "data:", "https:", "http:"],
       connectSrc: ["'self'", "https://api.scryfall.com", "https://*.supabase.co"],
-      fontSrc: ["'self'", "data:"],
+      // Allow font files from Google Fonts
+      fontSrc: ["'self'", "data:", "https://fonts.gstatic.com"],
       objectSrc: ["'none'"],
       mediaSrc: ["'self'"],
       frameSrc: ["'none'"],
@@ -84,14 +67,9 @@ app.use(cors({
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
-
+    
     // Allow GitHub Codespaces forwarded URLs
     if (origin.endsWith('.app.github.dev')) {
-      return callback(null, true);
-    }
-
-    // Allow Replit proxy domains
-    if (origin.includes('.replit.dev') || origin.includes('.repl.co')) {
       return callback(null, true);
     }
 
@@ -137,6 +115,17 @@ app.use(express.json({ limit: '10mb' }));
 
 // Enable gzip/brotli compression for all responses
 app.use(compression());
+
+// ========== SERVE STATIC ASSETS ==========
+// Must be before API routes so static files are served correctly
+if (!fs.existsSync(distPath)) {
+  console.error(`[STATIC] dist folder not found at ${distPath}. Assets will 500 until build runs.`);
+}
+
+app.use(express.static(distPath, {
+  maxAge: '1d',
+  etag: true,
+}));
 
 // ========== REGISTER ALL ROUTES ==========
 registerRoutes(app);

@@ -1,15 +1,18 @@
 import rateLimit from 'express-rate-limit';
 
 // ========== RATE LIMITING ==========
+// Use relaxed limits in non-production to avoid 429s during development / previews
+const isProduction = process.env.NODE_ENV === 'production';
+
 export const priceLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 100
+  max: isProduction ? 100 : 1000
 });
 
 // Rate limiter for AI API endpoints - more restrictive to prevent abuse
 export const aiApiLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute window
-  max: 30, // 30 requests per minute
+  max: isProduction ? 30 : 300,
   message: { error: 'Too many requests, please try again later' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -20,7 +23,7 @@ export const aiApiLimiter = rateLimit({
 // General API rate limiter for most routes
 export const apiLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: 120, // 120 requests per minute per IP
+  max: isProduction ? 120 : 1000, // higher limits in dev/preview
   message: { error: 'Too many requests, please try again later' },
   standardHeaders: true,
   legacyHeaders: false,

@@ -3,6 +3,7 @@ import { pool } from '../db/pool.js';
 import { validateId, authenticate, apiLimiter } from '../middleware/index.js';
 import { batchInsertReservations, batchInsertMissingCards } from '../utils/index.js';
 import { scryfallServerClient } from '../utils/scryfallClient.server.js';
+import { normalizeCardName } from '../utils/cardHelpers.js';
 
 const router = express.Router();
 
@@ -14,19 +15,6 @@ router.use(apiLimiter);
  * Maps card name (lowercase) -> color_identity array
  */
 const colorIdentityCache = new Map();
-
-/**
- * Normalize card name for database lookups (matches cards.normalized_name format)
- */
-function normalizeCardName(name) {
-  return (name || '')
-    .normalize('NFKD')
-    .replace(/[\u0300-\u036f]/g, '') // Remove diacritics
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, '') // Remove special chars
-    .replace(/\s+/g, ' ')
-    .trim();
-}
 
 /**
  * Lookup color identity for card names.

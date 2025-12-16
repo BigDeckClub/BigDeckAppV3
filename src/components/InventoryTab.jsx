@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
-import { X, Menu, Trash2, CheckSquare, Square, FolderInput } from 'lucide-react';
+import { X, Menu, Trash2, CheckSquare, Square, FolderInput, ListFilter } from 'lucide-react';
 import { 
   Breadcrumb,
   CardGrid, 
@@ -64,6 +64,8 @@ export const InventoryTab = ({
   // Sort State
   const [sortField, setSortField] = useState('name');
   const [sortDirection, setSortDirection] = useState('asc');
+  // Decklist filter state (all / in-decklist / not-in-decklist)
+  const [decklistFilter, setDecklistFilter] = useState('all');
   
   // Selection State for All Cards tab
   const [selectedCardIds, setSelectedCardIds] = useState(new Set());
@@ -181,24 +183,57 @@ export const InventoryTab = ({
       }, {});
   }, [filteredInventory]);
 
+  // Aggregate set of card names appearing in any decklists (lowercased)
+  const decklistCardNames = useMemo(() => {
+    const names = new Set();
+    (deckOps.deckInstances || []).forEach(deck => {
+      (deck.cards || []).forEach(c => {
+        if (c && c.name) names.add(String(c.name).toLowerCase());
+      });
+    });
+    return names;
+  }, [deckOps.deckInstances]);
+
   const { inStockCards, outOfStockCards } = useMemo(() => {
     const entries = Object.entries(groupedInventory);
+    // Helper to check if card is in any decklist (handles double-faced cards)
+    const isInDecklist = (name) => {
+      const lowerName = name.toLowerCase();
+      if (decklistCardNames.has(lowerName)) return true;
+      if (lowerName.includes(' // ')) {
+        const frontFace = lowerName.split(' // ')[0].trim();
+        if (decklistCardNames.has(frontFace)) return true;
+      }
+      return false;
+    };
+
     const inStock = entries.filter(([cardName, items]) => {
       const matchesSearch = inventorySearch === '' || cardName.toLowerCase().includes(inventorySearch.toLowerCase());
       const totalQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
-      return matchesSearch && totalQty > 0;
+      const inDecklist = isInDecklist(cardName);
+      const matchesDecklistFilter =
+        decklistFilter === 'all' ||
+        (decklistFilter === 'in-decklist' && inDecklist) ||
+        (decklistFilter === 'not-in-decklist' && !inDecklist);
+      return matchesSearch && matchesDecklistFilter && totalQty > 0;
     });
+
     const outOfStock = entries.filter(([cardName, items]) => {
       const matchesSearch = inventorySearch === '' || cardName.toLowerCase().includes(inventorySearch.toLowerCase());
       const totalQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
-      return matchesSearch && totalQty === 0;
+      const inDecklist = isInDecklist(cardName);
+      const matchesDecklistFilter =
+        decklistFilter === 'all' ||
+        (decklistFilter === 'in-decklist' && inDecklist) ||
+        (decklistFilter === 'not-in-decklist' && !inDecklist);
+      return matchesSearch && matchesDecklistFilter && totalQty === 0;
     });
     // Apply sorting to both lists
     return { 
       inStockCards: sortCards(inStock, sortField, sortDirection), 
       outOfStockCards: sortCards(outOfStock, sortField, sortDirection)
     };
-  }, [groupedInventory, inventorySearch, sortField, sortDirection]);
+  }, [groupedInventory, inventorySearch, sortField, sortDirection, decklistFilter, decklistCardNames]);
 
   // Get all card IDs for All Cards tab
   const allCardIds = useMemo(() => {
@@ -554,6 +589,22 @@ export const InventoryTab = ({
                         )}
                       </div>
                     )}
+                    {/* Decklist Filter - applies to All Cards view */}
+                    <div className="flex items-center gap-2 ml-auto">
+                      <ListFilter className="w-4 h-4 text-[var(--text-muted)]" />
+                      <select
+                        value={decklistFilter}
+                        onChange={(e) => setDecklistFilter(e.target.value)}
+                        className="px-3 py-1.5 bg-[var(--muted-surface)] border border-[var(--border)] text-slate-200 rounded-md text-sm focus:outline-none focus:border-teal-400"
+                      >
+                        <option value="all">All Cards</option>
+                        <option value="in-decklist">In Decklists</option>
+                        <option value="not-in-decklist">Not in Decklists</option>
+                      </select>
+                      {decklistFilter !== 'all' && (
+                        <span className="text-xs text-teal-300">{inStockCards.length + outOfStockCards.length} cards</span>
+                      )}
+                    </div>
                   </div>
 
                   <CardGrid 
@@ -658,6 +709,9 @@ export const InventoryTab = ({
                 setSellModalData={setSellModalData}
                 setShowSellModal={setShowSellModal}
                 onDeleteFolder={handleDeleteFolder}
+                decklistFilter={decklistFilter}
+                setDecklistFilter={setDecklistFilter}
+                decklistCardNames={decklistCardNames}
                 sortField={sortField}
                 sortDirection={sortDirection}
               />

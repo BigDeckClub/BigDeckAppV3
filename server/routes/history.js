@@ -5,6 +5,8 @@ import { authenticate } from '../middleware/auth.js';
 const router = express.Router();
 
 // ========== CHANGE HISTORY ENDPOINTS ==========
+// Allow disabling history/activity recording in development when DB endpoints are unavailable
+const HISTORY_DISABLED = process.env.DISABLE_HISTORY === 'true';
 
 // GET /api/history/changes - Fetch change history with filtering
 router.get('/history/changes', authenticate, async (req, res) => {
@@ -265,6 +267,7 @@ router.post('/history/activity', authenticate, async (req, res) => {
  * @param {string} [params.userId] - The user ID
  */
 export async function recordChange({ cardId, cardName, fieldChanged, oldValue, newValue, userId }) {
+  if (HISTORY_DISABLED) return;
   try {
     await pool.query(
       `INSERT INTO change_history (card_id, card_name, field_changed, old_value, new_value, user_id)
@@ -272,7 +275,8 @@ export async function recordChange({ cardId, cardName, fieldChanged, oldValue, n
       [cardId || null, cardName, fieldChanged, oldValue?.toString() ?? null, newValue?.toString() ?? null, userId || null]
     );
   } catch (error) {
-    console.error('[HISTORY] Error recording change:', error.message);
+    // Log concise message; avoid noisy stack traces for expected DB endpoint issues
+    console.error('[HISTORY] Error recording change:', error?.message || error);
   }
 }
 
@@ -287,6 +291,7 @@ export async function recordChange({ cardId, cardName, fieldChanged, oldValue, n
  * @param {string} [params.userId] - The user ID
  */
 export async function recordAudit({ actionType, description, entityType, entityId, metadata, userId }) {
+  if (HISTORY_DISABLED) return;
   try {
     await pool.query(
       `INSERT INTO audit_log (action_type, description, entity_type, entity_id, metadata, user_id)
@@ -294,7 +299,7 @@ export async function recordAudit({ actionType, description, entityType, entityI
       [actionType, description || null, entityType || null, entityId || null, metadata ? JSON.stringify(metadata) : '{}', userId || null]
     );
   } catch (error) {
-    console.error('[HISTORY] Error recording audit entry:', error.message);
+    console.error('[HISTORY] Error recording audit entry:', error?.message || error);
   }
 }
 
@@ -310,6 +315,7 @@ export async function recordAudit({ actionType, description, entityType, entityI
  * @param {string} [params.userId] - The user ID
  */
 export async function recordActivity({ activityType, title, description, entityType, entityId, metadata, userId }) {
+  if (HISTORY_DISABLED) return;
   try {
     await pool.query(
       `INSERT INTO activity_feed (activity_type, title, description, entity_type, entity_id, metadata, user_id)
@@ -317,7 +323,7 @@ export async function recordActivity({ activityType, title, description, entityT
       [activityType, title, description || null, entityType || null, entityId || null, metadata ? JSON.stringify(metadata) : '{}', userId || null]
     );
   } catch (error) {
-    console.error('[HISTORY] Error recording activity:', error.message);
+    console.error('[HISTORY] Error recording activity:', error?.message || error);
   }
 }
 

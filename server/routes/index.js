@@ -15,6 +15,7 @@ import aiRouter from './ai.js';
 import communityThemesRouter from './communityThemes.js';
 import assetsRouter from './assets.js';
 import adminRouter from './admin.js';
+import diagnosticsRouter from './diagnostics.js';
 
 export function registerRoutes(app) {
   // Health check (no /api prefix)
@@ -36,6 +37,8 @@ export function registerRoutes(app) {
   app.use('/api', communityThemesRouter);
   app.use('/api', assetsRouter);
   app.use('/api', adminRouter);
+  // Internal diagnostics (no API prefix)
+  app.use('/internal', diagnosticsRouter);
 }
 
 export {
@@ -53,4 +56,5 @@ export {
   historyRouter,
   aiRouter
   , communityThemesRouter, assetsRouter
+  , diagnosticsRouter
 };

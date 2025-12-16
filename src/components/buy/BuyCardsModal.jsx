@@ -7,8 +7,6 @@ import { useMarketplacePreferences } from '../../hooks/useMarketplacePreferences
 import { useToast, TOAST_TYPES } from '../../context/ToastContext';
 import { usePriceCache } from '../../context/PriceCacheContext';
 import { MARKETPLACES, buildCartUrl, buildClipboardText } from '../../utils/marketplaceUrls';
-import { ColorFilterChips } from '../ui/ColorFilterChips';
-import { useColorFilter } from '../../hooks/useColorFilter';
 
 /**
  * Helper function to create initial card selections
@@ -49,15 +47,6 @@ export const BuyCardsModal = memo(function BuyCardsModal({
   const [sortDirection, setSortDirection] = useState('desc'); // 'asc' | 'desc'
   const [searchQuery, setSearchQuery] = useState('');
   const [priceData, setPriceData] = useState({});
-
-  // Color filter hook
-  const {
-    selectedFilters: colorFilters,
-    toggleFilter: toggleColorFilter,
-    clearFilters: clearColorFilters,
-    filterCard: matchesColorFilter,
-    isLoading: colorFilterLoading,
-  } = useColorFilter({ cards, enabled: isOpen });
 
   // Reset selections when cards change
   useEffect(() => {
@@ -126,12 +115,8 @@ export const BuyCardsModal = memo(function BuyCardsModal({
         const priceKey = `${card.name}-${getSetCode(card.set) || index}`;
         return { card, index, selectionKey, priceKey };
       })
-      .filter(({ card }) => {
-        const matchesSearch = !query || card.name.toLowerCase().includes(query);
-        const passesColorFilter = colorFilters.length === 0 || matchesColorFilter(card);
-        return matchesSearch && passesColorFilter;
-      });
-  }, [cards, searchQuery, colorFilters, matchesColorFilter]);
+      .filter(({ card }) => !query || card.name.toLowerCase().includes(query));
+  }, [cards, searchQuery]);
 
   const cardsNeedingPrices = useMemo(() => {
     return cards
@@ -279,7 +264,7 @@ export const BuyCardsModal = memo(function BuyCardsModal({
 
   const modalTitle = (
     <div className="flex items-center gap-2">
-      <ShoppingCart className="w-5 h-5 text-ui-primary" />
+      <ShoppingCart className="w-5 h-5 text-teal-400" />
       <span>Buy Missing Cards</span>
     </div>
   );
@@ -289,7 +274,7 @@ export const BuyCardsModal = memo(function BuyCardsModal({
       <button
         onClick={handleCopyToClipboard}
         disabled={selectedCards.length === 0}
-        className="flex items-center gap-2 px-4 py-2 bg-ui-surface border border-ui-border text-ui-text rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-br from-slate-700 to-slate-800 hover:from-slate-600 hover:to-slate-700 text-white rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <Copy className="w-4 h-4" />
         Copy to Clipboard
@@ -297,7 +282,7 @@ export const BuyCardsModal = memo(function BuyCardsModal({
       <button
         onClick={handleOpenMarketplace}
         disabled={selectedCards.length === 0}
-        className="flex items-center gap-2 px-4 py-2 bg-ui-primary hover:bg-ui-primary/90 text-ui-primary-foreground rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-br from-teal-600 to-teal-700 hover:from-teal-500 hover:to-teal-600 text-white rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <ExternalLink className="w-4 h-4" />
         Open {marketplace?.name} with {totalQuantity} Cards
@@ -315,8 +300,8 @@ export const BuyCardsModal = memo(function BuyCardsModal({
     >
       <div className="space-y-4">
         {deckName && (
-          <p className="text-sm text-ui-muted">
-            For: <span className="text-ui-primary font-semibold">{deckName}</span>
+          <p className="text-sm text-slate-400">
+            For: <span className="text-teal-300 font-semibold">{deckName}</span>
           </p>
         )}
 
@@ -328,39 +313,28 @@ export const BuyCardsModal = memo(function BuyCardsModal({
           onRememberChange={setRememberPreference}
         />
 
-        {/* Color Filter */}
-        <ColorFilterChips
-          selectedFilters={colorFilters}
-          onToggleFilter={toggleColorFilter}
-          onClearFilters={clearColorFilters}
-          isLoading={colorFilterLoading}
-          variant="compact"
-          size="sm"
-          showLabel={true}
-        />
-
         {/* Cards List */}
         <div className="space-y-2">
           <div className="flex items-center justify-between gap-2 flex-wrap">
-            <h3 className="text-sm font-medium text-ui-heading">
+            <h3 className="text-sm font-medium text-slate-300">
               Cards to Buy ({filteredCards.length === cards.length ? cards.length : `${filteredCards.length}/${cards.length}`} cards)
             </h3>
             <div className="flex gap-2">
               <button
                 onClick={handleSelectAll}
-                className="text-xs px-2 py-1 bg-ui-surface hover:bg-ui-surface/90 text-ui-text rounded transition-colors"
+                className="text-xs px-2 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded transition-colors"
               >
                 Select All
               </button>
               <button
                 onClick={handleDeselectAll}
-                className="text-xs px-2 py-1 bg-ui-surface hover:bg-ui-surface/90 text-ui-text rounded transition-colors"
+                className="text-xs px-2 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded transition-colors"
               >
                 Deselect All
               </button>
               <button
                 onClick={() => setSortDirection(prev => (prev === 'asc' ? 'desc' : 'asc'))}
-                className="text-xs px-2 py-1 bg-ui-surface hover:bg-ui-surface/90 text-ui-text rounded transition-colors"
+                className="text-xs px-2 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded transition-colors"
                 title="Sort by TCG/Card Kingdom price"
               >
                 Price {sortDirection === 'asc' ? '↑' : '↓'}
@@ -369,25 +343,25 @@ export const BuyCardsModal = memo(function BuyCardsModal({
           </div>
 
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ui-muted" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search cards..."
-              className="w-full pl-10 pr-3 py-2 bg-ui-surface border border-ui-border rounded-lg text-ui-text placeholder-ui-muted focus:border-ui-primary focus:outline-none"
+              className="w-full pl-10 pr-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-200 placeholder-slate-500 focus:border-teal-500 focus:outline-none"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-ui-muted hover:text-ui-text"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200"
               >
                 x
               </button>
             )}
           </div>
 
-          <div className="max-h-64 overflow-y-auto bg-ui-card rounded-lg border border-ui-border divide-y divide-ui-border">
+          <div className="max-h-64 overflow-y-auto bg-slate-900 rounded-lg border border-slate-700 divide-y divide-slate-700">
             {sortedCards.map(({ card, index, selectionKey, priceKey }) => {
               const selection = cardSelections[selectionKey] || { selected: true, quantity: card.quantity || 1 };
               const tcgPrice = getTcgPrice(priceKey, card);
@@ -396,15 +370,15 @@ export const BuyCardsModal = memo(function BuyCardsModal({
                 <div
                   key={selectionKey}
                   className={`flex items-center gap-3 p-3 transition-colors ${
-                    selection.selected ? 'bg-ui-card/60' : 'bg-ui-surface/60 opacity-60'
+                    selection.selected ? 'bg-slate-800/50' : 'bg-slate-900/50 opacity-60'
                   }`}
                 >
                   <button
                     onClick={() => handleToggleCard(card, index)}
                     className={`flex-shrink-0 w-5 h-5 rounded border transition-colors ${
                       selection.selected
-                        ? 'bg-ui-primary border-ui-primary'
-                        : 'bg-ui-surface border-ui-border hover:border-ui-primary'
+                        ? 'bg-teal-600 border-teal-500'
+                        : 'bg-slate-700 border-slate-500 hover:border-slate-400'
                     }`}
                   >
                     {selection.selected && <Check className="w-4 h-4 text-white" />}
@@ -414,7 +388,7 @@ export const BuyCardsModal = memo(function BuyCardsModal({
                     <button
                       onClick={() => handleQuantityChange(card, index, -1)}
                       disabled={selection.quantity <= 1}
-                      className="p-1 text-ui-muted hover:text-ui-text disabled:opacity-30 disabled:cursor-not-allowed"
+                      className="p-1 text-slate-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
                     >
                       <Minus className="w-3 h-3" />
                     </button>
@@ -423,16 +397,16 @@ export const BuyCardsModal = memo(function BuyCardsModal({
                     </span>
                     <button
                       onClick={() => handleQuantityChange(card, index, 1)}
-                      className="p-1 text-ui-muted hover:text-ui-text"
+                      className="p-1 text-slate-400 hover:text-white"
                     >
                       <Plus className="w-3 h-3" />
                     </button>
                   </div>
 
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm text-ui-text truncate">{card.name}</div>
-                    <div className="text-xs text-ui-muted">
-                      TCG: <span className="text-ui-text">{formatPrice(tcgPrice)}</span>
+                    <div className="text-sm text-slate-200 truncate">{card.name}</div>
+                    <div className="text-xs text-slate-400">
+                      TCG: <span className="text-slate-200">{formatPrice(tcgPrice)}</span>
                     </div>
                   </div>
                 </div>
@@ -441,8 +415,8 @@ export const BuyCardsModal = memo(function BuyCardsModal({
           </div>
         </div>
 
-        <div className="text-sm text-ui-muted">
-          Selected: <span className="text-ui-primary font-semibold">{selectedCount} cards ({totalQuantity} total)</span>
+        <div className="text-sm text-slate-400">
+          Selected: <span className="text-teal-400 font-semibold">{selectedCount} cards ({totalQuantity} total)</span>
         </div>
       </div>
     </Modal>

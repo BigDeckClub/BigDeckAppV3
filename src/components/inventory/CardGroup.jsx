@@ -7,7 +7,6 @@ import { useConfirm } from '../../context/ConfirmContext';
 import { useHoverPreview } from '../../hooks/useHoverPreview';
 import { EXTERNAL_APIS } from '../../config/api';
 import { getSetCode } from '../../utils/cardHelpers';
-import scryfallClient from '../../utils/scryfallClient';
 
 /**
  * Get card image URL from Scryfall
@@ -17,9 +16,7 @@ import scryfallClient from '../../utils/scryfallClient';
  * @param {boolean} skipSetCode - If true, don't include set code (fallback for mismatched set codes)
  * @returns {string} - Scryfall image URL
  */
-// Image selection: prefer direct image URIs or known ids via scryfallClient.getImageUrl,
-// fall back to Scryfall named lookup by name (with optional set code).
-function getNamedImageUrl(cardName, set, version = 'normal', skipSetCode = false) {
+function getCardImageUrl(cardName, set, version = 'normal', skipSetCode = false) {
   const encodedName = encodeURIComponent(cardName.split('//')[0].trim());
   const setCode = getSetCode(set);
   if (setCode && !skipSetCode) {
@@ -186,14 +183,6 @@ export const CardGroup = memo(function CardGroup({
   const firstItem = items[0];
   const previewImageUri = firstItem?.image_uri || firstItem?.image_uris?.normal || null;
   const previewSetCode = firstItem?.set || null;
-  const previewCandidate = scryfallClient.getImageUrl({
-    image_uris: firstItem?.image_uris,
-    card_faces: firstItem?.card_faces,
-    scryfall_id: firstItem?.scryfall_id,
-    name: cardName,
-    set: firstItem?.set,
-  }, { version: 'normal' });
-  const previewFinalImage = previewImageUri || previewCandidate || null;
   
   return (
     <div>
@@ -241,7 +230,7 @@ export const CardGroup = memo(function CardGroup({
         }}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        className={`relative ${allItemsSelected ? 'border-ui-primary ring-2 ring-ui-primary shadow-lg' : 'border border-ui-border hover:border-ui-primary'} surface rounded-lg p-3 md:p-4 transition-all duration-300 flex flex-col h-32 sm:h-36 md:h-40 hover:shadow-2xl hover:-translate-y-1 cursor-grab active:cursor-grabbing group active:scale-95`}
+        className={`relative bg-gradient-to-br from-slate-800 to-slate-900 border ${allItemsSelected ? 'border-teal-500 ring-2 ring-teal-500/50' : 'border-slate-600 hover:border-teal-400'} rounded-lg p-3 md:p-4 transition-all duration-300 flex flex-col h-32 sm:h-36 md:h-40 hover:shadow-2xl hover:shadow-teal-500/30 hover:-translate-y-1 cursor-grab active:cursor-grabbing group active:scale-95`}
         onClick={handleOpenModal}
       >
         {/* Selection Checkbox (when selection mode enabled) */}
@@ -249,14 +238,14 @@ export const CardGroup = memo(function CardGroup({
           <button
             type="button"
             onClick={handleToggleSelection}
-            className={`absolute top-2 left-10 p-1.5 rounded-lg transition-all z-30 min-w-[36px] min-h-[36px] flex items-center justify-center ${
-              allItemsSelected
-                ? 'bg-ui-primary text-ui-primary-foreground'
-                : 'bg-ui-surface text-ui-muted hover:bg-ui-card'
+            className={`absolute top-1 right-1 p-1 rounded transition-all z-30 ${
+              allItemsSelected 
+                ? 'bg-teal-600 text-white' 
+                : 'bg-slate-700/80 text-slate-300 hover:bg-slate-600'
             }`}
             title={allItemsSelected ? "Deselect" : "Select"}
           >
-            {allItemsSelected ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
+            {allItemsSelected ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
           </button>
         )}
         
@@ -264,7 +253,7 @@ export const CardGroup = memo(function CardGroup({
           <button
             type="button"
             onClick={handleRestoreAll}
-            className="absolute top-2 left-2 p-1.5 bg-ui-surface hover:bg-ui-card text-ui-muted hover:text-ui-primary rounded-lg transition-all z-20 duration-200 min-w-[36px] min-h-[36px] flex items-center justify-center"
+            className="absolute top-2 left-2 p-1.5 bg-slate-700/80 hover:bg-green-600/60 text-slate-300 hover:text-green-300 rounded-lg transition-all z-20 duration-200 min-w-[36px] min-h-[36px] flex items-center justify-center"
             title="Restore all copies"
           >
             <RotateCcw className="w-5 h-5" />
@@ -275,7 +264,7 @@ export const CardGroup = memo(function CardGroup({
             onClick={(e) => {
               handleToggleLowInventory(items[0], e);
             }}
-            className="absolute top-2 left-2 p-1.5 bg-ui-surface hover:bg-ui-card text-ui-muted hover:text-ui-accent rounded-lg transition-all z-20 duration-200 min-w-[36px] min-h-[36px] flex items-center justify-center"
+            className="absolute top-2 left-2 p-1.5 bg-slate-700/80 hover:bg-yellow-600/60 text-slate-300 hover:text-yellow-300 rounded-lg transition-all z-20 duration-200 min-w-[36px] min-h-[36px] flex items-center justify-center"
             title={items[0]?.low_inventory_alert ? "Alert enabled" : "Enable low inventory alert"}
             disabled={togglingId === items[0]?.id}
           >
@@ -287,60 +276,52 @@ export const CardGroup = memo(function CardGroup({
             e.stopPropagation();
             items.forEach(item => deleteInventoryItem(item.id));
           }}
-          className="absolute top-2 right-2 p-1.5 bg-ui-surface hover:bg-ui-card text-ui-muted hover:text-ui-accent rounded-lg transition-all opacity-0 group-hover:opacity-100 z-20 duration-200 min-w-[36px] min-h-[36px] flex items-center justify-center"
+          className="absolute top-2 right-2 p-1.5 bg-slate-700/80 hover:bg-red-600/60 text-slate-300 hover:text-white rounded-lg transition-all opacity-0 group-hover:opacity-100 z-20 duration-200 min-w-[36px] min-h-[36px] flex items-center justify-center"
           title="Delete all copies"
         >
           <X className="w-5 h-5" />
         </button>
         <div className="text-center px-1 cursor-pointer flex items-center justify-center gap-1 mb-1">
-          <h3 style={{ color: isTrashView ? 'var(--accent)' : 'var(--text-primary)' }} className="text-xs md:text-sm font-semibold line-clamp-2 break-words flex-1">
+          <h3 className={`text-xs md:text-sm font-semibold ${isTrashView ? 'text-red-200' : 'text-slate-50'} line-clamp-2 break-words flex-1`}>
             {cardName.split('//')[0].trim()}
           </h3>
         </div>
         
         <div className="flex-1 flex items-center justify-center min-h-0 py-2">
           <div className="text-center">
-            <div className={`${isTrashView ? 'text-ui-accent' : 'text-ui-muted'} text-[9px] md:text-xs font-semibold uppercase tracking-wider mb-1`}>{isTrashView ? 'In Trash' : 'Available'}</div>
-            <div style={{ color: isTrashView ? 'var(--accent)' : 'var(--text-primary)' }} className="text-2xl md:text-3xl font-bold leading-tight">{available}</div>
+            <div className={`${isTrashView ? 'text-red-400' : 'text-slate-400'} text-[9px] md:text-xs font-semibold uppercase tracking-wider mb-1`}>{isTrashView ? 'In Trash' : 'Available'}</div>
+            <div className={`text-2xl md:text-3xl font-bold ${isTrashView ? 'text-red-400' : 'text-green-400'} leading-tight`}>{available}</div>
           </div>
         </div>
         
         {/* View Details Indicator */}
-        <div className="absolute bottom-2 right-2 flex items-center gap-1 text-ui-muted opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="absolute bottom-2 right-2 flex items-center gap-1 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity">
           <Eye className="w-3 h-3" />
           <span className="text-[9px] font-medium">View</span>
         </div>
         
         {/* SKU Count Badge */}
-        {items.length > 1 && !allItemsSelected && (
-          <div className="absolute bottom-2 left-2 bg-ui-primary text-ui-primary-foreground text-[9px] font-bold px-1.5 py-0.5 rounded" title={`${items.length} SKUs`}>
+        {items.length > 1 && (
+          <div className="absolute bottom-2 left-2 bg-teal-600/80 text-white text-[9px] font-bold px-1.5 py-0.5 rounded" title={`${items.length} SKUs`}>
             {items.length} SKUs
           </div>
         )}
-
-        {/* Selected Badge */}
-        {allItemsSelected && (
-          <div className="absolute bottom-2 left-2 bg-teal-500 text-white text-[9px] font-bold px-2 py-0.5 rounded flex items-center gap-1">
-            <CheckSquare className="w-3 h-3" />
-            Selected
-          </div>
-        )}
-
-        <div className="grid grid-cols-3 gap-2 text-center pt-2 border-t border-[var(--border)]">
+        
+        <div className="grid grid-cols-3 gap-2 text-center pt-2 border-t border-slate-700/50">
           <div className="space-y-1">
-            <div className="text-[var(--text-muted)] text-[7px] md:text-[9px] font-semibold uppercase">Qty</div>
+            <div className="text-slate-500 text-[7px] md:text-[9px] font-semibold uppercase">Qty</div>
             <div className="h-4 flex items-center justify-center">
-              <div className={`font-bold leading-none ${getStatFontSize(totalQty)} ${totalQty === 0 ? 'text-[var(--text-muted)]' : 'text-teal-300'}`}>{totalQty}</div>
+              <div className={`font-bold leading-none ${getStatFontSize(totalQty)} ${totalQty === 0 ? 'text-slate-500' : 'text-teal-300'}`}>{totalQty}</div>
             </div>
           </div>
           <div className="space-y-1">
-            <div className="text-[var(--text-muted)] text-[7px] md:text-[9px] font-semibold uppercase">Cost</div>
+            <div className="text-slate-500 text-[7px] md:text-[9px] font-semibold uppercase">Cost</div>
             <div className="h-4 flex items-center justify-center">
               <div className={`font-bold leading-none text-blue-300 ${getStatFontSize(avgPrice.toFixed(2))}`}>${avgPrice.toFixed(2)}</div>
             </div>
           </div>
           <div className="space-y-1">
-            <div className="text-[var(--text-muted)] text-[7px] md:text-[9px] font-semibold uppercase">Total</div>
+            <div className="text-slate-500 text-[7px] md:text-[9px] font-semibold uppercase">Total</div>
             <div className="h-4 flex items-center justify-center">
               <div className={`font-bold leading-none text-amber-400 ${getStatFontSize(formatTotal(totalValue))}`}>${formatTotal(totalValue)}</div>
             </div>
@@ -360,52 +341,39 @@ export const CardGroup = memo(function CardGroup({
             e.dataTransfer.setData('skuData', JSON.stringify(items[0]));
           }
         }}
-        className={`relative rounded-xl overflow-hidden border ${allItemsSelected ? 'border-teal-500 ring-2 ring-teal-500/50 shadow-lg shadow-teal-500/30' : 'border-[var(--border)] hover:border-teal-400'} transition-all duration-300 cursor-grab active:cursor-grabbing group hover:shadow-2xl hover:shadow-teal-500/30 hover:-translate-y-1 active:scale-95`}
+        className={`relative rounded-xl overflow-hidden border ${allItemsSelected ? 'border-teal-500 ring-2 ring-teal-500/50' : 'border-slate-600 hover:border-teal-400'} transition-all duration-300 cursor-grab active:cursor-grabbing group hover:shadow-2xl hover:shadow-teal-500/30 hover:-translate-y-1 active:scale-95`}
         onClick={handleOpenModal}
       >
         {/* Card Image */}
-        <div className="aspect-[5/7] bg-[var(--surface)] relative">
+        <div className="aspect-[5/7] bg-slate-800 relative">
           {/* Loading skeleton */}
           {imageLoading && !imageError && (
-            <div className="absolute inset-0 bg-[var(--muted-surface)] animate-pulse flex items-center justify-center">
-              <div className="text-[var(--text-muted)] text-xs">Loading...</div>
+            <div className="absolute inset-0 bg-slate-700 animate-pulse flex items-center justify-center">
+              <div className="text-slate-500 text-xs">Loading...</div>
             </div>
           )}
           
           {/* Card image */}
           {!imageError ? (
-            (() => {
-              // prefer known URIs / ids via scryfallClient, fallback to named lookup
-              const candidate = scryfallClient.getImageUrl({
-                image_uris: items[0]?.image_uris,
-                card_faces: items[0]?.card_faces,
-                scryfall_id: items[0]?.scryfall_id,
-                name: cardName,
-                set: items[0]?.set,
-              }, { version: 'normal' });
-              const src = candidate || getNamedImageUrl(cardName, items[0]?.set, 'normal', skipSetCode);
-              return (
-                <img
-                  src={src}
-                  alt={cardName}
-                  className={`w-full h-full object-cover transition-opacity ${imageLoading ? 'opacity-0' : 'opacity-100'}`}
-                  onLoad={() => setImageLoading(false)}
-                  onError={() => {
-                    // If we haven't tried without set code yet, retry without it
-                    if (!skipSetCode && getSetCode(items[0]?.set)) {
-                      setSkipSetCode(true);
-                      setImageLoading(true);
-                    } else {
-                      setImageError(true);
-                      setImageLoading(false);
-                    }
-                  }}
-                  loading="lazy"
-                />
-              );
-            })()
+            <img
+              src={getCardImageUrl(cardName, items[0]?.set, 'normal', skipSetCode)}
+              alt={cardName}
+              className={`w-full h-full object-cover transition-opacity ${imageLoading ? 'opacity-0' : 'opacity-100'}`}
+              onLoad={() => setImageLoading(false)}
+              onError={() => {
+                // If we haven't tried without set code yet, retry without it
+                if (!skipSetCode && getSetCode(items[0]?.set)) {
+                  setSkipSetCode(true);
+                  setImageLoading(true);
+                } else {
+                  setImageError(true);
+                  setImageLoading(false);
+                }
+              }}
+              loading="lazy"
+            />
           ) : (
-            <div className="absolute inset-0 bg-[var(--surface)] flex flex-col items-center justify-center text-[var(--text-muted)] p-4">
+            <div className="absolute inset-0 bg-slate-800 flex flex-col items-center justify-center text-slate-400 p-4">
               <ImageOff className="w-10 h-10 mb-2" />
               <span className="text-xs text-center line-clamp-2">{cardName}</span>
             </div>
@@ -415,8 +383,8 @@ export const CardGroup = memo(function CardGroup({
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3">
             <h3 className="text-white text-sm font-semibold line-clamp-2">{cardName}</h3>
             <div className="flex items-center gap-2 mt-1">
-              <Eye className="w-3 h-3 text-[var(--text-muted)]" />
-              <span className="text-[var(--text-muted)] text-xs">Click for details</span>
+              <Eye className="w-3 h-3 text-slate-300" />
+              <span className="text-slate-300 text-xs">Click for details</span>
             </div>
           </div>
           
@@ -433,7 +401,7 @@ export const CardGroup = memo(function CardGroup({
               className={`absolute top-2 left-2 p-1.5 rounded transition-all z-30 ${
                 allItemsSelected 
                   ? 'bg-teal-600 text-white' 
-                  : 'bg-black/50 text-[var(--text-muted)] hover:bg-slate-600'
+                  : 'bg-black/50 text-slate-300 hover:bg-slate-600'
               }`}
               title={allItemsSelected ? "Deselect" : "Select"}
             >
@@ -447,26 +415,16 @@ export const CardGroup = memo(function CardGroup({
               e.stopPropagation();
               items.forEach(item => deleteInventoryItem(item.id));
             }}
-            className="absolute top-2 right-2 p-1.5 bg-black/50 hover:bg-red-600/80 text-[var(--text-muted)] hover:text-white rounded-lg transition-all opacity-0 group-hover:opacity-100 z-20"
+            className="absolute top-2 right-2 p-1.5 bg-black/50 hover:bg-red-600/80 text-slate-300 hover:text-white rounded-lg transition-all opacity-0 group-hover:opacity-100 z-20"
             title="Delete all copies"
           >
             <X className="w-4 h-4" />
           </button>
           
           {/* SKU Count Badge */}
-          {items.length > 1 && !allItemsSelected && (
+          {items.length > 1 && (
             <div className="absolute bottom-2 left-2 bg-teal-600/90 text-white text-[10px] font-bold px-1.5 py-0.5 rounded backdrop-blur-sm" title={`${items.length} SKUs`}>
               {items.length} SKUs
-            </div>
-          )}
-
-          {/* Selected overlay */}
-          {allItemsSelected && (
-            <div className="absolute inset-0 bg-teal-500/20 pointer-events-none">
-              <div className="absolute bottom-2 left-2 bg-teal-500 text-white text-[10px] font-bold px-2 py-0.5 rounded flex items-center gap-1">
-                <CheckSquare className="w-3 h-3" />
-                Selected
-              </div>
             </div>
           )}
         </div>
@@ -489,7 +447,7 @@ export const CardGroup = memo(function CardGroup({
           }}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
-          className="relative bg-gradient-to-br from-slate-800 to-slate-900 border border-[var(--border)] hover:border-teal-400 rounded-lg p-4 transition-all duration-300 cursor-grab active:cursor-grabbing hover:shadow-2xl hover:shadow-teal-500/30 group"
+          className="relative bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600 hover:border-teal-400 rounded-lg p-4 transition-all duration-300 cursor-grab active:cursor-grabbing hover:shadow-2xl hover:shadow-teal-500/30 group"
           onClick={handleOpenModal}
         >
           <button
@@ -497,7 +455,7 @@ export const CardGroup = memo(function CardGroup({
               e.stopPropagation();
               items.forEach(item => deleteInventoryItem(item.id));
             }}
-            className="absolute top-3 right-3 p-1.5 bg-[var(--muted-surface)] hover:bg-slate-600 text-[var(--text-muted)] hover:text-red-400 rounded-lg transition-all opacity-0 group-hover:opacity-100 z-20 min-w-[36px] min-h-[36px] flex items-center justify-center"
+            className="absolute top-3 right-3 p-1.5 bg-slate-700/60 hover:bg-slate-600 text-slate-300 hover:text-red-400 rounded-lg transition-all opacity-0 group-hover:opacity-100 z-20 min-w-[36px] min-h-[36px] flex items-center justify-center"
             title="Delete all copies"
           >
             <X className="w-5 h-5" />
@@ -513,10 +471,10 @@ export const CardGroup = memo(function CardGroup({
                 )}
               </div>
               <div className="flex gap-4 md:gap-6 text-xs mt-2 flex-wrap">
-                <div><span className="text-[var(--text-muted)]">Qty:</span> <span className={`ml-1 font-semibold ${totalQty === 0 ? 'text-[var(--text-muted)]' : 'text-teal-300'}`}>{totalQty} copies</span></div>
-                <div><span className="text-[var(--text-muted)]">Available:</span> <span className="ml-1 text-green-400 font-semibold">{available}</span></div>
-                <div><span className="text-[var(--text-muted)]">Cost/ea:</span> <span className="ml-1 text-blue-300 font-semibold">${avgPrice.toFixed(2)}</span></div>
-                <div><span className="text-[var(--text-muted)]">Total:</span> <span className="ml-1 text-amber-400 font-semibold">${formatTotal(totalValue)}</span></div>
+                <div><span className="text-slate-400">Qty:</span> <span className={`ml-1 font-semibold ${totalQty === 0 ? 'text-slate-500' : 'text-teal-300'}`}>{totalQty} copies</span></div>
+                <div><span className="text-slate-400">Available:</span> <span className="ml-1 text-green-400 font-semibold">{available}</span></div>
+                <div><span className="text-slate-400">Cost/ea:</span> <span className="ml-1 text-blue-300 font-semibold">${avgPrice.toFixed(2)}</span></div>
+                <div><span className="text-slate-400">Total:</span> <span className="ml-1 text-amber-400 font-semibold">${formatTotal(totalValue)}</span></div>
               </div>
             </div>
             <div className="flex items-center gap-2 text-teal-400 text-sm flex-shrink-0">

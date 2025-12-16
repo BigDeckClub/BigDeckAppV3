@@ -1,8 +1,12 @@
 import pkg from 'pg';
+import dns from 'dns';
 import dotenv from 'dotenv';
 
 // Load environment variables from .env file
 dotenv.config();
+
+// Force IPv4 for DNS resolution (Supabase may only have IPv6 which doesn't work in some environments)
+dns.setDefaultResultOrder('ipv4first');
 
 const { Pool } = pkg;
 
@@ -15,10 +19,19 @@ if (!dbUrl) {
   throw new Error('DATABASE_URL is required but not configured');
 }
 
+// Detect if using Supabase (contains 'supabase.co' or 'supabase.com')
+const isSupabase = dbUrl.includes('supabase.co') || dbUrl.includes('supabase.com');
+
+// Configure SSL - Supabase requires SSL
+const sslConfig = isSupabase
+  ? { rejectUnauthorized: false } // Supabase needs relaxed SSL for some environments
+  : true;
+
 const pool = new Pool({
   connectionString: dbUrl,
+  ssl: sslConfig,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 5000,
+  connectionTimeoutMillis: 15000,
   max: 20, // Maximum number of clients in the pool
   min: 2,  // Minimum number of clients in the pool
 });
