@@ -63,6 +63,8 @@ jobs:
           project_id: ${{ secrets.GCP_PROJECT }}
           region: us-central1
           source: .
+          # Increase startup timeout to allow for database initialization
+          flags: '--cpu-boost --startup-cpu-boost --timeout=300'
           env_vars: |
             NODE_ENV=production
             DATABASE_URL=${{ secrets.DATABASE_URL }}
