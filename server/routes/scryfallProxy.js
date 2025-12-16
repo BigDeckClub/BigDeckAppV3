@@ -1,15 +1,16 @@
 import express from 'express';
-import fetch from 'node-fetch';
 
 const router = express.Router();
 
 // Proxy all requests under /api/external/scryfall/* to https://api.scryfall.com/*
 // Preserves method, query string and basic headers. Streams response back to client.
-router.all('/*', async (req, res) => {
+// Express 5 uses path-to-regexp v8 which requires named params: use *path for wildcard
+router.all('/*path', async (req, res) => {
   try {
-    // When mounted at /api/external/scryfall, req.params[0] will be the rest of the
-    // path (e.g. 'sets'). Build upstream path and preserve query string.
-    const wildcard = req.params && req.params[0] ? `/${req.params[0]}` : '';
+    // When mounted at /api/external/scryfall, req.params.path will be the rest of the
+    // path (e.g. ['sets']). Build upstream path and preserve query string.
+    const pathParts = req.params.path || [];
+    const wildcard = pathParts.length > 0 ? `/${pathParts.join('/')}` : '';
     const query = req.originalUrl && req.originalUrl.includes('?') ? req.originalUrl.split('?')[1] : '';
     const targetUrl = `https://api.scryfall.com${wildcard}${query ? `?${query}` : ''}`;
 
@@ -39,9 +40,9 @@ router.all('/*', async (req, res) => {
       }
     });
 
-    // Stream the body
-    const body = await upstream.buffer();
-    res.send(body);
+    // Stream the body using native fetch's arrayBuffer
+    const arrayBuf = await upstream.arrayBuffer();
+    res.send(Buffer.from(arrayBuf));
   } catch (err) {
     console.error('[SCRYFALL PROXY] Error proxying request', err.message);
     res.status(502).json({ error: 'Bad gateway' });

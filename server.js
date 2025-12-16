@@ -132,48 +132,6 @@ app.use(express.static(distPath, {
 // ========== REGISTER ALL ROUTES ==========
 // Mount scryfall proxy first so it cannot be intercepted by other /api routers
 app.use('/api/external/scryfall', scryfallProxyRouter);
-// Debug shim: simple route to verify path matching
-app.all('/api/external/scryfall/*', (req, res, next) => {
-  console.log('[SCRYFALL DEBUG] Hit debug shim for', req.method, req.originalUrl);
-  return next();
-});
-
-// Direct Scryfall proxy mounted at app level to guarantee matching.
-app.all('/api/external/scryfall/*', async (req, res) => {
-  try {
-    const wildcard = req.params && req.params[0] ? `/${req.params[0]}` : '';
-    const query = req.originalUrl && req.originalUrl.includes('?') ? req.originalUrl.split('?')[1] : '';
-    const targetUrl = `https://api.scryfall.com${wildcard}${query ? `?${query}` : ''}`;
-    console.log('[SCRYFALL PROXY - APP]', req.method, req.originalUrl, '->', targetUrl);
-
-    const fetchOptions = {
-      method: req.method,
-      headers: {
-        accept: req.get('accept') || '*/*',
-        'user-agent': req.get('user-agent') || 'bigdeck-proxy',
-      }
-    };
-
-    if (req.method !== 'GET' && req.method !== 'HEAD') {
-      fetchOptions.body = req.body && Object.keys(req.body).length ? JSON.stringify(req.body) : undefined;
-      fetchOptions.headers['content-type'] = req.get('content-type') || 'application/json';
-    }
-
-    const upstream = await fetch(targetUrl, fetchOptions);
-    res.status(upstream.status);
-    upstream.headers.forEach((value, name) => {
-      if (!['transfer-encoding', 'content-encoding', 'connection'].includes(name)) {
-        res.setHeader(name, value);
-      }
-    });
-
-    const arrayBuf = await upstream.arrayBuffer();
-    res.send(Buffer.from(arrayBuf));
-  } catch (err) {
-    console.error('[SCRYFALL PROXY - APP] Error proxying request', err?.message || err);
-    res.status(502).json({ error: 'Bad gateway' });
-  }
-});
 registerRoutes(app);
 
 // ========== API 404 HANDLER ==========
