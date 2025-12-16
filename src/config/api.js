@@ -14,7 +14,9 @@ export const API_BASE = import.meta.env.VITE_API_BASE || '/api';
  * External API endpoints
  */
 export const EXTERNAL_APIS = {
-  SCRYFALL: 'https://api.scryfall.com',
+  // When `VITE_SCRYFALL_PROXY=true` the client will call our server proxy at
+  // `${API_BASE}/external/scryfall` to avoid CORS issues on some deployments.
+  SCRYFALL: import.meta.env.VITE_SCRYFALL_PROXY === 'true' ? `${API_BASE}/external/scryfall` : 'https://api.scryfall.com',
   ARCHIDEKT: 'https://api.archidekt.com/v1',
 };
 

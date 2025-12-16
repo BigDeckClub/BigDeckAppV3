@@ -16,11 +16,16 @@ import communityThemesRouter from './communityThemes.js';
 import assetsRouter from './assets.js';
 import adminRouter from './admin.js';
 import diagnosticsRouter from './diagnostics.js';
+import scryfallProxyRouter from './scryfallProxy.js';
 
 export function registerRoutes(app) {
   // Health check (no /api prefix)
   app.use(healthRouter);
   
+  // Proxy to external Scryfall API to avoid browser CORS issues
+  // Mount the proxy directly at /api/external/scryfall so subpaths map cleanly.
+  app.use('/api/external/scryfall', scryfallProxyRouter);
+
   // API routes (mounted with /api prefix)
   app.use('/api', pricesRouter);
   app.use('/api', inventoryRouter);
@@ -37,6 +42,9 @@ export function registerRoutes(app) {
   app.use('/api', communityThemesRouter);
   app.use('/api', assetsRouter);
   app.use('/api', adminRouter);
+  // Proxy to external Scryfall API to avoid browser CORS issues
+  // Mount the proxy directly at /api/external/scryfall so subpaths map cleanly.
+  app.use('/api/external/scryfall', scryfallProxyRouter);
   // Internal diagnostics (no API prefix)
   app.use('/internal', diagnosticsRouter);
 }
