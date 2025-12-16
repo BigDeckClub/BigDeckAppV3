@@ -333,6 +333,62 @@ export async function initializeDatabase() {
       )
     `);
 
+    // ========== EBAY INTEGRATION TABLES ==========
+
+    // eBay connections - stores OAuth tokens for each user's eBay account
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS ebay_connections (
+        id SERIAL PRIMARY KEY,
+        user_id VARCHAR(255) REFERENCES users(id) ON DELETE CASCADE UNIQUE,
+        ebay_user_id VARCHAR(255),
+        access_token TEXT,
+        refresh_token TEXT,
+        token_expires_at TIMESTAMP,
+        scope TEXT,
+        connected_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    // eBay listings - tracks decks listed on eBay
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS ebay_listings (
+        id SERIAL PRIMARY KEY,
+        user_id VARCHAR(255) REFERENCES users(id) ON DELETE CASCADE,
+        deck_id INTEGER REFERENCES decks(id) ON DELETE SET NULL,
+        ebay_listing_id VARCHAR(50),
+        ebay_offer_id VARCHAR(50),
+        title VARCHAR(80),
+        description TEXT,
+        price DECIMAL(10,2),
+        quantity INTEGER DEFAULT 1,
+        status VARCHAR(20) DEFAULT 'draft',
+        listing_url TEXT,
+        listed_at TIMESTAMP,
+        sold_at TIMESTAMP,
+        ebay_buyer_username VARCHAR(255),
+        ebay_order_id VARCHAR(50),
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    // eBay sync log - for debugging and audit trail
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS ebay_sync_log (
+        id SERIAL PRIMARY KEY,
+        user_id VARCHAR(255),
+        action VARCHAR(50) NOT NULL,
+        ebay_listing_id VARCHAR(50),
+        deck_id INTEGER,
+        request_payload JSONB,
+        response_payload JSONB,
+        error_message TEXT,
+        success BOOLEAN DEFAULT true,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
     // ========== PERFORMANCE INDEXES ==========
     // Note: Create indexes in parallel for better performance
     // Using Promise.all for independent index creation operations
@@ -414,8 +470,39 @@ export async function initializeDatabase() {
       `).catch(() => {}),
       
       pool.query(`
-        CREATE INDEX IF NOT EXISTS idx_activity_feed_activity_type 
+        CREATE INDEX IF NOT EXISTS idx_activity_feed_activity_type
         ON activity_feed(activity_type);
+      `).catch(() => {}),
+
+      // Indexes for eBay integration
+      pool.query(`
+        CREATE INDEX IF NOT EXISTS idx_ebay_connections_user_id
+        ON ebay_connections(user_id);
+      `).catch(() => {}),
+
+      pool.query(`
+        CREATE INDEX IF NOT EXISTS idx_ebay_listings_user_id
+        ON ebay_listings(user_id);
+      `).catch(() => {}),
+
+      pool.query(`
+        CREATE INDEX IF NOT EXISTS idx_ebay_listings_deck_id
+        ON ebay_listings(deck_id);
+      `).catch(() => {}),
+
+      pool.query(`
+        CREATE INDEX IF NOT EXISTS idx_ebay_listings_status
+        ON ebay_listings(status);
+      `).catch(() => {}),
+
+      pool.query(`
+        CREATE INDEX IF NOT EXISTS idx_ebay_sync_log_user_id
+        ON ebay_sync_log(user_id);
+      `).catch(() => {}),
+
+      pool.query(`
+        CREATE INDEX IF NOT EXISTS idx_ebay_sync_log_created_at
+        ON ebay_sync_log(created_at DESC);
       `).catch(() => {}),
     ]);
 

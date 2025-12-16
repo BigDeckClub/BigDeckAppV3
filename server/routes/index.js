@@ -17,6 +17,7 @@ import assetsRouter from './assets.js';
 import adminRouter from './admin.js';
 import diagnosticsRouter from './diagnostics.js';
 import scryfallProxyRouter from './scryfallProxy.js';
+import ebayRouter from './ebay.js';
 
 export function registerRoutes(app) {
   // Health check (no /api prefix)
@@ -42,6 +43,7 @@ export function registerRoutes(app) {
   app.use('/api', communityThemesRouter);
   app.use('/api', assetsRouter);
   app.use('/api', adminRouter);
+  app.use('/api', ebayRouter);
   // Internal diagnostics (no API prefix)
   app.use('/internal', diagnosticsRouter);
 }
@@ -59,7 +61,9 @@ export {
   authRouter,
   lotsRouter,
   historyRouter,
-  aiRouter
-  , communityThemesRouter, assetsRouter
-  , diagnosticsRouter
+  aiRouter,
+  communityThemesRouter,
+  assetsRouter,
+  diagnosticsRouter,
+  ebayRouter,
 };
