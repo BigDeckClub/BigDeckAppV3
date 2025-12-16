@@ -24,10 +24,9 @@ import { AIChatWidget } from "./components/AIChatWidget";
 // Lazy load tab components for code splitting
 const InventoryTab = lazy(() => import("./components/InventoryTab"));
 const ImportTab = lazy(() => import("./components/ImportTab"));
-const AnalyticsTab = lazy(() => import("./components/AnalyticsTab"));
+const DashboardTab = lazy(() => import("./components/DashboardTab"));
 const DeckTab = lazy(() => import("./components/DeckTab"));
 const AITab = lazy(() => import("./components/AITab"));
-const SalesHistoryTab = lazy(() => import("./components/SalesHistoryTab"));
 const SettingsTab = lazy(() => import("./components/SettingsTab"));
 
 function MTGInventoryTrackerContent() {
@@ -198,14 +197,14 @@ function MTGInventoryTrackerContent() {
           </ErrorBoundaryWithRetry>
         )}
 
-        {activeTab === "analytics" && !isLoading && (
-          <Suspense fallback={<TabLoadingSpinner />}> 
-            <AnalyticsTab inventory={inventory} />
+        {activeTab === "dashboard" && !isLoading && (
+          <Suspense fallback={<TabLoadingSpinner />}>
+            <DashboardTab inventory={inventory} />
           </Suspense>
         )}
 
         {activeTab === "decks" && !isLoading && (
-          <Suspense fallback={<TabLoadingSpinner />}> 
+          <Suspense fallback={<TabLoadingSpinner />}>
             <DeckTab
               onDeckCreatedOrDeleted={() => setDeckRefreshTrigger(prev => prev + 1)}
               onInventoryUpdate={loadInventory}
@@ -214,14 +213,8 @@ function MTGInventoryTrackerContent() {
         )}
 
         {activeTab === "ai" && !isLoading && (
-          <Suspense fallback={<TabLoadingSpinner />}> 
+          <Suspense fallback={<TabLoadingSpinner />}>
             <AITab />
-          </Suspense>
-        )}
-
-        {activeTab === "sales" && !isLoading && (
-          <Suspense fallback={<TabLoadingSpinner />}> 
-            <SalesHistoryTab />
           </Suspense>
         )}
 

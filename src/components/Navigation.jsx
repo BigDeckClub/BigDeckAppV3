@@ -8,9 +8,8 @@ import PropTypes from 'prop-types';
 import {
   Layers,
   Download,
-  BarChart3,
+  LayoutDashboard,
   BookOpen,
-  TrendingUp,
   Settings,
 } from 'lucide-react';
 import { UserDropdown } from './UserDropdown';
@@ -21,9 +20,8 @@ import { UserDropdown } from './UserDropdown';
 const NAV_ITEMS = [
   { id: 'inventory', icon: Layers, label: 'Inventory' },
   { id: 'imports', icon: Download, label: 'Imports' },
-  { id: 'analytics', icon: BarChart3, label: 'Analytics' },
+  { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { id: 'decks', icon: BookOpen, label: 'Decks' },
-  { id: 'sales', icon: TrendingUp, label: 'Sales' },
   { id: 'settings', icon: Settings, label: 'Settings' },
 ];
 
