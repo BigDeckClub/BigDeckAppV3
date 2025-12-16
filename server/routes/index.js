@@ -42,9 +42,6 @@ export function registerRoutes(app) {
   app.use('/api', communityThemesRouter);
   app.use('/api', assetsRouter);
   app.use('/api', adminRouter);
-  // Proxy to external Scryfall API to avoid browser CORS issues
-  // Mount the proxy directly at /api/external/scryfall so subpaths map cleanly.
-  app.use('/api/external/scryfall', scryfallProxyRouter);
   // Internal diagnostics (no API prefix)
   app.use('/internal', diagnosticsRouter);
 }
