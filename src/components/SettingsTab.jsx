@@ -37,6 +37,7 @@ export const SettingsTab = ({ inventory = [] }) => {
       }
     };
     loadSales();
+
   }, []);
 
   // Tab button styling helper
@@ -105,6 +106,7 @@ export const SettingsTab = ({ inventory = [] }) => {
       {activeTab === 'account' && (
         <AccountSettings />
       )}
+      {/* Admin tools moved to top-level Templates page */}
     </div>
   );
 };

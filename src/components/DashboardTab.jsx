@@ -12,7 +12,11 @@ import {
   Layers,
   ShoppingCart,
   CreditCard,
-  Receipt
+  Receipt,
+  Store,
+  Clock,
+  CheckCircle,
+  Truck
 } from 'lucide-react';
 import { ChangeLogTab } from './ChangeLogTab';
 import { ActivityFeed } from './ActivityFeed';
@@ -162,6 +166,118 @@ function SalesSection() {
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * eBay Sales Widget Component
+ */
+function EbaySalesWidget() {
+  const [stats, setStats] = useState(null);
+  const [recentListings, setRecentListings] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchEbayStats = async () => {
+      try {
+        const [statsRes, listingsRes] = await Promise.all([
+          fetchWithAuth('/api/ebay/analytics'),
+          fetchWithAuth('/api/ebay/listings?limit=5')
+        ]);
+
+        if (statsRes.ok) {
+          const statsData = await statsRes.json();
+          setStats(statsData);
+        }
+
+        if (listingsRes.ok) {
+          const listingsData = await listingsRes.json();
+          setRecentListings(listingsData.slice(0, 5));
+        }
+      } catch (err) {
+        console.error('[Dashboard] Failed to fetch eBay stats', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEbayStats();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="bg-[var(--bda-surface)] border border-[var(--bda-border)] rounded-lg p-4">
+        <div className="text-[var(--bda-muted)] text-center py-4">Loading eBay stats...</div>
+      </div>
+    );
+  }
+
+  const statusIcons = {
+    draft: Clock,
+    active: Store,
+    sold: Package,
+    shipped: Truck,
+    completed: CheckCircle,
+  };
+
+  const statusColors = {
+    draft: 'text-gray-400',
+    active: 'text-blue-400',
+    sold: 'text-yellow-400',
+    shipped: 'text-purple-400',
+    completed: 'text-green-400',
+  };
+
+  return (
+    <div className="bg-[var(--bda-surface)] border border-[var(--bda-border)] rounded-lg p-4">
+      <h3 className="text-lg font-semibold text-[var(--bda-heading)] mb-4 flex items-center gap-2">
+        <Store className="w-4 h-4 text-[var(--bda-primary)]" />
+        eBay Sales
+      </h3>
+
+      {stats && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+          <div className="bg-[var(--input-bg)] rounded p-3 text-center">
+            <div className="text-2xl font-bold text-blue-400">{stats.activeListings || 0}</div>
+            <div className="text-xs text-[var(--bda-muted)]">Active</div>
+          </div>
+          <div className="bg-[var(--input-bg)] rounded p-3 text-center">
+            <div className="text-2xl font-bold text-yellow-400">{stats.pendingOrders || 0}</div>
+            <div className="text-xs text-[var(--bda-muted)]">Pending</div>
+          </div>
+          <div className="bg-[var(--input-bg)] rounded p-3 text-center">
+            <div className="text-2xl font-bold text-green-400">{stats.completedSales || 0}</div>
+            <div className="text-xs text-[var(--bda-muted)]">Completed</div>
+          </div>
+          <div className="bg-[var(--input-bg)] rounded p-3 text-center">
+            <div className="text-2xl font-bold text-teal-400">${(stats.totalRevenue || 0).toFixed(0)}</div>
+            <div className="text-xs text-[var(--bda-muted)]">Revenue</div>
+          </div>
+        </div>
+      )}
+
+      {recentListings.length > 0 ? (
+        <div className="space-y-2">
+          <div className="text-sm font-medium text-[var(--bda-muted)] mb-2">Recent Listings</div>
+          {recentListings.map((listing) => {
+            const StatusIcon = statusIcons[listing.status] || Clock;
+            return (
+              <div key={listing.id} className="flex items-center justify-between p-2 bg-[var(--input-bg)] rounded text-sm">
+                <div className="flex items-center gap-2 truncate flex-1">
+                  <StatusIcon size={14} className={statusColors[listing.status]} />
+                  <span className="truncate">{listing.title || listing.deck_name || 'Untitled'}</span>
+                </div>
+                <div className="text-[var(--bda-muted)] ml-2">${parseFloat(listing.price || 0).toFixed(2)}</div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="text-center text-[var(--bda-muted)] text-sm py-4">
+          No eBay listings yet. Create one from the Decks tab!
         </div>
       )}
     </div>
@@ -392,6 +508,9 @@ function OverviewSection({ inventory }) {
           </div>
         )}
       </div>
+
+      {/* eBay Sales Widget */}
+      <EbaySalesWidget />
     </div>
   );
 }

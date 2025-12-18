@@ -46,3 +46,15 @@ router.post('/admin/backfill-scryfall', authenticate, async (req, res) => {
 });
 
 export default router;
+
+// GET /api/admin/status
+router.get('/admin/status', authenticate, async (req, res) => {
+  try {
+    const userId = req.userId;
+    const allowed = isAdmin(userId);
+    res.json({ isAdmin: allowed, adminConfigured: Boolean(process.env.ADMIN_USER_IDS) });
+  } catch (error) {
+    console.error('[ADMIN] status check failed:', error);
+    res.status(500).json({ error: 'Failed to check admin status' });
+  }
+});

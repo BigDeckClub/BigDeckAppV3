@@ -11,6 +11,7 @@ import {
   LayoutDashboard,
   BookOpen,
   Settings,
+  FileText,
 } from 'lucide-react';
 import { UserDropdown } from './UserDropdown';
 
@@ -22,6 +23,7 @@ const NAV_ITEMS = [
   { id: 'imports', icon: Download, label: 'Imports' },
   { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { id: 'decks', icon: BookOpen, label: 'Decks' },
+  { id: 'templates', icon: FileText, label: 'Templates' },
   { id: 'settings', icon: Settings, label: 'Settings' },
 ];
 

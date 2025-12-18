@@ -28,6 +28,7 @@ const DashboardTab = lazy(() => import("./components/DashboardTab"));
 const DeckTab = lazy(() => import("./components/DeckTab"));
 const AITab = lazy(() => import("./components/AITab"));
 const SettingsTab = lazy(() => import("./components/SettingsTab"));
+const AdminTab = lazy(() => import("./components/admin/AdminTab"));
 
 function MTGInventoryTrackerContent() {
   // ALL hooks must be called before any conditional returns
@@ -221,6 +222,11 @@ function MTGInventoryTrackerContent() {
         {activeTab === "settings" && !isLoading && (
           <Suspense fallback={<TabLoadingSpinner />}> 
             <SettingsTab inventory={inventory} />
+          </Suspense>
+        )}
+        {activeTab === "templates" && !isLoading && (
+          <Suspense fallback={<TabLoadingSpinner />}>
+            <AdminTab />
           </Suspense>
         )}
       </main>

@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import PropTypes from 'prop-types';
-import { X, Trash2, ChevronDown, FileEdit, Link2, ShoppingCart } from 'lucide-react';
+import { X, Trash2, ChevronDown, FileEdit, Link2, ShoppingCart, Tag, Crown } from 'lucide-react';
+import EbayListingModal from '../ebay/EbayListingModal';
 import { getSetDisplayName } from '../../utils/cardHelpers';
 import { normalizeName, computeCompletion } from '../../utils/deckHelpers';
 import { BuyButton } from '../buy/BuyButton';
@@ -21,6 +22,9 @@ export function DeckDetailsView({
 }) {
   const [showMissing, setShowMissing] = useState(false);
   const [showBuyModal, setShowBuyModal] = useState(false);
+  const [showEbayModal, setShowEbayModal] = useState(false);
+  const [commanderLocal, setCommanderLocal] = useState(deck.commander || '');
+  const [settingCommanderFor, setSettingCommanderFor] = useState(null);
 
   // Compute missing cards using shared helpers
   const cards = Array.isArray(deck.cards) ? deck.cards : [];
@@ -51,6 +55,13 @@ export function DeckDetailsView({
                 <span className="ml-2 text-red-400 font-semibold">• {totalMissing} missing</span>
               )}
             </p>
+            {commanderLocal ? (
+              <p className="text-[var(--text-muted)] mt-1 flex items-center gap-2">
+                <Crown className="w-4 h-4 text-amber-300" />
+                <span className="font-medium">Commander:</span>
+                <span className="text-white ml-1">{commanderLocal}</span>
+              </p>
+            ) : null}
           </div>
           <div className="flex gap-2">
             {totalMissing > 0 && (
@@ -83,6 +94,14 @@ export function DeckDetailsView({
                 Edit Cards
               </button>
             )}
+            <button
+              onClick={() => setShowEbayModal(true)}
+              className="text-slate-100 bg-emerald-600 hover:bg-emerald-500 transition-colors px-3 py-2 rounded-lg flex items-center gap-2 font-medium"
+              title="Create eBay listing"
+            >
+              <Tag className="w-4 h-4" />
+              List on eBay
+            </button>
             <button
               onClick={() => onDelete(deck.id)}
               className="text-[var(--text-muted)] hover:text-red-400 transition-colors"
@@ -164,11 +183,44 @@ export function DeckDetailsView({
                         : 'bg-[var(--surface)] text-[var(--text-muted)]'
                     }`}
                   >
-                    <span>
-                      {card.quantity}x {card.name}
-                      {isMissing && <span className="ml-2 text-xs text-red-300">(need {needed})</span>}
-                    </span>
-                    <span className="text-[var(--text-muted)]">{getSetDisplayName(card.set, true)}</span>
+                    <div className="flex items-center gap-3">
+                      <span>
+                        {card.quantity}x {card.name}
+                        {isMissing && <span className="ml-2 text-xs text-red-300">(need {needed})</span>}
+                      </span>
+                      <span className="text-[var(--text-muted)]">{getSetDisplayName(card.set, true)}</span>
+                      {/* Set as commander action */}
+                      <button
+                        onClick={async () => {
+                          if (settingCommanderFor) return;
+                          const cardName = typeof card === 'string' ? card : card.name || '';
+                          setSettingCommanderFor(cardName);
+                          try {
+                            const res = await fetch(`/api/decks/${deck.id}`, {
+                              method: 'PUT',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ name: deck.name || '', commander: cardName }),
+                            });
+                            if (!res.ok) {
+                              const err = await res.json().catch(() => ({}));
+                              throw new Error(err.error || 'Failed to set commander');
+                            }
+                            const json = await res.json();
+                            setCommanderLocal(json.commander || cardName);
+                          } catch (err) {
+                            console.error('Set commander failed', err);
+                            alert('Failed to set commander: ' + (err.message || 'unknown'));
+                          } finally {
+                            setSettingCommanderFor(null);
+                          }
+                        }}
+                        className="ml-2 text-xs bg-[var(--bg-page)] border border-[var(--border)] hover:bg-[var(--muted-surface)] px-2 py-1 rounded text-[var(--text-muted)]"
+                        title="Set as commander"
+                      >
+                        {settingCommanderFor === (typeof card === 'string' ? card : card.name || '') ? 'Saving...' : 'Set as commander'}
+                      </button>
+                    </div>
+                    <div />
                   </div>
                 );
               })}
@@ -213,6 +265,15 @@ export function DeckDetailsView({
         cards={missingEntries}
         deckName={deck.name}
       />
+
+      <EbayListingModal
+        open={showEbayModal}
+        onClose={() => setShowEbayModal(false)}
+        deckId={deck.id}
+        initialPrice={0}
+        deckName={deck.name}
+        commander={commanderLocal || deck.commander}
+      />
     </div>
   );
 }
@@ -221,6 +282,7 @@ DeckDetailsView.propTypes = {
   deck: PropTypes.shape({
     id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
     name: PropTypes.string.isRequired,
+    commander: PropTypes.string,
     format: PropTypes.string,
     description: PropTypes.string,
     created_at: PropTypes.string,

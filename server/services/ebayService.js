@@ -36,6 +36,59 @@ function getEbayConfig() {
   return EBAY_CONFIG[env] || EBAY_CONFIG.sandbox;
 }
 
+// Simple sleep helper
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Fetch with retries for transient errors (5xx and specific transient bodies)
+ * Retries on 500/502/503/504 or when body contains 'temporarily_unavailable'
+ */
+async function fetchWithRetry(url, options = {}, retries = 3, baseDelay = 300) {
+  let attempt = 0;
+  let lastError = null;
+
+  while (attempt < retries) {
+    try {
+      const resp = await fetch(url, options);
+
+      if (resp.ok) return resp;
+
+      // Try to read body for transient indicators
+      const text = await resp.text();
+
+      const isTransientStatus = [500, 502, 503, 504].includes(resp.status);
+      const bodyIndicatesTransient = /temporarily_unavailable/i.test(text);
+
+      if (isTransientStatus || bodyIndicatesTransient) {
+        lastError = new Error(`Transient eBay error (${resp.status}): ${text}`);
+        attempt++;
+        const delay = baseDelay * Math.pow(2, attempt - 1);
+        console.warn(`[EBAY] Transient error (attempt ${attempt}/${retries}). Retrying in ${delay}ms...`);
+        await sleep(delay);
+        continue;
+      }
+
+      // Non-transient response, create error including body
+      const err = new Error(`eBay request failed (${resp.status}): ${text}`);
+      err.status = resp.status;
+      throw err;
+    } catch (err) {
+      // Network or other fetch-level errors: treat as transient and retry
+      lastError = err;
+      attempt++;
+      if (attempt >= retries) break;
+      const delay = baseDelay * Math.pow(2, attempt - 1);
+      console.warn(`[EBAY] Fetch error (attempt ${attempt}/${retries}): ${err.message}. Retrying in ${delay}ms...`);
+      await sleep(delay);
+    }
+  }
+
+  // All retries exhausted
+  throw lastError || new Error('eBay fetch failed after retries');
+}
+
 /**
  * Check if eBay integration is configured
  */
@@ -109,8 +162,7 @@ export async function exchangeCodeForTokens(code) {
   const credentials = Buffer.from(
     `${process.env.EBAY_CLIENT_ID}:${process.env.EBAY_CLIENT_SECRET}`
   ).toString('base64');
-
-  const response = await fetch(config.tokenUrl, {
+  const options = {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
@@ -121,13 +173,9 @@ export async function exchangeCodeForTokens(code) {
       code,
       redirect_uri: process.env.EBAY_REDIRECT_URI,
     }),
-  });
+  };
 
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`eBay token exchange failed: ${error}`);
-  }
-
+  const response = await fetchWithRetry(config.tokenUrl, options, 3, 300);
   return response.json();
 }
 
@@ -139,8 +187,7 @@ export async function refreshAccessToken(refreshToken) {
   const credentials = Buffer.from(
     `${process.env.EBAY_CLIENT_ID}:${process.env.EBAY_CLIENT_SECRET}`
   ).toString('base64');
-
-  const response = await fetch(config.tokenUrl, {
+  const options = {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
@@ -151,13 +198,9 @@ export async function refreshAccessToken(refreshToken) {
       refresh_token: refreshToken,
       scope: EBAY_SCOPES,
     }),
-  });
+  };
 
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`eBay token refresh failed: ${error}`);
-  }
-
+  const response = await fetchWithRetry(config.tokenUrl, options, 3, 300);
   return response.json();
 }
 
@@ -248,9 +291,9 @@ export async function getValidAccessToken(userId) {
 export async function ebayApiRequest(userId, endpoint, options = {}) {
   const accessToken = await getValidAccessToken(userId);
   const config = getEbayConfig();
-
   const url = `${config.apiUrl}${endpoint}`;
-  const response = await fetch(url, {
+
+  const reqOptions = {
     ...options,
     headers: {
       'Authorization': `Bearer ${accessToken}`,
@@ -258,22 +301,29 @@ export async function ebayApiRequest(userId, endpoint, options = {}) {
       'Accept': 'application/json',
       ...options.headers,
     },
-  });
+  };
 
-  // Log the request for debugging
-  await logSyncAction(userId, options.method || 'GET', null, null, {
-    endpoint,
-    method: options.method || 'GET',
-  }, response.ok ? { status: response.status } : null, response.ok ? null : await response.text());
+  try {
+    const response = await fetchWithRetry(url, reqOptions, 3, 250);
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`eBay API error (${response.status}): ${errorText}`);
+    // Handle empty responses
+    const text = await response.text();
+    const parsed = text ? JSON.parse(text) : null;
+
+    await logSyncAction(userId, options.method || 'GET', null, null, {
+      endpoint,
+      method: options.method || 'GET',
+    }, { status: response.status, body: parsed }, null);
+
+    return parsed;
+  } catch (err) {
+    // Log the failure and rethrow for callers to handle
+    await logSyncAction(userId, options.method || 'GET', null, null, {
+      endpoint,
+      method: options.method || 'GET',
+    }, null, err.message);
+    throw err;
   }
-
-  // Handle empty responses
-  const text = await response.text();
-  return text ? JSON.parse(text) : null;
 }
 
 /**
@@ -398,20 +448,22 @@ export async function getOrder(userId, orderId) {
 export async function saveListingToDb(userId, deckId, listingData) {
   const result = await pool.query(
     `INSERT INTO ebay_listings
-     (user_id, deck_id, ebay_listing_id, ebay_offer_id, title, description, price, status, listing_url, listed_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+     (user_id, deck_id, ebay_listing_id, ebay_offer_id, title, description, price, status, listing_url, listed_at, theme, image_urls)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
      RETURNING *`,
     [
       userId,
       deckId,
-      listingData.ebayListingId,
-      listingData.ebayOfferId,
+      listingData.ebayListingId || null,
+      listingData.ebayOfferId || null,
       listingData.title,
       listingData.description,
       listingData.price,
       listingData.status || 'draft',
-      listingData.listingUrl,
+      listingData.listingUrl || null,
       listingData.status === 'active' ? new Date() : null,
+      listingData.theme || null,
+      listingData.imageUrls ? JSON.stringify(listingData.imageUrls) : '[]',
     ]
   );
   return result.rows[0];

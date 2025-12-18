@@ -256,6 +256,10 @@ router.put('/decks/:id', authenticate, validateId, async (req, res) => {
       updates.push(`name = $${paramCount++}`);
       values.push(name);
     }
+    if (req.body.commander !== undefined) {
+      updates.push(`commander = $${paramCount++}`);
+      values.push(req.body.commander);
+    }
     if (format !== undefined) {
       updates.push(`format = $${paramCount++}`);
       values.push(format);
@@ -292,6 +296,26 @@ router.put('/decks/:id', authenticate, validateId, async (req, res) => {
   } catch (error) {
     console.error('[DECKS] Error updating deck:', error.message);
     res.status(500).json({ error: 'Failed to update deck' });
+  }
+});
+
+// POST set commander for a deck
+router.post('/decks/:id/set-commander', authenticate, validateId, async (req, res) => {
+  const id = req.validatedId;
+  const { commander } = req.body || {};
+  if (!commander || typeof commander !== 'string') return res.status(400).json({ error: 'commander is required' });
+
+  try {
+    const result = await pool.query(
+      `UPDATE decks SET commander = $1, updated_at = NOW() WHERE id = $2 AND user_id = $3 RETURNING *`,
+      [commander, id, req.userId]
+    );
+
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Deck not found' });
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('[DECKS] Error setting commander:', err.message);
+    res.status(500).json({ error: 'Failed to set commander' });
   }
 });
 

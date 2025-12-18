@@ -212,6 +212,7 @@ export async function initializeDatabase() {
     // Run decks table alterations in parallel
     await Promise.all([
       pool.query(`ALTER TABLE decks ADD COLUMN IF NOT EXISTS user_id VARCHAR(255) REFERENCES users(id) ON DELETE CASCADE`).catch(() => {}),
+      pool.query(`ALTER TABLE decks ADD COLUMN IF NOT EXISTS commander VARCHAR(255)`).catch(() => {}),
       pool.query(`ALTER TABLE decks ADD COLUMN IF NOT EXISTS format VARCHAR(50) DEFAULT 'Casual'`).catch(() => {}),
       pool.query(`ALTER TABLE decks ADD COLUMN IF NOT EXISTS cards JSONB DEFAULT '[]'`).catch(() => {}),
       pool.query(`ALTER TABLE decks ADD COLUMN IF NOT EXISTS description TEXT`).catch(() => {}),
@@ -351,27 +352,45 @@ export async function initializeDatabase() {
     `);
 
     // eBay listings - tracks decks listed on eBay
+    // deck_id references the DECKLIST (template)
+    // deck_instance_id references the pick list created when sold
     await pool.query(`
       CREATE TABLE IF NOT EXISTS ebay_listings (
         id SERIAL PRIMARY KEY,
         user_id VARCHAR(255) REFERENCES users(id) ON DELETE CASCADE,
         deck_id INTEGER REFERENCES decks(id) ON DELETE SET NULL,
+        deck_instance_id INTEGER REFERENCES decks(id) ON DELETE SET NULL,
         ebay_listing_id VARCHAR(50),
         ebay_offer_id VARCHAR(50),
         title VARCHAR(80),
+        theme VARCHAR(100),
         description TEXT,
         price DECIMAL(10,2),
         quantity INTEGER DEFAULT 1,
         status VARCHAR(20) DEFAULT 'draft',
+        image_urls JSONB DEFAULT '[]',
+        ai_description_prompt TEXT,
         listing_url TEXT,
         listed_at TIMESTAMP,
         sold_at TIMESTAMP,
+        shipped_at TIMESTAMP,
+        completed_at TIMESTAMP,
         ebay_buyer_username VARCHAR(255),
         ebay_order_id VARCHAR(50),
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP DEFAULT NOW()
       )
     `);
+
+    // Add new columns if they don't exist (for existing installations)
+    await Promise.all([
+      pool.query(`ALTER TABLE ebay_listings ADD COLUMN IF NOT EXISTS theme VARCHAR(100)`).catch(() => {}),
+      pool.query(`ALTER TABLE ebay_listings ADD COLUMN IF NOT EXISTS deck_instance_id INTEGER REFERENCES decks(id) ON DELETE SET NULL`).catch(() => {}),
+      pool.query(`ALTER TABLE ebay_listings ADD COLUMN IF NOT EXISTS image_urls JSONB DEFAULT '[]'`).catch(() => {}),
+      pool.query(`ALTER TABLE ebay_listings ADD COLUMN IF NOT EXISTS ai_description_prompt TEXT`).catch(() => {}),
+      pool.query(`ALTER TABLE ebay_listings ADD COLUMN IF NOT EXISTS shipped_at TIMESTAMP`).catch(() => {}),
+      pool.query(`ALTER TABLE ebay_listings ADD COLUMN IF NOT EXISTS completed_at TIMESTAMP`).catch(() => {}),
+    ]);
 
     // eBay sync log - for debugging and audit trail
     await pool.query(`
@@ -388,6 +407,39 @@ export async function initializeDatabase() {
         created_at TIMESTAMP DEFAULT NOW()
       )
     `);
+
+    // eBay templates - user-configurable templates for titles, descriptions, etc.
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS ebay_templates (
+        id SERIAL PRIMARY KEY,
+        user_id VARCHAR(255) REFERENCES users(id) ON DELETE CASCADE,
+        template_type VARCHAR(50) NOT NULL,
+        template_name VARCHAR(100),
+        template_content TEXT NOT NULL,
+        is_default BOOLEAN DEFAULT false,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    // Insert default templates if they don't exist
+    await pool.query(`
+      INSERT INTO ebay_templates (user_id, template_type, template_name, template_content, is_default)
+      SELECT NULL, 'title', 'Default Title', '{commander} - {theme} - 100 Card EDH MTG Commander Deck', true
+      WHERE NOT EXISTS (SELECT 1 FROM ebay_templates WHERE template_type = 'title' AND is_default = true AND user_id IS NULL)
+    `).catch(() => {});
+
+    await pool.query(`
+      INSERT INTO ebay_templates (user_id, template_type, template_name, template_content, is_default)
+      SELECT NULL, 'condition', 'Default Condition', 'Cards are in Near Mint to Lightly Played condition.', true
+      WHERE NOT EXISTS (SELECT 1 FROM ebay_templates WHERE template_type = 'condition' AND is_default = true AND user_id IS NULL)
+    `).catch(() => {});
+
+    await pool.query(`
+      INSERT INTO ebay_templates (user_id, template_type, template_name, template_content, is_default)
+      SELECT NULL, 'includes', 'Default Includes', 'Includes 100-card Commander deck, sleeved in premium sleeves, shipped in a secure deck box.', true
+      WHERE NOT EXISTS (SELECT 1 FROM ebay_templates WHERE template_type = 'includes' AND is_default = true AND user_id IS NULL)
+    `).catch(() => {});
 
     // ========== PERFORMANCE INDEXES ==========
     // Note: Create indexes in parallel for better performance
@@ -503,6 +555,21 @@ export async function initializeDatabase() {
       pool.query(`
         CREATE INDEX IF NOT EXISTS idx_ebay_sync_log_created_at
         ON ebay_sync_log(created_at DESC);
+      `).catch(() => {}),
+
+      pool.query(`
+        CREATE INDEX IF NOT EXISTS idx_ebay_templates_user_id
+        ON ebay_templates(user_id);
+      `).catch(() => {}),
+
+      pool.query(`
+        CREATE INDEX IF NOT EXISTS idx_ebay_templates_type
+        ON ebay_templates(template_type);
+      `).catch(() => {}),
+
+      pool.query(`
+        CREATE INDEX IF NOT EXISTS idx_ebay_listings_deck_instance_id
+        ON ebay_listings(deck_instance_id);
       `).catch(() => {}),
     ]);
 
