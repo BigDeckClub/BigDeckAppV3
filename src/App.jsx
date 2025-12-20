@@ -29,6 +29,7 @@ const DeckTab = lazy(() => import("./components/DeckTab"));
 const AITab = lazy(() => import("./components/AITab"));
 const SettingsTab = lazy(() => import("./components/SettingsTab"));
 const AdminTab = lazy(() => import("./components/admin/AdminTab"));
+const AutobuyTab = lazy(() => import("./components/AutobuyTab"));
 
 function MTGInventoryTrackerContent() {
   // ALL hooks must be called before any conditional returns
@@ -194,6 +195,14 @@ function MTGInventoryTrackerContent() {
                 searchIsLoading={searchIsLoading}
                 addInventoryItem={addInventoryItem}
               />
+            </Suspense>
+          </ErrorBoundaryWithRetry>
+        )}
+
+        {activeTab === "autobuy" && !isLoading && (
+          <ErrorBoundaryWithRetry>
+            <Suspense fallback={<TabLoadingSpinner />}>
+              <AutobuyTab />
             </Suspense>
           </ErrorBoundaryWithRetry>
         )}

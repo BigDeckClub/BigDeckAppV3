@@ -5,7 +5,7 @@ import type {
   SellerBasket as SellerBasketType,
   ManualDirective,
   Marketplace,
-} from './types'
+} from './types.js'
 
 // Deterministic helper: stable sort by keys when equal
 function stableSort<T>(arr: T[], cmp: (a: T, b: T) => number) {

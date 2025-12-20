@@ -1,0 +1,12 @@
+{
+  "demands": [
+    { "cardId": "C1", "quantity": 2 },
+    { "cardId": "C2", "quantity": 1 }
+  ],
+  "offers": [
+    { "marketplace": "TCG", "sellerId": "S1", "cardId": "C1", "price": 3, "quantityAvailable": 2, "shipping": { "base": 5, "freeAt": 20 } },
+    { "marketplace": "TCG", "sellerId": "S2", "cardId": "C1", "price": 4, "quantityAvailable": 2, "shipping": { "base": 0 } },
+    { "marketplace": "TCG", "sellerId": "S1", "cardId": "C2", "price": 6, "quantityAvailable": 1, "shipping": { "base": 5, "freeAt": 20 } }
+  ],
+  "cardKingdomPrices": { "C1": 8, "C2": 7 }
+}

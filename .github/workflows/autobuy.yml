@@ -1,0 +1,33 @@
+name: Autobuy CI
+
+on:
+  push:
+    paths:
+      - 'server/autobuy/**'
+      - 'scripts/**'
+      - 'bin/**'
+      - 'tsconfig.autobuy.json'
+      - 'package.json'
+  pull_request:
+    paths:
+      - 'server/autobuy/**'
+      - 'scripts/**'
+      - 'bin/**'
+      - 'tsconfig.autobuy.json'
+      - 'package.json'
+
+jobs:
+  build-and-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install
+        run: npm ci
+      - name: Build autobuy
+        run: npm run build:autobuy
+      - name: Verify CLI output
+        run: npm run autobuy:verify

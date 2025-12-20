@@ -12,6 +12,7 @@ import {
   BookOpen,
   Settings,
   FileText,
+  ShoppingCart,
 } from 'lucide-react';
 import { UserDropdown } from './UserDropdown';
 
@@ -21,6 +22,7 @@ import { UserDropdown } from './UserDropdown';
 const NAV_ITEMS = [
   { id: 'inventory', icon: Layers, label: 'Inventory' },
   { id: 'imports', icon: Download, label: 'Imports' },
+  { id: 'autobuy', icon: ShoppingCart, label: 'Autobuy' },
   { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { id: 'decks', icon: BookOpen, label: 'Decks' },
   { id: 'templates', icon: FileText, label: 'Templates' },
