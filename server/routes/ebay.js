@@ -50,6 +50,21 @@ router.get('/ebay/status', authenticate, async (req, res) => {
 });
 
 /**
+ * GET /api/ebay/debug
+ * Debug endpoint to check OAuth configuration
+ */
+router.get('/ebay/debug', authenticate, (req, res) => {
+  const authUrl = ebayService.getAuthUrl('test-state');
+  res.json({
+    environment: process.env.EBAY_ENVIRONMENT,
+    clientId: process.env.EBAY_CLIENT_ID,
+    runame: process.env.EBAY_RUNAME,
+    redirectUri: process.env.EBAY_REDIRECT_URI,
+    generatedAuthUrl: authUrl,
+  });
+});
+
+/**
  * GET /api/ebay/auth
  * Start OAuth flow - redirects to eBay authorization page
  */
@@ -57,7 +72,15 @@ router.get('/ebay/auth', authenticate, (req, res) => {
   if (!ebayService.isEbayConfigured()) {
     return res.status(503).json({
       error: 'eBay integration not configured',
-      message: 'Please configure EBAY_CLIENT_ID, EBAY_CLIENT_SECRET, and EBAY_REDIRECT_URI',
+      message: 'Please configure EBAY_CLIENT_ID, EBAY_CLIENT_SECRET, and EBAY_RUNAME in .env',
+    });
+  }
+
+  // Check if RUNAME is configured (it's required for OAuth)
+  if (!process.env.EBAY_RUNAME) {
+    return res.status(503).json({
+      error: 'eBay RuName not configured',
+      message: 'Please set EBAY_RUNAME in .env. Get it from eBay Developer Portal: Your App > User Tokens > RuName',
     });
   }
 
@@ -66,9 +89,13 @@ router.get('/ebay/auth', authenticate, (req, res) => {
 
   // Store state in session or temporary storage (using query param for simplicity)
   // In production, store this server-side associated with the user
-  const authUrl = ebayService.getAuthUrl(`${req.userId}:${state}`);
-
-  res.json({ authUrl });
+  try {
+    const authUrl = ebayService.getAuthUrl(`${req.userId}:${state}`);
+    res.json({ authUrl });
+  } catch (error) {
+    console.error('[EBAY] Failed to generate auth URL:', error);
+    res.status(500).json({ error: 'Failed to generate authorization URL', details: error.message });
+  }
 });
 
 /**

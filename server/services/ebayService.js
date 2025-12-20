@@ -21,12 +21,13 @@ const EBAY_CONFIG = {
 };
 
 // Required scopes for selling
+// Note: Scopes must match exactly what's configured in eBay Developer Portal
 const EBAY_SCOPES = [
   'https://api.ebay.com/oauth/api_scope',
   'https://api.ebay.com/oauth/api_scope/sell.inventory',
   'https://api.ebay.com/oauth/api_scope/sell.account',
   'https://api.ebay.com/oauth/api_scope/sell.fulfillment',
-].join(' ');
+];
 
 /**
  * Get eBay environment configuration
@@ -141,17 +142,42 @@ function decryptToken(encryptedToken) {
 
 /**
  * Generate OAuth authorization URL
+ *
+ * IMPORTANT: EBAY_RUNAME must be the RuName (Redirect URI Name) from eBay Developer Portal,
+ * NOT the actual callback URL. The RuName looks like: "Vincent_V-VincentV-BigDec-abcdef"
+ *
+ * To get your RuName:
+ * 1. Go to https://developer.ebay.com/my/keys (or sandbox.ebay.com for sandbox)
+ * 2. Find your app and click "User Tokens" under OAuth
+ * 3. Set up your OAuth settings if you haven't
+ * 4. Copy the RuName shown (it's a long string like "Your_Name-AppName-PRD-xxxxxx")
+ *
+ * Set EBAY_RUNAME in .env to this value
  */
 export function getAuthUrl(state) {
   const config = getEbayConfig();
-  const params = new URLSearchParams({
-    client_id: process.env.EBAY_CLIENT_ID,
-    redirect_uri: process.env.EBAY_REDIRECT_URI,
-    response_type: 'code',
-    scope: EBAY_SCOPES,
-    state: state || crypto.randomBytes(16).toString('hex'),
-  });
-  return `${config.authUrl}?${params.toString()}`;
+
+  // Use EBAY_RUNAME if available, otherwise fall back to EBAY_REDIRECT_URI
+  const redirectUri = process.env.EBAY_RUNAME || process.env.EBAY_REDIRECT_URI;
+
+  if (!redirectUri) {
+    throw new Error('EBAY_RUNAME or EBAY_REDIRECT_URI must be configured');
+  }
+
+  // Build URL manually to ensure proper encoding
+  // eBay requires the scope to be space-separated and URL-encoded
+  const scopeString = EBAY_SCOPES.join(' ');
+
+  const params = new URLSearchParams();
+  params.append('client_id', process.env.EBAY_CLIENT_ID);
+  params.append('redirect_uri', redirectUri);
+  params.append('response_type', 'code');
+  params.append('scope', scopeString);
+  params.append('state', state || crypto.randomBytes(16).toString('hex'));
+
+  const authUrl = `${config.authUrl}?${params.toString()}`;
+  console.log('[EBAY] Generated auth URL:', authUrl);
+  return authUrl;
 }
 
 /**
