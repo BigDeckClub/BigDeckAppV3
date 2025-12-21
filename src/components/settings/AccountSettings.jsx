@@ -113,7 +113,7 @@ export const AccountSettings = () => {
         icon={Database}
       >
         <div className="space-y-4">
-          <div className="bg-[var(--bg-page)] rounded-lg p-4 border border-[var(--border)]">
+          <div className="glass-panel p-4">
             <h3 className="text-base font-semibold text-[var(--text-primary)] mb-2">
               Update Price Data
             </h3>
@@ -125,11 +125,10 @@ export const AccountSettings = () => {
             <button
               onClick={handleBackfillScryfallIds}
               disabled={isBackfilling}
-              className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
-                isBackfilling
+              className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${isBackfilling
                   ? 'bg-[var(--muted-surface)] text-[var(--text-muted)] cursor-not-allowed'
                   : 'bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-400 hover:to-cyan-400 text-[var(--text-primary)] shadow-lg shadow-teal-500/25'
-              }`}
+                }`}
             >
               {isBackfilling ? (
                 <>
@@ -146,11 +145,10 @@ export const AccountSettings = () => {
 
             {/* Backfill Result Display */}
             {backfillResult && !isBackfilling && (
-              <div className={`mt-4 p-3 rounded-lg border ${
-                backfillResult.error
+              <div className={`mt-4 p-3 rounded-lg border ${backfillResult.error
                   ? 'bg-red-900/20 border-red-600/30 text-red-300'
                   : 'bg-green-900/20 border-green-600/30 text-green-300'
-              }`}>
+                }`}>
                 <div className="flex items-start gap-2">
                   {backfillResult.error ? (
                     <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />

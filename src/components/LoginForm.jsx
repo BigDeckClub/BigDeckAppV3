@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Layers, TrendingUp, BookOpen, BarChart3, ArrowRight, Sparkles } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Input, Button, Alert } from './ui';
+import ThemeToggle from './ui/ThemeToggle';
 
 // Animated background particles
 function AnimatedParticles() {
@@ -83,7 +84,7 @@ function FeatureCard({ feature, index }) {
             <Icon className="w-6 h-6 text-[var(--bda-primary)]" />
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="text-white font-semibold mb-1 group-hover:text-[var(--bda-primary)] transition-colors">{feature.title}</h3>
+            <h3 className="text-[var(--bda-heading)] font-semibold mb-1 group-hover:text-[var(--bda-primary)] transition-colors">{feature.title}</h3>
             <p className="text-[var(--text-muted)] text-sm leading-relaxed">{feature.description}</p>
           </div>
         </div>
@@ -149,7 +150,12 @@ export function LoginForm({ onSuccess }) {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 relative overflow-hidden">
+    <div className="min-h-screen bg-[var(--bda-bg)] relative overflow-hidden transition-colors duration-300">
+      {/* Theme Toggle */}
+      <div className="absolute top-6 right-6 z-50">
+        <ThemeToggle className="bg-[var(--surface)]/50 backdrop-blur-md border border-[var(--border)] shadow-sm" />
+      </div>
+
       {/* Subtle animated background */}
       <div className="fixed inset-0 opacity-15">
         <div className="absolute top-0 left-0 w-96 h-96 bg-gradient-to-br from-[var(--bda-primary)]/40 to-transparent rounded-full blur-3xl animate-pulse" />

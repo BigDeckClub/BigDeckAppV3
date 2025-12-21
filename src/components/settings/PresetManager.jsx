@@ -8,9 +8,9 @@ import { THRESHOLD_PRESETS } from '../../constants/thresholds';
  * PresetManager component - Threshold presets tab
  * Allows applying predefined thresholds to selected cards
  */
-export const PresetManager = ({ 
-  inventory = [], 
-  onSuccess = null 
+export const PresetManager = ({
+  inventory = [],
+  onSuccess = null
 }) => {
   const { put } = useApi();
   const [presetMode, setPresetMode] = useState('single'); // 'single' or 'bulk'
@@ -30,7 +30,7 @@ export const PresetManager = ({
   // Group inventory with alerts enabled by card name and variant - MEMOIZED
   const cardsWithAlerts = useMemo(() => {
     const items = inventory.filter(item => item.low_inventory_alert);
-    
+
     // Group by card name first
     const byName = items.reduce((acc, item) => {
       if (!acc[item.name]) {
@@ -39,11 +39,11 @@ export const PresetManager = ({
       acc[item.name].push(item);
       return acc;
     }, {});
-    
+
     // For each card name, group by variant (set + foil + quality)
     Object.keys(byName).forEach(cardName => {
       const cardItems = byName[cardName];
-      
+
       // Create a map of variant -> items
       const variantMap = {};
       cardItems.forEach(item => {
@@ -51,13 +51,13 @@ export const PresetManager = ({
         const foilStatus = item.foil ? 'foil' : 'nonfoil';
         const qualityValue = (item.quality || 'NM').toLowerCase().trim();
         const variantKey = `${setName}_${foilStatus}_${qualityValue}`;
-        
+
         if (!variantMap[variantKey]) {
           variantMap[variantKey] = [];
         }
         variantMap[variantKey].push(item);
       });
-      
+
       // Merge identical variants
       const variants = Object.values(variantMap);
       const mergedVariants = variants.map(variantItems => {
@@ -72,10 +72,10 @@ export const PresetManager = ({
         }
         return variantItems[0];
       });
-      
+
       byName[cardName] = mergedVariants;
     });
-    
+
     return byName;
   }, [inventory, getSetName]);
 
@@ -87,8 +87,8 @@ export const PresetManager = ({
   }, [cardsWithAlerts]);
 
   const toggleCardSelection = useCallback((itemId) => {
-    setSelectedCards(prev => 
-      prev.includes(itemId) 
+    setSelectedCards(prev =>
+      prev.includes(itemId)
         ? prev.filter(id => id !== itemId)
         : [...prev, itemId]
     );
@@ -97,7 +97,7 @@ export const PresetManager = ({
   const handleApplyPreset = useCallback(async () => {
     const preset = THRESHOLD_PRESETS[selectedCategory];
     let cardsToUpdate = [];
-    
+
     if (presetMode === 'single' && selectedCards.length > 0) {
       // Get selected cards and expand merged IDs
       selectedCards.forEach(id => {
@@ -128,7 +128,7 @@ export const PresetManager = ({
         }
       });
     }
-    
+
     if (cardsToUpdate.length === 0) {
       setSuccessMessage('No cards selected');
       setTimeout(() => setSuccessMessage(''), 3000);
@@ -145,7 +145,7 @@ export const PresetManager = ({
     );
     const successful = results.filter(r => r.status === 'fulfilled').length;
     const failed = results.filter(r => r.status === 'rejected').length;
-    
+
     if (failed > 0) {
       setSuccessMessage(`Applied to ${successful} card(s), ${failed} failed`);
     } else {
@@ -158,26 +158,26 @@ export const PresetManager = ({
   }, [selectedCategory, presetMode, selectedCards, flattenedCards, cardLookup, put, onSuccess]);
 
   return (
-    <div className="bg-[var(--surface)] rounded-lg border border-[var(--border)] p-6">
+    <div className="glass-panel rounded-xl p-6">
       <div className="flex items-center gap-3 mb-6">
         <Zap className="w-6 h-6 text-teal-400" />
         <h2 className="text-xl font-bold text-[var(--text-primary)]">Threshold Presets</h2>
       </div>
-      
+
       {/* Success/Error Message */}
       {successMessage && (
         <div className="bg-green-600/20 border border-green-600 rounded-lg p-3 text-green-300 text-sm mb-4">
           {successMessage}
         </div>
       )}
-      
+
       <div className="space-y-4">
         <div>
           <label className="block text-sm font-semibold text-[var(--text-muted)] mb-2">Select Category</label>
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="w-full bg-[var(--muted-surface)] border border-[var(--border)] rounded px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:border-teal-500"
+            className="w-full bg-[var(--input-bg)] border border-[var(--border)] rounded px-3 py-2 text-[var(--bda-text)] focus:outline-none focus:border-teal-500"
           >
             {Object.entries(THRESHOLD_PRESETS).map(([cat, preset]) => (
               <option key={cat} value={cat}>
@@ -187,7 +187,7 @@ export const PresetManager = ({
           </select>
         </div>
 
-        <div className="bg-[var(--muted-surface)] rounded p-3 border border-[var(--border)]">
+        <div className="bg-[var(--surface)]/50 rounded p-3 border border-[var(--border)]">
           <p className="text-sm text-[var(--text-muted)] font-semibold mb-1">Selected: {selectedCategory}</p>
           <p className="text-xs text-[var(--text-muted)]">{THRESHOLD_PRESETS[selectedCategory].description}</p>
           <p className="text-xs text-[var(--text-muted)] mt-2">
@@ -196,10 +196,10 @@ export const PresetManager = ({
         </div>
 
         {presetMode === 'single' && flattenedCards.length > 0 && (
-          <div className="max-h-32 overflow-y-auto space-y-2 bg-[var(--muted-surface)] rounded p-3 border border-[var(--border)]">
+          <div className="max-h-32 overflow-y-auto space-y-2 bg-[var(--surface)]/30 rounded p-3 border border-[var(--border)]">
             {flattenedCards.map(item => (
               <div key={item.id}>
-                <label className="flex items-center gap-2 cursor-pointer hover:bg-slate-600/50 p-1 rounded">
+                <label className="flex items-center gap-2 cursor-pointer hover:bg-[var(--card-hover)] p-1 rounded">
                   <input
                     type="checkbox"
                     checked={selectedCards.includes(item.id)}
@@ -226,7 +226,7 @@ export const PresetManager = ({
                   )}
                 </label>
                 {item._mergedCount > 1 && expandedMerged[item.id] && (
-                  <div className="ml-6 mt-1 space-y-1 bg-[var(--muted-surface)] rounded p-2 border-l-2 border-teal-500/30">
+                  <div className="ml-6 mt-1 space-y-1 bg-[var(--surface)]/50 rounded p-2 border-l-2 border-teal-500/30">
                     {item._mergedItems.map((subItem, idx) => (
                       <div key={subItem.id} className="flex items-center gap-2 text-xs text-[var(--text-muted)] py-1">
                         <span className="text-[var(--text-muted)]">#{idx + 1}</span>
@@ -245,21 +245,19 @@ export const PresetManager = ({
         <div className="flex gap-2">
           <button
             onClick={() => setPresetMode('single')}
-            className={`flex-1 px-3 py-2 rounded text-sm font-semibold transition-colors ${
-              presetMode === 'single'
-                ? 'bg-teal-600 text-[var(--bda-primary-foreground)]'
-                : 'bg-[var(--muted-surface)] text-[var(--text-muted)] hover:bg-slate-600'
-            }`}
+            className={`flex-1 px-3 py-2 rounded text-sm font-semibold transition-colors ${presetMode === 'single'
+                ? 'bg-teal-600 text-white'
+                : 'bg-[var(--bg-page)]/50 text-[var(--bda-muted)] hover:bg-[var(--card-hover)] border border-[var(--border)]'
+              }`}
           >
             Apply to Selected
           </button>
           <button
             onClick={() => setPresetMode('bulk')}
-            className={`flex-1 px-3 py-2 rounded text-sm font-semibold transition-colors ${
-              presetMode === 'bulk'
-                ? 'bg-teal-600 text-[var(--bda-primary-foreground)]'
-                : 'bg-[var(--muted-surface)] text-[var(--text-muted)] hover:bg-slate-600'
-            }`}
+            className={`flex-1 px-3 py-2 rounded text-sm font-semibold transition-colors ${presetMode === 'bulk'
+                ? 'bg-teal-600 text-white'
+                : 'bg-[var(--bg-page)]/50 text-[var(--bda-muted)] hover:bg-[var(--card-hover)] border border-[var(--border)]'
+              }`}
           >
             Apply to All
           </button>

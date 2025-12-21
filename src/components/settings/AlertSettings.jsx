@@ -51,14 +51,14 @@ export const AlertSettings = ({ inventory = [] }) => {
   // Group inventory with alerts enabled by card name and variant - MEMOIZED to prevent recreating on every render
   const cardsWithAlerts = useMemo(() => {
     let items = inventory.filter(item => item.low_inventory_alert);
-    
+
     // Filter by deck cards if toggle is enabled
     if (deckCardsOnly && deckCardNames.size > 0) {
-      items = items.filter(item => 
+      items = items.filter(item =>
         item.name && deckCardNames.has(item.name.toLowerCase().trim())
       );
     }
-    
+
     // Group by card name first
     const byName = items.reduce((acc, item) => {
       if (!acc[item.name]) {
@@ -67,12 +67,12 @@ export const AlertSettings = ({ inventory = [] }) => {
       acc[item.name].push(item);
       return acc;
     }, {});
-    
+
     // For each card name, group by variant (set + foil + quality)
     // If all items have the same variant, merge them
     Object.keys(byName).forEach(cardName => {
       const cardItems = byName[cardName];
-      
+
       // Create a map of variant -> items
       const variantMap = {};
       cardItems.forEach(item => {
@@ -80,13 +80,13 @@ export const AlertSettings = ({ inventory = [] }) => {
         const foilStatus = item.foil ? 'foil' : 'nonfoil';
         const qualityValue = (item.quality || 'NM').toLowerCase().trim();
         const variantKey = `${setName}_${foilStatus}_${qualityValue}`;
-        
+
         if (!variantMap[variantKey]) {
           variantMap[variantKey] = [];
         }
         variantMap[variantKey].push(item);
       });
-      
+
       // If there's only one variant with multiple items, keep only the first one
       // (they're identical, so we just show one entry)
       const variants = Object.values(variantMap);
@@ -102,7 +102,7 @@ export const AlertSettings = ({ inventory = [] }) => {
       }
       // Otherwise keep all items as-is (they have distinguishing features)
     });
-    
+
     return byName;
   }, [inventory, deckCardsOnly, deckCardNames, getSetName]);
 
@@ -158,7 +158,7 @@ export const AlertSettings = ({ inventory = [] }) => {
   }, [put]);
 
   return (
-    <div className="bg-[var(--surface)] rounded-lg border border-[var(--border)] p-6">
+    <div className="glass-panel rounded-xl p-6">
       <div className="flex items-center gap-3 mb-6">
         <Bell className="w-6 h-6 text-yellow-400" />
         <h2 className="text-xl font-bold text-[var(--text-primary)]">Low Inventory Alerts</h2>
@@ -173,7 +173,7 @@ export const AlertSettings = ({ inventory = [] }) => {
 
       {/* Filter Toggle - only show when alerts exist */}
       {totalAlertsCount > 0 && (
-        <div className="flex items-center justify-between mb-4 p-3 bg-[var(--muted-surface)] rounded-lg">
+        <div className="flex items-center justify-between mb-4 p-3 bg-[var(--surface)]/50 rounded-lg border border-[var(--border)]">
           <div className="flex items-center gap-2">
             <input
               type="checkbox"
@@ -181,7 +181,7 @@ export const AlertSettings = ({ inventory = [] }) => {
               checked={deckCardsOnly}
               onChange={(e) => setDeckCardsOnly(e.target.checked)}
               disabled={loadingDeckCards}
-              className="rounded border-slate-500 bg-slate-600 text-teal-500 focus:ring-teal-500"
+              className="rounded border-[var(--border)] bg-[var(--input-bg)] text-teal-500 focus:ring-teal-500"
             />
             <label htmlFor="deckCardsOnly" className="text-sm text-[var(--text-muted)]">
               Show only cards in deck templates
@@ -213,12 +213,12 @@ export const AlertSettings = ({ inventory = [] }) => {
       ) : (
         <div className="space-y-4">
           {Object.entries(cardsWithAlerts).map(([cardName, items]) => (
-            <div key={cardName} className="bg-[var(--muted-surface)] rounded-lg p-4 border border-[var(--border)]">
+            <div key={cardName} className="bg-[var(--surface)]/30 rounded-lg p-4 border border-[var(--border)]">
               <h3 className="font-semibold text-[var(--text-primary)] mb-3">{cardName}</h3>
               <div className="space-y-2">
                 {items.map(item => (
                   <div key={item.id}>
-                    <div className="flex items-center gap-3 bg-slate-600/50 p-3 rounded">
+                    <div className="flex items-center gap-3 bg-[var(--bg-page)]/50 p-3 rounded border border-[var(--border)]">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 text-sm">
                           <span className="text-[var(--text-muted)]">
@@ -230,7 +230,7 @@ export const AlertSettings = ({ inventory = [] }) => {
                             </span>
                           )}
                           {item.quality && item.quality !== 'NM' && (
-                            <span className="text-xs bg-[var(--muted-surface)] text-[var(--text-muted)] px-2 py-0.5 rounded">
+                            <span className="text-xs bg-[var(--surface)] text-[var(--text-muted)] px-2 py-0.5 rounded">
                               {item.quality}
                             </span>
                           )}
@@ -264,7 +264,7 @@ export const AlertSettings = ({ inventory = [] }) => {
                             }
                           }}
                           disabled={saving[item.id]}
-                          className="w-16 bg-slate-600 border border-slate-500 rounded px-2 py-1 text-[var(--text-primary)] text-sm text-center focus:outline-none focus:border-teal-500"
+                          className="w-16 bg-[var(--input-bg)] border border-[var(--border)] rounded px-2 py-1 text-[var(--text-primary)] text-sm text-center focus:outline-none focus:border-teal-500"
                         />
                       </div>
                       <button
@@ -282,10 +282,10 @@ export const AlertSettings = ({ inventory = [] }) => {
                         Remove
                       </button>
                     </div>
-                    
+
                     {/* Expanded dropdown showing individual entries */}
                     {item._mergedCount > 1 && expandedMerged[item.id] && (
-                      <div className="ml-6 mt-2 space-y-1 bg-[var(--muted-surface)] rounded p-2 border-l-2 border-teal-500/30">
+                      <div className="ml-6 mt-2 space-y-1 bg-[var(--surface)]/50 rounded p-2 border-l-2 border-teal-500/30">
                         {item._mergedItems.map((subItem, idx) => (
                           <div key={subItem.id} className="flex items-center gap-2 text-xs text-[var(--text-muted)] py-1">
                             <span className="text-[var(--text-muted)]">#{idx + 1}</span>
@@ -308,7 +308,7 @@ export const AlertSettings = ({ inventory = [] }) => {
       )}
 
       {/* Settings Info */}
-      <div className="bg-[var(--muted-surface)] rounded-lg border border-[var(--border)] p-4 mt-6">
+      <div className="bg-[var(--surface)]/50 rounded-lg p-4 mt-6 border border-[var(--border)]">
         <h3 className="font-semibold text-[var(--text-primary)] mb-2">How to Use Low Inventory Alerts</h3>
         <ul className="text-sm text-[var(--text-muted)] space-y-2 list-disc list-inside">
           <li>Go to the <strong>Inventory</strong> tab and click the bell icon on any card SKU</li>

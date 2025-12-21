@@ -28,7 +28,7 @@ export const ThresholdSettings = ({
   salesHistory = []
 }) => {
   const { showToast } = useToast();
-  
+
   // Progress tracking for bulk apply
   const [applyProgress, setApplyProgress] = useState({ current: 0, total: 0 });
   const [applying, setApplying] = useState(false);
@@ -51,17 +51,17 @@ export const ThresholdSettings = ({
     if (!inventory || inventory.length === 0) {
       return { total: 0, basicLands: 0, velocityBased: 0, priceBased: 0 };
     }
-    
+
     const basicLands = ['plains', 'island', 'swamp', 'mountain', 'forest'];
     let basicLandCount = 0;
     let velocityBasedCount = 0;
     let priceBasedCount = 0;
-    
+
     inventory.forEach(card => {
       const name = (card.name || '').toLowerCase().trim();
-      const isSnowBasic = name.startsWith('snow-covered ') && 
+      const isSnowBasic = name.startsWith('snow-covered ') &&
         basicLands.includes(name.replace('snow-covered ', ''));
-      
+
       if (basicLands.includes(name) || isSnowBasic) {
         basicLandCount++;
       } else {
@@ -73,7 +73,7 @@ export const ThresholdSettings = ({
         }
       }
     });
-    
+
     return {
       total: inventory.length,
       basicLands: basicLandCount,
@@ -88,10 +88,10 @@ export const ThresholdSettings = ({
       showToast('No inventory loaded. Please wait for inventory to load first.', TOAST_TYPES.WARNING);
       return;
     }
-    
+
     setApplying(true);
     setApplyProgress({ current: 0, total: inventory.length });
-    
+
     try {
       // Fetch sales history for velocity calculations
       let currentSalesHistory = salesHistory;
@@ -106,22 +106,22 @@ export const ThresholdSettings = ({
           currentSalesHistory = [];
         }
       }
-      
+
       // Calculate thresholds for all items
       const updates = [];
-      
+
       for (let i = 0; i < inventory.length; i++) {
         const item = inventory[i];
-        
+
         try {
           const result = calculateSmartThreshold(item, currentSalesHistory, thresholdSettings);
-          
+
           updates.push({
             id: item.id,
             threshold: result.suggested,
             enableAlert: true
           });
-          
+
           // Update progress every 10 items
           if (i % 10 === 0) {
             setApplyProgress({ current: i, total: inventory.length });
@@ -130,28 +130,28 @@ export const ThresholdSettings = ({
           console.error('[Settings] Calculation error for item', item.name, ':', calcErr.message);
         }
       }
-      
+
       setApplyProgress({ current: inventory.length, total: inventory.length });
-      
+
       // Send bulk update to backend
       const response = await fetchWithAuth('/api/inventory/bulk-threshold', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ updates })
       });
-      
+
       if (!response.ok) {
         throw new Error(`Bulk update failed: ${response.status}`);
       }
-      
+
       const result = await response.json();
-      
+
       if (result.errors > 0) {
         showToast(`Updated ${result.updated} items! ${result.errors} errors occurred.`, TOAST_TYPES.WARNING);
       } else {
         showToast(`Successfully updated all ${result.updated} items with smart thresholds!`, TOAST_TYPES.SUCCESS);
       }
-      
+
     } catch (error) {
       console.error('[Settings] Error applying thresholds:', error.message);
       showToast(`Error: ${error.message}`, TOAST_TYPES.ERROR);
@@ -162,7 +162,7 @@ export const ThresholdSettings = ({
   }, [inventory, salesHistory, thresholdSettings, showToast]);
 
   return (
-    <div className="bg-gradient-to-br from-slate-800/90 to-slate-900/70 rounded-2xl p-6 space-y-6 border border-slate-600/50 shadow-xl">
+    <div className="glass-panel rounded-2xl p-6 space-y-6">
       {/* Header with icon, title, description, and quick stats badge */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div className="flex items-start gap-3">
@@ -170,7 +170,7 @@ export const ThresholdSettings = ({
             <Settings className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h3 className="text-xl font-bold text-white flex items-center gap-2">
+            <h3 className="text-xl font-bold text-[var(--bda-heading)] flex items-center gap-2">
               Smart Threshold Settings
               {/* Auto-save status indicator */}
               {saveStatus === 'saving' && (
@@ -185,23 +185,23 @@ export const ThresholdSettings = ({
                 </span>
               )}
             </h3>
-            <p className="text-sm text-slate-400 mt-1">
+            <p className="text-sm text-[var(--bda-muted)] mt-1">
               Fine-tune how thresholds are calculated based on sales velocity and card types
             </p>
           </div>
         </div>
         {/* Inventory count badge */}
-        <div className="bg-slate-700/50 px-3 py-1.5 rounded-full border border-slate-600/50">
-          <span className="text-xs text-slate-300 flex items-center gap-1">
+        <div className="bg-[var(--surface)] px-3 py-1.5 rounded-full border border-[var(--border)]">
+          <span className="text-xs text-[var(--bda-muted)] flex items-center gap-1">
             <Package className="w-3 h-3" />
-            <span className="font-semibold text-white">{inventory?.length || 0}</span> items in inventory
+            <span className="font-semibold text-[var(--bda-text)]">{inventory?.length || 0}</span> items in inventory
           </span>
         </div>
       </div>
 
       {/* Quick Preset Buttons */}
       <div className="space-y-3">
-        <p className="text-sm font-medium text-slate-300">Quick Presets</p>
+        <p className="text-sm font-medium text-[var(--bda-text)]">Quick Presets</p>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
           {Object.entries(QUICK_PRESETS).map(([key, preset]) => {
             const IconComponent = PRESET_ICONS[preset.icon];
@@ -209,14 +209,14 @@ export const ThresholdSettings = ({
               <button
                 key={key}
                 onClick={() => handleApplyQuickPreset(preset)}
-                className="px-3 py-2.5 bg-slate-700/50 hover:bg-slate-600/70 border border-slate-600/50 hover:border-purple-500/50 rounded-lg text-xs text-left transition-all duration-200 hover:shadow-lg hover:shadow-purple-500/10 group"
+                className="px-3 py-2.5 bg-[var(--surface)] hover:bg-[var(--card-hover)] border border-[var(--border)] hover:border-[var(--bda-primary)]/50 rounded-lg text-xs text-left transition-all duration-200 hover:shadow-lg hover:shadow-[var(--bda-primary)]/10 group"
                 aria-label={`Apply ${preset.label} preset: ${preset.description}`}
               >
-                <span className="flex items-center gap-2 font-semibold text-white group-hover:text-purple-300 transition-colors">
-                  {IconComponent && <IconComponent className="w-4 h-4 text-purple-400 group-hover:text-purple-300" />}
+                <span className="flex items-center gap-2 font-semibold text-[var(--bda-text)] group-hover:text-[var(--bda-primary)] transition-colors">
+                  {IconComponent && <IconComponent className="w-4 h-4 text-[var(--bda-primary)]" />}
                   {preset.label}
                 </span>
-                <span className="block text-slate-400 mt-1">{preset.description}</span>
+                <span className="block text-[var(--bda-muted)] mt-1">{preset.description}</span>
               </button>
             );
           })}
@@ -226,14 +226,14 @@ export const ThresholdSettings = ({
       {/* Slider Controls in Responsive Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Slider Card 1: Base Stock Level */}
-        <div className="bg-slate-700/40 rounded-xl p-4 border border-slate-600/30 hover:border-yellow-500/30 transition-colors">
+        <div className="bg-[var(--surface)] rounded-xl p-4 border border-[var(--border)] hover:border-yellow-500/30 transition-colors">
           <div className="flex items-center gap-2 mb-3">
             <Package className="w-5 h-5 text-yellow-400" />
-            <label className="text-sm font-medium text-white">Base Stock Level</label>
+            <label className="text-sm font-medium text-[var(--bda-text)]">Base Stock Level</label>
           </div>
           <div className="flex items-center justify-between mb-2">
             <span className="text-2xl font-bold text-yellow-400">{thresholdSettings.baseStock}</span>
-            <span className="text-xs text-slate-500">2-50</span>
+            <span className="text-xs text-[var(--bda-muted)]">2-50</span>
           </div>
           <input
             type="range"
@@ -244,20 +244,20 @@ export const ThresholdSettings = ({
             className="threshold-slider threshold-slider-yellow w-full"
             aria-label="Base Stock Level"
           />
-          <p className="text-xs text-slate-400 mt-2">
+          <p className="text-xs text-[var(--bda-muted)] mt-2">
             Default threshold for cards with no sales history
           </p>
         </div>
-        
+
         {/* Slider Card 2: Basic Land Multiplier */}
-        <div className="bg-slate-700/40 rounded-xl p-4 border border-slate-600/30 hover:border-green-500/30 transition-colors">
+        <div className="bg-[var(--surface)] rounded-xl p-4 border border-[var(--border)] hover:border-green-500/30 transition-colors">
           <div className="flex items-center gap-2 mb-3">
             <Mountain className="w-5 h-5 text-green-400" />
-            <label className="text-sm font-medium text-white">Land Multiplier</label>
+            <label className="text-sm font-medium text-[var(--bda-text)]">Land Multiplier</label>
           </div>
           <div className="flex items-center justify-between mb-2">
             <span className="text-2xl font-bold text-green-400">{thresholdSettings.landMultiplier}x</span>
-            <span className="text-xs text-slate-500">→ {thresholdSettings.baseStock * thresholdSettings.landMultiplier}</span>
+            <span className="text-xs text-[var(--bda-muted)]">→ {thresholdSettings.baseStock * thresholdSettings.landMultiplier}</span>
           </div>
           <input
             type="range"
@@ -268,20 +268,20 @@ export const ThresholdSettings = ({
             className="threshold-slider threshold-slider-green w-full"
             aria-label="Land Multiplier"
           />
-          <p className="text-xs text-slate-400 mt-2">
+          <p className="text-xs text-[var(--bda-muted)] mt-2">
             Plains, Island, Swamp, Mountain, Forest multiplier
           </p>
         </div>
-        
+
         {/* Slider Card 3: Sales Buffer Weeks */}
-        <div className="bg-slate-700/40 rounded-xl p-4 border border-slate-600/30 hover:border-blue-500/30 transition-colors">
+        <div className="bg-[var(--surface)] rounded-xl p-4 border border-[var(--border)] hover:border-blue-500/30 transition-colors">
           <div className="flex items-center gap-2 mb-3">
             <TrendingUp className="w-5 h-5 text-blue-400" />
-            <label className="text-sm font-medium text-white">Sales Buffer</label>
+            <label className="text-sm font-medium text-[var(--bda-text)]">Sales Buffer</label>
           </div>
           <div className="flex items-center justify-between mb-2">
             <span className="text-2xl font-bold text-blue-400">{thresholdSettings.velocityWeeks}</span>
-            <span className="text-xs text-slate-500">weeks</span>
+            <span className="text-xs text-[var(--bda-muted)]">weeks</span>
           </div>
           <input
             type="range"
@@ -292,98 +292,98 @@ export const ThresholdSettings = ({
             className="threshold-slider threshold-slider-blue w-full"
             aria-label="Sales Buffer Weeks"
           />
-          <p className="text-xs text-slate-400 mt-2">
+          <p className="text-xs text-[var(--bda-muted)] mt-2">
             Weeks of buffer stock for selling cards
           </p>
         </div>
       </div>
 
       {/* Live Preview Section */}
-      <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-600/30">
-        <h4 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+      <div className="bg-[var(--surface)] rounded-xl p-4 border border-[var(--border)]">
+        <h4 className="text-sm font-semibold text-[var(--bda-text)] mb-3 flex items-center gap-2">
           <Lightbulb className="w-4 h-4 text-yellow-400" />
           Live Preview - How Thresholds Will Be Calculated
         </h4>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div className="bg-slate-700/50 rounded-lg p-3 border border-green-500/20">
-            <p className="text-xs text-slate-400 mb-1 flex items-center gap-1">
+          <div className="bg-[var(--bg-page)] rounded-lg p-3 border border-green-500/20">
+            <p className="text-xs text-[var(--bda-muted)] mb-1 flex items-center gap-1">
               <Mountain className="w-3 h-3" />
               Basic Land
             </p>
             <p className="text-lg font-bold text-green-400">
               {thresholdSettings.baseStock * thresholdSettings.landMultiplier}
             </p>
-            <p className="text-xs text-slate-500">{thresholdSettings.baseStock} × {thresholdSettings.landMultiplier}</p>
+            <p className="text-xs text-[var(--bda-muted)]">{thresholdSettings.baseStock} × {thresholdSettings.landMultiplier}</p>
           </div>
-          <div className="bg-slate-700/50 rounded-lg p-3 border border-blue-500/20">
-            <p className="text-xs text-slate-400 mb-1 flex items-center gap-1">
+          <div className="bg-[var(--bg-page)] rounded-lg p-3 border border-blue-500/20">
+            <p className="text-xs text-[var(--bda-muted)] mb-1 flex items-center gap-1">
               <TrendingUp className="w-3 h-3" />
               Fast Seller
             </p>
             <p className="text-lg font-bold text-blue-400">
               {5 * thresholdSettings.velocityWeeks}
             </p>
-            <p className="text-xs text-slate-500">5/week × {thresholdSettings.velocityWeeks} weeks</p>
+            <p className="text-xs text-[var(--bda-muted)]">5/week × {thresholdSettings.velocityWeeks} weeks</p>
           </div>
-          <div className="bg-slate-700/50 rounded-lg p-3 border border-purple-500/20">
-            <p className="text-xs text-slate-400 mb-1 flex items-center gap-1">
+          <div className="bg-[var(--bg-page)] rounded-lg p-3 border border-purple-500/20">
+            <p className="text-xs text-[var(--bda-muted)] mb-1 flex items-center gap-1">
               <Coins className="w-3 h-3" />
               Budget Card
             </p>
             <p className="text-lg font-bold text-purple-400">
               {Math.round(thresholdSettings.baseStock * 1.5)}
             </p>
-            <p className="text-xs text-slate-500">Under $0.50: base × 1.5</p>
+            <p className="text-xs text-[var(--bda-muted)]">Under $0.50: base × 1.5</p>
           </div>
-          <div className="bg-slate-700/50 rounded-lg p-3 border border-amber-500/20">
-            <p className="text-xs text-slate-400 mb-1 flex items-center gap-1">
+          <div className="bg-[var(--bg-page)] rounded-lg p-3 border border-amber-500/20">
+            <p className="text-xs text-[var(--bda-muted)] mb-1 flex items-center gap-1">
               <Gem className="w-3 h-3" />
               Premium Card
             </p>
             <p className="text-lg font-bold text-amber-400">
               {Math.max(2, Math.round(thresholdSettings.baseStock * 0.3))}
             </p>
-            <p className="text-xs text-slate-500">Over $10: base × 0.3</p>
+            <p className="text-xs text-[var(--bda-muted)]">Over $10: base × 0.3</p>
           </div>
         </div>
       </div>
 
       {/* Summary Stats Before Apply */}
-      <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-600/30">
-        <h4 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
-          <BarChart3 className="w-4 h-4 text-slate-400" />
+      <div className="bg-[var(--surface)] rounded-xl p-4 border border-[var(--border)]">
+        <h4 className="text-sm font-semibold text-[var(--bda-text)] mb-3 flex items-center gap-2">
+          <BarChart3 className="w-4 h-4 text-[var(--text-muted)]" />
           What Will Be Updated
         </h4>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
-          <div className="bg-slate-700/50 rounded-lg p-2">
-            <p className="text-xl font-bold text-white">{summaryStats.total}</p>
-            <p className="text-xs text-slate-400">Total Items</p>
+          <div className="bg-[var(--bg-page)] rounded-lg p-2">
+            <p className="text-xl font-bold text-[var(--bda-text)]">{summaryStats.total}</p>
+            <p className="text-xs text-[var(--bda-muted)]">Total Items</p>
           </div>
-          <div className="bg-slate-700/50 rounded-lg p-2">
+          <div className="bg-[var(--bg-page)] rounded-lg p-2">
             <p className="text-xl font-bold text-green-400">{summaryStats.basicLands}</p>
-            <p className="text-xs text-slate-400">Basic Lands</p>
+            <p className="text-xs text-[var(--bda-muted)]">Basic Lands</p>
           </div>
-          <div className="bg-slate-700/50 rounded-lg p-2">
+          <div className="bg-[var(--bg-page)] rounded-lg p-2">
             <p className="text-xl font-bold text-blue-400">{summaryStats.velocityBased}</p>
-            <p className="text-xs text-slate-400">Velocity-Based</p>
+            <p className="text-xs text-[var(--bda-muted)]">Velocity-Based</p>
           </div>
-          <div className="bg-slate-700/50 rounded-lg p-2">
+          <div className="bg-[var(--bg-page)] rounded-lg p-2">
             <p className="text-xl font-bold text-purple-400">{summaryStats.priceBased}</p>
-            <p className="text-xs text-slate-400">Price-Based</p>
+            <p className="text-xs text-[var(--bda-muted)]">Price-Based</p>
           </div>
         </div>
       </div>
 
       {/* Expandable Card Preview */}
-      <details className="bg-slate-800/50 rounded-xl border border-slate-600/30 overflow-hidden">
-        <summary className="p-4 cursor-pointer hover:bg-slate-700/30 transition-colors flex items-center gap-2 text-sm font-semibold text-slate-300">
+      <details className="bg-[var(--surface)] rounded-xl border border-[var(--border)] overflow-hidden">
+        <summary className="p-4 cursor-pointer hover:bg-[var(--card-hover)] transition-colors flex items-center gap-2 text-sm font-semibold text-[var(--bda-text)]">
           <ChevronDown className="w-4 h-4" />
           Preview Individual Card Thresholds
         </summary>
         <div className="p-4 pt-0 max-h-64 overflow-y-auto">
           <table className="w-full text-xs">
             <thead>
-              <tr className="text-slate-400 border-b border-slate-600/50">
+              <tr className="text-[var(--bda-muted)] border-b border-[var(--border)]">
                 <th className="text-left py-2 font-medium">Card Name</th>
                 <th className="text-center py-2 font-medium">Current</th>
                 <th className="text-center py-2 font-medium">New</th>
@@ -394,11 +394,11 @@ export const ThresholdSettings = ({
               {inventory?.slice(0, 20).map(item => {
                 const suggestion = computedSmartSuggestions[item.id];
                 return (
-                  <tr key={item.id} className="border-b border-slate-700/30 hover:bg-slate-700/20">
-                    <td className="py-2 text-slate-300 font-medium">{item.name}</td>
-                    <td className="py-2 text-center text-slate-500">{item.low_inventory_threshold || 0}</td>
+                  <tr key={item.id} className="border-b border-[var(--border)] hover:bg-[var(--card-hover)]">
+                    <td className="py-2 text-[var(--bda-text)] font-medium">{item.name}</td>
+                    <td className="py-2 text-center text-[var(--bda-muted)]">{item.low_inventory_threshold || 0}</td>
                     <td className="py-2 text-center text-yellow-400 font-semibold">{suggestion?.suggested || '-'}</td>
-                    <td className="py-2 text-slate-400">{suggestion?.reason || '-'}</td>
+                    <td className="py-2 text-[var(--bda-muted)]">{suggestion?.reason || '-'}</td>
                   </tr>
                 );
               })}
@@ -436,7 +436,7 @@ export const ThresholdSettings = ({
         </button>
         <button
           onClick={handleResetSliders}
-          className="px-4 py-3 bg-slate-700/50 hover:bg-slate-600/70 border border-slate-600 hover:border-slate-500 text-slate-300 font-medium rounded-xl transition-all duration-200 flex items-center justify-center gap-2"
+          className="px-4 py-3 bg-[var(--surface)] hover:bg-[var(--card-hover)] border border-[var(--border)] hover:border-[var(--bda-muted)] text-[var(--bda-text)] font-medium rounded-xl transition-all duration-200 flex items-center justify-center gap-2"
         >
           <RotateCcw className="w-4 h-4" />
           Reset Sliders
@@ -450,10 +450,10 @@ export const ThresholdSettings = ({
           <div>
             <h4 className="font-semibold text-blue-300 mb-1">How Threshold Calculation Works</h4>
             <ul className="text-sm text-slate-400 space-y-1">
-              <li>• <strong className="text-slate-300">Basic Lands</strong> use Base Stock × Land Multiplier for high-demand staples</li>
-              <li>• <strong className="text-slate-300">Fast Sellers</strong> calculate threshold based on weekly sales velocity × buffer weeks</li>
-              <li>• <strong className="text-slate-300">Budget Cards</strong> (under $0.50) get 1.5× base stock for bulk inventory</li>
-              <li>• <strong className="text-slate-300">Premium Cards</strong> (over $10) use 0.3× base stock to minimize capital in expensive singles</li>
+              <li>• <strong className="text-[var(--bda-text)]">Basic Lands</strong> use Base Stock × Land Multiplier for high-demand staples</li>
+              <li>• <strong className="text-[var(--bda-text)]">Fast Sellers</strong> calculate threshold based on weekly sales velocity × buffer weeks</li>
+              <li>• <strong className="text-[var(--bda-text)]">Budget Cards</strong> (under $0.50) get 1.5× base stock for bulk inventory</li>
+              <li>• <strong className="text-[var(--bda-text)]">Premium Cards</strong> (over $10) use 0.3× base stock to minimize capital in expensive singles</li>
             </ul>
           </div>
         </div>

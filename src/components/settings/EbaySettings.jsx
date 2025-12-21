@@ -131,7 +131,7 @@ export const EbaySettings = () => {
 
         {/* Configured but Not Connected State */}
         {status?.configured && !status?.connected && (
-          <div className="bg-[var(--bg-page)] rounded-lg p-4 border border-[var(--border)]">
+          <div className="glass-panel p-4">
             <h4 className="font-semibold text-[var(--text-primary)] mb-2">Connect Your eBay Account</h4>
             <p className="text-sm text-[var(--text-muted)] mb-4">
               Link your eBay seller account to create listings directly from your deck inventory.
@@ -141,11 +141,10 @@ export const EbaySettings = () => {
             <button
               onClick={handleConnect}
               disabled={isConnecting}
-              className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
-                isConnecting
+              className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${isConnecting
                   ? 'bg-[var(--muted-surface)] text-[var(--text-muted)] cursor-not-allowed'
                   : 'bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-400 hover:to-indigo-400 text-white shadow-lg shadow-blue-500/25'
-              }`}
+                }`}
             >
               {isConnecting ? (
                 <>
@@ -212,11 +211,10 @@ export const EbaySettings = () => {
               <button
                 onClick={handleDisconnect}
                 disabled={isDisconnecting}
-                className={`px-3 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-2 ${
-                  isDisconnecting
+                className={`px-3 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-2 ${isDisconnecting
                     ? 'bg-[var(--muted-surface)] text-[var(--text-muted)] cursor-not-allowed'
                     : 'bg-red-900/30 text-red-300 hover:bg-red-900/50 border border-red-600/30'
-                }`}
+                  }`}
               >
                 {isDisconnecting ? (
                   <>
