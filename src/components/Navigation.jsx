@@ -10,6 +10,7 @@ import {
   ShoppingCart,
   Menu,
   X,
+  Store,
 } from 'lucide-react';
 import { UserDropdown } from './UserDropdown';
 
@@ -18,11 +19,11 @@ import { UserDropdown } from './UserDropdown';
  */
 const NAV_ITEMS = [
   { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  { id: 'imports', icon: Download, label: 'Add Cards' },
   { id: 'inventory', icon: Layers, label: 'Inventory' },
   { id: 'decks', icon: BookOpen, label: 'Decks' },
   { id: 'autobuy', icon: ShoppingCart, label: 'Autobuy' },
-  { id: 'marketplace', icon: FileText, label: 'Marketplace' },
-  { id: 'imports', icon: Download, label: 'Imports' },
+  { id: 'marketplace', icon: Store, label: 'Marketplace' },
 ];
 
 /**

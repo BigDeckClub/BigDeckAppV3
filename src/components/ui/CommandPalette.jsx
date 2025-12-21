@@ -30,7 +30,7 @@ const COMMAND_CATEGORIES = {
     label: 'Navigation',
     items: [
       { id: 'nav-inventory', label: 'Go to Inventory', icon: Layers, action: 'navigate', target: 'inventory', keywords: ['cards', 'collection'] },
-      { id: 'nav-imports', label: 'Go to Imports', icon: Download, action: 'navigate', target: 'imports', keywords: ['add', 'upload'] },
+      { id: 'nav-imports', label: 'Go to Add Cards', icon: Download, action: 'navigate', target: 'imports', keywords: ['add', 'upload'] },
       { id: 'nav-analytics', label: 'Go to Analytics', icon: BarChart3, action: 'navigate', target: 'analytics', keywords: ['stats', 'charts'] },
       { id: 'nav-decks', label: 'Go to Decks', icon: BookOpen, action: 'navigate', target: 'decks', keywords: ['build', 'commander'] },
       { id: 'nav-sales', label: 'Go to Sales', icon: TrendingUp, action: 'navigate', target: 'sales', keywords: ['sold', 'history'] },

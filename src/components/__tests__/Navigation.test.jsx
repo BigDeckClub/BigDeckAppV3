@@ -13,6 +13,7 @@ vi.mock('lucide-react', () => ({
     ShoppingCart: () => <div data-testid="icon-carth" />,
     Menu: () => <div data-testid="icon-menu" />,
     X: () => <div data-testid="icon-x" />,
+    Store: () => <div data-testid="icon-store" />,
 }));
 
 // Mock UserDropdown
@@ -57,9 +58,7 @@ describe('Navigation Component', () => {
             fireEvent.click(moreButton);
 
             // Check if overlay menu appears
-            expect(screen.getByText('Imports')).toBeInTheDocument();
             expect(screen.getByText('Marketplace')).toBeInTheDocument();
-            expect(screen.getByText('Settings')).toBeInTheDocument();
         });
 
         it('closes the mobile menu when an item is clicked', () => {
@@ -69,13 +68,13 @@ describe('Navigation Component', () => {
             const moreButton = screen.getByText('More').closest('button');
             fireEvent.click(moreButton);
 
-            // Click 'Imports'
-            const importsButton = screen.getByText('Imports').closest('button');
-            fireEvent.click(importsButton);
+            // Click 'Marketplace'
+            const marketplaceButton = screen.getByText('Marketplace').closest('button');
+            fireEvent.click(marketplaceButton);
 
             // Verify tab change and menu close (can't easily check 'menu close' without checking DOM absence, 
             // but we can assume it should behave this way. Ensuring setActiveTab is key).
-            expect(mockSetActiveTab).toHaveBeenCalledWith('imports');
+            expect(mockSetActiveTab).toHaveBeenCalledWith('marketplace');
         });
 
         it('highlights "More" when an overflow item is active', () => {

@@ -25,7 +25,7 @@ import ThemeToggle from './ThemeToggle';
  */
 const NAV_ITEMS = [
   { id: 'inventory', icon: Layers, label: 'Inventory', shortcut: '1' },
-  { id: 'imports', icon: Download, label: 'Imports', shortcut: '2' },
+  { id: 'imports', icon: Download, label: 'Add Cards', shortcut: '2' },
   { id: 'analytics', icon: BarChart3, label: 'Analytics', shortcut: '3' },
   { id: 'decks', icon: BookOpen, label: 'Decks', shortcut: '4' },
   { id: 'sales', icon: TrendingUp, label: 'Sales', shortcut: '5' },

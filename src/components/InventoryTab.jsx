@@ -634,7 +634,7 @@ export const InventoryTab = ({
                   )}
                 </>
               ) : (
-                <p className="text-[var(--text-muted)] text-center py-12">No cards in inventory yet. Add some from the Imports tab!</p>
+                <p className="text-[var(--text-muted)] text-center py-12">No cards in inventory yet. Add some from the Add Cards tab!</p>
               )
             ) : activeTab === 'Trash' ? (
               (() => {
