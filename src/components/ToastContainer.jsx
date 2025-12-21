@@ -82,7 +82,7 @@ function Toast({ toast, onDismiss }) {
 
       const updateProgress = () => {
         if (!mountedRef.current) return;
-        
+
         const now = Date.now();
         const remaining = Math.max(0, endTime - now);
         const newProgress = (remaining / toast.duration) * 100;
@@ -94,7 +94,7 @@ function Toast({ toast, onDismiss }) {
       };
 
       rafId = requestAnimationFrame(updateProgress);
-      
+
       return () => {
         if (rafId) {
           cancelAnimationFrame(rafId);
@@ -191,7 +191,7 @@ export function ToastContainer() {
 
   return (
     <div
-      className="fixed top-4 right-4 z-[90] flex flex-col gap-3 max-w-sm w-full pointer-events-none"
+      className="fixed bottom-24 left-4 right-4 md:bottom-auto md:left-auto md:top-4 md:right-4 z-[90] flex flex-col gap-3 md:max-w-sm w-auto pointer-events-none"
       aria-label="Notifications"
     >
       {toasts.map((toast) => (

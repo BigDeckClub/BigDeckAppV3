@@ -78,7 +78,7 @@ export function AuthProvider({ children }) {
 
       let data = {};
       const contentType = response.headers.get('content-type');
-      
+
       if (contentType?.includes('application/json')) {
         data = await response.json().catch(() => ({}));
       } else {
@@ -107,7 +107,11 @@ export function AuthProvider({ children }) {
 
   const logout = async () => {
     try {
-      await fetch('/api/auth/logout', { method: 'POST' });
+      try {
+        await fetch('/api/auth/logout', { method: 'POST' });
+      } catch (e) {
+        console.warn('Logout API call failed, proceeding with local cleanup:', e);
+      }
       setUser(null);
       localStorage.removeItem('supabase_user');
       localStorage.removeItem('supabase_session');

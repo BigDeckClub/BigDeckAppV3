@@ -51,7 +51,7 @@ export const SellModal = ({ isOpen, itemName, purchasePrice, onClose, onSell, it
 
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-      <div className="bg-[var(--bda-card)] rounded-lg border border-[var(--bda-border)] p-6 max-w-md w-full mx-4">
+      <div className="glass-panel rounded-lg p-6 max-w-md w-full mx-4 shadow-2xl animate-scale-in">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-[var(--bda-text)]">Sell {itemType === 'deck' ? 'Deck' : 'Folder'}</h2>
           <button onClick={onClose} className="text-[var(--bda-muted)] hover:text-[var(--bda-text)]">

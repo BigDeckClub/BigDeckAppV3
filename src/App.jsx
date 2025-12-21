@@ -160,7 +160,7 @@ function MTGInventoryTrackerContent() {
       />
 
       {/* Main Content Area - Shifted for Sidebar */}
-      <main className="transition-all duration-300 md:ml-64 p-4 md:p-8 pb-32 md:pb-8 max-w-7xl mx-auto">
+      <main className="transition-all duration-300 md:ml-64 p-3 md:p-8 pb-32 md:pb-8 max-w-7xl mx-auto">
         {isLoading && (
           <div className="text-center py-20 flex justify-center">
             <div className="w-10 h-10 animate-spin text-[var(--primary)] border-2 border-[var(--primary)] border-t-transparent rounded-full shadow-[0_0_15px_rgba(99,102,241,0.5)]"></div>

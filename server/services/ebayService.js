@@ -7,7 +7,7 @@ import { pool } from '../db/pool.js';
 import crypto from 'crypto';
 
 // eBay API configuration
-const EBAY_CONFIG = {
+const EBAY_ENV_URLS = {
   sandbox: {
     authUrl: 'https://auth.sandbox.ebay.com/oauth2/authorize',
     tokenUrl: 'https://api.sandbox.ebay.com/identity/v1/oauth2/token',
@@ -30,11 +30,47 @@ const EBAY_SCOPES = [
 ];
 
 /**
- * Get eBay environment configuration
+ * Get eBay environment URLs
  */
-function getEbayConfig() {
+function getEbayEnvUrls() {
   const env = process.env.EBAY_ENVIRONMENT || 'sandbox';
-  return EBAY_CONFIG[env] || EBAY_CONFIG.sandbox;
+  return EBAY_ENV_URLS[env] || EBAY_ENV_URLS.sandbox;
+}
+
+/**
+ * Get eBay App Configuration (ClientId, ClientSecret, RuName)
+ * Priority: Database Settings > Environment Variables
+ */
+async function getAppConfig() {
+  try {
+    const keys = ['ebay_client_id', 'ebay_client_secret', 'ebay_runame'];
+    const result = await pool.query(
+      `SELECT key, value FROM settings WHERE key = ANY($1)`,
+      [keys]
+    );
+
+    const dbSettings = {};
+    result.rows.forEach(row => {
+      try {
+        dbSettings[row.key] = JSON.parse(row.value);
+      } catch (e) {
+        dbSettings[row.key] = row.value;
+      }
+    });
+
+    return {
+      clientId: dbSettings.ebay_client_id || process.env.EBAY_CLIENT_ID,
+      clientSecret: dbSettings.ebay_client_secret || process.env.EBAY_CLIENT_SECRET,
+      ruName: dbSettings.ebay_runame || process.env.EBAY_RUNAME || process.env.EBAY_REDIRECT_URI,
+    };
+  } catch (err) {
+    console.error('[EBAY] Failed to fetch app config, falling back to env:', err);
+    return {
+      clientId: process.env.EBAY_CLIENT_ID,
+      clientSecret: process.env.EBAY_CLIENT_SECRET,
+      ruName: process.env.EBAY_RUNAME || process.env.EBAY_REDIRECT_URI,
+    };
+  }
 }
 
 // Simple sleep helper
@@ -93,6 +129,17 @@ async function fetchWithRetry(url, options = {}, retries = 3, baseDelay = 300) {
 /**
  * Check if eBay integration is configured
  */
+export async function checkConfigured() {
+  const config = await getAppConfig();
+  return !!(
+    config.clientId &&
+    config.clientSecret &&
+    config.ruName
+  );
+}
+
+// Deprecated sync version kept for backward compatibility if needed, 
+// but try to use checkConfigured()
 export function isEbayConfigured() {
   return !!(
     process.env.EBAY_CLIENT_ID &&
@@ -152,16 +199,14 @@ function decryptToken(encryptedToken) {
  * 3. Set up your OAuth settings if you haven't
  * 4. Copy the RuName shown (it's a long string like "Your_Name-AppName-PRD-xxxxxx")
  *
- * Set EBAY_RUNAME in .env to this value
+ * Set EBAY_RUNAME in .env to this value OR configure in UI settings
  */
-export function getAuthUrl(state) {
-  const config = getEbayConfig();
+export async function getAuthUrl(state) {
+  const envUrls = getEbayEnvUrls();
+  const config = await getAppConfig();
 
-  // Use EBAY_RUNAME if available, otherwise fall back to EBAY_REDIRECT_URI
-  const redirectUri = process.env.EBAY_RUNAME || process.env.EBAY_REDIRECT_URI;
-
-  if (!redirectUri) {
-    throw new Error('EBAY_RUNAME or EBAY_REDIRECT_URI must be configured');
+  if (!config.ruName) {
+    throw new Error('EBAY_RUNAME must be configured in settings or .env');
   }
 
   // Build URL manually to ensure proper encoding
@@ -169,13 +214,13 @@ export function getAuthUrl(state) {
   const scopeString = EBAY_SCOPES.join(' ');
 
   const params = new URLSearchParams();
-  params.append('client_id', process.env.EBAY_CLIENT_ID);
-  params.append('redirect_uri', redirectUri);
+  params.append('client_id', config.clientId);
+  params.append('redirect_uri', config.ruName);
   params.append('response_type', 'code');
   params.append('scope', scopeString);
   params.append('state', state || crypto.randomBytes(16).toString('hex'));
 
-  const authUrl = `${config.authUrl}?${params.toString()}`;
+  const authUrl = `${envUrls.authUrl}?${params.toString()}`;
   console.log('[EBAY] Generated auth URL:', authUrl);
   return authUrl;
 }
@@ -184,10 +229,13 @@ export function getAuthUrl(state) {
  * Exchange authorization code for tokens
  */
 export async function exchangeCodeForTokens(code) {
-  const config = getEbayConfig();
+  const envUrls = getEbayEnvUrls();
+  const config = await getAppConfig();
+
   const credentials = Buffer.from(
-    `${process.env.EBAY_CLIENT_ID}:${process.env.EBAY_CLIENT_SECRET}`
+    `${config.clientId}:${config.clientSecret}`
   ).toString('base64');
+
   const options = {
     method: 'POST',
     headers: {
@@ -197,11 +245,11 @@ export async function exchangeCodeForTokens(code) {
     body: new URLSearchParams({
       grant_type: 'authorization_code',
       code,
-      redirect_uri: process.env.EBAY_REDIRECT_URI,
+      redirect_uri: config.ruName,
     }),
   };
 
-  const response = await fetchWithRetry(config.tokenUrl, options, 3, 300);
+  const response = await fetchWithRetry(envUrls.tokenUrl, options, 3, 300);
   return response.json();
 }
 
@@ -209,10 +257,13 @@ export async function exchangeCodeForTokens(code) {
  * Refresh access token using refresh token
  */
 export async function refreshAccessToken(refreshToken) {
-  const config = getEbayConfig();
+  const envUrls = getEbayEnvUrls();
+  const config = await getAppConfig();
+
   const credentials = Buffer.from(
-    `${process.env.EBAY_CLIENT_ID}:${process.env.EBAY_CLIENT_SECRET}`
+    `${config.clientId}:${config.clientSecret}`
   ).toString('base64');
+
   const options = {
     method: 'POST',
     headers: {
@@ -226,7 +277,7 @@ export async function refreshAccessToken(refreshToken) {
     }),
   };
 
-  const response = await fetchWithRetry(config.tokenUrl, options, 3, 300);
+  const response = await fetchWithRetry(envUrls.tokenUrl, options, 3, 300);
   return response.json();
 }
 
@@ -316,8 +367,8 @@ export async function getValidAccessToken(userId) {
  */
 export async function ebayApiRequest(userId, endpoint, options = {}) {
   const accessToken = await getValidAccessToken(userId);
-  const config = getEbayConfig();
-  const url = `${config.apiUrl}${endpoint}`;
+  const envUrls = getEbayEnvUrls();
+  const url = `${envUrls.apiUrl}${endpoint}`;
 
   const reqOptions = {
     ...options,
@@ -562,6 +613,7 @@ export async function getListingByDeckId(userId, deckId) {
 }
 
 export default {
+  checkConfigured,
   isEbayConfigured,
   getAuthUrl,
   exchangeCodeForTokens,
@@ -581,4 +633,5 @@ export default {
   updateListingStatus,
   getUserListings,
   getListingByDeckId,
+  getAppConfig,
 };

@@ -1,4 +1,4 @@
-import React, { startTransition } from 'react';
+import React, { startTransition, useState } from 'react';
 import PropTypes from 'prop-types';
 import {
   Layers,
@@ -9,6 +9,7 @@ import {
   FileText,
   ShoppingCart,
   Menu,
+  X,
 } from 'lucide-react';
 import { UserDropdown } from './UserDropdown';
 
@@ -22,7 +23,6 @@ const NAV_ITEMS = [
   { id: 'autobuy', icon: ShoppingCart, label: 'Autobuy' },
   { id: 'marketplace', icon: FileText, label: 'Marketplace' },
   { id: 'imports', icon: Download, label: 'Imports' },
-  { id: 'settings', icon: Settings, label: 'Settings' },
 ];
 
 /**
@@ -86,6 +86,7 @@ MobileNavButton.propTypes = {
  * Main Navigation component with Sidebar (Desktop) and Bottom Bar (Mobile)
  */
 export function Navigation({ activeTab, setActiveTab }) {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   return (
     <>
       {/* Desktop Sidebar */}
@@ -114,30 +115,70 @@ export function Navigation({ activeTab, setActiveTab }) {
         </div>
 
         <div className="p-4 border-t border-[var(--glass-border)] bg-black/20">
-          <UserDropdown setActiveTab={setActiveTab} activeTab={activeTab} />
+          <UserDropdown setActiveTab={setActiveTab} activeTab={activeTab} direction="up" />
         </div>
       </aside>
 
       {/* Mobile Bottom Navigation */}
       <nav className="mobile-nav md:hidden">
         <div className="mobile-nav-inner">
-          {NAV_ITEMS.slice(0, 5).map((item) => (
+          {/* First 4 items */}
+          {NAV_ITEMS.slice(0, 4).map((item) => (
             <MobileNavButton
               key={item.id}
               item={item}
               activeTab={activeTab}
-              setActiveTab={setActiveTab}
+              setActiveTab={(id) => {
+                setActiveTab(id);
+                setIsMobileMenuOpen(false);
+              }}
             />
           ))}
+
+          {/* More Button */}
           <button
-            onClick={() => setActiveTab('settings')}
-            className={`mobile-nav-item ${activeTab === 'settings' ? 'active' : ''}`}
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className={`mobile-nav-item ${isMobileMenuOpen || (!NAV_ITEMS.slice(0, 4).find(i => i.id === activeTab)) ? 'active' : ''}`}
           >
-            <Menu className="w-6 h-6 mobile-nav-icon" />
-            <span className="mobile-nav-label">More</span>
+            {isMobileMenuOpen ? (
+              <X className="w-6 h-6 mobile-nav-icon" />
+            ) : (
+              <Menu className="w-6 h-6 mobile-nav-icon" />
+            )}
+            <span className="mobile-nav-label">{isMobileMenuOpen ? 'Close' : 'More'}</span>
           </button>
         </div>
       </nav>
+
+      {/* Mobile Menu Overlay */}
+      {isMobileMenuOpen && (
+        <div className="fixed inset-0 z-40 md:hidden bg-black/60 backdrop-blur-sm animate-fade-in" onClick={() => setIsMobileMenuOpen(false)}>
+          <div
+            className="absolute bottom-[calc(env(safe-area-inset-bottom)+70px)] right-4 p-4 min-w-[200px] glass-panel rounded-xl flex flex-col gap-2 shadow-2xl animate-slide-up"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {NAV_ITEMS.slice(4).map((item) => {
+              const Icon = item.icon;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    startTransition(() => setActiveTab(item.id));
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${activeTab === item.id
+                    ? 'bg-[var(--primary)]/20 text-[var(--primary)]'
+                    : 'hover:bg-white/5 text-[var(--text-main)]'
+                    }`}
+                >
+                  <Icon className="w-5 h-5" />
+                  <span className="font-medium">{item.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </>
   );
 }

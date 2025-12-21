@@ -239,8 +239,8 @@ export const CardGroup = memo(function CardGroup({
               type="button"
               onClick={handleToggleSelection}
               className={`absolute top-1 right-1 p-1 rounded transition-all z-30 ${allItemsSelected
-                  ? 'bg-[var(--bda-primary)] text-[var(--bda-primary-foreground)]'
-                  : 'bg-slate-700/80 text-slate-300 hover:bg-slate-600'
+                ? 'bg-[var(--bda-primary)] text-[var(--bda-primary-foreground)]'
+                : 'bg-slate-700/80 text-slate-300 hover:bg-slate-600'
                 }`}
               title={allItemsSelected ? "Deselect" : "Select"}
             >
@@ -252,7 +252,7 @@ export const CardGroup = memo(function CardGroup({
             <button
               type="button"
               onClick={handleRestoreAll}
-              className="absolute top-2 left-2 p-1.5 bg-slate-700/80 hover:bg-green-600/60 text-slate-300 hover:text-green-300 rounded-lg transition-all z-20 duration-200 min-w-[36px] min-h-[36px] flex items-center justify-center"
+              className="absolute top-2 left-2 p-1.5 bg-slate-700/80 hover:bg-green-600/60 text-slate-300 hover:text-green-300 rounded-lg transition-all z-20 duration-200 min-w-[44px] min-h-[44px] flex items-center justify-center opacity-100 md:opacity-0 md:group-hover:opacity-100"
               title="Restore all copies"
             >
               <RotateCcw className="w-5 h-5" />
@@ -263,7 +263,7 @@ export const CardGroup = memo(function CardGroup({
               onClick={(e) => {
                 handleToggleLowInventory(items[0], e);
               }}
-              className="absolute top-2 left-2 p-1.5 bg-slate-700/80 hover:bg-yellow-600/60 text-slate-300 hover:text-yellow-300 rounded-lg transition-all z-20 duration-200 min-w-[36px] min-h-[36px] flex items-center justify-center"
+              className="absolute top-2 left-2 p-1.5 bg-slate-700/80 hover:bg-yellow-600/60 text-slate-300 hover:text-yellow-300 rounded-lg transition-all z-20 duration-200 min-w-[44px] min-h-[44px] flex items-center justify-center opacity-100 md:opacity-0 md:group-hover:opacity-100"
               title={items[0]?.low_inventory_alert ? "Alert enabled" : "Enable low inventory alert"}
               disabled={togglingId === items[0]?.id}
             >
@@ -275,7 +275,7 @@ export const CardGroup = memo(function CardGroup({
               e.stopPropagation();
               items.forEach(item => deleteInventoryItem(item.id));
             }}
-            className="absolute top-2 right-2 p-1.5 bg-slate-700/80 hover:bg-red-600/60 text-slate-300 hover:text-white rounded-lg transition-all opacity-0 group-hover:opacity-100 z-20 duration-200 min-w-[36px] min-h-[36px] flex items-center justify-center"
+            className="absolute top-2 right-2 p-1.5 bg-slate-700/80 hover:bg-red-600/60 text-slate-300 hover:text-white rounded-lg transition-all z-20 duration-200 min-w-[44px] min-h-[44px] flex items-center justify-center opacity-100 md:opacity-0 md:group-hover:opacity-100"
             title="Delete all copies"
           >
             <X className="w-5 h-5" />
@@ -294,7 +294,7 @@ export const CardGroup = memo(function CardGroup({
           </div>
 
           {/* View Details Indicator */}
-          <div className="absolute bottom-2 right-2 flex items-center gap-1 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="absolute bottom-2 right-2 flex items-center gap-1 text-slate-400 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
             <Eye className="w-3 h-3" />
             <span className="text-[9px] font-medium">View</span>
           </div>
@@ -347,8 +347,8 @@ export const CardGroup = memo(function CardGroup({
           <div className="aspect-[5/7] bg-slate-800 relative">
             {/* Loading skeleton */}
             {imageLoading && !imageError && (
-              <div className="absolute inset-0 bg-slate-700 animate-pulse flex items-center justify-center">
-                <div className="text-slate-500 text-xs">Loading...</div>
+              <div className="absolute inset-0 bg-slate-800 animate-pulse">
+                <div className="h-full w-full bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800 bg-[length:200%_100%] animate-[shimmer_1.5s_infinite]" />
               </div>
             )}
 
@@ -398,8 +398,8 @@ export const CardGroup = memo(function CardGroup({
                 type="button"
                 onClick={handleToggleSelection}
                 className={`absolute top-2 left-2 p-1.5 rounded transition-all z-30 ${allItemsSelected
-                    ? 'bg-[var(--bda-primary)] text-[var(--bda-primary-foreground)]'
-                    : 'bg-black/50 text-slate-300 hover:bg-slate-600'
+                  ? 'bg-[var(--bda-primary)] text-[var(--bda-primary-foreground)]'
+                  : 'bg-black/50 text-slate-300 hover:bg-slate-600'
                   }`}
                 title={allItemsSelected ? "Deselect" : "Select"}
               >
@@ -413,7 +413,7 @@ export const CardGroup = memo(function CardGroup({
                 e.stopPropagation();
                 items.forEach(item => deleteInventoryItem(item.id));
               }}
-              className="absolute top-2 right-2 p-1.5 bg-black/50 hover:bg-red-600/80 text-slate-300 hover:text-white rounded-lg transition-all opacity-0 group-hover:opacity-100 z-20"
+              className="absolute top-2 right-2 p-1.5 bg-black/50 hover:bg-red-600/80 text-slate-300 hover:text-white rounded-lg transition-all z-20 opacity-100 md:opacity-0 md:group-hover:opacity-100 min-w-[44px] min-h-[44px] flex items-center justify-center"
               title="Delete all copies"
             >
               <X className="w-4 h-4" />
@@ -453,7 +453,7 @@ export const CardGroup = memo(function CardGroup({
                 e.stopPropagation();
                 items.forEach(item => deleteInventoryItem(item.id));
               }}
-              className="absolute top-3 right-3 p-1.5 bg-slate-700/60 hover:bg-slate-600 text-slate-300 hover:text-red-400 rounded-lg transition-all opacity-0 group-hover:opacity-100 z-20 min-w-[36px] min-h-[36px] flex items-center justify-center"
+              className="absolute top-3 right-3 p-1.5 bg-slate-700/60 hover:bg-slate-600 text-slate-300 hover:text-red-400 rounded-lg transition-all z-20 min-w-[44px] min-h-[44px] flex items-center justify-center opacity-100 md:opacity-0 md:group-hover:opacity-100"
               title="Delete all copies"
             >
               <X className="w-5 h-5" />
@@ -476,7 +476,7 @@ export const CardGroup = memo(function CardGroup({
                 </div>
               </div>
               <div className="flex items-center gap-2 text-[var(--bda-primary)] text-sm flex-shrink-0">
-                <Eye className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <Eye className="w-4 h-4 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity" />
                 <ChevronRight className="w-5 h-5" />
               </div>
             </div>

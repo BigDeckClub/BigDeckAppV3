@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, startTransition } from 'react';
 import { LogOut, User, Settings } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
-export function UserDropdown({ setActiveTab, activeTab }) {
+export function UserDropdown({ setActiveTab, activeTab, direction = 'down' }) {
   const { logout, user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -37,6 +37,10 @@ export function UserDropdown({ setActiveTab, activeTab }) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const dropdownClasses = direction === 'up'
+    ? 'bottom-full mb-3'
+    : 'mt-3';
+
   return (
     <div ref={dropdownRef} className="relative">
       <button
@@ -48,18 +52,17 @@ export function UserDropdown({ setActiveTab, activeTab }) {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-3 w-56 bg-[var(--bda-surface)] border border-[var(--bda-border)] rounded-xl shadow-2xl z-50 backdrop-blur-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        <div className={`absolute right-0 ${dropdownClasses} w-56 bg-[var(--bda-surface)] border border-[var(--bda-border)] rounded-xl shadow-2xl z-50 backdrop-blur-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200`}>
           <div className="px-4 py-3 border-b border-[var(--bda-border)] text-sm text-[var(--bda-muted)] bg-[var(--card-hover)]">
             <div className="text-xs text-[var(--bda-muted)] mb-1">Account</div>
             <div className="font-medium text-[var(--bda-primary)] truncate">{user?.email}</div>
           </div>
           <button
             onClick={handleSettings}
-            className={`w-full px-4 py-3 text-left flex items-center gap-2 transition-all duration-200 group border-t border-[var(--bda-border)] ${
-              activeTab === 'settings' 
-                ? 'bg-[var(--bda-primary)]/20 text-[var(--bda-primary)]' 
+            className={`w-full px-4 py-3 text-left flex items-center gap-2 transition-all duration-200 group border-t border-[var(--bda-border)] ${activeTab === 'settings'
+                ? 'bg-[var(--bda-primary)]/20 text-[var(--bda-primary)]'
                 : 'text-[var(--bda-muted)] hover:bg-[var(--bda-primary)]/20 hover:text-[var(--bda-primary)]'
-            }`}
+              }`}
           >
             <Settings className="w-4 h-4" />
             <span className="font-medium">Settings</span>

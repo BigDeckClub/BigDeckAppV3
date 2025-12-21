@@ -27,7 +27,7 @@ async function fetchCardByName(name, setCode) {
   if (!name) return null;
   const params = new URLSearchParams();
   params.set('exact', name);
-  if (setCode) params.set('set', setCode);
+  if (setCode && setCode.toLowerCase() !== 'unknown') params.set('set', setCode);
   const url = `https://api.scryfall.com/cards/named?${params.toString()}`;
   try {
     const res = await fetch(url);
@@ -49,7 +49,7 @@ export async function ensureCardMetadata(cards = []) {
   const results = {};
   // Basic sequential fetch to be kinder to Scryfall; skip items already cached
   for (const c of cards) {
-    const key = `${(c.name||'').toLowerCase().trim()}|${(c.set||'').toLowerCase().trim()}`;
+    const key = `${(c.name || '').toLowerCase().trim()}|${(c.set || '').toLowerCase().trim()}`;
     if (memoryCache.has(key)) {
       results[key] = JSON.parse(memoryCache.get(key));
       continue;
@@ -67,7 +67,7 @@ export async function ensureCardMetadata(cards = []) {
 }
 
 export function getCachedMetadata(name, setCode) {
-  const key = `${(name||'').toLowerCase().trim()}|${(setCode||'').toLowerCase().trim()}`;
+  const key = `${(name || '').toLowerCase().trim()}|${(setCode || '').toLowerCase().trim()}`;
   if (!memoryCache.has(key)) return null;
   try { return JSON.parse(memoryCache.get(key)); } catch (e) { return null; }
 }

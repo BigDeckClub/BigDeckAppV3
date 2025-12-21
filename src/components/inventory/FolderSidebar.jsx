@@ -37,7 +37,7 @@ export const FolderSidebar = memo(function FolderSidebar({
 }) {
   const { confirm } = useConfirm();
   return (
-    <div className={`fixed md:static left-0 w-64 flex-shrink-0 space-y-4 h-full overflow-y-auto bg-[var(--bda-bg)] md:bg-transparent z-30 transition-transform duration-300 md:px-0 px-4 md:pl-8 md:pt-16 pt-20 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+    <div className={`fixed md:static left-0 w-64 flex-shrink-0 space-y-4 h-full overflow-y-auto glass-panel md:bg-transparent md:border-none md:shadow-none z-30 transition-transform duration-300 md:px-0 px-4 md:pl-8 md:pt-16 pt-20 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
       }`}>
       {/* Folder List */}
       <div className="rounded-lg p-4 border-2 border-[var(--bda-primary)]/40 bg-[var(--bda-surface)] space-y-3 max-h-[calc(100vh-220px)] overflow-y-auto scrollbar-thumb-rounded shadow-xl shadow-black/20">
@@ -168,8 +168,8 @@ export const FolderSidebar = memo(function FolderSidebar({
                   }
                 }}
                 className={`w-full text-left p-3 rounded-t-lg transition-colors flex-1 ${isSelected
-                    ? 'bg-teal-600/40 border-l-4 border-teal-400'
-                    : 'bg-[var(--bda-card)] border-l-4 border-transparent hover:bg-[var(--card-hover)]'
+                  ? 'bg-teal-600/40 border-l-4 border-teal-400'
+                  : 'bg-[var(--bda-card)] border-l-4 border-transparent hover:bg-[var(--card-hover)]'
                   }`}
               >
                 <div className="font-medium text-sm text-[var(--bda-text)]">Unsorted</div>
@@ -234,8 +234,8 @@ export const FolderSidebar = memo(function FolderSidebar({
                   }
                 }}
                 className={`w-full text-left p-3 rounded-t-lg transition-colors flex-1 ${isSelected
-                    ? 'bg-teal-600/40 border-l-4 border-teal-400'
-                    : 'bg-[var(--bda-card)] border-l-4 border-transparent hover:bg-[var(--card-hover)]'
+                  ? 'bg-teal-600/40 border-l-4 border-teal-400'
+                  : 'bg-[var(--bda-card)] border-l-4 border-transparent hover:bg-[var(--card-hover)]'
                   }`}
               >
                 <div className="font-medium text-sm text-[var(--bda-text)]">{folderName}</div>
@@ -292,8 +292,8 @@ export const FolderSidebar = memo(function FolderSidebar({
                     }
                   }}
                   className={`w-full text-left p-3 rounded-lg transition-all duration-300 border-l-4 ${isSelected
-                      ? 'bg-gradient-to-r from-teal-600/50 to-cyan-600/30 border-l-teal-400 shadow-md shadow-teal-500/10'
-                      : 'bg-[var(--bda-card)] border-l-transparent hover:bg-[var(--card-hover)]'
+                    ? 'bg-gradient-to-r from-teal-600/50 to-cyan-600/30 border-l-teal-400 shadow-md shadow-teal-500/10'
+                    : 'bg-[var(--bda-card)] border-l-transparent hover:bg-[var(--card-hover)]'
                     }`}
                 >
                   <div className="font-medium text-sm text-[var(--bda-text)]">{folder}</div>
@@ -371,8 +371,8 @@ export const FolderSidebar = memo(function FolderSidebar({
                   }
                 }}
                 className={`w-full text-left p-3 rounded-lg transition-colors flex-1 ${isSelected
-                    ? 'bg-red-600/40 border-l-4 border-red-400'
-                    : 'bg-gradient-to-r from-red-900/30 to-slate-800/50 border-l-4 border-transparent hover:from-red-800/40 hover:to-slate-700/50'
+                  ? 'bg-red-600/40 border-l-4 border-red-400'
+                  : 'bg-gradient-to-r from-red-900/30 to-slate-800/50 border-l-4 border-transparent hover:from-red-800/40 hover:to-slate-700/50'
                   }`}
               >
                 <div className="flex items-center justify-between">

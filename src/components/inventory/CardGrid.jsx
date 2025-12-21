@@ -64,7 +64,7 @@ export const CardGrid = memo(function CardGrid({
 
   if (viewMode === 'card') {
     return (
-      <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-3">
         {cards.map(([cardName, items]) => (
           <CardGroup
             key={cardName}

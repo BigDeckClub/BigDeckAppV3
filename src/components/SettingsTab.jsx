@@ -53,7 +53,7 @@ export const SettingsTab = ({ inventory = [] }) => {
   return (
     <div className="space-y-6">
       {/* Tab Navigation Bar */}
-      <div className="flex gap-2 border-b border-slate-600 pb-0 overflow-x-auto">
+      <div className="flex gap-2 border-b border-slate-600 pb-0 overflow-x-auto no-scrollbar scroll-smooth">
         <button
           onClick={() => setActiveTab('thresholds')}
           className={getTabClassName('thresholds', 'border-purple-500 text-purple-400')}

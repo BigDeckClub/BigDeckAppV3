@@ -33,7 +33,7 @@ const router = express.Router();
  */
 router.get('/ebay/status', authenticate, async (req, res) => {
   try {
-    const configured = ebayService.isEbayConfigured();
+    const configured = await ebayService.checkConfigured();
     const connection = await ebayService.getConnection(req.userId);
 
     res.json({
@@ -53,13 +53,14 @@ router.get('/ebay/status', authenticate, async (req, res) => {
  * GET /api/ebay/debug
  * Debug endpoint to check OAuth configuration
  */
-router.get('/ebay/debug', authenticate, (req, res) => {
-  const authUrl = ebayService.getAuthUrl('test-state');
+router.get('/ebay/debug', authenticate, async (req, res) => {
+  const authUrl = await ebayService.getAuthUrl('test-state');
+  const config = await ebayService.getAppConfig();
   res.json({
     environment: process.env.EBAY_ENVIRONMENT,
-    clientId: process.env.EBAY_CLIENT_ID,
-    runame: process.env.EBAY_RUNAME,
-    redirectUri: process.env.EBAY_REDIRECT_URI,
+    clientId: config.clientId ? '***' : null,
+    runame: config.ruName,
+    redirectUri: config.ruName,
     generatedAuthUrl: authUrl,
   });
 });
@@ -68,19 +69,21 @@ router.get('/ebay/debug', authenticate, (req, res) => {
  * GET /api/ebay/auth
  * Start OAuth flow - redirects to eBay authorization page
  */
-router.get('/ebay/auth', authenticate, (req, res) => {
-  if (!ebayService.isEbayConfigured()) {
+router.get('/ebay/auth', authenticate, async (req, res) => {
+  const configured = await ebayService.checkConfigured();
+  if (!configured) {
     return res.status(503).json({
       error: 'eBay integration not configured',
-      message: 'Please configure EBAY_CLIENT_ID, EBAY_CLIENT_SECRET, and EBAY_RUNAME in .env',
+      message: 'Please configure eBay API settings in the Settings tab',
     });
   }
 
-  // Check if RUNAME is configured (it's required for OAuth)
-  if (!process.env.EBAY_RUNAME) {
+  // Double check RuName explicitly if needed, but checkConfigured handles it
+  const config = await ebayService.getAppConfig();
+  if (!config.ruName) {
     return res.status(503).json({
       error: 'eBay RuName not configured',
-      message: 'Please set EBAY_RUNAME in .env. Get it from eBay Developer Portal: Your App > User Tokens > RuName',
+      message: 'Please set RuName in settings',
     });
   }
 
@@ -90,7 +93,7 @@ router.get('/ebay/auth', authenticate, (req, res) => {
   // Store state in session or temporary storage (using query param for simplicity)
   // In production, store this server-side associated with the user
   try {
-    const authUrl = ebayService.getAuthUrl(`${req.userId}:${state}`);
+    const authUrl = await ebayService.getAuthUrl(`${req.userId}:${state}`);
     res.json({ authUrl });
   } catch (error) {
     console.error('[EBAY] Failed to generate auth URL:', error);
@@ -1314,7 +1317,7 @@ router.post('/ebay/listings/:id/create-picklist', authenticate, async (req, res)
     // Batch insert reservations
     if (reservations.length > 0) {
       const values = reservations.map((r, i) =>
-        `($${i*4+1}, $${i*4+2}, $${i*4+3}, $${i*4+4})`
+        `($${i * 4 + 1}, $${i * 4 + 2}, $${i * 4 + 3}, $${i * 4 + 4})`
       ).join(', ');
       const params = reservations.flatMap(r => [r.deck_id, r.inventory_item_id, r.quantity_reserved, r.original_folder]);
       await pool.query(
@@ -1326,7 +1329,7 @@ router.post('/ebay/listings/:id/create-picklist', authenticate, async (req, res)
     // Batch insert missing cards
     if (missingCards.length > 0) {
       const values = missingCards.map((m, i) =>
-        `($${i*4+1}, $${i*4+2}, $${i*4+3}, $${i*4+4})`
+        `($${i * 4 + 1}, $${i * 4 + 2}, $${i * 4 + 3}, $${i * 4 + 4})`
       ).join(', ');
       const params = missingCards.flatMap(m => [m.deck_id, m.card_name, m.set_code, m.quantity_needed]);
       await pool.query(

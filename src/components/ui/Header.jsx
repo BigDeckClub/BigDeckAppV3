@@ -228,11 +228,7 @@ export const Header = memo(function Header({
               onClick={() => handleNavClick(item.id)}
             />
           ))}
-          <MobileNavButton
-            item={{ id: 'settings', icon: Settings, label: 'Settings' }}
-            isActive={activeTab === 'settings'}
-            onClick={() => handleNavClick('settings')}
-          />
+
         </div>
       </nav>
     </>
