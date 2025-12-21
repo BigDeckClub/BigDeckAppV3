@@ -7,6 +7,7 @@ import { normalizeName, computeCompletion } from '../../utils/deckHelpers';
 import { BuyButton } from '../buy/BuyButton';
 import { BuyCardsModal } from '../buy/BuyCardsModal';
 import { ManaCurveChart, DeckColorPie, DeckStatsPanel } from '../ui';
+import { useCardMetadata } from '../../hooks/useCardMetadata';
 
 /**
  * DeckDetailsView component - Displays detailed view of a single deck
@@ -25,6 +26,38 @@ export function DeckDetailsView({
   const [showEbayModal, setShowEbayModal] = useState(false);
   const [commanderLocal, setCommanderLocal] = useState(deck.commander || '');
   const [settingCommanderFor, setSettingCommanderFor] = useState(null);
+  const [enrichedCards, setEnrichedCards] = useState([]);
+  const { fetchMetadata, loading: metadataLoading } = useCardMetadata();
+
+  // Load metadata for cards to enable charts
+  React.useEffect(() => {
+    const loadMetadata = async () => {
+      const cards = Array.isArray(deck.cards) ? deck.cards : [];
+      if (cards.length === 0) return;
+
+      const names = cards.map(c => c.name);
+      const metadataMap = await fetchMetadata(names);
+
+      const enriched = cards.map(card => {
+        const metadata = metadataMap[card.name.toLowerCase().trim()];
+        if (metadata) {
+          return {
+            ...card,
+            cmc: metadata.cmc,
+            mana_value: metadata.cmc,
+            colors: metadata.colors,
+            type_line: metadata.typeLine,
+            mana_cost: metadata.manaCost
+          };
+        }
+        return card;
+      });
+
+      setEnrichedCards(enriched);
+    };
+
+    loadMetadata();
+  }, [deck.cards, fetchMetadata]);
 
   // Compute missing cards using shared helpers
   const cards = Array.isArray(deck.cards) ? deck.cards : [];
@@ -135,12 +168,12 @@ export function DeckDetailsView({
               {/* Charts row */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <ManaCurveChart
-                  cards={deck.cards}
+                  cards={enrichedCards.length > 0 ? enrichedCards : deck.cards}
                   showStats={true}
                   title="Mana Curve"
                 />
                 <DeckColorPie
-                  cards={deck.cards}
+                  cards={enrichedCards.length > 0 ? enrichedCards : deck.cards}
                   showLegend={true}
                   size="md"
                   title="Color Distribution"
@@ -177,11 +210,10 @@ export function DeckDetailsView({
                 return (
                   <div
                     key={idx}
-                    className={`flex justify-between text-sm p-2 rounded ${
-                      isMissing
+                    className={`flex justify-between text-sm p-2 rounded ${isMissing
                         ? 'bg-red-900/40 text-red-200 border border-red-700/30'
                         : 'bg-[var(--surface)] text-[var(--text-muted)]'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center gap-3">
                       <span>

@@ -26,6 +26,8 @@ class MtgjsonPriceService {
     this.priceData = new Map();
     // Maps Scryfall ID -> MTGJSON UUID
     this.scryfallToMtgjsonMap = new Map();
+    // Maps normalized card name -> card metadata
+    this.cardDataByName = new Map();
     this.lastFetchTime = null;
     this.isLoading = false;
     this.loadPromise = null;
@@ -36,7 +38,7 @@ class MtgjsonPriceService {
    */
   async initialize() {
     await this.loadCacheFromDisk();
-    
+
     // If cache is stale or empty, refresh in background
     if (this.isCacheStale()) {
       this.refreshPriceData().catch(err => {
@@ -54,10 +56,10 @@ class MtgjsonPriceService {
   }
 
   /**
-   * Check if the service is ready (has loaded Scryfall->MTGJSON mappings)
+   * Check if the service is ready (has loaded Scryfall->MTGJSON mappings and card data)
    */
   isReady() {
-    return this.scryfallToMtgjsonMap.size > 0;
+    return this.scryfallToMtgjsonMap.size > 0 && this.cardDataByName.size > 0;
   }
 
   /**
@@ -67,14 +69,17 @@ class MtgjsonPriceService {
     try {
       const cacheContent = await fs.readFile(CACHE_FILE, 'utf8');
       const cache = JSON.parse(cacheContent);
-      
+
       if (cache.timestamp && cache.prices) {
         this.lastFetchTime = cache.timestamp;
         this.priceData = new Map(Object.entries(cache.prices));
         if (cache.scryfallMap) {
           this.scryfallToMtgjsonMap = new Map(Object.entries(cache.scryfallMap));
         }
-        console.log(`[MTGJSON] Loaded ${this.priceData.size} price entries and ${this.scryfallToMtgjsonMap.size} ID mappings from cache`);
+        if (cache.cardData) {
+          this.cardDataByName = new Map(Object.entries(cache.cardData));
+        }
+        console.log(`[MTGJSON] Loaded ${this.priceData.size} price entries, ${this.scryfallToMtgjsonMap.size} ID mappings, and ${this.cardDataByName.size} card data entries from cache`);
       }
     } catch (err) {
       if (err.code !== 'ENOENT') {
@@ -91,10 +96,11 @@ class MtgjsonPriceService {
       const cache = {
         timestamp: this.lastFetchTime,
         prices: Object.fromEntries(this.priceData),
-        scryfallMap: Object.fromEntries(this.scryfallToMtgjsonMap)
+        scryfallMap: Object.fromEntries(this.scryfallToMtgjsonMap),
+        cardData: Object.fromEntries(this.cardDataByName)
       };
       await fs.writeFile(CACHE_FILE, JSON.stringify(cache), 'utf8');
-      console.log(`[MTGJSON] Saved ${this.priceData.size} price entries and ${this.scryfallToMtgjsonMap.size} ID mappings to cache`);
+      console.log(`[MTGJSON] Saved ${this.priceData.size} price entries, ${this.scryfallToMtgjsonMap.size} ID mappings, and ${this.cardDataByName.size} card data entries to cache`);
     } catch (err) {
       console.error('[MTGJSON] Failed to save cache to disk:', err.message);
     }
@@ -110,7 +116,7 @@ class MtgjsonPriceService {
 
     this.isLoading = true;
     this.loadPromise = this._fetchAllData();
-    
+
     try {
       await this.loadPromise;
     } finally {
@@ -125,7 +131,7 @@ class MtgjsonPriceService {
   async _fetchWithTimeout(url, timeoutMs = PRICES_TIMEOUT_MS) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-    
+
     try {
       const response = await fetch(url, {
         signal: controller.signal,
@@ -150,14 +156,14 @@ class MtgjsonPriceService {
     } catch (err) {
       console.error('[MTGJSON] Error fetching price data. Will attempt to fetch identifiers and preserve cache:', err.message);
     }
-    
+
     try {
       // Fetch identifiers mapping (this is a larger file, so do it separately)
       await this._fetchIdentifiersData();
     } catch (err) {
       console.error('[MTGJSON] Error fetching identifiers data:', err.message);
     }
-    
+
     // Save combined cache to disk, even if price fetch failed
     try {
       await this.saveCacheToDisk();
@@ -171,7 +177,7 @@ class MtgjsonPriceService {
    */
   async _fetchPriceData() {
     console.log('[MTGJSON] Fetching price data from API...');
-    
+
     try {
       const response = await this._fetchWithTimeout(MTGJSON_PRICES_URL, PRICES_TIMEOUT_MS);
 
@@ -180,12 +186,12 @@ class MtgjsonPriceService {
       }
 
       const data = await response.json();
-      
+
       if (data && data.data) {
         // MTGJSON returns { data: { uuid: priceData, ... }, meta: { ... } }
         this.priceData = new Map(Object.entries(data.data));
         this.lastFetchTime = Date.now();
-        
+
         console.log(`[MTGJSON] ✓ Loaded ${this.priceData.size} price entries`);
       } else {
         console.warn('[MTGJSON] Invalid price response format from API');
@@ -201,7 +207,7 @@ class MtgjsonPriceService {
    */
   async _fetchIdentifiersData() {
     console.log('[MTGJSON] Fetching identifiers data from API (streaming parse)...');
-    
+
     try {
       const response = await this._fetchWithTimeout(MTGJSON_IDENTIFIERS_URL, IDENTIFIERS_TIMEOUT_MS);
 
@@ -211,8 +217,9 @@ class MtgjsonPriceService {
 
       // Use streaming parser to avoid loading entire file into memory
       const newMap = new Map();
+      const newCardDataMap = new Map();
       let processedCount = 0;
-      
+
       return new Promise((resolve, reject) => {
         const pipeline = chain([
           response.body,
@@ -227,12 +234,30 @@ class MtgjsonPriceService {
             if (data.key.startsWith('data.')) {
               const mtgjsonUuid = data.key.substring(5); // Remove 'data.' prefix
               const cardData = data.value;
-              
+
               const scryfallId = cardData?.identifiers?.scryfallId;
               if (scryfallId && this.priceData.has(mtgjsonUuid)) {
                 newMap.set(scryfallId, mtgjsonUuid);
               }
-              
+
+              // Also store card metadata for local lookups
+              if (cardData && cardData.name) {
+                const normalizedKey = cardData.name.toLowerCase().trim();
+                // Store minimal metadata for analysis components
+                if (!newCardDataMap.has(normalizedKey)) {
+                  newCardDataMap.set(normalizedKey, {
+                    nameList: [cardData.name], // In case of split cards
+                    cmc: cardData.manaValue ?? 0,
+                    manaCost: cardData.manaCost || '',
+                    colors: cardData.colors || [],
+                    types: cardData.types || [],
+                    typeLine: cardData.type || '',
+                    colorIdentity: cardData.colorIdentity || [],
+                    rarity: cardData.rarity || 'common'
+                  });
+                }
+              }
+
               processedCount++;
               if (processedCount % 50000 === 0) {
                 console.log(`[MTGJSON] Processed ${processedCount} identifiers...`);
@@ -245,7 +270,8 @@ class MtgjsonPriceService {
 
         pipeline.on('end', () => {
           this.scryfallToMtgjsonMap = newMap;
-          console.log(`[MTGJSON] ✓ Built ${this.scryfallToMtgjsonMap.size} Scryfall->MTGJSON ID mappings from ${processedCount} total entries`);
+          this.cardDataByName = newCardDataMap;
+          console.log(`[MTGJSON] ✓ Built ${this.scryfallToMtgjsonMap.size} ID mappings and ${this.cardDataByName.size} card data entries from ${processedCount} total entries`);
           resolve();
         });
 
@@ -267,11 +293,11 @@ class MtgjsonPriceService {
    */
   getCardKingdomPriceByScryfallId(scryfallId) {
     if (!scryfallId) return null;
-    
+
     // Look up MTGJSON UUID from Scryfall ID
     const mtgjsonUuid = this.scryfallToMtgjsonMap.get(scryfallId);
     if (!mtgjsonUuid) return null;
-    
+
     return this.getCardKingdomPrice(mtgjsonUuid);
   }
 
@@ -282,7 +308,7 @@ class MtgjsonPriceService {
    */
   getCardKingdomPrice(uuid) {
     if (!uuid) return null;
-    
+
     const priceEntry = this.priceData.get(uuid);
     if (!priceEntry) return null;
 
@@ -326,7 +352,7 @@ class MtgjsonPriceService {
           return !isNaN(price) && price > 0 ? price : null;
         }
       }
-    } catch (err) {}
+    } catch (err) { }
     return null;
   }
 
@@ -348,7 +374,7 @@ class MtgjsonPriceService {
           return !isNaN(price) && price > 0 ? price : null;
         }
       }
-    } catch (err) {}
+    } catch (err) { }
     return null;
   }
 
@@ -365,6 +391,32 @@ class MtgjsonPriceService {
       cardkingdom: this.getCardKingdomPriceNumeric(mtgjsonUuid),
       tcgplayer: this.getTCGPlayerPriceNumeric(mtgjsonUuid)
     };
+  }
+
+  /**
+   * Get card metadata by its name
+   * @param {string} name - The card name
+   * @returns {object|null} - Card metadata or null
+   */
+  getCardDataByName(name) {
+    if (!name) return null;
+    const normalized = name.toLowerCase().trim();
+    return this.cardDataByName.get(normalized) || null;
+  }
+
+  /**
+   * Bulk get card metadata by names
+   * @param {string[]} names - Array of card names
+   * @returns {Object} - Map of name -> metadata
+   */
+  getCardsDataByNames(names) {
+    if (!Array.isArray(names)) return {};
+    const results = {};
+    names.forEach(name => {
+      const data = this.getCardDataByName(name);
+      if (data) results[name] = data;
+    });
+    return results;
   }
 }
 

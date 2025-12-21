@@ -1,4 +1,5 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useCardMetadata } from './useCardMetadata';
 
 /**
  * Custom hook for deck analysis calculations
@@ -9,6 +10,25 @@ export function useDeckAnalysis({ decks, selectedDeckIds, inventoryByName }) {
   const [deckQuantities, setDeckQuantities] = useState(
     selectedDeckIds.reduce((acc, id) => ({ ...acc, [id]: 1 }), {})
   );
+  const [metadataMap, setMetadataMap] = useState({});
+  const { fetchMetadata } = useCardMetadata();
+
+  // Load metadata for all selected decks
+  useEffect(() => {
+    const loadMetadata = async () => {
+      const allCardNames = new Set();
+      decks.filter(d => selectedDeckIds.includes(d.id)).forEach(deck => {
+        (deck.cards || []).forEach(card => allCardNames.add(card.name));
+      });
+
+      if (allCardNames.size === 0) return;
+
+      const metadata = await fetchMetadata(Array.from(allCardNames));
+      setMetadataMap(metadata);
+    };
+
+    loadMetadata();
+  }, [decks, selectedDeckIds, fetchMetadata]);
 
   // Get selected decks
   const selectedDecks = useMemo(() => {
@@ -133,14 +153,18 @@ export function useDeckAnalysis({ decks, selectedDeckIds, inventoryByName }) {
       sharedCards,
       missingFromAll,
       missingCards,
-      cardRequirements: Object.values(cardRequirements),
+      cardRequirements: Object.values(cardRequirements).map(req => ({
+        ...req,
+        metadata: metadataMap[req.name.toLowerCase().trim()] || null
+      })),
       totalCardsNeeded,
       totalCardsOwned,
       completionRate,
       deckStats,
-      estimatedCost
+      estimatedCost,
+      metadataMap // Export for components that need it
     };
-  }, [selectedDecks, deckQuantities, inventoryByName]);
+  }, [selectedDecks, deckQuantities, inventoryByName, metadataMap]);
 
   // Handle quantity slider change
   const handleQuantityChange = useCallback((deckId, quantity) => {

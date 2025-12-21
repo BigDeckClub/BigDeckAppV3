@@ -12,6 +12,7 @@ import {
   SharedCardsView,
   BreakdownView
 } from './DeckAnalysisView/index';
+import { ManaCurveChart, DeckColorPie } from '../ui';
 
 /**
  * DeckAnalysisView - Advanced multi-deck analysis and comparison
@@ -78,11 +79,10 @@ export function DeckAnalysisView({ decks, selectedDeckIds, inventoryByName }) {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all text-sm font-medium ${
-                activeTab === tab.id
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all text-sm font-medium ${activeTab === tab.id
                   ? 'bg-ui-primary text-ui-primary-foreground shadow-lg'
                   : 'bg-ui-surface text-ui-muted hover:bg-ui-surface/60'
-              }`}
+                }`}
             >
               <tab.icon className="w-4 h-4" />
               {tab.label}
@@ -108,6 +108,36 @@ export function DeckAnalysisView({ decks, selectedDeckIds, inventoryByName }) {
             isExpanded={expandedSections.quantities}
             onToggle={() => toggleSection('quantities')}
           />
+
+          {/* Aggregated Charts Section */}
+          <div className="bg-ui-card rounded-lg border border-ui-border p-6 mt-4">
+            <h3 className="text-xl font-bold text-teal-300 mb-6 flex items-center gap-2">
+              <BarChart3 className="w-6 h-6" />
+              Aggregated Analysis (All Selected Decks)
+            </h3>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <ManaCurveChart
+                cards={selectedDecks.flatMap(d => (d.cards || []).map(c => {
+                  const meta = analysis.metadataMap?.[c.name.toLowerCase().trim()];
+                  const qty = (c.quantity || 1) * (deckQuantities[d.id] || 1);
+                  return meta ? { ...c, ...meta, quantity: qty } : { ...c, quantity: qty };
+                }))}
+                showStats={true}
+                title="Aggregated Mana Curve"
+              />
+              <DeckColorPie
+                cards={selectedDecks.flatMap(d => (d.cards || []).map(c => {
+                  const meta = analysis.metadataMap?.[c.name.toLowerCase().trim()];
+                  const qty = (c.quantity || 1) * (deckQuantities[d.id] || 1);
+                  return meta ? { ...c, ...meta, quantity: qty } : { ...c, quantity: qty };
+                }))}
+                showLegend={true}
+                size="md"
+                title="Aggregated Color Distribution"
+              />
+            </div>
+          </div>
 
           <DeckAnalysisStats
             deckStats={analysis.deckStats}

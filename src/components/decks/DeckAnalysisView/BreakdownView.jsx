@@ -13,6 +13,8 @@ export const BreakdownView = memo(function BreakdownView({
   const [sortBy, setSortBy] = useState('missing');
   const [sortOrder, setSortOrder] = useState('desc');
   const [filterMissingOnly, setFilterMissingOnly] = useState(false);
+  const [filterColor, setFilterColor] = useState('all');
+  const [filterType, setFilterType] = useState('all');
   const [hoveredCard, setHoveredCard] = useState(null);
 
   // Filter and sort cards
@@ -30,6 +32,21 @@ export const BreakdownView = memo(function BreakdownView({
     // Apply missing only filter
     if (filterMissingOnly) {
       cards = cards.filter(card => card.totalRequired > card.available);
+    }
+
+    // Apply color filter
+    if (filterColor !== 'all') {
+      cards = cards.filter(card =>
+        card.metadata?.colors?.includes(filterColor) ||
+        (filterColor === 'C' && card.metadata?.colors?.length === 0)
+      );
+    }
+
+    // Apply type filter
+    if (filterType !== 'all') {
+      cards = cards.filter(card =>
+        card.metadata?.types?.some(t => t.toLowerCase() === filterType.toLowerCase())
+      );
     }
 
     // Apply sorting
@@ -103,6 +120,32 @@ export const BreakdownView = memo(function BreakdownView({
             Missing only
           </label>
           <select
+            value={filterColor}
+            onChange={(e) => setFilterColor(e.target.value)}
+            className="px-3 py-2 bg-ui-card/50 border border-ui-border rounded-lg text-ui-text focus:border-teal-500 focus:outline-none"
+          >
+            <option value="all">All Colors</option>
+            <option value="W">White</option>
+            <option value="U">Blue</option>
+            <option value="B">Black</option>
+            <option value="R">Red</option>
+            <option value="G">Green</option>
+            <option value="C">Colorless</option>
+          </select>
+          <select
+            value={filterType}
+            onChange={(e) => setFilterType(e.target.value)}
+            className="px-3 py-2 bg-ui-card/50 border border-ui-border rounded-lg text-ui-text focus:border-teal-500 focus:outline-none"
+          >
+            <option value="all">All Types</option>
+            <option value="Creature">Creatures</option>
+            <option value="Instant">Instants</option>
+            <option value="Sorcery">Sorceries</option>
+            <option value="Artifact">Artifacts</option>
+            <option value="Enchantment">Enchantments</option>
+            <option value="Land">Lands</option>
+          </select>
+          <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
             className="px-3 py-2 bg-ui-card/50 border border-ui-border rounded-lg text-ui-text focus:border-teal-500 focus:outline-none"
@@ -134,9 +177,8 @@ export const BreakdownView = memo(function BreakdownView({
             return (
               <div
                 key={idx}
-                className={`flex items-center justify-between p-3 border-b border-ui-border last:border-0 hover:bg-ui-surface/30 transition-colors ${
-                  isComplete ? 'bg-green-900/10' : ''
-                }`}
+                className={`flex items-center justify-between p-3 border-b border-ui-border last:border-0 hover:bg-ui-surface/30 transition-colors ${isComplete ? 'bg-green-900/10' : ''
+                  }`}
                 onMouseEnter={(e) => setHoveredCard({ name: card.name, x: e.clientX, y: e.clientY })}
                 onMouseLeave={() => setHoveredCard(null)}
               >

@@ -19,11 +19,12 @@ import diagnosticsRouter from './diagnostics.js';
 import scryfallProxyRouter from './scryfallProxy.js';
 import ebayRouter from './ebay.js';
 import autobuyRouter from './autobuy.js';
+import cardsRouter from './cards.js';
 
 export function registerRoutes(app) {
   // Health check (no /api prefix)
   app.use(healthRouter);
-  
+
   // Proxy to external Scryfall API to avoid browser CORS issues
   // Mount the proxy directly at /api/external/scryfall so subpaths map cleanly.
   app.use('/api/external/scryfall', scryfallProxyRouter);
@@ -46,6 +47,7 @@ export function registerRoutes(app) {
   app.use('/api', adminRouter);
   app.use('/api', ebayRouter);
   app.use('/api', autobuyRouter);
+  app.use('/api', cardsRouter);
   // Internal diagnostics (no API prefix)
   app.use('/internal', diagnosticsRouter);
 }
