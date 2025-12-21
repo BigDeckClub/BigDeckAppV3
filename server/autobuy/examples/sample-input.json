@@ -1,12 +1,136 @@
 {
   "demands": [
-    { "cardId": "C1", "quantity": 2 },
-    { "cardId": "C2", "quantity": 1 }
+    {
+      "cardId": "f0bb4a5c-0c03-4d6b-94e2-d8df6f3d08e7",
+      "quantity": 4
+    },
+    {
+      "cardId": "6a9a0b57-8c84-40da-b4b3-cb8c1a22c9bf",
+      "quantity": 2
+    },
+    {
+      "cardId": "1c2f4fae-a4ff-4c8b-9f3d-c8e1e0a9c0f2",
+      "quantity": 1
+    },
+    {
+      "cardId": "e37b0e67-9c2d-4a3e-b589-1a5c8f9e0b3d",
+      "quantity": 3
+    }
   ],
   "offers": [
-    { "marketplace": "TCG", "sellerId": "S1", "cardId": "C1", "price": 3, "quantityAvailable": 2, "shipping": { "base": 5, "freeAt": 20 } },
-    { "marketplace": "TCG", "sellerId": "S2", "cardId": "C1", "price": 4, "quantityAvailable": 2, "shipping": { "base": 0 } },
-    { "marketplace": "TCG", "sellerId": "S1", "cardId": "C2", "price": 6, "quantityAvailable": 1, "shipping": { "base": 5, "freeAt": 20 } }
+    {
+      "marketplace": "TCG",
+      "sellerId": "TopDeckHeroes",
+      "cardId": "f0bb4a5c-0c03-4d6b-94e2-d8df6f3d08e7",
+      "price": 2.99,
+      "quantityAvailable": 8,
+      "sellerRating": 0.98,
+      "shipping": {
+        "base": 2.99,
+        "freeAt": 35
+      }
+    },
+    {
+      "marketplace": "TCG",
+      "sellerId": "TopDeckHeroes",
+      "cardId": "6a9a0b57-8c84-40da-b4b3-cb8c1a22c9bf",
+      "price": 4.50,
+      "quantityAvailable": 3,
+      "sellerRating": 0.98,
+      "shipping": {
+        "base": 2.99,
+        "freeAt": 35
+      }
+    },
+    {
+      "marketplace": "TCG",
+      "sellerId": "CardCollectorsUnited",
+      "cardId": "f0bb4a5c-0c03-4d6b-94e2-d8df6f3d08e7",
+      "price": 3.25,
+      "quantityAvailable": 4,
+      "sellerRating": 0.95,
+      "shipping": {
+        "base": 0.99,
+        "freeAt": 25
+      }
+    },
+    {
+      "marketplace": "TCG",
+      "sellerId": "CardCollectorsUnited",
+      "cardId": "1c2f4fae-a4ff-4c8b-9f3d-c8e1e0a9c0f2",
+      "price": 12.00,
+      "quantityAvailable": 2,
+      "sellerRating": 0.95,
+      "shipping": {
+        "base": 0.99,
+        "freeAt": 25
+      }
+    },
+    {
+      "marketplace": "TCG",
+      "sellerId": "MTGDeals",
+      "cardId": "e37b0e67-9c2d-4a3e-b589-1a5c8f9e0b3d",
+      "price": 1.50,
+      "quantityAvailable": 10,
+      "sellerRating": 0.92,
+      "shipping": {
+        "base": 3.99
+      }
+    },
+    {
+      "marketplace": "TCG",
+      "sellerId": "CardKingdomDirect",
+      "cardId": "f0bb4a5c-0c03-4d6b-94e2-d8df6f3d08e7",
+      "price": 3.50,
+      "quantityAvailable": 20,
+      "sellerRating": 1.0,
+      "shipping": {
+        "base": 2.49,
+        "freeAt": 100
+      }
+    }
   ],
-  "cardKingdomPrices": { "C1": 8, "C2": 7 }
+  "hotList": [
+    {
+      "cardId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "IPS": 0.92,
+      "targetInventory": 8
+    },
+    {
+      "cardId": "b2c3d4e5-f6a7-8901-bcde-f23456789012",
+      "IPS": 0.75,
+      "targetInventory": 4
+    }
+  ],
+  "cardKingdomPrices": {
+    "f0bb4a5c-0c03-4d6b-94e2-d8df6f3d08e7": 3.99,
+    "6a9a0b57-8c84-40da-b4b3-cb8c1a22c9bf": 5.99,
+    "1c2f4fae-a4ff-4c8b-9f3d-c8e1e0a9c0f2": 14.99,
+    "e37b0e67-9c2d-4a3e-b589-1a5c8f9e0b3d": 1.99,
+    "a1b2c3d4-e5f6-7890-abcd-ef1234567890": 2.49,
+    "b2c3d4e5-f6a7-8901-bcde-f23456789012": 3.49
+  },
+  "currentInventory": {
+    "f0bb4a5c-0c03-4d6b-94e2-d8df6f3d08e7": 2,
+    "6a9a0b57-8c84-40da-b4b3-cb8c1a22c9bf": 0,
+    "1c2f4fae-a4ff-4c8b-9f3d-c8e1e0a9c0f2": 0,
+    "e37b0e67-9c2d-4a3e-b589-1a5c8f9e0b3d": 1,
+    "a1b2c3d4-e5f6-7890-abcd-ef1234567890": 3,
+    "b2c3d4e5-f6a7-8901-bcde-f23456789012": 1
+  },
+  "directives": [
+    {
+      "cardId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "mode": "FORCE",
+      "quantity": 2
+    }
+  ],
+  "budget": {
+    "maxTotalSpend": 150,
+    "maxPerSeller": 75,
+    "maxPerCard": 25,
+    "maxSpeculativeSpend": 30,
+    "reserveBudgetPercent": 15,
+    "budgetMode": "SOFT"
+  }
 }

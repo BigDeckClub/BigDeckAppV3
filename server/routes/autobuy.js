@@ -3,6 +3,7 @@ import fs from 'fs';
 import { asyncHandler } from '../middleware/asyncHandler.js';
 import path from 'path';
 import { pathToFileURL } from 'url';
+import { pool } from '../db/pool.js';
 
 // Marketplace module will be loaded dynamically after build
 import { z } from 'zod';
@@ -12,6 +13,12 @@ const router = express.Router();
 
 // Lightweight per-route body parser with size limit to avoid huge uploads
 router.use('/autobuy', express.json({ limit: '200kb' }));
+
+// Attach database pool to request for all autobuy routes
+router.use(/^\/autobuy/, (req, res, next) => {
+  req.db = pool;
+  next();
+});
 
 // Validation schemas (local copies for reference, main validation in validation.js)
 const demandSchema = z.object({ cardId: z.string(), quantity: z.number().int().nonnegative(), maxPrice: z.number().nonnegative().optional() });
@@ -316,10 +323,8 @@ router.get('/autobuy/status', asyncHandler(async (req, res) => {
  */
 router.get('/autobuy/substitution-groups', asyncHandler(async (req, res) => {
   try {
-    const db = req.db;
-    if (!db) {
-      return res.status(500).json({ error: 'Database not available' });
-    }
+    // Use pool directly since req.db may not be attached
+    const db = req.db || pool;
 
     // Load substitution service module
     const servicePath = path.join(process.cwd(), 'dist', 'server', 'autobuy', 'substitutionService.js');
@@ -597,33 +602,8 @@ router.get('/autobuy/analytics/runs', asyncHandler(async (req, res) => {
   res.json({ runs });
 }));
 
-/**
- * GET /api/autobuy/analytics/accuracy
- */
-router.get('/autobuy/analytics/accuracy', asyncHandler(async (req, res) => {
-  const days = parseInt(req.query.days) || 30;
-  const { AnalyticsService } = await import(pathToFileURL(path.join(process.cwd(), 'dist', 'server', 'autobuy', 'analytics.js')).href);
-  const analytics = new AnalyticsService(req.db);
-  const metrics = await analytics.getAccuracyMetrics(days);
-  res.json(metrics);
-}));
-
-/**
- * GET /api/autobuy/analytics/suggestions
- */
-router.get('/autobuy/analytics/suggestions', asyncHandler(async (req, res) => {
-  const { AnalyticsService } = await import(pathToFileURL(path.join(process.cwd(), 'dist', 'server', 'autobuy', 'analytics.js')).href);
-  const analytics = new AnalyticsService(req.db);
-  const suggestions = await analytics.getSuggestions();
-  res.json({ suggestions });
-}));
-
-/**
- * GET /api/autobuy/analytics/sell-through
- */
-router.get('/autobuy/analytics/sell-through', asyncHandler(async (req, res) => {
-  res.json({ sellThroughRate: 0, totalSold: 0, totalPurchased: 0 });
-}));
+// NOTE: /analytics/accuracy, /analytics/suggestions, and /analytics/sell-through
+// routes are defined below (after loadAnalyticsService helper) with better error handling
 
 
 /**
@@ -796,8 +776,13 @@ async function loadAnalyticsService() {
   const analyticsPath = path.join(process.cwd(), 'dist', 'server', 'autobuy', 'analyticsService.js');
   try {
     const mod = await import(pathToFileURL(analyticsPath).href);
-    return mod.createAnalyticsService || mod.default?.createAnalyticsService;
+    // analyticsService.ts exports the class as default
+    const AnalyticsService = mod.default || mod.AnalyticsService;
+    if (!AnalyticsService) return null;
+    // Return a factory function that creates service instances
+    return (db) => new AnalyticsService(db);
   } catch (e) {
+    console.error('Failed to load analytics service:', e.message);
     return null;
   }
 }

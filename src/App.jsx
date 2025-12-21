@@ -225,7 +225,7 @@ function MTGInventoryTrackerContent() {
             <SettingsTab inventory={inventory} />
           </Suspense>
         )}
-        {activeTab === "templates" && !isLoading && (
+        {activeTab === "marketplace" && !isLoading && (
           <Suspense fallback={<TabLoadingSpinner />}>
             <AdminTab />
           </Suspense>

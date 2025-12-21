@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import AnalyticsDashboard from './autobuy/AnalyticsDashboard';
+import SubstitutionGroupsManager from './autobuy/SubstitutionGroupsManager';
+import SeasonalityManager from './autobuy/SeasonalityManager';
 import {
   ShoppingCart,
   Package,
@@ -20,7 +22,9 @@ import {
   AlertCircle,
   Info,
   BarChart3,
-  LayoutDashboard
+  LayoutDashboard,
+  Layers,
+  Calendar,
 } from 'lucide-react';
 
 /**
@@ -33,9 +37,16 @@ import {
  * - Deep links to marketplace carts
  * - Analytics Dashboard for tracking performance
  */
-export function AutobuyTab({ inventory = [], decks = [] }) {
-  // User preferences state
-  const [preferences, setPreferences] = useState({
+// Stable empty arrays to avoid infinite re-renders when props are undefined
+const EMPTY_ARRAY = [];
+
+export function AutobuyTab({ inventory, decks }) {
+  // Use stable empty arrays when props are undefined to prevent infinite re-renders
+  const safeInventory = inventory ?? EMPTY_ARRAY;
+  const safeDecks = decks ?? EMPTY_ARRAY;
+
+  // Default preferences
+  const defaultPreferences = {
     priceThresholdPercent: 100,    // % of CK price willing to pay
     minSellerRating: 0.95,         // Minimum seller rating (0-1)
     maxSellersPerOrder: 5,         // Max number of sellers to order from
@@ -51,25 +62,49 @@ export function AutobuyTab({ inventory = [], decks = [] }) {
     reserveBudgetPercent: 10,      // Keep X% for Card Kingdom fallback
     enableBudgetLimits: false,     // Toggle budget enforcement
     budgetMode: 'STRICT',          // 'STRICT' or 'SOFT'
+  };
+
+  // Load preferences from localStorage on mount
+  const [preferences, setPreferences] = useState(() => {
+    try {
+      const saved = localStorage.getItem('autobuy-preferences');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Merge with defaults to handle new fields added over time
+        return { ...defaultPreferences, ...parsed };
+      }
+    } catch (e) {
+      console.warn('Could not load autobuy preferences:', e);
+    }
+    return defaultPreferences;
   });
 
+  // Save preferences to localStorage when they change
+  useEffect(() => {
+    try {
+      localStorage.setItem('autobuy-preferences', JSON.stringify(preferences));
+    } catch (e) {
+      console.warn('Could not save autobuy preferences:', e);
+    }
+  }, [preferences]);
+
   // State
-  const [activeView, setActiveView] = useState('optimizer'); // 'optimizer' | 'analytics'
+  const [activeView, setActiveView] = useState('optimizer'); // 'optimizer' | 'analytics' | 'config'
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [plan, setPlan] = useState(null);
-  const [demandSummary, setDemandSummary] = useState(null);
   const [expandedBaskets, setExpandedBaskets] = useState(new Set());
   const [showSettings, setShowSettings] = useState(false);
 
-  // Calculate demand summary from inventory and decks
-  const calculateDemandSummary = useCallback(() => {
-    const alertCards = inventory.filter(item =>
+  // Calculate demand summary from inventory and decks using useMemo
+  // This avoids the useEffect -> setState cycle that was causing infinite re-renders
+  const demandSummary = useMemo(() => {
+    const alertCards = safeInventory.filter(item =>
       item.low_inventory_alert &&
       item.quantity < (item.low_inventory_threshold || 0)
     );
 
-    const deckCards = decks
+    const deckCards = safeDecks
       .filter(d => d.status === 'active' || (preferences.includeQueuedDecks && d.status === 'queued'))
       .flatMap(d => d.cards || []);
 
@@ -82,14 +117,10 @@ export function AutobuyTab({ inventory = [], decks = [] }) {
       alertCards: alertCards.length,
       deckCards: deckCards.length,
       uniqueCardsNeeded,
-      totalDecks: decks.filter(d => d.status === 'active').length,
-      queuedDecks: decks.filter(d => d.status === 'queued').length,
+      totalDecks: safeDecks.filter(d => d.status === 'active').length,
+      queuedDecks: safeDecks.filter(d => d.status === 'queued').length,
     };
-  }, [inventory, decks, preferences.includeQueuedDecks]);
-
-  useEffect(() => {
-    setDemandSummary(calculateDemandSummary());
-  }, [calculateDemandSummary]);
+  }, [safeInventory, safeDecks, preferences.includeQueuedDecks]);
 
   // Run the autobuy optimizer
   const runOptimizer = async () => {
@@ -99,7 +130,7 @@ export function AutobuyTab({ inventory = [], decks = [] }) {
 
     try {
       // Build demands from inventory alerts
-      const demands = inventory
+      const demands = safeInventory
         .filter(item => item.low_inventory_alert && item.quantity < (item.low_inventory_threshold || 0))
         .map(item => ({
           cardId: item.scryfall_id || item.card_id || item.id?.toString(),
@@ -108,7 +139,7 @@ export function AutobuyTab({ inventory = [], decks = [] }) {
 
       // Build CK prices from inventory
       const cardKingdomPrices = {};
-      inventory.forEach(item => {
+      safeInventory.forEach(item => {
         if (item.ck_price && (item.scryfall_id || item.card_id)) {
           cardKingdomPrices[item.scryfall_id || item.card_id] = item.ck_price;
         }
@@ -116,7 +147,7 @@ export function AutobuyTab({ inventory = [], decks = [] }) {
 
       // Build current inventory map
       const currentInventory = {};
-      inventory.forEach(item => {
+      safeInventory.forEach(item => {
         const id = item.scryfall_id || item.card_id;
         if (id) {
           currentInventory[id] = item.quantity || 0;
@@ -124,7 +155,7 @@ export function AutobuyTab({ inventory = [], decks = [] }) {
       });
 
       // Build hot list from high-value cards with alerts
-      const hotList = inventory
+      const hotList = safeInventory
         .filter(item => item.low_inventory_alert && item.ck_price > 1)
         .map(item => ({
           cardId: item.scryfall_id || item.card_id,
@@ -132,9 +163,45 @@ export function AutobuyTab({ inventory = [], decks = [] }) {
           targetInventory: item.low_inventory_threshold || 4,
         }));
 
+      // Fetch real marketplace offers for demanded cards
+      let offers = [];
+      const cardIds = demands.map(d => d.cardId).filter(Boolean);
+      if (cardIds.length > 0) {
+        try {
+          // Also include card lookup info for better marketplace matching
+          const cardLookups = safeInventory
+            .filter(item => cardIds.includes(item.scryfall_id || item.card_id))
+            .map(item => ({
+              scryfallId: item.scryfall_id || item.card_id,
+              cardName: item.name || item.card_name,
+              setCode: item.set_code || item.set?.editioncode,
+            }));
+
+          const offerResp = await fetch('/api/autobuy/fetch-offers', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cardIds, cardLookups }),
+          });
+
+          if (offerResp.ok) {
+            const { offers: fetchedOffers, errors } = await offerResp.json();
+            offers = fetchedOffers || [];
+            // Log any marketplace errors but don't fail the request
+            if (errors?.length > 0) {
+              console.warn('Some marketplaces returned errors:', errors);
+            }
+          } else {
+            console.warn('Failed to fetch marketplace offers, proceeding with CK fallback');
+          }
+        } catch (offerErr) {
+          console.warn('Could not fetch marketplace offers:', offerErr);
+          // Continue without offers - optimizer will use CK fallback
+        }
+      }
+
       const requestBody = {
         demands,
-        offers: [], // Would be fetched from marketplace APIs
+        offers,
         hotList,
         cardKingdomPrices,
         currentInventory,
@@ -300,6 +367,16 @@ export function AutobuyTab({ inventory = [], decks = [] }) {
           >
             <BarChart3 className="w-4 h-4" />
             Analytics
+          </button>
+          <button
+            onClick={() => setActiveView('config')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeView === 'config'
+              ? 'btn-primary shadow-md'
+              : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--card-hover)]'
+              }`}
+          >
+            <Layers className="w-4 h-4" />
+            Config
           </button>
         </div>
 
@@ -877,8 +954,14 @@ export function AutobuyTab({ inventory = [], decks = [] }) {
             </div>
           )}
         </>
-      ) : (
+      ) : activeView === 'analytics' ? (
         <AnalyticsDashboard />
+      ) : (
+        <div className="space-y-8">
+          <SubstitutionGroupsManager />
+          <div className="border-t border-[var(--border)]" />
+          <SeasonalityManager />
+        </div>
       )}
     </div>
   );

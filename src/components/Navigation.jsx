@@ -26,7 +26,7 @@ const NAV_ITEMS = [
   { id: 'autobuy', icon: ShoppingCart, label: 'Autobuy' },
   { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { id: 'decks', icon: BookOpen, label: 'Decks' },
-  { id: 'templates', icon: FileText, label: 'Templates' },
+  { id: 'marketplace', icon: FileText, label: 'Marketplace' },
   { id: 'settings', icon: Settings, label: 'Settings' },
 ];
 

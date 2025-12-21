@@ -24,6 +24,7 @@ export const offerSchema = z.object({
   quantityAvailable: z.number().int().nonnegative(),
   marketplace: z.string().optional(),
   shipping: shippingSchema.optional(),
+  sellerRating: z.number().min(0).max(1).optional(),
 }).strict()
 
 export const hotSchema = z.object({
