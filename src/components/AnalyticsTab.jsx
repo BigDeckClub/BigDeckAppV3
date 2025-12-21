@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { BarChart3, TrendingUp, Package, DollarSign, Filter, Activity, Shield, Bell, Layers, ShoppingCart, CreditCard } from 'lucide-react';
+import { BarChart3, TrendingUp, Package, DollarSign, Filter, Activity, Shield, Bell, Library, ShoppingCart, Fingerprint, History, Inbox, Tag, ShoppingBag } from 'lucide-react';
 import { ChangeLogTab } from './ChangeLogTab';
 import { ActivityFeed } from './ActivityFeed';
 import { AuditLog } from './AuditLog';
@@ -49,7 +49,7 @@ export const AnalyticsTab = ({ inventory }) => {
           lifetimeTotalCards: 0,
           lifetimeTotalValue: 0
         });
-      } catch (error) {}
+      } catch (error) { }
     };
     fetchAnalytics();
   }, []);
@@ -108,11 +108,10 @@ export const AnalyticsTab = ({ inventory }) => {
         </h2>
         <button
           onClick={() => setShowHistory(!showHistory)}
-          className={`px-4 py-2 rounded-lg font-semibold flex items-center gap-2 transition-all ${
-            showHistory
+          className={`px-4 py-2 rounded-lg font-semibold flex items-center gap-2 transition-all ${showHistory
               ? 'bg-amber-600 text-white shadow-lg'
               : 'bg-[var(--surface)] text-[var(--text-muted)] hover:bg-[var(--muted-surface)]'
-          }`}
+            }`}
         >
           <Bell className="w-4 h-4" />
           Alerts & History
@@ -130,11 +129,10 @@ export const AnalyticsTab = ({ inventory }) => {
                 <button
                   key={tab.id}
                   onClick={() => setHistoryTab(tab.id)}
-                  className={`flex-1 px-4 py-2.5 rounded-md font-medium text-sm flex items-center justify-center gap-2 transition-all ${
-                    historyTab === tab.id
+                  className={`flex-1 px-4 py-2.5 rounded-md font-medium text-sm flex items-center justify-center gap-2 transition-all ${historyTab === tab.id
                       ? 'bg-[var(--bda-primary)] text-[var(--bda-primary-foreground)] shadow-md'
                       : 'text-[var(--bda-muted)] hover:text-[var(--bda-text)] hover:bg-[var(--card-hover)]'
-                  }`}
+                    }`}
                 >
                   <IconComponent className="w-4 h-4" />
                   <span className="hidden sm:inline">{tab.label}</span>
@@ -146,11 +144,11 @@ export const AnalyticsTab = ({ inventory }) => {
           {/* Sub-tab Content */}
           <div className="bg-[var(--bda-surface)] border border-[var(--bda-border)] rounded-lg p-4">
             <h3 className="text-xl font-bold text-[var(--bda-heading)] mb-4 flex items-center gap-2">
-              {historyTabs.find(t => t.id === historyTab)?.icon && 
+              {historyTabs.find(t => t.id === historyTab)?.icon &&
                 React.createElement(historyTabs.find(t => t.id === historyTab).icon, { className: "w-5 h-5" })}
               {historyTabs.find(t => t.id === historyTab)?.label}
             </h3>
-            
+
             {historyTab === 'alerts' && <AlertSettings inventory={inventory} />}
             {historyTab === 'changes' && <ChangeLogTab />}
             {historyTab === 'activity' && <ActivityFeed />}
@@ -166,37 +164,37 @@ export const AnalyticsTab = ({ inventory }) => {
               <StatsCard
                 title="Total Cards"
                 value={formatNumber((cardMetrics && cardMetrics.totalCards) ?? 0)}
-                icon={Layers}
+                icon={Library}
                 color="teal"
               />
               <StatsCard
                 title="Available"
                 value={formatNumber(totalAvailable ?? 0)}
-                icon={Package}
+                icon={Inbox}
                 color="blue"
               />
               <StatsCard
                 title="Unique Cards"
                 value={formatNumber((cardMetrics && cardMetrics.uniqueCards) ?? 0)}
-                icon={CreditCard}
+                icon={Fingerprint}
                 color="slate"
               />
               <StatsCard
                 title="Sold (60d)"
                 value={formatNumber((cardMetrics && cardMetrics.totalSoldLast60d) ?? 0)}
-                icon={ShoppingCart}
+                icon={Tag}
                 color="red"
               />
               <StatsCard
                 title="Purchased (60d)"
                 value={formatNumber((cardMetrics && cardMetrics.totalPurchasedLast60d) ?? 0)}
-                icon={TrendingUp}
+                icon={ShoppingBag}
                 color="emerald"
               />
               <StatsCard
                 title="Lifetime Sold"
                 value={formatNumber((cardMetrics && cardMetrics.lifetimeTotalCards) ?? 0)}
-                icon={BarChart3}
+                icon={History}
                 color="amber"
               />
             </div>
@@ -228,75 +226,75 @@ export const AnalyticsTab = ({ inventory }) => {
             </div>
           </div>
 
-      {/* Cards by Folder */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <div className="bg-[var(--bda-surface)] border border-[var(--bda-border)] rounded-lg p-4">
-          <h3 className="text-lg font-semibold text-[var(--bda-heading)] mb-4 flex items-center gap-2">
-            <Package className="w-4 h-4 text-[var(--bda-primary)]" />
-            By Folder
-          </h3>
-          <div className="space-y-2">
-            {Object.entries(byFolder).map(([folder, data]) => (
-              <div key={folder} className="flex justify-between items-center text-sm p-2 bg-[var(--input-bg)] rounded">
-                <span className="text-[var(--bda-muted)]">{folder}</span>
-                <div className="flex gap-3">
-                  <span className="text-[var(--bda-primary)] font-semibold">{data.count} cards</span>
-                  <span className="text-[var(--bda-text)]">${data.value.toFixed(2)}</span>
-                </div>
+          {/* Cards by Folder */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <div className="bg-[var(--bda-surface)] border border-[var(--bda-border)] rounded-lg p-4">
+              <h3 className="text-lg font-semibold text-[var(--bda-heading)] mb-4 flex items-center gap-2">
+                <Package className="w-4 h-4 text-[var(--bda-primary)]" />
+                By Folder
+              </h3>
+              <div className="space-y-2">
+                {Object.entries(byFolder).map(([folder, data]) => (
+                  <div key={folder} className="flex justify-between items-center text-sm p-2 bg-[var(--input-bg)] rounded">
+                    <span className="text-[var(--bda-muted)]">{folder}</span>
+                    <div className="flex gap-3">
+                      <span className="text-[var(--bda-primary)] font-semibold">{data.count} cards</span>
+                      <span className="text-[var(--bda-text)]">${data.value.toFixed(2)}</span>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
+            </div>
 
-        {/* Top Cards */}
-        <div className="bg-[var(--bda-surface)] border border-[var(--bda-border)] rounded-lg p-4">
-          <h3 className="text-lg font-semibold text-[var(--bda-heading)] mb-4 flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-[var(--bda-primary)]" />
-            Top 5 Valuable
-          </h3>
-          <div className="space-y-2">
-            {topCards.map((card, idx) => (
-              <div key={card.id} className="flex justify-between items-center text-sm p-2 bg-[var(--input-bg)] rounded">
-                <span className="text-[var(--bda-muted)]">{idx + 1}. {card.name}</span>
-                <div className="text-[var(--bda-text)] font-semibold">${((card.quantity || 0) * (parseFloat(card.purchase_price) || 0)).toFixed(2)}</div>
+            {/* Top Cards */}
+            <div className="bg-[var(--bda-surface)] border border-[var(--bda-border)] rounded-lg p-4">
+              <h3 className="text-lg font-semibold text-[var(--bda-heading)] mb-4 flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-[var(--bda-primary)]" />
+                Top 5 Valuable
+              </h3>
+              <div className="space-y-2">
+                {topCards.map((card, idx) => (
+                  <div key={card.id} className="flex justify-between items-center text-sm p-2 bg-[var(--input-bg)] rounded">
+                    <span className="text-[var(--bda-muted)]">{idx + 1}. {card.name}</span>
+                    <div className="text-[var(--bda-text)] font-semibold">${((card.quantity || 0) * (parseFloat(card.purchase_price) || 0)).toFixed(2)}</div>
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
           </div>
-        </div>
-      </div>
 
-      {/* Value by Set */}
-      <div className="bg-[var(--bda-surface)] border border-[var(--bda-border)] rounded-lg p-4">
-        <h3 className="text-lg font-semibold text-[var(--bda-heading)] mb-4 flex items-center gap-2">
-          <DollarSign className="w-4 h-4 text-[var(--bda-primary)]" />
-          Value by Set
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-          {Object.entries(bySet)
-            .sort((a, b) => b[1].value - a[1].value)
-            .map(([set, data]) => (
-              <div key={set} className="p-2 bg-[var(--input-bg)] rounded text-sm">
-                <div className="font-semibold text-[var(--bda-heading)]">{set}</div>
-                <div className="text-xs text-[var(--bda-muted)]">{data.count} cards • ${data.value.toFixed(2)}</div>
+          {/* Value by Set */}
+          <div className="bg-[var(--bda-surface)] border border-[var(--bda-border)] rounded-lg p-4">
+            <h3 className="text-lg font-semibold text-[var(--bda-heading)] mb-4 flex items-center gap-2">
+              <DollarSign className="w-4 h-4 text-[var(--bda-primary)]" />
+              Value by Set
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+              {Object.entries(bySet)
+                .sort((a, b) => b[1].value - a[1].value)
+                .map(([set, data]) => (
+                  <div key={set} className="p-2 bg-[var(--input-bg)] rounded text-sm">
+                    <div className="font-semibold text-[var(--bda-heading)]">{set}</div>
+                    <div className="text-xs text-[var(--bda-muted)]">{data.count} cards • ${data.value.toFixed(2)}</div>
+                  </div>
+                ))}
+            </div>
+            {/* Trend chart for top sets */}
+            {bySetData.length > 0 && (
+              <div className="mt-4">
+                <TrendChart
+                  data={bySetData}
+                  dataKey="value"
+                  labelKey="label"
+                  title="Top Sets by Value"
+                  subtitle="Top 10 sets by purchase value"
+                  format="currency"
+                  color="teal"
+                  height={180}
+                />
               </div>
-            ))}
-        </div>
-        {/* Trend chart for top sets */}
-        {bySetData.length > 0 && (
-          <div className="mt-4">
-            <TrendChart
-              data={bySetData}
-              dataKey="value"
-              labelKey="label"
-              title="Top Sets by Value"
-              subtitle="Top 10 sets by purchase value"
-              format="currency"
-              color="teal"
-              height={180}
-            />
+            )}
           </div>
-        )}
-      </div>
         </>
       )}
     </div>

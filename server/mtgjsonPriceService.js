@@ -1,14 +1,17 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { Readable } from 'stream';
 import StreamJsonParser from 'stream-json';
 import StreamObject from 'stream-json/streamers/StreamObject.js';
+import Pick from 'stream-json/filters/Pick.js';
 import streamChainPkg from 'stream-chain';
 
 const { chain } = streamChainPkg;
 
 const { parser } = StreamJsonParser;
 const { streamObject } = StreamObject;
+const { pick } = Pick;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -39,8 +42,9 @@ class MtgjsonPriceService {
   async initialize() {
     await this.loadCacheFromDisk();
 
-    // If cache is stale or empty, refresh in background
-    if (this.isCacheStale()) {
+    // If cache is stale, empty, or missing metadata, refresh in background
+    if (this.isCacheStale() || this.cardDataByName.size === 0) {
+      console.log('[MTGJSON] Cache missing metadata or stale, starting refresh...');
       this.refreshPriceData().catch(err => {
         console.error('[MTGJSON] Background refresh failed:', err.message);
       });
@@ -215,24 +219,26 @@ class MtgjsonPriceService {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
+      console.log('[MTGJSON] Response OK. Starting stream processing...');
+
       // Use streaming parser to avoid loading entire file into memory
       const newMap = new Map();
       const newCardDataMap = new Map();
       let processedCount = 0;
 
       return new Promise((resolve, reject) => {
-        const pipeline = chain([
-          response.body,
-          parser(),
-          streamObject()
-        ]);
+        try {
+          const pipeline = chain([
+            Readable.fromWeb(response.body),
+            parser(),
+            pick({ filter: 'data' }),
+            streamObject()
+          ]);
 
-        pipeline.on('data', (data) => {
-          try {
-            // streamObject emits { key, value } pairs
-            // Filter to only process entries within 'data' object
-            if (data.key.startsWith('data.')) {
-              const mtgjsonUuid = data.key.substring(5); // Remove 'data.' prefix
+          pipeline.on('data', (data) => {
+            try {
+              // streamObject with pick({filter:'data'}) emits { key: mtgjsonUuid, value: cardData }
+              const mtgjsonUuid = data.key;
               const cardData = data.value;
 
               const scryfallId = cardData?.identifiers?.scryfallId;
@@ -246,7 +252,7 @@ class MtgjsonPriceService {
                 // Store minimal metadata for analysis components
                 if (!newCardDataMap.has(normalizedKey)) {
                   newCardDataMap.set(normalizedKey, {
-                    nameList: [cardData.name], // In case of split cards
+                    nameList: [cardData.name],
                     cmc: cardData.manaValue ?? 0,
                     manaCost: cardData.manaCost || '',
                     colors: cardData.colors || [],
@@ -262,27 +268,29 @@ class MtgjsonPriceService {
               if (processedCount % 50000 === 0) {
                 console.log(`[MTGJSON] Processed ${processedCount} identifiers...`);
               }
+            } catch (err) {
+              if (processedCount < 10) console.debug('[MTGJSON] Error processing entry:', err.message);
             }
-          } catch (err) {
-            console.debug('[MTGJSON] Error processing entry:', err.message);
-          }
-        });
+          });
 
-        pipeline.on('end', () => {
-          this.scryfallToMtgjsonMap = newMap;
-          this.cardDataByName = newCardDataMap;
-          console.log(`[MTGJSON] ✓ Built ${this.scryfallToMtgjsonMap.size} ID mappings and ${this.cardDataByName.size} card data entries from ${processedCount} total entries`);
-          resolve();
-        });
+          pipeline.on('end', () => {
+            this.scryfallToMtgjsonMap = newMap;
+            this.cardDataByName = newCardDataMap;
+            console.log(`[MTGJSON] ✓ Built ${this.scryfallToMtgjsonMap.size} ID mappings and ${this.cardDataByName.size} card data entries from ${processedCount} entries`);
+            resolve();
+          });
 
-        pipeline.on('error', (err) => {
-          console.error('[MTGJSON] Stream parsing error:', err.message);
-          reject(err);
-        });
+          pipeline.on('error', (err) => {
+            console.error('[MTGJSON] Stream parsing error:', err.message);
+            reject(err);
+          });
+        } catch (pipelineErr) {
+          console.error('[MTGJSON] Pipeline setup error:', pipelineErr.message);
+          reject(pipelineErr);
+        }
       });
     } catch (err) {
       console.error('[MTGJSON] ✗ Failed to fetch identifiers data:', err.message);
-      // Don't throw - prices can still work without the mapping if we have cached data
     }
   }
 

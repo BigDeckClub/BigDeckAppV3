@@ -9,14 +9,18 @@ import {
   Activity,
   Shield,
   Bell,
-  Layers,
+  Library,
   ShoppingCart,
-  CreditCard,
-  Receipt,
+  Fingerprint,
+  History,
   Store,
   Clock,
   CheckCircle,
-  Truck
+  Truck,
+  Inbox,
+  Tag,
+  ShoppingBag,
+  Receipt
 } from 'lucide-react';
 import { ChangeLogTab } from './ChangeLogTab';
 import { ActivityFeed } from './ActivityFeed';
@@ -378,37 +382,37 @@ function OverviewSection({ inventory }) {
           <StatsCard
             title="Total Cards"
             value={formatNumber((cardMetrics && cardMetrics.totalCards) ?? 0)}
-            icon={Layers}
+            icon={Library}
             color="primary"
           />
           <StatsCard
             title="Available"
             value={formatNumber(totalAvailable ?? 0)}
-            icon={Package}
+            icon={Inbox}
             color="blue"
           />
           <StatsCard
             title="Unique Cards"
             value={formatNumber((cardMetrics && cardMetrics.uniqueCards) ?? 0)}
-            icon={CreditCard}
+            icon={Fingerprint}
             color="slate"
           />
           <StatsCard
             title="Sold (60d)"
             value={formatNumber((cardMetrics && cardMetrics.totalSoldLast60d) ?? 0)}
-            icon={ShoppingCart}
+            icon={Tag}
             color="red"
           />
           <StatsCard
             title="Purchased (60d)"
             value={formatNumber((cardMetrics && cardMetrics.totalPurchasedLast60d) ?? 0)}
-            icon={TrendingUp}
+            icon={ShoppingBag}
             color="emerald"
           />
           <StatsCard
             title="Lifetime Sold"
             value={formatNumber((cardMetrics && cardMetrics.lifetimeTotalCards) ?? 0)}
-            icon={BarChart3}
+            icon={History}
             color="amber"
           />
         </div>
