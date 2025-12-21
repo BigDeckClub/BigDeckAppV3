@@ -12,7 +12,6 @@ import { ToastContainer } from "./components/ToastContainer";
 import { ConfirmDialog } from "./components/ConfirmDialog";
 import { OfflineBanner } from "./components/OfflineBanner";
 import { useApi } from "./hooks/useApi";
-import { TutorialModal } from "./components/TutorialModal";
 import { TabLoadingSpinner } from "./components/TabLoadingSpinner";
 import { Navigation } from "./components/Navigation";
 import { useCardSearch } from "./hooks/useCardSearch";
@@ -57,7 +56,6 @@ function MTGInventoryTrackerContent() {
   const [activeTab, setActiveTab] = useState("inventory");
   const [isLoading, setIsLoading] = useState(false);
   const [deckRefreshTrigger, setDeckRefreshTrigger] = useState(0);
-  const [showTutorial, setShowTutorial] = useState(false);
   const [showKeyboardHelp, setShowKeyboardHelp] = useState(false);
 
   const [allSets, setAllSets] = useState([]);
@@ -81,16 +79,11 @@ function MTGInventoryTrackerContent() {
       setShowKeyboardHelp(false);
       return;
     }
-    // Close tutorial if open
-    if (showTutorial) {
-      setShowTutorial(false);
-      return;
-    }
     // Blur active element if in an input
     if (document.activeElement && document.activeElement.tagName === 'INPUT') {
       document.activeElement.blur();
     }
-  }, [showKeyboardHelp, showTutorial]);
+  }, [showKeyboardHelp]);
 
   const toggleKeyboardHelp = useCallback(() => {
     setShowKeyboardHelp(prev => !prev);
@@ -157,7 +150,6 @@ function MTGInventoryTrackerContent() {
       <Navigation
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        onShowTutorial={() => setShowTutorial(true)}
       />
 
       <main className="max-w-7xl mx-auto px-4 py-8 main-content md:px-4 px-3">
@@ -240,7 +232,8 @@ function MTGInventoryTrackerContent() {
         )}
       </main>
 
-      <TutorialModal isOpen={showTutorial} onClose={() => setShowTutorial(false)} />
+
+
       <KeyboardShortcutsHelp isOpen={showKeyboardHelp} onClose={() => setShowKeyboardHelp(false)} />
       <ToastContainer />
       <ConfirmDialog />

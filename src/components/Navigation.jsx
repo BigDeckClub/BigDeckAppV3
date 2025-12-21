@@ -15,6 +15,7 @@ import {
   ShoppingCart,
 } from 'lucide-react';
 import { UserDropdown } from './UserDropdown';
+import ThemeToggle from './ui/ThemeToggle';
 
 /**
  * Navigation items configuration
@@ -94,20 +95,14 @@ MobileNavButton.propTypes = {
  * @param {function} props.setActiveTab - Function to set active tab
  * @param {function} props.onShowTutorial - Function to show tutorial modal
  */
-export function Navigation({ activeTab, setActiveTab, onShowTutorial }) {
+export function Navigation({ activeTab, setActiveTab }) {
   return (
     <>
       {/* Desktop Navigation */}
       <nav className="bg-[var(--bda-surface)] border-b border-[var(--bda-border)] sticky top-0 z-50 shadow-xl shadow-black/20">
         <div className="max-w-7xl mx-auto px-4 py-4 app-header flex items-center justify-between">
           <div className="desktop-nav flex gap-2 items-center">
-            <button
-              onClick={onShowTutorial}
-              className="px-3 py-2 text-[var(--bda-muted)] hover:text-[var(--bda-primary)] text-sm font-medium transition"
-              title="View tutorial"
-            >
-              ?
-            </button>
+            <ThemeToggle />
           </div>
           <div className="desktop-nav flex gap-2 items-center">
             {DESKTOP_NAV_ITEMS.map((item) => (
@@ -143,7 +138,6 @@ export function Navigation({ activeTab, setActiveTab, onShowTutorial }) {
 Navigation.propTypes = {
   activeTab: PropTypes.string.isRequired,
   setActiveTab: PropTypes.func.isRequired,
-  onShowTutorial: PropTypes.func.isRequired,
 };
 
 export default Navigation;

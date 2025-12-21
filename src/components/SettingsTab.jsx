@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import { Target, Zap, Settings } from 'lucide-react';
 import { useThresholdSettings } from '../hooks/useThresholdSettings';
 import { ThresholdSettings, PresetManager, AccountSettings } from './settings';
+import AppearanceSettings from './settings/AppearanceSettings';
 import { api } from '../utils/apiClient';
 import { API_ENDPOINTS } from '../config/api';
 
@@ -72,6 +73,15 @@ export const SettingsTab = ({ inventory = [] }) => {
           </span>
         </button>
         <button
+          onClick={() => setActiveTab('appearance')}
+          className={getTabClassName('appearance', 'border-amber-500 text-amber-400')}
+        >
+          <span className="flex items-center gap-1.5">
+            <Settings className="w-4 h-4" />
+            Appearance
+          </span>
+        </button>
+        <button
           onClick={() => setActiveTab('account')}
           className={getTabClassName('account', 'border-blue-500 text-blue-400')}
         >
@@ -100,6 +110,11 @@ export const SettingsTab = ({ inventory = [] }) => {
         <PresetManager
           inventory={inventory}
         />
+      )}
+
+      {/* Appearance Tab */}
+      {activeTab === 'appearance' && (
+        <AppearanceSettings />
       )}
 
       {/* Account Tab */}

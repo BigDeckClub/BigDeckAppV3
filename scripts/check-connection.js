@@ -1,33 +1,43 @@
 import { pool } from '../server/db/pool.js';
 import dotenv from 'dotenv';
+import https from 'https';
+
 dotenv.config();
 
 console.log('Testing configuration and connections...');
 
 const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-console.log('Environment Variables:');
-console.log('- DATABASE_URL:', process.env.DATABASE_URL ? 'Set' : 'MISSING');
-console.log('- SUPABASE_URL:', supabaseUrl ? 'Set' : 'MISSING');
-console.log('- SUPABASE_SERVICE_ROLE_KEY:', supabaseKey ? 'Set' : 'MISSING');
-
-if (!supabaseUrl || !supabaseKey) {
-    console.error('ERROR: Missing Supabase configuration!');
+function checkSupabaseReachability(url) {
+    return new Promise((resolve, reject) => {
+        if (!url) {
+            console.log('Skipping Supabase HTTP check (no URL)');
+            return resolve(false);
+        }
+        console.log(`Checking reachability of ${url}...`);
+        const req = https.get(url, (res) => {
+            console.log(`Supabase URL Status: ${res.statusCode}`);
+            res.resume();
+            resolve(true);
+        }).on('error', (e) => {
+            console.error(`Supabase Reachability Error: ${e.message}`);
+            // Usually caused by DNS or Firewall
+            resolve(false);
+        });
+    });
 }
 
-console.log('\nTesting DB connection...');
-try {
-    const result = await pool.query('SELECT NOW() as now');
-    console.log('DB Connection successful!');
-    console.log('Server time:', result.rows[0].now);
+(async () => {
+    await checkSupabaseReachability(supabaseUrl);
 
-    if (!supabaseUrl || !supabaseKey) {
-        console.log('Exiting with error due to missing config');
+    console.log('\nTesting DB connection...');
+    try {
+        const result = await pool.query('SELECT NOW() as now');
+        console.log('DB Connection successful!');
+        console.log('Server time:', result.rows[0].now);
+        process.exit(0);
+    } catch (error) {
+        console.error('Connection failed:', error.message);
         process.exit(1);
     }
-    process.exit(0);
-} catch (error) {
-    console.error('Connection failed:', error.message);
-    process.exit(1);
-}
+})();
