@@ -53,7 +53,7 @@ function MTGInventoryTrackerContent() {
   } = useInventory();
 
   // ALL useState hooks
-  const [activeTab, setActiveTab] = useState("inventory");
+  const [activeTab, setActiveTab] = useState("dashboard"); // Default to Dashboard for new look
   const [isLoading, setIsLoading] = useState(false);
   const [deckRefreshTrigger, setDeckRefreshTrigger] = useState(0);
   const [showKeyboardHelp, setShowKeyboardHelp] = useState(false);
@@ -146,93 +146,105 @@ function MTGInventoryTrackerContent() {
   }
 
   return (
-    <div className="min-h-screen bda-bg text-[var(--bda-text)]">
+    <div className="min-h-screen text-[var(--text-main)] overflow-x-hidden">
+      {/* Animated Background */}
+      <div className="bg-mesh-container">
+        <div className="bg-mesh-blob blob-1"></div>
+        <div className="bg-mesh-blob blob-2"></div>
+        <div className="bg-mesh-blob blob-3"></div>
+      </div>
+
       <Navigation
         activeTab={activeTab}
         setActiveTab={setActiveTab}
       />
 
-      <main className="max-w-7xl mx-auto px-4 py-8 main-content md:px-4 px-3">
+      {/* Main Content Area - Shifted for Sidebar */}
+      <main className="transition-all duration-300 md:ml-64 p-4 md:p-8 pb-32 md:pb-8 max-w-7xl mx-auto">
         {isLoading && (
-          <div className="text-center py-8">
-            <div className="w-8 h-8 animate-spin mx-auto text-[var(--bda-primary)] border-2 border-[var(--bda-primary)] border-t-transparent rounded-full"></div>
+          <div className="text-center py-20 flex justify-center">
+            <div className="w-10 h-10 animate-spin text-[var(--primary)] border-2 border-[var(--primary)] border-t-transparent rounded-full shadow-[0_0_15px_rgba(99,102,241,0.5)]"></div>
           </div>
         )}
 
-        {activeTab === "inventory" && !isLoading && (
-          <ErrorBoundaryWithRetry>
-            <Suspense fallback={<TabLoadingSpinner />}>
-              <InventoryTab
-                successMessage={successMessage}
-                setSuccessMessage={setSuccessMessage}
-                expandedCards={expandedCards}
-                setExpandedCards={setExpandedCards}
-                deckRefreshTrigger={deckRefreshTrigger}
-                onSell={handleSell}
-                searchRef={searchInputRef}
-              />
-            </Suspense>
-          </ErrorBoundaryWithRetry>
-        )}
+        {/* Tab Content */}
+        {!isLoading && (
+          <div className="animate-fade-in">
+            {activeTab === "inventory" && (
+              <ErrorBoundaryWithRetry>
+                <Suspense fallback={<TabLoadingSpinner />}>
+                  <InventoryTab
+                    successMessage={successMessage}
+                    setSuccessMessage={setSuccessMessage}
+                    expandedCards={expandedCards}
+                    setExpandedCards={setExpandedCards}
+                    deckRefreshTrigger={deckRefreshTrigger}
+                    onSell={handleSell}
+                    searchRef={searchInputRef}
+                  />
+                </Suspense>
+              </ErrorBoundaryWithRetry>
+            )}
 
-        {activeTab === "imports" && !isLoading && (
-          <ErrorBoundaryWithRetry>
-            <Suspense fallback={<TabLoadingSpinner />}>
-              <ImportTab
-                allSets={allSets}
-                searchResults={searchResults}
-                showDropdown={showDropdown}
-                setShowDropdown={setShowDropdown}
-                handleSearch={handleSearch}
-                searchIsLoading={searchIsLoading}
-                addInventoryItem={addInventoryItem}
-              />
-            </Suspense>
-          </ErrorBoundaryWithRetry>
-        )}
+            {activeTab === "imports" && (
+              <ErrorBoundaryWithRetry>
+                <Suspense fallback={<TabLoadingSpinner />}>
+                  <ImportTab
+                    allSets={allSets}
+                    searchResults={searchResults}
+                    showDropdown={showDropdown}
+                    setShowDropdown={setShowDropdown}
+                    handleSearch={handleSearch}
+                    searchIsLoading={searchIsLoading}
+                    addInventoryItem={addInventoryItem}
+                  />
+                </Suspense>
+              </ErrorBoundaryWithRetry>
+            )}
 
-        {activeTab === "autobuy" && !isLoading && (
-          <ErrorBoundaryWithRetry>
-            <Suspense fallback={<TabLoadingSpinner />}>
-              <AutobuyTab inventory={inventory} />
-            </Suspense>
-          </ErrorBoundaryWithRetry>
-        )}
+            {activeTab === "autobuy" && (
+              <ErrorBoundaryWithRetry>
+                <Suspense fallback={<TabLoadingSpinner />}>
+                  <AutobuyTab inventory={inventory} />
+                </Suspense>
+              </ErrorBoundaryWithRetry>
+            )}
 
-        {activeTab === "dashboard" && !isLoading && (
-          <Suspense fallback={<TabLoadingSpinner />}>
-            <DashboardTab inventory={inventory} />
-          </Suspense>
-        )}
+            {activeTab === "dashboard" && (
+              <Suspense fallback={<TabLoadingSpinner />}>
+                <DashboardTab inventory={inventory} />
+              </Suspense>
+            )}
 
-        {activeTab === "decks" && !isLoading && (
-          <Suspense fallback={<TabLoadingSpinner />}>
-            <DeckTab
-              onDeckCreatedOrDeleted={() => setDeckRefreshTrigger(prev => prev + 1)}
-              onInventoryUpdate={loadInventory}
-            />
-          </Suspense>
-        )}
+            {activeTab === "decks" && (
+              <Suspense fallback={<TabLoadingSpinner />}>
+                <DeckTab
+                  onDeckCreatedOrDeleted={() => setDeckRefreshTrigger(prev => prev + 1)}
+                  onInventoryUpdate={loadInventory}
+                />
+              </Suspense>
+            )}
 
-        {activeTab === "ai" && !isLoading && (
-          <Suspense fallback={<TabLoadingSpinner />}>
-            <AITab />
-          </Suspense>
-        )}
+            {activeTab === "ai" && (
+              <Suspense fallback={<TabLoadingSpinner />}>
+                <AITab />
+              </Suspense>
+            )}
 
-        {activeTab === "settings" && !isLoading && (
-          <Suspense fallback={<TabLoadingSpinner />}>
-            <SettingsTab inventory={inventory} />
-          </Suspense>
-        )}
-        {activeTab === "marketplace" && !isLoading && (
-          <Suspense fallback={<TabLoadingSpinner />}>
-            <AdminTab />
-          </Suspense>
+            {activeTab === "settings" && (
+              <Suspense fallback={<TabLoadingSpinner />}>
+                <SettingsTab inventory={inventory} />
+              </Suspense>
+            )}
+
+            {activeTab === "marketplace" && (
+              <Suspense fallback={<TabLoadingSpinner />}>
+                <AdminTab />
+              </Suspense>
+            )}
+          </div>
         )}
       </main>
-
-
 
       <KeyboardShortcutsHelp isOpen={showKeyboardHelp} onClose={() => setShowKeyboardHelp(false)} />
       <ToastContainer />
@@ -248,27 +260,34 @@ import { ThemeProvider } from "./context/ThemeContext";
 function MTGInventoryTracker() {
   return (
     <ErrorBoundary>
-      <AuthProvider>
-        <PriceCacheProvider>
-          <ToastProvider>
-            <ConfirmProvider>
-              <UndoProvider>
-                <InventoryProvider>
-                  <MTGInventoryTrackerContent />
-                </InventoryProvider>
-              </UndoProvider>
-            </ConfirmProvider>
-          </ToastProvider>
-        </PriceCacheProvider>
-      </AuthProvider>
+      <PriceCacheProvider>
+        <ToastProvider>
+          <ConfirmProvider>
+            <UndoProvider>
+              <InventoryProvider>
+                <MTGInventoryTrackerContent />
+              </InventoryProvider>
+            </UndoProvider>
+          </ConfirmProvider>
+        </ToastProvider>
+      </PriceCacheProvider>
     </ErrorBoundary>
   );
 }
 
+// Separate AuthProvider to use it in App
+// Wait, original file wrapped AuthProvider inside ErrorBoundary but outside everything else
+// I will keep the Context nesting same as before but ensure new theme context is used if needed.
+// ThemeProvider wraps everything.
+
 export default function App() {
   return (
     <ThemeProvider>
-      <MTGInventoryTracker />
+      <ErrorBoundary>
+        <AuthProvider>
+          <MTGInventoryTracker />
+        </AuthProvider>
+      </ErrorBoundary>
     </ThemeProvider>
   );
 }

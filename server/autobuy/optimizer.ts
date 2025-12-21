@@ -171,7 +171,7 @@ export function runFullPipeline(opts: {
 
   const { baskets: phase2Baskets, budgetTracker: phase2Budget } = phase2OptimizeShipping(
     phase1Baskets, offers, unmet, opts.hotList ?? [], directives, pre.maxPriceByCard, currentInventory,
-    budgetConfig, phase1Budget.demandSpend
+    budgetConfig, phase1Budget.demandSpend, cardKingdomPrices
   )
 
   const { baskets: phase3Baskets } = phase3LocalImprovement(phase2Baskets, offers, cardKingdomPrices)
@@ -227,6 +227,20 @@ export function greedyAllocatePhase1(
   let runningTotalSpend = 0
   const sellerSpend = new Map<string, number>()
 
+  // Calculate potential revenue for optimistic shipping checks
+  const demandsMap = new Map<string, number>()
+  for (const d of demandsIn) demandsMap.set(d.cardId, d.quantity)
+
+  const potentialRevenueBySeller = new Map<string, number>()
+  for (const o of offersIn) {
+    const qtyNeeded = demandsMap.get(o.cardId) ?? 0
+    if (qtyNeeded > 0 && o.quantityAvailable > 0) {
+      const reachable = Math.min(qtyNeeded, o.quantityAvailable)
+      const val = reachable * o.price
+      potentialRevenueBySeller.set(o.sellerId, (potentialRevenueBySeller.get(o.sellerId) ?? 0) + val)
+    }
+  }
+
   // Filter offers map by availability
   const offersByCard = new Map<string, Offer[]>()
   for (const o of offersIn) {
@@ -270,7 +284,11 @@ export function greedyAllocatePhase1(
       if (budgetConfig?.budgetMode !== 'SOFT' && runningTotalSpend >= effectiveBudget) break
 
       // build candidate marginal costs
-      const candidates: { offer: Offer; marginal: number }[] = []
+      // calculate CR Ratio for prioritization
+      const candidates: { offer: Offer; marginal: number; ratio: number }[] = []
+
+      const retailPrice = cardKingdomPrices.get(demand.cardId) ?? 0
+
       for (const o of offers) {
         if (o.quantityAvailable <= 0) continue
 
@@ -281,30 +299,50 @@ export function greedyAllocatePhase1(
         // Check if this purchase would exceed per-seller budget
         const currentSellerSpend = sellerSpend.get(o.sellerId) ?? 0
         const basketExists = baskets.has(o.sellerId)
-        const shippingMarginal = basketExists ? 0 : o.shipping.base
+
+        // Optimistic Shipping: Check if we are likely to hit free shipping threshold
+        // If basket exists, shipping is 0.
+        // If not, check if potential revenue >= freeAt
+        const freeAt = o.shipping.freeAt
+        const potentialVal = potentialRevenueBySeller.get(o.sellerId) ?? 0
+        const isFreeShippingLikely = freeAt !== undefined && potentialVal >= freeAt
+
+        // We use Optimistic Shipping for prioritization if basket exists OR likely to trigger free shipping
+        const shippingMarginal = (basketExists || isFreeShippingLikely) ? 0 : o.shipping.base
+
         const totalSellerWithPurchase = currentSellerSpend + o.price + shippingMarginal
         if (totalSellerWithPurchase > maxPerSeller) continue
 
         // Seller rating penalty: penalty = λ * (1 - sellerRating)
-        // Lower rated sellers have higher effective cost
-        const sellerRating = o.sellerRating ?? 1.0 // Default to perfect rating
+        const sellerRating = o.sellerRating ?? 1.0
         const ratingPenalty = sellerRatingPenaltyWeight * (1 - sellerRating) * o.price
 
         let marginal = o.price + shippingMarginal + ratingPenalty
 
         // Apply PREFER discount: give 10% preference to preferred sellers
         if (preferredSellerId && o.sellerId === preferredSellerId) {
-          marginal *= 0.9 // 10% discount for preferred seller
+          marginal *= 0.9
         }
 
-        candidates.push({ offer: o, marginal })
+        // CR Ratio: Marginal Cost / Retail Price
+        // If Retail Price is missing (0), fallback to using Marginal Cost as the sort key (effectively Ratio = Cost)
+        // This prioritizes cheap items when value is unknown.
+        const ratio = retailPrice > 0 ? marginal / retailPrice : marginal
+
+        candidates.push({ offer: o, marginal, ratio })
       }
 
       if (candidates.length === 0) break
 
-      // pick lowest marginal; deterministic tie-breaker: sellerId
+      // pick lowest CR Ratio (Best Dealer); tie-breaker: marginal cost, then sellerId
       candidates.sort((a, b) => {
+        // Primary: CR Ratio ASC
+        if (Math.abs(a.ratio - b.ratio) > 0.0001) return a.ratio - b.ratio
+
+        // Secondary: Marginal Cost ASC
         if (a.marginal !== b.marginal) return a.marginal - b.marginal
+
+        // Tertiary: SellerId
         if (a.offer.sellerId < b.offer.sellerId) return -1
         if (a.offer.sellerId > b.offer.sellerId) return 1
         return 0
@@ -374,7 +412,8 @@ export function phase2OptimizeShipping(
   maxPriceByCard: Map<string, number>,
   currentInventory: Map<string, number>,
   budgetConfig?: BudgetConfig,
-  currentDemandSpend: number = 0
+  currentDemandSpend: number = 0,
+  cardKingdomPrices: Map<string, number> = new Map()
 ) {
   // Budget limits for speculative spending
   const maxSpeculativeSpend = budgetConfig?.maxSpeculativeSpend ?? Infinity
@@ -444,7 +483,7 @@ export function phase2OptimizeShipping(
 
     const sellerOffers = offersBySeller.get(sellerId) ?? []
     // candidates: offers from this seller that match unmet, hot list, or ship_only
-    const candidates: { cardId: string; price: number; available: number; priority: number; reasonSrc: string; isSpeculative: boolean }[] = []
+    const candidates: { cardId: string; price: number; available: number; priority: number; reasonSrc: string; isSpeculative: boolean; ratio: number }[] = []
 
     // helper to push candidate if meets price/margin/budget rules
     const pushIfValid = (cardId: string, price: number, avail: number, priority: number, reasonSrc: string, isSpeculative: boolean) => {
@@ -454,7 +493,15 @@ export function phase2OptimizeShipping(
       if (margin <= 0) return
       // Check per-card budget
       if (price > maxPerCard) return
-      candidates.push({ cardId, price, available: avail, priority, reasonSrc, isSpeculative })
+
+      // Calculate CR Ratio using Retail Price (with fallback)
+      const retail = cardKingdomPrices.get(cardId) ?? 0
+      const ratio = retail > 0 ? price / retail : price
+
+      // Filter: For speculative items (Priority > 1), reject if Ratio > 1.0 (bad value)
+      if (priority > 1 && ratio > 1.0) return
+
+      candidates.push({ cardId, price, available: avail, priority, reasonSrc, isSpeculative, ratio })
     }
 
     // unmet demand candidates (highest priority, not speculative)
@@ -462,6 +509,7 @@ export function phase2OptimizeShipping(
       const avail = o.quantityAvailable
       if (avail <= 0) continue
       if (unmetMap.has(o.cardId)) {
+        // Priority 1
         pushIfValid(o.cardId, o.price, avail, 1, 'DEMAND', false)
       }
     }
@@ -474,18 +522,25 @@ export function phase2OptimizeShipping(
       const curr = currentInventory.get(o.cardId) ?? 0
       const deficit = Math.max(0, target - curr)
       if (deficit <= 0) continue
+      // Priority 2
       pushIfValid(o.cardId, o.price, Math.min(o.quantityAvailable, deficit), 2, 'HOT_LIST', true)
     }
 
     // SHIP_ONLY directives (speculative)
     for (const o of sellerOffers) {
+      // Priority 5 (Lowest?) Or maintain existing. Using 5 as placeholder from original code?
+      // Original code used 5.
       if (shipOnlySet.has(o.cardId)) pushIfValid(o.cardId, o.price, o.quantityAvailable, 5, 'SHIP_ONLY', true)
     }
 
     if (candidates.length === 0) continue
 
-    // deterministic ordering: priority asc, price asc, cardId asc
+    // deterministic ordering: 
+    // 1. Ratio ASC (Best Value)
+    // 2. Priority ASC (Demand > HotList > ShipOnly)
+    // 3. Price ASC
     candidates.sort((a, b) => {
+      if (Math.abs(a.ratio - b.ratio) > 0.0001) return a.ratio - b.ratio
       if (a.priority !== b.priority) return a.priority - b.priority
       if (a.price !== b.price) return a.price - b.price
       return a.cardId < b.cardId ? -1 : 1
@@ -528,7 +583,7 @@ export function phase2OptimizeShipping(
     }
 
     const newTotal = runningSubtotal // shipping 0
-    if (newTotal < initialTotal) {
+    if (newTotal <= initialTotal) {
       // apply additions to basket and decrement seller offers
       for (const a of additions) {
         // find matching offer from this seller
