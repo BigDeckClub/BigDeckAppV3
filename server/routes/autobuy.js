@@ -8,6 +8,7 @@ import { pool } from '../db/pool.js';
 // Marketplace module will be loaded dynamically after build
 import { z } from 'zod';
 import inputSchema from '../autobuy/validation.js';
+import substitutionService from '../autobuy/substitutionService.js';
 
 const router = express.Router();
 
@@ -326,15 +327,7 @@ router.get('/autobuy/substitution-groups', asyncHandler(async (req, res) => {
     // Use pool directly since req.db may not be attached
     const db = req.db || pool;
 
-    // Load substitution service module
-    const servicePath = path.join(process.cwd(), 'dist', 'server', 'autobuy', 'substitutionService.js');
-    let substitutionService;
-    try {
-      const mod = await import(pathToFileURL(servicePath).href);
-      substitutionService = mod.default || mod;
-    } catch (e) {
-      return res.status(500).json({ error: 'Substitution service not available - run build first' });
-    }
+    // Load substitution service module (now static)
 
     const groups = await substitutionService.getSubstitutionGroups(db);
     res.json({ groups });
@@ -372,15 +365,7 @@ router.post('/autobuy/substitution-groups', asyncHandler(async (req, res) => {
       }
     }
 
-    // Load substitution service module
-    const servicePath = path.join(process.cwd(), 'dist', 'server', 'autobuy', 'substitutionService.js');
-    let substitutionService;
-    try {
-      const mod = await import(pathToFileURL(servicePath).href);
-      substitutionService = mod.default || mod;
-    } catch (e) {
-      return res.status(500).json({ error: 'Substitution service not available - run build first' });
-    }
+    // Load substitution service module (now static)
 
     const group = await substitutionService.createGroup(db, name.trim(), cardList, description);
     res.status(201).json({ group });
@@ -417,15 +402,7 @@ router.put('/autobuy/substitution-groups/:id/cards', asyncHandler(async (req, re
       return res.status(400).json({ error: 'scryfallId is required' });
     }
 
-    // Load substitution service module
-    const servicePath = path.join(process.cwd(), 'dist', 'server', 'autobuy', 'substitutionService.js');
-    let substitutionService;
-    try {
-      const mod = await import(pathToFileURL(servicePath).href);
-      substitutionService = mod.default || mod;
-    } catch (e) {
-      return res.status(500).json({ error: 'Substitution service not available - run build first' });
-    }
+    // Load substitution service module (now static)
 
     const group = await substitutionService.addCardToGroup(db, groupId, scryfallId, cardName);
     res.json({ group });
@@ -459,15 +436,7 @@ router.delete('/autobuy/substitution-groups/:id', asyncHandler(async (req, res) 
       return res.status(400).json({ error: 'Invalid group ID' });
     }
 
-    // Load substitution service module
-    const servicePath = path.join(process.cwd(), 'dist', 'server', 'autobuy', 'substitutionService.js');
-    let substitutionService;
-    try {
-      const mod = await import(pathToFileURL(servicePath).href);
-      substitutionService = mod.default || mod;
-    } catch (e) {
-      return res.status(500).json({ error: 'Substitution service not available - run build first' });
-    }
+    // Load substitution service module (now static)
 
     const deleted = await substitutionService.deleteGroup(db, groupId);
     if (!deleted) {
@@ -497,15 +466,7 @@ router.delete('/autobuy/substitution-groups/:id/cards/:cardId', asyncHandler(asy
       return res.status(400).json({ error: 'Card ID is required' });
     }
 
-    // Load substitution service module
-    const servicePath = path.join(process.cwd(), 'dist', 'server', 'autobuy', 'substitutionService.js');
-    let substitutionService;
-    try {
-      const mod = await import(pathToFileURL(servicePath).href);
-      substitutionService = mod.default || mod;
-    } catch (e) {
-      return res.status(500).json({ error: 'Substitution service not available - run build first' });
-    }
+    // Load substitution service module (now static)
 
     const removed = await substitutionService.removeCardFromGroup(db, cardId);
     if (!removed) {
