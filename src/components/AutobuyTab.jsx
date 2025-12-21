@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import AnalyticsDashboard from './autobuy/AnalyticsDashboard';
 import SubstitutionGroupsManager from './autobuy/SubstitutionGroupsManager';
-import SeasonalityManager from './autobuy/SeasonalityManager';
+
 import {
   ShoppingCart,
   Package,
@@ -960,7 +960,7 @@ export function AutobuyTab({ inventory, decks }) {
         <div className="space-y-8">
           <SubstitutionGroupsManager />
           <div className="border-t border-[var(--border)]" />
-          <SeasonalityManager />
+
         </div>
       )}
     </div>
