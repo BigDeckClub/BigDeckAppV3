@@ -114,7 +114,15 @@ export default function AdminTab() {
                 <div className="text-sm text-[var(--text-muted)]">Account: {ebayStatus.ebayUserId}</div>
               )}
               {!ebayStatus?.configured && !statusLoading && (
-                <div className="text-sm text-amber-400">eBay credentials not configured in environment</div>
+                <div className="text-sm text-amber-400">
+                  Set up your eBay API credentials in{' '}
+                  <button
+                    onClick={() => { /* Ideally navigate to settings */ }}
+                    className="underline hover:text-amber-300"
+                  >
+                    Settings → eBay Integration
+                  </button>
+                </div>
               )}
             </div>
           </div>
@@ -160,21 +168,19 @@ export default function AdminTab() {
       <div className="flex gap-2 border-b border-[var(--border)] pb-2">
         <button
           onClick={() => { setActiveSection('listings'); setSelectedListing(null); }}
-          className={`px-4 py-2 rounded-t text-sm font-medium transition ${
-            activeSection === 'listings'
+          className={`px-4 py-2 rounded-t text-sm font-medium transition ${activeSection === 'listings'
               ? 'bg-[var(--surface)] text-[var(--bda-text)] border-b-2 border-teal-400'
               : 'text-[var(--text-muted)] hover:text-[var(--bda-text)]'
-          }`}
+            }`}
         >
           Listings & Orders
         </button>
         <button
           onClick={() => { setActiveSection('templates'); setSelectedListing(null); }}
-          className={`px-4 py-2 rounded-t text-sm font-medium transition ${
-            activeSection === 'templates'
+          className={`px-4 py-2 rounded-t text-sm font-medium transition ${activeSection === 'templates'
               ? 'bg-[var(--surface)] text-[var(--bda-text)] border-b-2 border-teal-400'
               : 'text-[var(--text-muted)] hover:text-[var(--bda-text)]'
-          }`}
+            }`}
         >
           Templates
         </button>
@@ -209,7 +215,7 @@ export default function AdminTab() {
       {/* Templates Section */}
       {activeSection === 'templates' && (
         <div className="mt-4">
-          <EbayTemplatesManager onClose={() => {}} />
+          <EbayTemplatesManager onClose={() => { }} />
         </div>
       )}
 
