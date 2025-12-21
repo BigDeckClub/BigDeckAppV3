@@ -23,7 +23,7 @@ export const aiApiLimiter = rateLimit({
 // General API rate limiter for most routes
 export const apiLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: isProduction ? 120 : 1000, // higher limits in dev/preview
+  max: isProduction ? 300 : 1000, // higher limits in dev/preview
   message: { error: 'Too many requests, please try again later' },
   standardHeaders: true,
   legacyHeaders: false,

@@ -23,10 +23,10 @@ import { useEffect, useCallback, useRef } from 'react';
 const isInputElement = () => {
   const activeElement = document.activeElement;
   if (!activeElement) return false;
-  
+
   const tagName = activeElement.tagName.toLowerCase();
   const isContentEditable = activeElement.getAttribute('contenteditable') === 'true';
-  
+
   return (
     tagName === 'input' ||
     tagName === 'textarea' ||
@@ -53,7 +53,7 @@ const isInputElement = () => {
 export function useKeyboardShortcuts(shortcuts, options = {}) {
   const { enabled = true } = options;
   const shortcutsRef = useRef(shortcuts);
-  
+
   // Keep shortcuts ref updated
   useEffect(() => {
     shortcutsRef.current = shortcuts;
@@ -61,9 +61,9 @@ export function useKeyboardShortcuts(shortcuts, options = {}) {
 
   const handleKeyDown = useCallback((event) => {
     if (!enabled) return;
-    
+
     const currentShortcuts = shortcutsRef.current;
-    
+
     for (const shortcut of currentShortcuts) {
       const {
         key,
@@ -73,24 +73,26 @@ export function useKeyboardShortcuts(shortcuts, options = {}) {
         handler,
         allowInInput = false,
       } = shortcut;
-      
+
       // Check if shortcut should be ignored when in input
       if (!allowInInput && isInputElement()) {
         // Only allow Escape key in inputs by default
         if (key !== 'Escape') continue;
       }
-      
+
       // Check modifier keys
       // For Ctrl+Key shortcuts, we also accept Cmd+Key (Meta) on Mac for cross-platform compatibility
-      const matchesModifiers = 
+      const matchesModifiers =
         (ctrlKey ? (event.ctrlKey || event.metaKey) : (!event.ctrlKey && !event.metaKey)) &&
         event.shiftKey === shiftKey &&
         event.altKey === altKey;
-      
+
       // Check key match (case-insensitive for letters)
+      // Guard against undefined event.key from synthetic/non-standard events
+      if (!event.key) continue;
       const keyMatch = event.key.toLowerCase() === key.toLowerCase() ||
         event.key === key;
-      
+
       if (keyMatch && matchesModifiers) {
         event.preventDefault();
         event.stopPropagation();
@@ -102,7 +104,7 @@ export function useKeyboardShortcuts(shortcuts, options = {}) {
 
   useEffect(() => {
     if (!enabled) return;
-    
+
     document.addEventListener('keydown', handleKeyDown);
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
@@ -131,13 +133,13 @@ export const SHORTCUT_KEYS = {
  */
 export function isMacPlatform() {
   if (typeof navigator === 'undefined') return false;
-  
+
   // Check userAgentData first (modern browsers)
   if (navigator.userAgentData?.platform === 'macOS') return true;
-  
+
   // Check userAgent (reliable fallback)
   if (navigator.userAgent?.includes('Mac')) return true;
-  
+
   // Check platform (deprecated but still works)
   return /Mac|iPod|iPhone|iPad/.test(navigator.platform);
 }
@@ -150,9 +152,9 @@ export function isMacPlatform() {
  */
 export function formatShortcut(shortcut) {
   const isMac = isMacPlatform();
-  
+
   const parts = [];
-  
+
   if (shortcut.ctrlKey) {
     parts.push(isMac ? '⌘' : 'Ctrl');
   }
@@ -162,15 +164,15 @@ export function formatShortcut(shortcut) {
   if (shortcut.shiftKey) {
     parts.push(isMac ? '⇧' : 'Shift');
   }
-  
+
   // Format the key
   let keyDisplay = shortcut.key;
   if (keyDisplay === 'Escape') keyDisplay = 'Esc';
   if (keyDisplay === ' ') keyDisplay = 'Space';
   if (keyDisplay.length === 1) keyDisplay = keyDisplay.toUpperCase();
-  
+
   parts.push(keyDisplay);
-  
+
   // Always use '+' separator for consistent parsing
   return parts.join('+');
 }
