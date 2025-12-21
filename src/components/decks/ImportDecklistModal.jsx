@@ -17,8 +17,8 @@ export function ImportDecklistModal({
   onCancel
 }) {
   return (
-    <div className="bg-[var(--surface)] rounded-lg border border-purple-500/50 p-4 mb-4">
-      <h3 className="text-lg font-semibold text-purple-300 mb-4">Import Deck from Text</h3>
+    <div className="bg-[var(--surface)] rounded-lg border border-[var(--bda-primary)]/50 p-4 mb-4">
+      <h3 className="text-lg font-semibold text-[var(--bda-primary)] mb-4">Import Deck from Text</h3>
       <div className="space-y-3">
         <div>
           <label className="block text-sm text-[var(--text-muted)] mb-1">Deck Name</label>
@@ -27,7 +27,7 @@ export function ImportDecklistModal({
             placeholder="e.g., Mono Red Aggro"
             value={deckName}
             onChange={(e) => onDeckNameChange(e.target.value)}
-            className="w-full bg-[var(--muted-surface)] border border-[var(--border)] rounded px-3 py-2 text-white placeholder-slate-500"
+            className="w-full bg-[var(--muted-surface)] border border-[var(--border)] rounded px-3 py-2 text-[var(--bda-text)] placeholder-[var(--bda-muted)]"
             autoFocus
           />
         </div>
@@ -36,7 +36,7 @@ export function ImportDecklistModal({
           <select
             value={format}
             onChange={(e) => onFormatChange(e.target.value)}
-            className="w-full bg-[var(--muted-surface)] border border-[var(--border)] rounded px-3 py-2 text-white"
+            className="w-full bg-[var(--muted-surface)] border border-[var(--border)] rounded px-3 py-2 text-[var(--bda-text)]"
           >
             {FORMATS.map(fmt => (
               <option key={fmt} value={fmt}>{fmt}</option>
@@ -49,7 +49,7 @@ export function ImportDecklistModal({
             placeholder={`4 Black Lotus\n4 Ancestral Recall\n4 Time Walk\n\nOne card per line. Format: "4 Card Name" or "4x Card Name (SET)"`}
             value={deckListText}
             onChange={(e) => onDeckListTextChange(e.target.value)}
-            className="w-full bg-[var(--muted-surface)] border border-[var(--border)] rounded px-3 py-2 text-white placeholder-slate-500 resize-none font-mono text-sm"
+            className="w-full bg-[var(--muted-surface)] border border-[var(--border)] rounded px-3 py-2 text-[var(--bda-text)] placeholder-[var(--bda-muted)] resize-none font-mono text-sm"
             rows="8"
           />
           <p className="text-xs text-[var(--text-muted)] mt-1">One card per line. Optional set code in parentheses: "Card Name (MH2)"</p>
@@ -57,13 +57,13 @@ export function ImportDecklistModal({
         <div className="flex gap-2 pt-2">
           <button
             onClick={onImport}
-            className="flex-1 bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded font-semibold transition-colors"
+            className="flex-1 bg-[var(--bda-primary)] hover:opacity-90 text-[var(--bda-primary-foreground)] px-3 py-2 rounded font-semibold transition-colors"
           >
             Import
           </button>
           <button
             onClick={onCancel}
-            className="flex-1 bg-[var(--muted-surface)] hover:bg-slate-600 text-white px-3 py-2 rounded transition-colors"
+            className="flex-1 bg-[var(--muted-surface)] hover:bg-[var(--surface)] text-[var(--bda-text)] px-3 py-2 rounded transition-colors"
           >
             Cancel
           </button>

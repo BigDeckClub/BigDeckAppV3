@@ -264,7 +264,7 @@ export const BuyCardsModal = memo(function BuyCardsModal({
 
   const modalTitle = (
     <div className="flex items-center gap-2">
-      <ShoppingCart className="w-5 h-5 text-teal-400" />
+      <ShoppingCart className="w-5 h-5 text-[var(--bda-primary)]" />
       <span>Buy Missing Cards</span>
     </div>
   );
@@ -282,7 +282,7 @@ export const BuyCardsModal = memo(function BuyCardsModal({
       <button
         onClick={handleOpenMarketplace}
         disabled={selectedCards.length === 0}
-        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-br from-teal-600 to-teal-700 hover:from-teal-500 hover:to-teal-600 text-white rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+        className="flex items-center gap-2 px-4 py-2 bg-[var(--bda-primary)] hover:opacity-90 text-[var(--bda-primary-foreground)] rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <ExternalLink className="w-4 h-4" />
         Open {marketplace?.name} with {totalQuantity} Cards
@@ -300,8 +300,8 @@ export const BuyCardsModal = memo(function BuyCardsModal({
     >
       <div className="space-y-4">
         {deckName && (
-          <p className="text-sm text-slate-400">
-            For: <span className="text-teal-300 font-semibold">{deckName}</span>
+          <p className="text-sm text-[var(--bda-muted)]">
+            For: <span className="text-[var(--bda-primary)] font-semibold">{deckName}</span>
           </p>
         )}
 
@@ -316,25 +316,25 @@ export const BuyCardsModal = memo(function BuyCardsModal({
         {/* Cards List */}
         <div className="space-y-2">
           <div className="flex items-center justify-between gap-2 flex-wrap">
-            <h3 className="text-sm font-medium text-slate-300">
+            <h3 className="text-sm font-medium text-[var(--bda-text)]">
               Cards to Buy ({filteredCards.length === cards.length ? cards.length : `${filteredCards.length}/${cards.length}`} cards)
             </h3>
             <div className="flex gap-2">
               <button
                 onClick={handleSelectAll}
-                className="text-xs px-2 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded transition-colors"
+                className="text-xs px-2 py-1 bg-[var(--bda-card)] hover:bg-[var(--card-hover)] text-[var(--bda-muted)] rounded transition-colors"
               >
                 Select All
               </button>
               <button
                 onClick={handleDeselectAll}
-                className="text-xs px-2 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded transition-colors"
+                className="text-xs px-2 py-1 bg-[var(--bda-card)] hover:bg-[var(--card-hover)] text-[var(--bda-muted)] rounded transition-colors"
               >
                 Deselect All
               </button>
               <button
                 onClick={() => setSortDirection(prev => (prev === 'asc' ? 'desc' : 'asc'))}
-                className="text-xs px-2 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded transition-colors"
+                className="text-xs px-2 py-1 bg-[var(--bda-card)] hover:bg-[var(--card-hover)] text-[var(--bda-muted)] rounded transition-colors"
                 title="Sort by TCG/Card Kingdom price"
               >
                 Price {sortDirection === 'asc' ? '↑' : '↓'}
@@ -349,7 +349,7 @@ export const BuyCardsModal = memo(function BuyCardsModal({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search cards..."
-              className="w-full pl-10 pr-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-200 placeholder-slate-500 focus:border-teal-500 focus:outline-none"
+              className="w-full pl-10 pr-3 py-2 bg-[var(--input-bg)] border border-[var(--bda-border)] rounded-lg text-[var(--bda-text)] placeholder-[var(--bda-muted)] focus:border-[var(--bda-primary)] focus:outline-none"
             />
             {searchQuery && (
               <button
@@ -361,25 +361,23 @@ export const BuyCardsModal = memo(function BuyCardsModal({
             )}
           </div>
 
-          <div className="max-h-64 overflow-y-auto bg-slate-900 rounded-lg border border-slate-700 divide-y divide-slate-700">
+          <div className="max-h-64 overflow-y-auto bg-[var(--input-bg)] rounded-lg border border-[var(--bda-border)] divide-y divide-[var(--bda-border)]">
             {sortedCards.map(({ card, index, selectionKey, priceKey }) => {
               const selection = cardSelections[selectionKey] || { selected: true, quantity: card.quantity || 1 };
               const tcgPrice = getTcgPrice(priceKey, card);
-              
+
               return (
                 <div
                   key={selectionKey}
-                  className={`flex items-center gap-3 p-3 transition-colors ${
-                    selection.selected ? 'bg-slate-800/50' : 'bg-slate-900/50 opacity-60'
-                  }`}
+                  className={`flex items-center gap-3 p-3 transition-colors ${selection.selected ? 'bg-[var(--bda-primary)]/10' : 'bg-[var(--bda-card)] opacity-60'
+                    }`}
                 >
                   <button
                     onClick={() => handleToggleCard(card, index)}
-                    className={`flex-shrink-0 w-5 h-5 rounded border transition-colors ${
-                      selection.selected
-                        ? 'bg-teal-600 border-teal-500'
-                        : 'bg-slate-700 border-slate-500 hover:border-slate-400'
-                    }`}
+                    className={`flex-shrink-0 w-5 h-5 rounded border transition-colors ${selection.selected
+                        ? 'bg-[var(--bda-primary)] border-[var(--bda-primary)]'
+                        : 'bg-[var(--bda-card)] border-[var(--bda-border)] hover:border-[var(--bda-text)]'
+                      }`}
                   >
                     {selection.selected && <Check className="w-4 h-4 text-white" />}
                   </button>
@@ -388,25 +386,25 @@ export const BuyCardsModal = memo(function BuyCardsModal({
                     <button
                       onClick={() => handleQuantityChange(card, index, -1)}
                       disabled={selection.quantity <= 1}
-                      className="p-1 text-slate-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
+                      className="p-1 text-[var(--bda-muted)] hover:text-[var(--bda-text)] disabled:opacity-30 disabled:cursor-not-allowed"
                     >
                       <Minus className="w-3 h-3" />
                     </button>
-                    <span className="w-6 text-center text-sm font-medium text-slate-200">
+                    <span className="w-6 text-center text-sm font-medium text-[var(--bda-text)]">
                       {selection.quantity}
                     </span>
                     <button
                       onClick={() => handleQuantityChange(card, index, 1)}
-                      className="p-1 text-slate-400 hover:text-white"
+                      className="p-1 text-[var(--bda-muted)] hover:text-[var(--bda-text)]"
                     >
                       <Plus className="w-3 h-3" />
                     </button>
                   </div>
 
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm text-slate-200 truncate">{card.name}</div>
-                    <div className="text-xs text-slate-400">
-                      TCG: <span className="text-slate-200">{formatPrice(tcgPrice)}</span>
+                    <div className="text-sm text-[var(--bda-text)] truncate">{card.name}</div>
+                    <div className="text-xs text-[var(--bda-muted)]">
+                      TCG: <span className="text-[var(--bda-text)]">{formatPrice(tcgPrice)}</span>
                     </div>
                   </div>
                 </div>
@@ -415,8 +413,8 @@ export const BuyCardsModal = memo(function BuyCardsModal({
           </div>
         </div>
 
-        <div className="text-sm text-slate-400">
-          Selected: <span className="text-teal-400 font-semibold">{selectedCount} cards ({totalQuantity} total)</span>
+        <div className="text-sm text-[var(--bda-muted)]">
+          Selected: <span className="text-[var(--bda-primary)] font-semibold">{selectedCount} cards ({totalQuantity} total)</span>
         </div>
       </div>
     </Modal>

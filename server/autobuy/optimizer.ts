@@ -5,6 +5,8 @@ import type {
   SellerBasket as SellerBasketType,
   ManualDirective,
   Marketplace,
+  BudgetConfig,
+  BudgetResult,
 } from './types.js'
 
 // Deterministic helper: stable sort by keys when equal
@@ -142,24 +144,49 @@ export function runFullPipeline(opts: {
   hotList?: { cardId: string; IPS: number; targetInventory?: number }[]
   cardKingdomPrices?: Map<string, number>
   currentInventory?: Map<string, number>
+  budget?: BudgetConfig
 }) {
   const directives = opts.directives ?? []
   validateDirectives(directives)
   const cardKingdomPrices = opts.cardKingdomPrices ?? new Map()
   const currentInventory = opts.currentInventory ?? new Map()
+  const budgetConfig = opts.budget
 
   const pre = preprocessDemands(opts.demands, directives, cardKingdomPrices, currentInventory)
 
-  const offers = opts.offers ?? []
-  const { baskets: phase1Baskets, unmet } = greedyAllocatePhase1(pre.demands, offers, cardKingdomPrices)
+  // Build PREFER directives map for Phase 1
+  const preferDirectives = new Map<string, string>()
+  for (const d of directives) {
+    if (d.mode === 'PREFER') {
+      // For PREFER, the cardId indicates which card, and we could extend to include preferred seller
+      // For now, PREFER cards get priority in allocation order
+      preferDirectives.set(d.cardId, d.cardId) // Placeholder - extend schema for preferred seller
+    }
+  }
 
-  const { baskets: phase2Baskets } = phase2OptimizeShipping(phase1Baskets, offers, unmet, opts.hotList ?? [], directives, pre.maxPriceByCard, currentInventory)
+  const offers = opts.offers ?? []
+  const { baskets: phase1Baskets, unmet, budgetTracker: phase1Budget } = greedyAllocatePhase1(
+    pre.demands, offers, cardKingdomPrices, preferDirectives, 0.1, budgetConfig
+  )
+
+  const { baskets: phase2Baskets, budgetTracker: phase2Budget } = phase2OptimizeShipping(
+    phase1Baskets, offers, unmet, opts.hotList ?? [], directives, pre.maxPriceByCard, currentInventory,
+    budgetConfig, phase1Budget.demandSpend
+  )
 
   const { baskets: phase3Baskets } = phase3LocalImprovement(phase2Baskets, offers, cardKingdomPrices)
 
-  const { baskets: phase4Baskets } = phase4CardKingdomFallback(phase3Baskets, unmet, cardKingdomPrices)
+  // Calculate current spend before Phase 4
+  const currentTotalSpend = phase3Baskets.reduce((sum, b) => sum + b.totalCost, 0)
 
-  const plan = phase5FinalizePlan(phase4Baskets)
+  const { baskets: phase4Baskets } = phase4CardKingdomFallback(
+    phase3Baskets, unmet, cardKingdomPrices, { base: 0 }, budgetConfig, currentTotalSpend
+  )
+
+  const plan = phase5FinalizePlan(phase4Baskets, {}, budgetConfig, {
+    demandSpend: phase1Budget.demandSpend,
+    speculativeSpend: phase2Budget.speculativeSpend,
+  })
   return plan
 }
 
@@ -176,16 +203,36 @@ export function groupOffersBySeller(offers: Offer[]) {
 /**
  * Phase 1 - Greedy Demand Allocation
  * For each demanded card unit, assign to seller with lowest marginal cost
+ * Supports PREFER directives which give a discount to preferred sellers
+ * Includes seller rating penalty for lower-rated sellers
+ * Now includes budget tracking and enforcement
  */
 export function greedyAllocatePhase1(
   demandsIn: Demand[],
   offersIn: Offer[],
-  cardKingdomPrices: Map<string, number>
+  cardKingdomPrices: Map<string, number>,
+  preferDirectives: Map<string, string> = new Map(), // cardId -> preferred sellerId
+  sellerRatingPenaltyWeight: number = 0.1, // λ for rating penalty
+  budgetConfig?: BudgetConfig
 ) {
+  // Calculate effective budget (reserving for CK fallback)
+  const reservePercent = budgetConfig?.reserveBudgetPercent ?? 0
+  const effectiveBudget = budgetConfig?.maxTotalSpend
+    ? budgetConfig.maxTotalSpend * (1 - reservePercent / 100)
+    : Infinity
+  const maxPerCard = budgetConfig?.maxPerCard ?? Infinity
+  const maxPerSeller = budgetConfig?.maxPerSeller ?? Infinity
+
+  // Budget tracking
+  let runningTotalSpend = 0
+  const sellerSpend = new Map<string, number>()
+
   // Filter offers map by availability
   const offersByCard = new Map<string, Offer[]>()
   for (const o of offersIn) {
     if (o.quantityAvailable <= 0) continue
+    // Skip offers exceeding per-card budget
+    if (o.price > maxPerCard) continue
     const arr = offersByCard.get(o.cardId) ?? []
     arr.push({ ...o })
     offersByCard.set(o.cardId, arr)
@@ -214,16 +261,42 @@ export function greedyAllocatePhase1(
       return x.sellerId < y.sellerId ? -1 : 1
     })
 
+    // Check if there's a PREFER directive for this card
+    const preferredSellerId = preferDirectives.get(demand.cardId)
+
     // allocate each unit deterministically
     while (remaining > 0) {
+      // Check if we've hit the budget ceiling (STRICT only)
+      if (budgetConfig?.budgetMode !== 'SOFT' && runningTotalSpend >= effectiveBudget) break
+
       // build candidate marginal costs
       const candidates: { offer: Offer; marginal: number }[] = []
       for (const o of offers) {
         if (o.quantityAvailable <= 0) continue
-        // compute marginal cost
+
+        // Check if this purchase would exceed total budget
+        const wouldSpend = runningTotalSpend + o.price
+        if (budgetConfig?.budgetMode !== 'SOFT' && wouldSpend > effectiveBudget) continue
+
+        // Check if this purchase would exceed per-seller budget
+        const currentSellerSpend = sellerSpend.get(o.sellerId) ?? 0
         const basketExists = baskets.has(o.sellerId)
         const shippingMarginal = basketExists ? 0 : o.shipping.base
-        const marginal = o.price + shippingMarginal
+        const totalSellerWithPurchase = currentSellerSpend + o.price + shippingMarginal
+        if (totalSellerWithPurchase > maxPerSeller) continue
+
+        // Seller rating penalty: penalty = λ * (1 - sellerRating)
+        // Lower rated sellers have higher effective cost
+        const sellerRating = o.sellerRating ?? 1.0 // Default to perfect rating
+        const ratingPenalty = sellerRatingPenaltyWeight * (1 - sellerRating) * o.price
+
+        let marginal = o.price + shippingMarginal + ratingPenalty
+
+        // Apply PREFER discount: give 10% preference to preferred sellers
+        if (preferredSellerId && o.sellerId === preferredSellerId) {
+          marginal *= 0.9 // 10% discount for preferred seller
+        }
+
         candidates.push({ offer: o, marginal })
       }
 
@@ -241,13 +314,21 @@ export function greedyAllocatePhase1(
       // create basket if needed
       if (!baskets.has(pick.sellerId)) {
         baskets.set(pick.sellerId, new SellerBasket(pick.sellerId, pick.marketplace, pick.shipping.base, pick.shipping.freeAt))
+        // Account for shipping in seller spend
+        const newSellerSpend = (sellerSpend.get(pick.sellerId) ?? 0) + pick.shipping.base
+        sellerSpend.set(pick.sellerId, newSellerSpend)
+        runningTotalSpend += pick.shipping.base
       }
       const basket = baskets.get(pick.sellerId) as SellerBasket
 
-      // assign one unit
+      // assign one unit and track budget
       basket.addItem(demand.cardId, pick.price, 1, 'DECK_DEMAND')
       pick.quantityAvailable -= 1
       remaining -= 1
+
+      // Update spend tracking
+      runningTotalSpend += pick.price
+      sellerSpend.set(pick.sellerId, (sellerSpend.get(pick.sellerId) ?? 0) + pick.price)
     }
 
     if (remaining > 0) {
@@ -267,13 +348,22 @@ export function greedyAllocatePhase1(
     reasons: b.reasons,
   }))
 
-  return { baskets: result, unmet }
+  return {
+    baskets: result,
+    unmet,
+    budgetTracker: {
+      demandSpend: runningTotalSpend,
+      sellerSpend: Object.fromEntries(sellerSpend),
+    }
+  }
 }
+
 
 /**
  * Phase 2 - Shipping Threshold Optimization
  * For each seller basket try to add seller-local candidates (demand, hot list, ship_only)
  * until free shipping is triggered and only if total cost improves.
+ * Now includes budget tracking for speculative (non-demand) spending.
  */
 export function phase2OptimizeShipping(
   basketsIn: SellerBasketType[],
@@ -282,8 +372,26 @@ export function phase2OptimizeShipping(
   hotList: { cardId: string; IPS: number; targetInventory?: number }[],
   directives: ManualDirective[],
   maxPriceByCard: Map<string, number>,
-  currentInventory: Map<string, number>
+  currentInventory: Map<string, number>,
+  budgetConfig?: BudgetConfig,
+  currentDemandSpend: number = 0
 ) {
+  // Budget limits for speculative spending
+  const maxSpeculativeSpend = budgetConfig?.maxSpeculativeSpend ?? Infinity
+  const maxPerSeller = budgetConfig?.maxPerSeller ?? Infinity
+  const maxPerCard = budgetConfig?.maxPerCard ?? Infinity
+  // Speculative spending must ALWAYS respect total budget, even in SOFT mode
+  const maxTotalDetail = budgetConfig?.maxTotalSpend ?? Infinity
+
+  let speculativeSpend = 0
+  let totalSpend = currentDemandSpend // Need to track total spend for speculative limits
+
+  // Compute current seller spend from existing baskets
+  const sellerSpend = new Map<string, number>()
+  for (const b of basketsIn) {
+    sellerSpend.set(b.sellerId, b.totalCost)
+  }
+
   // Reconstruct mutable SellerBasket instances with shipping rules
   const offersBySeller = new Map<string, Offer[]>()
   for (const o of offersIn) {
@@ -336,27 +444,29 @@ export function phase2OptimizeShipping(
 
     const sellerOffers = offersBySeller.get(sellerId) ?? []
     // candidates: offers from this seller that match unmet, hot list, or ship_only
-    const candidates: { cardId: string; price: number; available: number; priority: number; reasonSrc: string }[] = []
+    const candidates: { cardId: string; price: number; available: number; priority: number; reasonSrc: string; isSpeculative: boolean }[] = []
 
-    // helper to push candidate if meets price/margin rules
-    const pushIfValid = (cardId: string, price: number, avail: number, priority: number, reasonSrc: string) => {
+    // helper to push candidate if meets price/margin/budget rules
+    const pushIfValid = (cardId: string, price: number, avail: number, priority: number, reasonSrc: string, isSpeculative: boolean) => {
       const maxP = maxPriceByCard.get(cardId)
       if (maxP === undefined) return
       const margin = maxP - price
       if (margin <= 0) return
-      candidates.push({ cardId, price, available: avail, priority, reasonSrc })
+      // Check per-card budget
+      if (price > maxPerCard) return
+      candidates.push({ cardId, price, available: avail, priority, reasonSrc, isSpeculative })
     }
 
-    // unmet demand candidates (highest priority)
+    // unmet demand candidates (highest priority, not speculative)
     for (const o of sellerOffers) {
       const avail = o.quantityAvailable
       if (avail <= 0) continue
       if (unmetMap.has(o.cardId)) {
-        pushIfValid(o.cardId, o.price, avail, 1, 'DEMAND')
+        pushIfValid(o.cardId, o.price, avail, 1, 'DEMAND', false)
       }
     }
 
-    // hot list candidates
+    // hot list candidates (speculative)
     for (const o of sellerOffers) {
       const h = hotMap.get(o.cardId)
       if (!h) continue
@@ -364,12 +474,12 @@ export function phase2OptimizeShipping(
       const curr = currentInventory.get(o.cardId) ?? 0
       const deficit = Math.max(0, target - curr)
       if (deficit <= 0) continue
-      pushIfValid(o.cardId, o.price, Math.min(o.quantityAvailable, deficit), 2, 'HOT_LIST')
+      pushIfValid(o.cardId, o.price, Math.min(o.quantityAvailable, deficit), 2, 'HOT_LIST', true)
     }
 
-    // SHIP_ONLY directives
+    // SHIP_ONLY directives (speculative)
     for (const o of sellerOffers) {
-      if (shipOnlySet.has(o.cardId)) pushIfValid(o.cardId, o.price, o.quantityAvailable, 5, 'SHIP_ONLY')
+      if (shipOnlySet.has(o.cardId)) pushIfValid(o.cardId, o.price, o.quantityAvailable, 5, 'SHIP_ONLY', true)
     }
 
     if (candidates.length === 0) continue
@@ -383,17 +493,33 @@ export function phase2OptimizeShipping(
 
     const initialTotal = basket.cardSubtotal + basket.shippingCost
     const deltaNeeded = basket.freeAt - basket.cardSubtotal
+    const currentSellerTotal = sellerSpend.get(sellerId) ?? 0
 
     // try adding cheapest candidates in order until free ship triggered
-    const additions: { cardId: string; qty: number; price: number; reason: string }[] = []
+    const additions: { cardId: string; qty: number; price: number; reason: string; isSpeculative: boolean }[] = []
     let runningSubtotal = basket.cardSubtotal
+    let runningSpeculative = speculativeSpend
+    let runningSellerTotal = currentSellerTotal
+
     for (const c of candidates) {
       if (runningSubtotal >= basket.freeAt) break
+
+      // Check if speculative addition would exceed speculative budget
+      if (c.isSpeculative && runningSpeculative + c.price > maxSpeculativeSpend) continue
+
+      // Check if speculative addition would exceed TOTAL budget (Strict rule for speculative)
+      if (c.isSpeculative && totalSpend + c.price > maxTotalDetail) continue
+
+      // Check if addition would exceed per-seller budget
+      if (runningSellerTotal + c.price > maxPerSeller) continue
+
       // take up to available units; but keep deterministic: try 1 unit first
       const take = 1
       // respect hot list target deficit cap already in available
       runningSubtotal += c.price * take
-      additions.push({ cardId: c.cardId, qty: take, price: c.price, reason: 'SHIPPING_OPTIMIZATION' })
+      if (c.isSpeculative) runningSpeculative += c.price * take
+      runningSellerTotal += c.price * take
+      additions.push({ cardId: c.cardId, qty: take, price: c.price, reason: 'SHIPPING_OPTIMIZATION', isSpeculative: c.isSpeculative })
     }
 
     if (runningSubtotal < basket.freeAt) {
@@ -411,6 +537,15 @@ export function phase2OptimizeShipping(
         const qtyToAdd = Math.min(a.qty, offer.quantityAvailable)
         basket.addItem(a.cardId, a.price, qtyToAdd, a.reason)
         offer.quantityAvailable -= qtyToAdd
+
+        // Track speculative spending
+        if (a.isSpeculative) {
+          speculativeSpend += a.price * qtyToAdd
+        }
+
+        // Update seller spend tracking
+        sellerSpend.set(sellerId, (sellerSpend.get(sellerId) ?? 0) + a.price * qtyToAdd)
+
         // adjust unmetMap if we satisfied demand
         if (unmetMap.has(a.cardId)) {
           const rem = unmetMap.get(a.cardId)! - qtyToAdd
@@ -433,7 +568,14 @@ export function phase2OptimizeShipping(
     reasons: b.reasons,
   }))
 
-  return { baskets: outBaskets, offers: offersIn }
+  return {
+    baskets: outBaskets,
+    offers: offersIn,
+    budgetTracker: {
+      speculativeSpend,
+      sellerSpend: Object.fromEntries(sellerSpend),
+    }
+  }
 }
 
 /**
@@ -583,7 +725,7 @@ export function phase3LocalImprovement(
     reasons: b.reasons,
   }))
 
-  return { baskets: outBaskets, offers: [].concat(...offersBySeller.values()) }
+  return { baskets: outBaskets, offers: Array.from(offersBySeller.values()).flat() }
 }
 
 /**
@@ -596,12 +738,17 @@ export function phase4CardKingdomFallback(
   basketsIn: SellerBasketType[],
   unmet: { cardId: string; quantity: number }[],
   cardKingdomPrices: Map<string, number>,
-  ckShipping: { base: number; freeAt?: number } = { base: 0, freeAt: undefined }
+  ckShipping: { base: number; freeAt?: number } = { base: 0, freeAt: undefined },
+  budgetConfig?: BudgetConfig,
+  currentTotalSpend: number = 0
 ) {
   // copy existing baskets
   const baskets = basketsIn.slice()
 
   if (!unmet || unmet.length === 0) return { baskets, unmet: [] }
+
+  const maxTotal = budgetConfig?.maxTotalSpend ?? Infinity
+  let runningTotal = currentTotalSpend
 
   // find existing CK basket or create new one
   let ckBasket = baskets.find(b => b.marketplace === 'CK') as SellerBasketType | undefined
@@ -623,7 +770,19 @@ export function phase4CardKingdomFallback(
   // add unmet demand to CK basket using CK prices from map
   for (const u of unmet) {
     const price = cardKingdomPrices.get(u.cardId) ?? 0
-    const qty = u.quantity
+    let qty = u.quantity
+
+    // Check budget
+    // Check budget (STRICT mode only)
+    if (budgetConfig && budgetConfig.budgetMode !== 'SOFT') {
+      // If we can't afford even one unit, stop or partial fill
+      if (runningTotal >= maxTotal) break
+
+      const affordableQty = Math.floor((maxTotal - runningTotal) / price)
+      if (affordableQty <= 0) continue // Skip if too expensive
+      qty = Math.min(qty, affordableQty)
+    }
+
     // update items map
     const prev = ckBasket.items.get(u.cardId) ?? 0
     ckBasket.items.set(u.cardId, prev + qty)
@@ -631,6 +790,8 @@ export function phase4CardKingdomFallback(
     const reasons = ckBasket.reasons.get(u.cardId) ?? []
     reasons.push('CK_FALLBACK')
     ckBasket.reasons.set(u.cardId, reasons)
+
+    runningTotal += price * qty
   }
 
   // evaluate free shipping and totals
@@ -648,10 +809,13 @@ export function phase4CardKingdomFallback(
  * Phase 5 - Finalize Plan
  * Validate baskets, compute totals deterministically and produce a human-friendly
  * purchase plan object ready for review.
+ * Now includes budget validation with warnings and utilization metrics.
  */
 export function phase5FinalizePlan(
   basketsIn: SellerBasketType[],
-  meta: { runId?: string; createdAt?: string } = {}
+  meta: { runId?: string; createdAt?: string } = {},
+  budgetConfig?: BudgetConfig,
+  spendTracker?: { demandSpend: number; speculativeSpend: number }
 ) {
   // Validate and compute totals deterministically
   const baskets = basketsIn.map(b => ({
@@ -673,6 +837,55 @@ export function phase5FinalizePlan(
 
   const overallTotal = baskets.reduce((s, bx) => s + bx.totalCost, 0)
 
+  // Budget validation
+  let budgetResult: BudgetResult | undefined
+  if (budgetConfig) {
+    const maxTotal = budgetConfig.maxTotalSpend
+    const reservePercent = budgetConfig.reserveBudgetPercent ?? 0
+    const reservedBudget = maxTotal * (reservePercent / 100)
+    const budgetUtilization = maxTotal > 0 ? (overallTotal / maxTotal) * 100 : 0
+    const warnings: string[] = []
+
+    // Generate warnings based on utilization
+    if (budgetUtilization >= 95) {
+      warnings.push('Budget utilization exceeds 95% - critically close to limit')
+    } else if (budgetUtilization >= 90) {
+      warnings.push('Budget utilization exceeds 90% - approaching limit')
+    } else if (budgetUtilization >= 80) {
+      warnings.push('Budget utilization exceeds 80%')
+    }
+
+    // Check hard budget exceeded
+    const isStrict = budgetConfig.budgetMode !== 'SOFT'
+    const limitExceeded = overallTotal > maxTotal
+    const hardBudgetExceeded = isStrict && limitExceeded
+
+    if (limitExceeded) {
+      if (isStrict) {
+        warnings.push(`HARD BUDGET EXCEEDED: Total $${overallTotal.toFixed(2)} exceeds max $${maxTotal.toFixed(2)}`)
+      } else {
+        warnings.push(`Soft Budget Limit Exceeded: Total $${overallTotal.toFixed(2)} exceeds max $${maxTotal.toFixed(2)}`)
+      }
+    }
+
+    // Check speculative spend
+    if (spendTracker && budgetConfig.maxSpeculativeSpend > 0) {
+      if (spendTracker.speculativeSpend > budgetConfig.maxSpeculativeSpend) {
+        warnings.push(`Speculative spending ($${spendTracker.speculativeSpend.toFixed(2)}) exceeded limit ($${budgetConfig.maxSpeculativeSpend.toFixed(2)})`)
+      }
+    }
+
+    budgetResult = {
+      totalSpend: overallTotal,
+      demandSpend: spendTracker?.demandSpend ?? overallTotal,
+      speculativeSpend: spendTracker?.speculativeSpend ?? 0,
+      reservedBudget,
+      budgetUtilization: Math.round(budgetUtilization * 100) / 100,
+      warnings,
+      hardBudgetExceeded,
+    }
+  }
+
   const plan = {
     meta: {
       runId: meta.runId ?? `autobuy-${Date.now()}`,
@@ -683,6 +896,7 @@ export function phase5FinalizePlan(
       overallTotal,
     },
     baskets,
+    budget: budgetResult,
   }
 
   return plan

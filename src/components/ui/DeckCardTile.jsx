@@ -61,12 +61,12 @@ const getCompletionBg = (percentage) => {
  */
 const ManaSymbol = memo(function ManaSymbol({ symbol, size = 'sm' }) {
   const colors = {
-    W: 'bg-mtg-W-dark text-slate-900',
+    W: 'bg-mtg-W-dark text-[var(--bda-heading)]',
     U: 'bg-mtg-U text-white',
     B: 'bg-mtg-B-light text-white',
     R: 'bg-mtg-R text-white',
     G: 'bg-mtg-G text-white',
-    C: 'bg-mtg-C text-slate-900',
+    C: 'bg-mtg-C text-[var(--bda-heading)]',
   };
 
   const sizes = {
@@ -78,7 +78,7 @@ const ManaSymbol = memo(function ManaSymbol({ symbol, size = 'sm' }) {
     <span
       className={`
         inline-flex items-center justify-center rounded-full font-bold
-        ${colors[symbol] || 'bg-slate-600 text-white'}
+        ${colors[symbol] || 'bg-[var(--bda-muted)] text-white'}
         ${sizes[size]}
       `}
     >
@@ -103,8 +103,8 @@ const ActionButton = memo(function ActionButton({
   disabled = false,
 }) {
   const variants = {
-    default: 'bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white',
-    primary: 'bg-teal-600 hover:bg-teal-500 text-white',
+    default: 'bg-[var(--bda-card)] hover:bg-[var(--card-hover)] text-[var(--bda-muted)] hover:text-[var(--bda-text)]',
+    primary: 'bg-[var(--bda-primary)] hover:opacity-80 text-[var(--bda-primary-foreground)]',
     secondary: 'bg-purple-600 hover:bg-purple-500 text-white',
     danger: 'bg-red-600/20 hover:bg-red-600/40 text-red-400 hover:text-red-300',
     warning: 'bg-amber-600 hover:bg-amber-500 text-white',
@@ -147,7 +147,7 @@ const MissingCardRow = memo(function MissingCardRow({ card, onBuy }) {
     <div className="flex items-center justify-between py-2 px-3 bg-red-900/20 rounded-lg">
       <div className="flex-1 min-w-0">
         <span className="text-red-300 font-medium">{card.quantity}×</span>
-        <span className="text-slate-200 ml-2 truncate">{card.name}</span>
+        <span className="text-[var(--bda-text)] ml-2 truncate">{card.name}</span>
         {setDisplay && (
           <span className="text-slate-500 text-xs ml-2">[{setDisplay}]</span>
         )}
@@ -219,11 +219,11 @@ export const DeckCardTile = memo(function DeckCardTile({
   return (
     <div
       className={`
-        group relative bg-gradient-to-br from-slate-800 to-slate-900
-        border border-slate-700 hover:border-teal-500/50
+        group relative neo-card
+        hover:border-[var(--bda-primary)]/50
         rounded-xl overflow-hidden cursor-pointer
-        transition-all duration-200
-        hover:shadow-lg hover:shadow-teal-500/10
+        transition-all duration-300
+        hover:shadow-lg hover:shadow-[var(--bda-primary)]/10
         ${className}
       `}
       onClick={() => onSelect?.(deck)}
@@ -249,7 +249,7 @@ export const DeckCardTile = memo(function DeckCardTile({
                 const metaMap = await ensureCardMetadata(unique);
                 const sset = new Set();
                 deck.cards.forEach(c => {
-                  const key = `${(c.name||'').toLowerCase().trim()}|${(c.set||'').toLowerCase().trim()}`;
+                  const key = `${(c.name || '').toLowerCase().trim()}|${(c.set || '').toLowerCase().trim()}`;
                   const meta = metaMap[key] || getCachedMetadata(c.name, c.set);
                   (meta?.color_identity || []).forEach(ci => sset.add(String(ci).toUpperCase()));
                 });
@@ -287,7 +287,7 @@ export const DeckCardTile = memo(function DeckCardTile({
                 className="z-20"
               />
               {process.env.NODE_ENV !== 'production' && (
-                <div className="absolute top-3 left-3 text-[10px] text-slate-200 bg-black/30 px-2 py-0.5 rounded z-40">
+                <div className="absolute top-3 left-3 text-[10px] text-[var(--bda-text)] bg-black/30 px-2 py-0.5 rounded z-40">
                   <div>Keys: {mapped.join(', ')}</div>
                 </div>
               )}
@@ -297,7 +297,7 @@ export const DeckCardTile = memo(function DeckCardTile({
       </div>
 
       {/* Completion indicator bar */}
-      <div className="absolute top-0 left-0 right-0 h-1 bg-slate-700">
+      <div className="absolute top-0 left-0 right-0 h-1 bg-[var(--bda-border)]">
         <div
           className={`h-full bg-gradient-to-r ${getCompletionBg(completionPercentage)} to-transparent transition-all duration-500`}
           style={{ width: `${Math.min(100, completionPercentage)}%` }}
@@ -313,7 +313,7 @@ export const DeckCardTile = memo(function DeckCardTile({
                 type="text"
                 defaultValue={deck.name}
                 placeholder="Deck name"
-                className="w-full bg-slate-900 border border-teal-500 rounded-lg px-3 py-2 text-white font-semibold focus:outline-none focus:ring-2 focus:ring-teal-500/50"
+                className="w-full bg-[var(--input-bg)] border border-[var(--bda-primary)] rounded-lg px-3 py-2 text-[var(--bda-text)] font-semibold focus:outline-none focus:ring-2 focus:ring-[var(--bda-primary)]/50"
                 onBlur={(e) => onUpdateName?.(deck.id, e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') onUpdateName?.(deck.id, e.currentTarget.value);
@@ -324,10 +324,10 @@ export const DeckCardTile = memo(function DeckCardTile({
               />
             ) : (
               <>
-                <h3 className="text-lg font-bold text-white truncate group-hover:text-teal-300 transition-colors">
+                <h3 className="text-lg font-bold text-[var(--bda-text)] truncate group-hover:text-[var(--bda-primary)] transition-colors">
                   {deck.name}
                 </h3>
-                <p className="text-xs text-slate-400 mt-0.5">{deck.format || 'No format'}</p>
+                <p className="text-xs text-[var(--bda-muted)] mt-0.5">{deck.format || 'No format'}</p>
               </>
             )}
           </div>
@@ -339,7 +339,7 @@ export const DeckCardTile = memo(function DeckCardTile({
                 e.stopPropagation();
                 setShowActions(!showActions);
               }}
-              className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
+              className="p-2 text-[var(--bda-muted)] hover:text-[var(--bda-text)] hover:bg-[var(--card-hover)] rounded-lg transition-colors"
             >
               <MoreVertical className="w-5 h-5" />
             </button>
@@ -392,7 +392,7 @@ export const DeckCardTile = memo(function DeckCardTile({
                   )}
                   {onDelete && (
                     <>
-                      <div className="my-1 border-t border-slate-700" />
+                      <div className="my-1 border-t border-[var(--bda-border)]" />
                       <button
                         onClick={handleAction(() => onDelete(deck.id))}
                         className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-400 hover:bg-red-900/30"
@@ -419,28 +419,28 @@ export const DeckCardTile = memo(function DeckCardTile({
       </div>
 
       {/* Stats */}
-      <div className="px-4 py-3 border-t border-slate-700/50 bg-slate-900/30">
+      <div className="px-4 py-3 border-t border-[var(--bda-border)] bg-[var(--surface)]/30">
         <div className="grid grid-cols-3 gap-4 text-center">
           <div>
-            <div className="text-lg font-bold text-teal-300">{totalCards}</div>
-            <div className="text-xs text-slate-500">Cards</div>
+            <div className="text-lg font-bold text-[var(--bda-primary)]">{totalCards}</div>
+            <div className="text-xs text-[var(--bda-muted)]">Cards</div>
           </div>
           <div>
-            <div className="text-lg font-bold text-slate-300">{cardCount}</div>
-            <div className="text-xs text-slate-500">Unique</div>
+            <div className="text-lg font-bold text-[var(--bda-text)]">{cardCount}</div>
+            <div className="text-xs text-[var(--bda-muted)]">Unique</div>
           </div>
           <div>
             <div className={`text-lg font-bold ${getCompletionColor(completionPercentage)}`}>
               {completionPercentage.toFixed(0)}%
             </div>
-            <div className="text-xs text-slate-500">Complete</div>
+            <div className="text-xs text-[var(--bda-muted)]">Complete</div>
           </div>
         </div>
       </div>
 
       {/* Missing cards section */}
       {totalMissing > 0 && (
-        <div className="border-t border-slate-700/50">
+        <div className="border-t border-[var(--bda-border)]">
           <button
             onClick={handleToggleMissing}
             className="w-full flex items-center justify-between px-4 py-3 bg-red-900/10 hover:bg-red-900/20 transition-colors"
@@ -459,7 +459,7 @@ export const DeckCardTile = memo(function DeckCardTile({
           </button>
 
           {showMissing && (
-            <div className="px-4 py-3 space-y-2 max-h-48 overflow-y-auto bg-slate-900/50">
+            <div className="px-4 py-3 space-y-2 max-h-48 overflow-y-auto bg-[var(--input-bg)]">
               {onBuyMissing && (
                 <button
                   onClick={(e) => {
@@ -496,8 +496,8 @@ export const DeckCardTile = memo(function DeckCardTile({
       )}
 
       {/* Footer */}
-      <div className="px-4 py-3 border-t border-slate-700/50 flex items-center justify-between">
-        <div className="flex items-center gap-1 text-xs text-slate-500">
+      <div className="px-4 py-3 border-t border-[var(--bda-border)] flex items-center justify-between">
+        <div className="flex items-center gap-1 text-xs text-[var(--bda-muted)]">
           <Calendar className="w-3 h-3" />
           {formatDate(deck.created_at)}
         </div>
@@ -506,7 +506,7 @@ export const DeckCardTile = memo(function DeckCardTile({
             e.stopPropagation();
             onSelect?.(deck);
           }}
-          className="text-sm font-medium text-teal-400 hover:text-teal-300 transition-colors"
+          className="text-sm font-medium text-[var(--bda-primary)] hover:text-[var(--bda-primary)]/80 transition-colors"
         >
           View Details →
         </button>

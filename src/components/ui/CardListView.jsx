@@ -83,7 +83,7 @@ const CardRow = memo(function CardRow({
         group flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer
         transition-all duration-150 ease-out
         hover:bg-[var(--surface)]
-        ${isSelected ? 'bg-teal-500/10 ring-1 ring-teal-500/30' : ''}
+        ${isSelected ? 'bg-[var(--bda-primary)]/10 ring-1 ring-[var(--bda-primary)]/30' : ''}
       `}
       onClick={() => onCardClick?.(card)}
       onContextMenu={handleContextMenu}
@@ -100,8 +100,8 @@ const CardRow = memo(function CardRow({
             checked={isSelected}
             onChange={handleSelect}
             onClick={(e) => e.stopPropagation()}
-            className="w-4 h-4 rounded border-[var(--border)] bg-[var(--surface)] text-teal-500
-                       focus:ring-teal-500/50 focus:ring-offset-0 cursor-pointer"
+            className="w-4 h-4 rounded border-[var(--border)] bg-[var(--surface)] text-[var(--bda-primary)]
+                       focus:ring-[var(--bda-primary)]/50 focus:ring-offset-0 cursor-pointer"
             aria-label={`Select ${card.name}`}
           />
         </div>
@@ -191,7 +191,7 @@ const CardRow = memo(function CardRow({
       {/* Price */}
       {showPrice && (
         <div className="flex-shrink-0 text-right min-w-[70px]">
-          <div className="text-sm font-medium text-emerald-400">
+          <div className="text-sm font-medium text-[var(--bda-primary)]">
             {formatPrice(price)}
           </div>
           {quantity > 1 && totalPrice !== null && (
@@ -291,8 +291,8 @@ export const CardListView = memo(function CardListView({
               if (el) el.indeterminate = someSelected && !allSelected;
             }}
             onChange={handleSelectAll}
-            className="w-4 h-4 rounded border-[var(--border)] bg-[var(--surface)] text-teal-500
-                       focus:ring-teal-500/50 focus:ring-offset-0 cursor-pointer"
+            className="w-4 h-4 rounded border-[var(--border)] bg-[var(--surface)] text-[var(--bda-primary)]
+                       focus:ring-[var(--bda-primary)]/50 focus:ring-offset-0 cursor-pointer"
             aria-label="Select all cards"
           />
           <span className="text-sm text-[var(--text-muted)]">

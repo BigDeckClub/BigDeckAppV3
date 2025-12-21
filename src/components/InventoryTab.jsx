@@ -1,11 +1,11 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { X, Menu, Trash2, CheckSquare, Square, FolderInput, ListFilter } from 'lucide-react';
-import { 
+import {
   Breadcrumb,
-  CardGrid, 
-  InventorySearchBar, 
-  InventoryTabs, 
+  CardGrid,
+  InventorySearchBar,
+  InventoryTabs,
   DeckDetailView,
   FolderSidebar,
   FolderView
@@ -36,7 +36,7 @@ export const InventoryTab = ({
   const { confirm } = useConfirm();
   const { post } = useApi();
   const { showToast } = useToast();
-  
+
   // Get inventory state and operations from context
   const {
     inventory,
@@ -51,7 +51,7 @@ export const InventoryTab = ({
     restoreFromTrash,
     emptyTrash,
   } = useInventory();
-  
+
   // UI State
   const [activeTab, setActiveTab] = useState('all');
   const [viewMode, setViewMode] = useState('image');
@@ -60,19 +60,19 @@ export const InventoryTab = ({
   const [inventorySearch, setInventorySearch] = useState('');
   const [showSellModal, setShowSellModal] = useState(false);
   const [sellModalData, setSellModalData] = useState(null);
-  
+
   // Sort State
   const [sortField, setSortField] = useState('name');
   const [sortDirection, setSortDirection] = useState('asc');
   // Decklist filter state (all / in-decklist / not-in-decklist)
   const [decklistFilter, setDecklistFilter] = useState('all');
-  
+
   // Selection State for All Cards tab
   const [selectedCardIds, setSelectedCardIds] = useState(new Set());
   const [showBulkMove, setShowBulkMove] = useState(false);
   const [targetFolder, setTargetFolder] = useState('');
   const [isMoving, setIsMoving] = useState(false);
-  
+
   // Sort change handler
   const handleSortChange = useCallback((field, direction) => {
     setSortField(field);
@@ -229,8 +229,8 @@ export const InventoryTab = ({
       return matchesSearch && matchesDecklistFilter && totalQty === 0;
     });
     // Apply sorting to both lists
-    return { 
-      inStockCards: sortCards(inStock, sortField, sortDirection), 
+    return {
+      inStockCards: sortCards(inStock, sortField, sortDirection),
       outOfStockCards: sortCards(outOfStock, sortField, sortDirection)
     };
   }, [groupedInventory, inventorySearch, sortField, sortDirection, decklistFilter, decklistCardNames]);
@@ -256,22 +256,22 @@ export const InventoryTab = ({
 
   const handleBulkMove = useCallback(async () => {
     if (!targetFolder || selectedCardIds.size === 0 || isMoving) return;
-    
+
     const totalCards = selectedCardIds.size;
     setIsMoving(true);
-    
+
     try {
       // Show loading toast
       showToast(
         `Moving ${totalCards} card${totalCards === 1 ? '' : 's'} to ${targetFolder}...`,
         TOAST_TYPES.INFO
       );
-      
+
       // Disable the move button during operation
       setShowBulkMove(false);
-      
+
       // Prepare all API calls
-      const movePromises = Array.from(selectedCardIds).map(cardId => 
+      const movePromises = Array.from(selectedCardIds).map(cardId =>
         fetchWithAuth(`/api/inventory/${cardId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -281,19 +281,19 @@ export const InventoryTab = ({
           return cardId;
         })
       );
-      
+
       // Execute all moves in parallel
       const results = await Promise.allSettled(movePromises);
-      
+
       // Count successes and failures
       const successCount = results.filter(r => r.status === 'fulfilled').length;
       const failureCount = results.filter(r => r.status === 'rejected').length;
-      
+
       // Refresh inventory once after all moves
       if (loadInventory) {
         await loadInventory();
       }
-      
+
       // Show final result
       if (failureCount === 0) {
         showToast(
@@ -306,7 +306,7 @@ export const InventoryTab = ({
           TOAST_TYPES.WARNING
         );
       }
-      
+
       // Reset selection
       setSelectedCardIds(new Set());
       setTargetFolder('');
@@ -323,10 +323,10 @@ export const InventoryTab = ({
     if (activeTab !== 'all' || selectedCardIds.size === 0) {
       return { isAllSelected: false, uniqueCardsSelected: 0, totalCardsSelected: 0 };
     }
-    
+
     let uniqueCount = 0;
     let totalCount = 0;
-    
+
     Object.values(groupedInventory).forEach(items => {
       const hasSelectedItem = items.some(item => selectedCardIds.has(item.id));
       if (hasSelectedItem) {
@@ -339,11 +339,11 @@ export const InventoryTab = ({
         });
       }
     });
-    
+
     const allSelected = allCardIds.length > 0 && selectedCardIds.size === allCardIds.length;
     return { isAllSelected: allSelected, uniqueCardsSelected: uniqueCount, totalCardsSelected: totalCount };
   }, [activeTab, selectedCardIds, groupedInventory, allCardIds.length]);
-  
+
   const availableFolders = folderOps.createdFolders.filter(f => f !== 'Trash');
 
   // Navigation path for breadcrumb - MUST be before any non-hook logic
@@ -402,7 +402,7 @@ export const InventoryTab = ({
   }, []);
 
   return (
-    <div className="flex gap-6 min-h-screen bg-[var(--bg-page)] max-w-7xl mx-auto w-full">
+    <div className="flex gap-6 min-h-[calc(100vh-80px)] max-w-7xl mx-auto w-full relative">
       {/* Error Message Toast */}
       {successMessage && successMessage.includes('Error') && (
         <div className="fixed top-4 right-4 z-50 rounded-lg p-4 border flex items-center justify-between bg-red-900 bg-opacity-30 border-red-500 text-red-200">
@@ -415,7 +415,7 @@ export const InventoryTab = ({
       {/* Mobile Menu Button */}
       <button
         onClick={() => setSidebarOpen(!sidebarOpen)}
-        className="fixed bottom-8 right-8 md:hidden z-40 bg-gradient-to-br from-teal-600 to-teal-700 hover:from-teal-500 hover:to-teal-600 text-white p-4 rounded-full shadow-2xl shadow-teal-500/40 transition-all active:scale-90 min-w-14 min-h-14 flex items-center justify-center"
+        className="fixed bottom-8 right-8 md:hidden z-40 bg-[var(--bda-primary)] hover:opacity-90 text-[var(--bda-primary-foreground)] p-4 rounded-full shadow-2xl shadow-[var(--bda-primary)]/40 transition-all active:scale-90 min-w-14 min-h-14 flex items-center justify-center"
         title="Toggle Sidebar"
       >
         <Menu className="w-6 h-6" />
@@ -451,14 +451,14 @@ export const InventoryTab = ({
 
       {/* Overlay for mobile */}
       {sidebarOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/60 backdrop-blur-sm z-20 md:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* Main Content */}
-      <div className="flex-1 pb-24 md:pb-6 px-4 md:px-8 md:ml-0 pt-16">
+      <div className="flex-1 pb-24 md:pb-6 px-4 md:px-0 md:pr-2 pt-4">
         <InventorySearchBar
           ref={searchRef}
           inventorySearch={inventorySearch}
@@ -525,7 +525,7 @@ export const InventoryTab = ({
                     <div className="flex items-center gap-2">
                       <button
                         onClick={isAllSelected ? handleDeselectAll : handleSelectAll}
-                        className="flex items-center gap-2 px-3 py-1.5 bg-[var(--muted-surface)] hover:bg-slate-600 text-slate-200 rounded-md transition-colors text-sm font-medium"
+                        className="flex items-center gap-2 px-3 py-1.5 bg-[var(--muted-surface)] hover:bg-[var(--surface)] text-[var(--bda-text)] rounded-md transition-colors text-sm font-medium"
                       >
                         {isAllSelected ? (
                           <>
@@ -545,13 +545,13 @@ export const InventoryTab = ({
                         </span>
                       )}
                     </div>
-                    
+
                     {selectedCardIds.size > 0 && (
                       <div className="flex items-center gap-2">
                         {!showBulkMove ? (
                           <button
                             onClick={() => setShowBulkMove(true)}
-                            className="flex items-center gap-2 px-3 py-1.5 bg-teal-600 hover:bg-teal-500 text-white rounded-md transition-colors text-sm font-medium"
+                            className="flex items-center gap-2 px-3 py-1.5 bg-[var(--bda-primary)] hover:opacity-90 text-[var(--bda-primary-foreground)] rounded-md transition-colors text-sm font-medium"
                           >
                             <FolderInput className="w-4 h-4" />
                             Move to Folder
@@ -561,7 +561,7 @@ export const InventoryTab = ({
                             <select
                               value={targetFolder}
                               onChange={(e) => setTargetFolder(e.target.value)}
-                              className="px-3 py-1.5 bg-[var(--muted-surface)] border border-[var(--border)] text-slate-200 rounded-md text-sm focus:outline-none focus:border-teal-400"
+                              className="px-3 py-1.5 bg-[var(--muted-surface)] border border-[var(--border)] text-[var(--bda-text)] rounded-md text-sm focus:outline-none focus:border-[var(--bda-primary)]"
                             >
                               <option value="">Select folder...</option>
                               {availableFolders.map(folder => (
@@ -571,7 +571,7 @@ export const InventoryTab = ({
                             <button
                               onClick={handleBulkMove}
                               disabled={!targetFolder || isMoving}
-                              className="px-3 py-1.5 bg-teal-600 hover:bg-teal-500 disabled:bg-[var(--muted-surface)] disabled:text-[var(--text-muted)] text-white rounded-md transition-colors text-sm font-medium"
+                              className="px-3 py-1.5 bg-[var(--bda-primary)] hover:opacity-90 disabled:bg-[var(--muted-surface)] disabled:text-[var(--bda-muted)] text-[var(--bda-primary-foreground)] rounded-md transition-colors text-sm font-medium"
                             >
                               {isMoving ? 'Moving...' : 'Move'}
                             </button>
@@ -595,20 +595,20 @@ export const InventoryTab = ({
                       <select
                         value={decklistFilter}
                         onChange={(e) => setDecklistFilter(e.target.value)}
-                        className="px-3 py-1.5 bg-[var(--muted-surface)] border border-[var(--border)] text-slate-200 rounded-md text-sm focus:outline-none focus:border-teal-400"
+                        className="px-3 py-1.5 bg-[var(--muted-surface)] border border-[var(--border)] text-[var(--bda-text)] rounded-md text-sm focus:outline-none focus:border-[var(--bda-primary)]"
                       >
                         <option value="all">All Cards</option>
                         <option value="in-decklist">In Decklists</option>
                         <option value="not-in-decklist">Not in Decklists</option>
                       </select>
                       {decklistFilter !== 'all' && (
-                        <span className="text-xs text-teal-300">{inStockCards.length + outOfStockCards.length} cards</span>
+                        <span className="text-xs text-[var(--bda-primary)]">{inStockCards.length + outOfStockCards.length} cards</span>
                       )}
                     </div>
                   </div>
 
-                  <CardGrid 
-                    cards={inStockCards} 
+                  <CardGrid
+                    cards={inStockCards}
                     {...cardGridProps}
                     selectedCardIds={selectedCardIds}
                     setSelectedCardIds={setSelectedCardIds}
@@ -616,8 +616,8 @@ export const InventoryTab = ({
                   {inStockCards.length > 0 && outOfStockCards.length > 0 && (
                     <div className="border-t border-[var(--border)] pt-4">
                       <h3 className="text-sm font-semibold text-[var(--text-muted)] mb-3">Out of Stock</h3>
-                      <CardGrid 
-                        cards={outOfStockCards} 
+                      <CardGrid
+                        cards={outOfStockCards}
                         {...cardGridProps}
                         selectedCardIds={selectedCardIds}
                         setSelectedCardIds={setSelectedCardIds}
@@ -625,8 +625,8 @@ export const InventoryTab = ({
                     </div>
                   )}
                   {outOfStockCards.length > 0 && inStockCards.length === 0 && (
-                    <CardGrid 
-                      cards={outOfStockCards} 
+                    <CardGrid
+                      cards={outOfStockCards}
                       {...cardGridProps}
                       selectedCardIds={selectedCardIds}
                       setSelectedCardIds={setSelectedCardIds}
@@ -653,7 +653,7 @@ export const InventoryTab = ({
                   }
                   return acc;
                 }, { uniqueCount: 0, totalCount: 0, totalCost: 0 });
-                
+
                 return (
                   <>
                     <div className="bg-gradient-to-br from-red-900/30 to-slate-800 rounded-lg p-4 mb-4 border border-red-600/50">

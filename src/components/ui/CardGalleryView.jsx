@@ -68,8 +68,8 @@ const CardTile = memo(function CardTile({
         group relative rounded-xl overflow-hidden cursor-pointer
         transition-all duration-200 ease-out
         hover:scale-[1.02] hover:z-10
-        focus-within:ring-2 focus-within:ring-accent/50
-        ${isSelected ? 'ring-2 ring-teal-400 shadow-glow-accent' : ''}
+        focus-within:ring-2 focus-within:ring-[var(--bda-primary)]/50
+        ${isSelected ? 'ring-2 ring-[var(--bda-primary)] shadow-glow-accent' : ''}
       `}
       onClick={() => onCardClick?.(card)}
       onContextMenu={handleContextMenu}
@@ -86,8 +86,8 @@ const CardTile = memo(function CardTile({
             checked={isSelected}
             onChange={handleSelect}
             onClick={(e) => e.stopPropagation()}
-            className="w-4 h-4 rounded border-[var(--border)] bg-[var(--surface)] text-teal-500
-                       focus:ring-teal-500/50 focus:ring-offset-0 cursor-pointer
+            className="w-4 h-4 rounded border-[var(--border)] bg-[var(--surface)] text-[var(--bda-primary)]
+                       focus:ring-[var(--bda-primary)]/50 focus:ring-offset-0 cursor-pointer
                        opacity-0 group-hover:opacity-100 checked:opacity-100 transition-opacity"
             aria-label={`Select ${card.name}`}
           />
@@ -179,7 +179,7 @@ const CardTile = memo(function CardTile({
             <p className="text-xs text-[var(--text-muted)]">{getSetDisplayName(card.set)}</p>
           </div>
           {showPrice && (
-            <div className="flex items-center gap-1 text-sm font-medium text-emerald-400">
+            <div className="flex items-center gap-1 text-sm font-medium text-[var(--bda-primary)]">
               <DollarSign className="w-3 h-3" />
               <span>{formatPrice(price).replace('$', '')}</span>
             </div>

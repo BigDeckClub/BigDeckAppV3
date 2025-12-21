@@ -73,7 +73,7 @@ export function RapidEntryTable({
   // Keyboard navigation handler
   const handleKeyDown = useCallback((e, rowIndex, fieldType) => {
     const row = rows[rowIndex];
-    
+
     // Arrow keys for dropdown navigation
     if (showDropdown && fieldType === 'name' && searchResults.length > 0) {
       if (e.key === 'ArrowDown') {
@@ -106,7 +106,7 @@ export function RapidEntryTable({
         return;
       }
     }
-    
+
     // Escape to clear row
     if (e.key === 'Escape') {
       e.preventDefault();
@@ -114,7 +114,7 @@ export function RapidEntryTable({
       handleClearRow(rowIndex);
       return;
     }
-    
+
     // Ctrl+Shift+Enter to submit all pending cards
     if (e.key === 'Enter' && e.shiftKey && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
@@ -122,7 +122,7 @@ export function RapidEntryTable({
       handleSubmitAll();
       return;
     }
-    
+
     // Shift+Enter to add new row (queue card for batch submit)
     if (e.key === 'Enter' && e.shiftKey) {
       e.preventDefault();
@@ -136,7 +136,7 @@ export function RapidEntryTable({
       }
       return;
     }
-    
+
     // Ctrl+D or Ctrl+Shift+D to duplicate previous row
     if ((e.key === 'd' || e.key === 'D') && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
@@ -218,7 +218,7 @@ export function RapidEntryTable({
             Running total: <span className="font-semibold text-white">{runningTotal.count} cards</span>
           </div>
           <div className="text-sm text-slate-400">
-            Total: <span className="font-semibold text-teal-400">${runningTotal.price.toFixed(2)}</span>
+            Total: <span className="font-semibold text-[var(--bda-primary)]">${runningTotal.price.toFixed(2)}</span>
           </div>
           {pendingCount > 0 && (
             <div className="text-sm text-amber-400">
@@ -226,7 +226,7 @@ export function RapidEntryTable({
             </div>
           )}
         </div>
-        
+
         {/* Submit All Button */}
         {!lotModeEnabled && (
           <button
@@ -235,7 +235,7 @@ export function RapidEntryTable({
             className={`
               flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all
               ${pendingCount > 0 && !isSubmitting
-                ? 'bg-teal-600 hover:bg-teal-500 text-white shadow-lg shadow-teal-600/20'
+                ? 'bg-[var(--bda-primary)] hover:opacity-90 text-[var(--bda-primary-foreground)] shadow-lg shadow-[var(--bda-primary)]/20'
                 : 'bg-slate-700 text-slate-500 cursor-not-allowed'
               }
             `}
@@ -254,7 +254,7 @@ export function RapidEntryTable({
           </button>
         )}
       </div>
-      
+
       {/* Submit Error */}
       {submitError && (
         <div className="px-3 py-2 bg-red-900/30 border border-red-700 rounded-lg text-red-300 text-sm flex items-center justify-between">

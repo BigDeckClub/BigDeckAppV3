@@ -11,14 +11,14 @@ import PropTypes from 'prop-types';
  */
 const getBarColor = (index) => {
   const colors = [
-    'from-slate-500 to-slate-600',   // 0
-    'from-teal-500 to-teal-600',     // 1
-    'from-cyan-500 to-cyan-600',     // 2
-    'from-blue-500 to-blue-600',     // 3
-    'from-indigo-500 to-indigo-600', // 4
-    'from-purple-500 to-purple-600', // 5
-    'from-fuchsia-500 to-fuchsia-600', // 6
-    'from-pink-500 to-pink-600',     // 7+
+    'from-[var(--surface)]/50 to-[var(--surface)]', // 0
+    'from-[var(--bda-primary)]/80 to-[var(--bda-primary)]', // 1
+    'from-cyan-500/80 to-cyan-600',   // 2
+    'from-blue-500/80 to-blue-600',   // 3
+    'from-indigo-500/80 to-indigo-600', // 4
+    'from-purple-500/80 to-purple-600', // 5
+    'from-fuchsia-500/80 to-fuchsia-600', // 6
+    'from-pink-500/80 to-pink-600',   // 7+
   ];
   return colors[Math.min(index, colors.length - 1)];
 };
@@ -27,9 +27,9 @@ const getBarColor = (index) => {
  * Mana cost label
  */
 const ManaLabel = memo(function ManaLabel({ cmc }) {
-  if (cmc === 0) return <span className="text-[var(--text-muted)]">0</span>;
-  if (cmc >= 7) return <span className="text-[var(--text-muted)]">7+</span>;
-  return <span className="text-[var(--text-muted)]">{cmc}</span>;
+  if (cmc === 0) return <span className="text-[var(--bda-muted)]">0</span>;
+  if (cmc >= 7) return <span className="text-[var(--bda-muted)]">7+</span>;
+  return <span className="text-[var(--bda-muted)]">{cmc}</span>;
 });
 
 ManaLabel.propTypes = {
@@ -53,7 +53,7 @@ const CurveBar = memo(function CurveBar({
     <div className="flex flex-col items-center gap-2 flex-1 min-w-0">
       {/* Count label */}
       {showLabels && (
-        <span className={`text-xs font-medium ${count > 0 ? 'text-white' : 'text-slate-600'}`}>
+        <span className={`text-xs font-medium ${count > 0 ? 'text-[var(--bda-text)]' : 'text-[var(--bda-muted)]'}`}>
           {count > 0 ? count : ''}
         </span>
       )}
@@ -70,7 +70,7 @@ const CurveBar = memo(function CurveBar({
       </div>
 
       {/* CMC label */}
-      <div className="w-8 h-8 rounded-lg bg-[var(--surface)] flex items-center justify-center text-sm font-medium">
+      <div className="w-8 h-8 rounded-lg bg-[var(--surface)] flex items-center justify-center text-sm font-medium border border-[var(--border)]">
         <ManaLabel cmc={cmc} />
       </div>
     </div>
@@ -92,7 +92,7 @@ const CurveStats = memo(function CurveStats({ totalCards, averageCmc, landCount 
   return (
     <div className="grid grid-cols-3 gap-4 pt-4 border-t border-[var(--border)]">
       <div className="text-center">
-        <div className="text-lg font-bold text-teal-400">{totalCards}</div>
+        <div className="text-lg font-bold text-[var(--bda-primary)]">{totalCards}</div>
         <div className="text-xs text-[var(--text-muted)]">Non-land cards</div>
       </div>
       <div className="text-center">
@@ -131,9 +131,9 @@ export const ManaCurveChart = memo(function ManaCurveChart({
       const totalCards = Object.values(externalCurve).reduce((a, b) => a + b, 0);
       const avgCmc = totalCards > 0
         ? Object.entries(externalCurve).reduce((sum, [cmc, count]) => {
-            const cmcNum = cmc === '7+' ? 7 : parseInt(cmc, 10);
-            return sum + (cmcNum * count);
-          }, 0) / totalCards
+          const cmcNum = cmc === '7+' ? 7 : parseInt(cmc, 10);
+          return sum + (cmcNum * count);
+        }, 0) / totalCards
         : 0;
 
       return {
@@ -195,7 +195,7 @@ export const ManaCurveChart = memo(function ManaCurveChart({
     <div className={`bg-[var(--surface)] rounded-xl border border-[var(--border)] p-4 ${className}`}>
       {/* Title */}
       {title && (
-        <h3 className="text-sm font-medium text-[var(--text-muted)] mb-4">{title}</h3>
+        <h3 className="text-sm font-medium text-[var(--bda-muted)] mb-4">{title}</h3>
       )}
 
       {/* Chart */}

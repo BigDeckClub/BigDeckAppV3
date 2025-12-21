@@ -128,7 +128,7 @@ export function TutorialModal({ isOpen, onClose }) {
   const customHeader = (
     <div className="flex items-start gap-4 flex-1">
       <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-teal-500/30 to-cyan-500/30 border border-teal-500/50 flex items-center justify-center flex-shrink-0 mt-1">
-        <Icon className="w-6 h-6 text-teal-400" />
+        <Icon className="w-6 h-6 text-[var(--bda-primary)]" />
       </div>
       <div>
         <h2 className="text-2xl font-bold text-white">{step.title}</h2>
@@ -158,11 +158,10 @@ export function TutorialModal({ isOpen, onClose }) {
             <button
               key={index}
               onClick={() => setCurrentStep(index)}
-              className={`h-2 rounded-full transition ${
-                index === currentStep 
-                  ? 'bg-teal-400 w-6' 
-                  : 'bg-slate-600 w-2 hover:bg-slate-500'
-              }`}
+              className={`h-2 rounded-full transition ${index === currentStep
+                  ? 'bg-[var(--bda-primary)] w-6'
+                  : 'bg-[var(--bda-muted)]/30 w-2 hover:bg-[var(--bda-muted)]/50'
+                }`}
             />
           ))}
         </div>
@@ -191,7 +190,7 @@ export function TutorialModal({ isOpen, onClose }) {
         {step.details.map((detail, index) => (
           <li key={index} className="flex gap-3 items-start">
             <div className="w-6 h-6 rounded-full bg-teal-500/20 border border-teal-500/40 flex items-center justify-center flex-shrink-0 mt-0.5">
-              <span className="text-xs font-semibold text-teal-400">{index + 1}</span>
+              <span className="text-xs font-semibold text-[var(--bda-primary)]">{index + 1}</span>
             </div>
             <span className="text-[var(--text-muted)] leading-relaxed">{detail}</span>
           </li>

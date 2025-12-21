@@ -37,20 +37,19 @@ export const FolderSidebar = memo(function FolderSidebar({
 }) {
   const { confirm } = useConfirm();
   return (
-    <div className={`fixed md:static left-0 w-64 flex-shrink-0 space-y-4 h-full overflow-y-auto bg-slate-900 md:bg-transparent z-30 transition-transform duration-300 md:px-0 px-4 md:pl-8 md:pt-16 pt-20 ${
-      sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
-    }`}>
+    <div className={`fixed md:static left-0 w-64 flex-shrink-0 space-y-4 h-full overflow-y-auto bg-[var(--bda-bg)] md:bg-transparent z-30 transition-transform duration-300 md:px-0 px-4 md:pl-8 md:pt-16 pt-20 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+      }`}>
       {/* Folder List */}
-      <div className="rounded-lg p-4 border-2 border-teal-500/40 bg-gradient-to-br from-slate-800/60 to-slate-900/40 space-y-3 max-h-[calc(100vh-220px)] overflow-y-auto scrollbar-thumb-rounded shadow-xl shadow-slate-900/50">
+      <div className="rounded-lg p-4 border-2 border-[var(--bda-primary)]/40 bg-[var(--bda-surface)] space-y-3 max-h-[calc(100vh-220px)] overflow-y-auto scrollbar-thumb-rounded shadow-xl shadow-black/20">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-teal-300 flex items-center gap-1.5">
+          <h3 className="text-sm font-semibold text-[var(--bda-primary)] flex items-center gap-1.5">
             <Folder className="w-4 h-4" />
             Folders
           </h3>
           {!showCreateFolder && (
             <button
               onClick={() => setShowCreateFolder(true)}
-              className="text-teal-300 hover:text-teal-200 transition-colors"
+              className="text-[var(--bda-primary)] hover:opacity-80 transition-colors"
               title="New Folder"
             >
               <Plus className="w-4 h-4" />
@@ -59,13 +58,13 @@ export const FolderSidebar = memo(function FolderSidebar({
         </div>
 
         {showCreateFolder && (
-          <div className="flex flex-col gap-2 pb-3 border-b border-slate-700">
+          <div className="flex flex-col gap-2 pb-3 border-b border-[var(--bda-border)]">
             <input
               type="text"
               placeholder="Folder name"
               value={newFolderName}
               onChange={(e) => setNewFolderName(e.target.value)}
-              className="w-full bg-slate-800 border border-teal-600 rounded px-3 py-2 text-white placeholder-gray-400 text-sm"
+              className="w-full bg-[var(--input-bg)] border border-[var(--bda-primary)] rounded px-3 py-2 text-[var(--bda-text)] placeholder-[var(--bda-muted)] text-sm"
               autoFocus
               onKeyDown={async (e) => {
                 if (e.key === 'Enter' && newFolderName.trim()) {
@@ -105,14 +104,14 @@ export const FolderSidebar = memo(function FolderSidebar({
                   setNewFolderName('');
                   setShowCreateFolder(false);
                 }}
-                className="bg-slate-700 hover:bg-slate-600 text-white px-2 py-1 rounded text-xs transition-colors"
+                className="bg-[var(--bda-card)] hover:bg-[var(--card-hover)] text-[var(--bda-text)] px-2 py-1 rounded text-xs transition-colors"
               >
                 <X className="w-3 h-3" />
               </button>
             </div>
           </div>
         )}
-        
+
         {/* Unsorted Folder - for cards without a folder (DEFAULT TO TOP) */}
         {(() => {
           // Only use 'Uncategorized' folder now that backend is consistent
@@ -131,7 +130,7 @@ export const FolderSidebar = memo(function FolderSidebar({
             }, 0);
           }, 0);
           const isSelected = selectedFolder === 'Uncategorized';
-          
+
           return (
             <div key="Unsorted">
               <button
@@ -168,14 +167,13 @@ export const FolderSidebar = memo(function FolderSidebar({
                     moveCardFromDeckToFolder(deckCardData, 'Uncategorized');
                   }
                 }}
-                className={`w-full text-left p-3 rounded-t-lg transition-colors flex-1 ${
-                  isSelected
+                className={`w-full text-left p-3 rounded-t-lg transition-colors flex-1 ${isSelected
                     ? 'bg-teal-600/40 border-l-4 border-teal-400'
-                    : 'bg-slate-800 border-l-4 border-transparent hover:bg-slate-700'
-                }`}
+                    : 'bg-[var(--bda-card)] border-l-4 border-transparent hover:bg-[var(--card-hover)]'
+                  }`}
               >
-                <div className="font-medium text-sm text-slate-100">Unsorted</div>
-                <div className="text-xs text-teal-300">{totalAvailableCards} available • {uniqueCards} unique {uniqueCards === 1 ? 'card' : 'cards'}</div>
+                <div className="font-medium text-sm text-[var(--bda-text)]">Unsorted</div>
+                <div className="text-xs text-[var(--bda-primary)]">{totalAvailableCards} available • {uniqueCards} unique {uniqueCards === 1 ? 'card' : 'cards'}</div>
               </button>
             </div>
           );
@@ -198,7 +196,7 @@ export const FolderSidebar = memo(function FolderSidebar({
             }, 0);
           }, 0);
           const isSelected = selectedFolder === folderName;
-          
+
           return (
             <div key={folderName}>
               <button
@@ -235,14 +233,13 @@ export const FolderSidebar = memo(function FolderSidebar({
                     moveCardFromDeckToFolder(deckCardData, folderName);
                   }
                 }}
-                className={`w-full text-left p-3 rounded-t-lg transition-colors flex-1 ${
-                  isSelected
+                className={`w-full text-left p-3 rounded-t-lg transition-colors flex-1 ${isSelected
                     ? 'bg-teal-600/40 border-l-4 border-teal-400'
-                    : 'bg-slate-800 border-l-4 border-transparent hover:bg-slate-700'
-                }`}
+                    : 'bg-[var(--bda-card)] border-l-4 border-transparent hover:bg-[var(--card-hover)]'
+                  }`}
               >
-                <div className="font-medium text-sm text-slate-100">{folderName}</div>
-                <div className="text-xs text-teal-300">{totalAvailableCards} available • {uniqueCards} {uniqueCards === 1 ? 'unique' : 'unique'}</div>
+                <div className="font-medium text-sm text-[var(--bda-text)]">{folderName}</div>
+                <div className="text-xs text-[var(--bda-primary)]">{totalAvailableCards} available • {uniqueCards} {uniqueCards === 1 ? 'unique' : 'unique'}</div>
               </button>
             </div>
           );
@@ -257,7 +254,7 @@ export const FolderSidebar = memo(function FolderSidebar({
               return totalQty > 0;
             });
             const isSelected = selectedFolder === folder;
-            
+
             return (
               <div key={folder}>
                 <button
@@ -294,14 +291,13 @@ export const FolderSidebar = memo(function FolderSidebar({
                       moveCardFromDeckToFolder(deckCardData, folder);
                     }
                   }}
-                  className={`w-full text-left p-3 rounded-lg transition-all duration-300 border-l-4 ${
-                    isSelected
+                  className={`w-full text-left p-3 rounded-lg transition-all duration-300 border-l-4 ${isSelected
                       ? 'bg-gradient-to-r from-teal-600/50 to-cyan-600/30 border-l-teal-400 shadow-md shadow-teal-500/10'
-                      : 'bg-gradient-to-r from-slate-700/50 to-slate-800/50 border-l-transparent hover:from-slate-600/50 hover:to-slate-700/50 hover:shadow-md hover:shadow-slate-600/20'
-                  }`}
+                      : 'bg-[var(--bda-card)] border-l-transparent hover:bg-[var(--card-hover)]'
+                    }`}
                 >
-                  <div className="font-medium text-sm text-slate-100">{folder}</div>
-                  <div className="text-xs text-teal-300">{folderInStockCards.length} {folderInStockCards.length === 1 ? 'card' : 'cards'}</div>
+                  <div className="font-medium text-sm text-[var(--bda-text)]">{folder}</div>
+                  <div className="text-xs text-[var(--bda-primary)]">{folderInStockCards.length} {folderInStockCards.length === 1 ? 'card' : 'cards'}</div>
                 </button>
               </div>
             );
@@ -339,7 +335,7 @@ export const FolderSidebar = memo(function FolderSidebar({
           };
 
           return (
-            <div key="Trash" className="mt-4 pt-4 border-t border-slate-700">
+            <div key="Trash" className="mt-4 pt-4 border-t border-[var(--bda-border)]">
               <button
                 onClick={() => {
                   if (isSelected) {
@@ -374,11 +370,10 @@ export const FolderSidebar = memo(function FolderSidebar({
                     moveCardFromDeckToFolder(deckCardData, 'Trash');
                   }
                 }}
-                className={`w-full text-left p-3 rounded-lg transition-colors flex-1 ${
-                  isSelected
+                className={`w-full text-left p-3 rounded-lg transition-colors flex-1 ${isSelected
                     ? 'bg-red-600/40 border-l-4 border-red-400'
                     : 'bg-gradient-to-r from-red-900/30 to-slate-800/50 border-l-4 border-transparent hover:from-red-800/40 hover:to-slate-700/50'
-                }`}
+                  }`}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">

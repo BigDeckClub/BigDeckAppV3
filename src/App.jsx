@@ -149,7 +149,7 @@ function MTGInventoryTrackerContent() {
   }
 
   if (!user) {
-    return <LoginForm onSuccess={() => {}} />;
+    return <LoginForm onSuccess={() => { }} />;
   }
 
   return (
@@ -163,13 +163,13 @@ function MTGInventoryTrackerContent() {
       <main className="max-w-7xl mx-auto px-4 py-8 main-content md:px-4 px-3">
         {isLoading && (
           <div className="text-center py-8">
-            <div className="w-8 h-8 animate-spin mx-auto text-teal-400 border-2 border-teal-400 border-t-transparent rounded-full"></div>
+            <div className="w-8 h-8 animate-spin mx-auto text-[var(--bda-primary)] border-2 border-[var(--bda-primary)] border-t-transparent rounded-full"></div>
           </div>
         )}
 
         {activeTab === "inventory" && !isLoading && (
           <ErrorBoundaryWithRetry>
-            <Suspense fallback={<TabLoadingSpinner />}> 
+            <Suspense fallback={<TabLoadingSpinner />}>
               <InventoryTab
                 successMessage={successMessage}
                 setSuccessMessage={setSuccessMessage}
@@ -185,7 +185,7 @@ function MTGInventoryTrackerContent() {
 
         {activeTab === "imports" && !isLoading && (
           <ErrorBoundaryWithRetry>
-            <Suspense fallback={<TabLoadingSpinner />}> 
+            <Suspense fallback={<TabLoadingSpinner />}>
               <ImportTab
                 allSets={allSets}
                 searchResults={searchResults}
@@ -202,7 +202,7 @@ function MTGInventoryTrackerContent() {
         {activeTab === "autobuy" && !isLoading && (
           <ErrorBoundaryWithRetry>
             <Suspense fallback={<TabLoadingSpinner />}>
-              <AutobuyTab />
+              <AutobuyTab inventory={inventory} />
             </Suspense>
           </ErrorBoundaryWithRetry>
         )}
@@ -229,7 +229,7 @@ function MTGInventoryTrackerContent() {
         )}
 
         {activeTab === "settings" && !isLoading && (
-          <Suspense fallback={<TabLoadingSpinner />}> 
+          <Suspense fallback={<TabLoadingSpinner />}>
             <SettingsTab inventory={inventory} />
           </Suspense>
         )}

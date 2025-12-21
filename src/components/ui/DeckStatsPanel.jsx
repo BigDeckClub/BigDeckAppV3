@@ -38,7 +38,7 @@ const StatCard = memo(function StatCard({
   size = 'md',
 }) {
   const colors = {
-    teal: 'from-teal-500/20 to-teal-600/10 border-teal-500/30 text-teal-400',
+    teal: 'from-[var(--bda-primary)]/20 to-[var(--bda-primary)]/10 border-[var(--bda-primary)]/30 text-[var(--bda-primary)]',
     blue: 'from-blue-500/20 to-blue-600/10 border-blue-500/30 text-blue-400',
     purple: 'from-purple-500/20 to-purple-600/10 border-purple-500/30 text-purple-400',
     amber: 'from-amber-500/20 to-amber-600/10 border-amber-500/30 text-amber-400',
@@ -61,13 +61,13 @@ const StatCard = memo(function StatCard({
     >
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-xs text-ui-muted uppercase tracking-wider mb-1">{label}</p>
+          <p className="text-xs text-[var(--bda-muted)] uppercase tracking-wider mb-1">{label}</p>
           <p className={`text-2xl font-bold ${colors[color].split(' ').pop()}`}>{value}</p>
           {subValue && (
-            <p className="text-xs text-ui-muted mt-1">{subValue}</p>
+            <p className="text-xs text-[var(--bda-muted)] mt-1">{subValue}</p>
           )}
         </div>
-        <div className={`p-2 rounded-lg bg-ui-surface/50 ${colors[color].split(' ').pop()}`}>
+        <div className={`p-2 rounded-lg bg-[var(--surface)]/50 ${colors[color].split(' ').pop()}`}>
           <Icon className="w-5 h-5" />
         </div>
       </div>
@@ -97,7 +97,7 @@ const ProgressBar = memo(function ProgressBar({
   const percentage = max > 0 ? Math.min(100, (value / max) * 100) : 0;
 
   const colors = {
-    teal: 'bg-teal-500',
+    teal: 'bg-[var(--bda-primary)]',
     blue: 'bg-blue-500',
     emerald: 'bg-emerald-500',
     amber: 'bg-amber-500',
@@ -112,14 +112,14 @@ const ProgressBar = memo(function ProgressBar({
 
   return (
     <div className="space-y-1">
-      <div className={`bg-ui-surface rounded-full overflow-hidden ${heights[height]}`}>
+      <div className={`bg-[var(--surface)] rounded-full overflow-hidden ${heights[height]}`}>
         <div
           className={`${colors[color]} ${heights[height]} transition-all duration-500`}
           style={{ width: `${percentage}%` }}
         />
       </div>
       {showLabel && (
-        <div className="flex justify-between text-xs text-ui-muted">
+        <div className="flex justify-between text-xs text-[var(--bda-muted)]">
           <span>{value} / {max}</span>
           <span>{percentage.toFixed(0)}%</span>
         </div>
@@ -144,17 +144,17 @@ const TypeBreakdownItem = memo(function TypeBreakdownItem({ type, count, total, 
 
   return (
     <div className="flex items-center gap-3">
-      <div className="w-8 h-8 rounded-lg bg-ui-card flex items-center justify-center">
-        <Icon className="w-4 h-4 text-ui-muted" />
+      <div className="w-8 h-8 rounded-lg bg-[var(--bda-card)] flex items-center justify-center">
+        <Icon className="w-4 h-4 text-[var(--bda-muted)]" />
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between mb-1">
-          <span className="text-sm text-ui-text">{type}</span>
-          <span className="text-sm font-medium text-ui-muted">{count}</span>
+          <span className="text-sm text-[var(--bda-text)]">{type}</span>
+          <span className="text-sm font-medium text-[var(--bda-muted)]">{count}</span>
         </div>
-        <div className="h-1.5 bg-ui-surface/30 rounded-full overflow-hidden">
+        <div className="h-1.5 bg-[var(--surface)]/30 rounded-full overflow-hidden">
           <div
-            className="h-full bg-gradient-to-r from-teal-500 to-cyan-500"
+            className="h-full bg-gradient-to-r from-[var(--bda-primary)] to-cyan-500"
             style={{ width: `${percentage}%` }}
           />
         </div>
@@ -305,13 +305,13 @@ export const DeckStatsPanel = memo(function DeckStatsPanel({
       </div>
 
       {/* Completion progress */}
-      <div className="bg-ui-surface/50 rounded-xl p-4 border border-ui-border">
+      <div className="bg-[var(--surface)]/50 rounded-xl p-4 border border-[var(--border)]">
         <div className="flex items-center justify-between mb-3">
-          <h4 className="text-sm font-medium text-ui-heading flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-ui-accent" />
+          <h4 className="text-sm font-medium text-[var(--bda-heading)] flex items-center gap-2">
+            <TrendingUp className="w-4 h-4 text-[var(--bda-primary)]" />
             Deck Completion
           </h4>
-          <span className="text-sm text-ui-muted">
+          <span className="text-sm text-[var(--bda-muted)]">
             {ownedCount} / {stats.totalCards} cards
           </span>
         </div>
@@ -325,8 +325,8 @@ export const DeckStatsPanel = memo(function DeckStatsPanel({
 
       {/* Type breakdown */}
       {showTypeBreakdown && Object.keys(stats.types).length > 0 && (
-        <div className="bg-ui-surface/50 rounded-xl p-4 border border-ui-border">
-          <h4 className="text-sm font-medium text-ui-heading mb-4 flex items-center gap-2">
+        <div className="bg-[var(--surface)]/50 rounded-xl p-4 border border-[var(--border)]">
+          <h4 className="text-sm font-medium text-[var(--bda-heading)] mb-4 flex items-center gap-2">
             <Package className="w-4 h-4 text-purple-400" />
             Card Type Breakdown
           </h4>
@@ -347,8 +347,8 @@ export const DeckStatsPanel = memo(function DeckStatsPanel({
       )}
 
       {/* Rarity breakdown */}
-      <div className="bg-ui-surface/50 rounded-xl p-4 border border-ui-border">
-        <h4 className="text-sm font-medium text-ui-heading mb-4 flex items-center gap-2">
+      <div className="bg-[var(--surface)]/50 rounded-xl p-4 border border-[var(--border)]">
+        <h4 className="text-sm font-medium text-[var(--bda-heading)] mb-4 flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-amber-400" />
           Rarity Distribution
         </h4>
@@ -362,12 +362,12 @@ export const DeckStatsPanel = memo(function DeckStatsPanel({
             <div className="text-xs text-ui-muted">Rare</div>
           </div>
           <div className="text-center">
-            <div className="text-xl font-bold text-ui-text">{stats.rarities.uncommon}</div>
-            <div className="text-xs text-ui-muted">Uncommon</div>
+            <div className="text-xl font-bold text-[var(--bda-text)]">{stats.rarities.uncommon}</div>
+            <div className="text-xs text-[var(--bda-muted)]">Uncommon</div>
           </div>
           <div className="text-center">
-            <div className="text-xl font-bold text-ui-text">{stats.rarities.common}</div>
-            <div className="text-xs text-ui-muted">Common</div>
+            <div className="text-xl font-bold text-[var(--bda-text)]">{stats.rarities.common}</div>
+            <div className="text-xs text-[var(--bda-muted)]">Common</div>
           </div>
         </div>
       </div>

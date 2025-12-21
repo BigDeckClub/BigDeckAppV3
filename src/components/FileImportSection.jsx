@@ -26,12 +26,12 @@ export const FileImportSection = ({
 }) => {
   const { showToast } = useToast();
   const fileInputRef = useRef(null);
-  
+
   const [isDragging, setIsDragging] = useState(false);
   const [selectedFormat, setSelectedFormat] = useState('auto');
   const [selectedFolder, setSelectedFolder] = useState('Unsorted');
   const [editingId, setEditingId] = useState(null);
-  
+
   const {
     parsedCards,
     detectedFormat,
@@ -44,7 +44,7 @@ export const FileImportSection = ({
     removeCard,
     importCards,
     clearCards,
-  } = useFileImport({ 
+  } = useFileImport({
     addInventoryItem,
     showToast: (message, type) => showToast(message, mapToastType(type)),
   });
@@ -62,13 +62,13 @@ export const FileImportSection = ({
   // Handle file selection
   const handleFileSelect = useCallback((file) => {
     if (!file) return;
-    
+
     const extension = file.name.split('.').pop().toLowerCase();
     if (!['csv', 'txt'].includes(extension)) {
       showToast('Please select a CSV or TXT file', TOAST_TYPES.WARNING);
       return;
     }
-    
+
     parseFile(file, selectedFormat);
   }, [parseFile, selectedFormat, showToast]);
 
@@ -94,7 +94,7 @@ export const FileImportSection = ({
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
-    
+
     const files = e.dataTransfer?.files;
     if (files && files.length > 0) {
       handleFileSelect(files[0]);
@@ -218,10 +218,9 @@ export const FileImportSection = ({
             </select>
             <button
               onClick={() => downloadTemplate(selectedFormat)}
-              className={`px-3 py-2 rounded-lg transition-colors ${
-                  selectedFormat === 'auto' 
-                    ? 'bg-ui-surface text-ui-muted cursor-not-allowed' 
-                    : 'bg-ui-surface hover:bg-ui-surface/90'
+              className={`px-3 py-2 rounded-lg transition-colors ${selectedFormat === 'auto'
+                  ? 'bg-ui-surface text-ui-muted cursor-not-allowed'
+                  : 'bg-ui-surface hover:bg-ui-surface/90'
                 }`}
               title={selectedFormat === 'auto' ? 'Select a format to download its template' : 'Download selected template'}
               type="button"
@@ -242,8 +241,8 @@ export const FileImportSection = ({
         onClick={openFilePicker}
         className={`
           relative border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-all
-          ${isDragging 
-            ? 'border-ui-primary bg-ui-primary/10' 
+          ${isDragging
+            ? 'border-ui-primary bg-ui-primary/10'
             : 'border-ui-border hover:border-ui-border hover:bg-ui-surface/30'
           }
         `}
@@ -255,7 +254,7 @@ export const FileImportSection = ({
           onChange={handleInputChange}
           className="hidden"
         />
-        
+
         {isLoading ? (
           <div className="flex flex-col items-center gap-3">
             <Loader2 className="w-10 h-10 text-ui-primary animate-spin" />
@@ -325,17 +324,17 @@ export const FileImportSection = ({
             <div className="space-y-2">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-ui-muted">Importing cards...</span>
-                <span className="text-teal-400">
+                <span className="text-[var(--bda-primary)]">
                   {importProgress.current} / {importProgress.total}
                 </span>
               </div>
               <div className="h-2 bg-ui-surface rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-teal-500 transition-all duration-300"
-                  style={{ 
-                    width: `${importProgress.total > 0 
-                      ? (importProgress.current / importProgress.total) * 100 
-                      : 0}%` 
+                  className="h-full bg-[var(--bda-primary)] transition-all duration-300"
+                  style={{
+                    width: `${importProgress.total > 0
+                      ? (importProgress.current / importProgress.total) * 100
+                      : 0}%`
                   }}
                 />
               </div>
@@ -360,8 +359,8 @@ export const FileImportSection = ({
                 </thead>
                 <tbody className="divide-y divide-ui-border">
                   {parsedCards.map((card) => (
-                    <tr 
-                      key={card.id} 
+                    <tr
+                      key={card.id}
                       className={`
                         ${card.status === 'imported' ? 'bg-emerald-900/10' : ''}
                         ${card.status === 'error' ? 'bg-red-900/10' : ''}
@@ -376,7 +375,7 @@ export const FileImportSection = ({
                               type="text"
                               value={card.name}
                               onChange={(e) => updateCard(card.id, { name: e.target.value })}
-                              className="w-full bg-ui-surface border border-ui-border rounded px-2 py-1 text-ui-text text-sm focus:outline-none focus:ring-1 focus:ring-teal-400"
+                              className="w-full bg-ui-surface border border-ui-border rounded px-2 py-1 text-ui-text text-sm focus:outline-none focus:ring-1 focus:ring-[var(--bda-primary)]"
                             />
                           </td>
                           <td className="px-3 py-2">
@@ -384,7 +383,7 @@ export const FileImportSection = ({
                               type="text"
                               value={getSetCode(card.set)}
                               onChange={(e) => updateCard(card.id, { set: e.target.value.toUpperCase() })}
-                              className="w-20 bg-ui-surface border border-ui-border rounded px-2 py-1 text-ui-text text-sm focus:outline-none focus:ring-1 focus:ring-teal-400"
+                              className="w-20 bg-ui-surface border border-ui-border rounded px-2 py-1 text-ui-text text-sm focus:outline-none focus:ring-1 focus:ring-[var(--bda-primary)]"
                             />
                           </td>
                           <td className="px-3 py-2 text-center">
@@ -393,14 +392,14 @@ export const FileImportSection = ({
                               min="1"
                               value={card.quantity}
                               onChange={(e) => updateCard(card.id, { quantity: parseInt(e.target.value, 10) || 1 })}
-                              className="w-16 bg-ui-surface border border-ui-border rounded px-2 py-1 text-ui-text text-sm text-center focus:outline-none focus:ring-1 focus:ring-teal-400"
+                              className="w-16 bg-ui-surface border border-ui-border rounded px-2 py-1 text-ui-text text-sm text-center focus:outline-none focus:ring-1 focus:ring-[var(--bda-primary)]"
                             />
                           </td>
                           <td className="px-3 py-2 text-center">
                             <select
                               value={card.condition}
                               onChange={(e) => updateCard(card.id, { condition: e.target.value })}
-                              className="bg-ui-surface border border-ui-border rounded px-2 py-1 text-ui-text text-sm focus:outline-none focus:ring-1 focus:ring-teal-400"
+                              className="bg-ui-surface border border-ui-border rounded px-2 py-1 text-ui-text text-sm focus:outline-none focus:ring-1 focus:ring-[var(--bda-primary)]"
                             >
                               {QUALITY_OPTIONS.map(q => (
                                 <option key={q} value={q}>{q}</option>
@@ -412,7 +411,7 @@ export const FileImportSection = ({
                               type="checkbox"
                               checked={card.foil}
                               onChange={(e) => updateCard(card.id, { foil: e.target.checked })}
-                              className="w-4 h-4 rounded border-ui-border bg-ui-surface text-teal-500 focus:ring-teal-400"
+                              className="w-4 h-4 rounded border-ui-border bg-ui-surface text-[var(--bda-primary)] focus:ring-[var(--bda-primary)]"
                             />
                           </td>
                           <td className="px-3 py-2 text-right">
@@ -422,7 +421,7 @@ export const FileImportSection = ({
                               min="0"
                               value={card.price}
                               onChange={(e) => updateCard(card.id, { price: e.target.value })}
-                              className="w-20 bg-ui-surface border border-ui-border rounded px-2 py-1 text-ui-text text-sm text-right focus:outline-none focus:ring-1 focus:ring-teal-400"
+                              className="w-20 bg-ui-surface border border-ui-border rounded px-2 py-1 text-ui-text text-sm text-right focus:outline-none focus:ring-1 focus:ring-[var(--bda-primary)]"
                             />
                           </td>
                           <td className="px-3 py-2 text-center">
@@ -431,7 +430,7 @@ export const FileImportSection = ({
                           <td className="px-3 py-2 text-center">
                             <button
                               onClick={() => setEditingId(null)}
-                              className="p-1 text-teal-400 hover:text-teal-300"
+                              className="p-1 text-[var(--bda-primary)] hover:opacity-80"
                               title="Done editing"
                               type="button"
                             >
@@ -502,14 +501,14 @@ export const FileImportSection = ({
             >
               Clear All
             </button>
-            
+
             <button
               onClick={handleImport}
               disabled={isImporting || pendingCount === 0}
               className={`
                 flex items-center gap-2 px-6 py-2 rounded-lg font-medium transition-all text-sm
                 ${pendingCount > 0 && !isImporting
-                  ? 'bg-teal-600 hover:bg-teal-500 text-white'
+                  ? 'bg-[var(--bda-primary)] hover:opacity-90 text-[var(--bda-primary-foreground)]'
                   : 'bg-ui-surface text-ui-muted cursor-not-allowed'
                 }
               `}

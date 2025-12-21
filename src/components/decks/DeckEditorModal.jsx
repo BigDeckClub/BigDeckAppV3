@@ -20,7 +20,7 @@ export function DeckEditorModal({ deck, onClose, onSave }) {
   const filteredCards = useMemo(() => {
     if (!searchTerm) return editedCards;
     const term = searchTerm.toLowerCase();
-    return editedCards.filter(card => 
+    return editedCards.filter(card =>
       card.name?.toLowerCase().includes(term)
     );
   }, [editedCards, searchTerm]);
@@ -29,7 +29,7 @@ export function DeckEditorModal({ deck, onClose, onSave }) {
   const handleQuantityChange = (index, newQuantity) => {
     const qty = parseInt(newQuantity) || 0;
     if (qty < 1) return;
-    
+
     const updated = [...editedCards];
     updated[index] = { ...updated[index], quantity: qty };
     setEditedCards(updated);
@@ -82,7 +82,7 @@ export function DeckEditorModal({ deck, onClose, onSave }) {
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-[var(--border)]">
           <div>
-            <h2 className="text-xl font-bold text-teal-300">Edit Deck: {deck.name}</h2>
+            <h2 className="text-xl font-bold text-[var(--bda-primary)]">Edit Deck: {deck.name}</h2>
             <p className="text-sm text-[var(--text-muted)] mt-1">
               {totalCards} cards • {editedCards.length} unique
             </p>
@@ -99,7 +99,7 @@ export function DeckEditorModal({ deck, onClose, onSave }) {
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {/* Add New Card Section */}
           <div className="bg-[var(--bg-page)] rounded-lg border border-[var(--border)] p-4">
-            <h3 className="text-sm font-semibold text-teal-300 mb-3 flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-[var(--bda-primary)] mb-3 flex items-center gap-2">
               <Plus className="w-4 h-4" />
               Add Card
             </h3>
@@ -110,7 +110,7 @@ export function DeckEditorModal({ deck, onClose, onSave }) {
                 value={newCardName}
                 onChange={(e) => setNewCardName(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleAddCard()}
-                className="md:col-span-2 px-3 py-2 bg-[var(--muted-surface)] border border-[var(--border)] rounded text-white placeholder-slate-400 focus:outline-none focus:border-teal-400"
+                className="md:col-span-2 px-3 py-2 bg-[var(--muted-surface)] border border-[var(--border)] rounded text-[var(--bda-text)] placeholder-[var(--bda-muted)] focus:outline-none focus:border-[var(--bda-primary)]"
               />
               <input
                 type="number"
@@ -118,19 +118,19 @@ export function DeckEditorModal({ deck, onClose, onSave }) {
                 min="1"
                 value={newCardQuantity}
                 onChange={(e) => setNewCardQuantity(parseInt(e.target.value) || 1)}
-                className="px-3 py-2 bg-[var(--muted-surface)] border border-[var(--border)] rounded text-white placeholder-slate-400 focus:outline-none focus:border-teal-400"
+                className="px-3 py-2 bg-[var(--muted-surface)] border border-[var(--border)] rounded text-[var(--bda-text)] placeholder-[var(--bda-muted)] focus:outline-none focus:border-[var(--bda-primary)]"
               />
               <input
                 type="text"
                 placeholder="Set (optional)"
                 value={newCardSet}
                 onChange={(e) => setNewCardSet(e.target.value)}
-                className="px-3 py-2 bg-[var(--muted-surface)] border border-[var(--border)] rounded text-white placeholder-slate-400 focus:outline-none focus:border-teal-400"
+                className="px-3 py-2 bg-[var(--muted-surface)] border border-[var(--border)] rounded text-[var(--bda-text)] placeholder-[var(--bda-muted)] focus:outline-none focus:border-[var(--bda-primary)]"
               />
             </div>
             <button
               onClick={handleAddCard}
-              className="mt-2 w-full px-4 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded-lg transition-colors font-semibold"
+              className="mt-2 w-full px-4 py-2 bg-[var(--bda-primary)] hover:opacity-90 text-[var(--bda-primary-foreground)] rounded-lg transition-colors font-semibold"
             >
               Add to Deck
             </button>
@@ -144,7 +144,7 @@ export function DeckEditorModal({ deck, onClose, onSave }) {
               placeholder="Search cards in deck..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-[var(--muted-surface)] border border-[var(--border)] rounded text-white placeholder-slate-400 focus:outline-none focus:border-teal-400"
+              className="w-full pl-10 pr-4 py-2 bg-[var(--muted-surface)] border border-[var(--border)] rounded text-[var(--bda-text)] placeholder-[var(--bda-muted)] focus:outline-none focus:border-[var(--bda-primary)]"
             />
           </div>
 
@@ -168,7 +168,7 @@ export function DeckEditorModal({ deck, onClose, onSave }) {
                       editedCards.findIndex(c => c === card),
                       e.target.value
                     )}
-                    className="w-16 px-2 py-1 bg-[var(--muted-surface)] border border-[var(--border)] rounded text-white text-center focus:outline-none focus:border-teal-400"
+                    className="w-16 px-2 py-1 bg-[var(--muted-surface)] border border-[var(--border)] rounded text-[var(--bda-text)] text-center focus:outline-none focus:border-[var(--bda-primary)]"
                   />
                   <div className="flex-1">
                     <div className="text-slate-100 font-medium">{card.name}</div>
@@ -201,7 +201,7 @@ export function DeckEditorModal({ deck, onClose, onSave }) {
           <button
             onClick={handleSave}
             disabled={isSaving}
-            className="px-4 py-2 bg-teal-600 hover:bg-teal-500 disabled:bg-[var(--muted-surface)] disabled:text-[var(--text-muted)] text-white rounded-lg transition-colors font-semibold flex items-center gap-2"
+            className="px-4 py-2 bg-[var(--bda-primary)] hover:opacity-90 disabled:bg-[var(--muted-surface)] disabled:text-[var(--text-muted)] text-[var(--bda-primary-foreground)] rounded-lg transition-colors font-semibold flex items-center gap-2"
           >
             {isSaving ? (
               <>

@@ -12,28 +12,45 @@
   --bda-ring: 0 0 0 3px rgba(20, 184, 166, 0.15);
   --bda-elevation-1: 0 4px 6px -1px rgba(0, 0, 0, 0.08);
   
-  --header-bg: rgba(255, 249, 242, 0.95);
-  --input-bg: #F1E9E1;
-  --card-hover: rgba(23, 33, 38, 0.06);
+  --header-bg: rgba(255, 249, 242, 0.9);
+  --input-bg: #FFFBF7;
+  --card-hover: rgba(23, 33, 38, 0.04);
+  
+  --bda-secondary: #0D9488;
+  --glass-bg: rgba(255, 255, 255, 0.6);
+  --glass-border: rgba(23, 33, 38, 0.08);
+  --primary-rgb: 20, 184, 166;
 }
 
 .theme-dark {
-  --bda-bg: #0C1424;
-  --bda-surface: #111B2E;
-  --bda-card: rgba(17, 27, 46, 0.85);
-  --bda-text: #E8EEF6;
-  --bda-heading: #F4F8FC;
-  --bda-muted: #8B99AB;
-  --bda-border: rgba(255, 255, 255, 0.08);
-  --bda-primary: #14B8A6;
-  --bda-primary-foreground: #042f2e;
-  --bda-accent: #14B8A6;
-  --bda-ring: 0 0 0 3px rgba(20, 184, 166, 0.2);
-  --bda-elevation-1: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+  /* Rich Midnight Palette */
+  --bda-bg: #0B1120; /* Deep midnight blue */
+  --bda-surface: #151F32; /* Slightly lighter midnight */
+  --bda-card: rgba(30, 41, 59, 0.7); /* Glass-like card base */
   
-  --header-bg: rgba(17, 27, 46, 0.95);
-  --input-bg: #172033;
-  --card-hover: rgba(255, 255, 255, 0.04);
+  /* Text & Content */
+  --bda-text: #E2E8F0;
+  --bda-heading: #F8FAFC;
+  --bda-muted: #94A3B8;
+  
+  /* Borders & Interactive */
+  --bda-border: rgba(148, 163, 184, 0.1);
+  --bda-primary: #2DD4BF; /* Teal-400 */
+  --bda-primary-foreground: #0F172A;
+  --bda-secondary: #0EA5E9; /* Sky-500 for gradients */
+  --bda-accent: #2DD4BF;
+  
+  /* Effects */
+  --bda-ring: 0 0 0 3px rgba(45, 212, 191, 0.2);
+  --bda-elevation-1: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+  --glass-bg: rgba(30, 41, 59, 0.4);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --primary-rgb: 45, 212, 191;
+  
+  /* Component Specific */
+  --header-bg: rgba(11, 17, 32, 0.85);
+  --input-bg: rgba(15, 23, 42, 0.6);
+  --card-hover: rgba(255, 255, 255, 0.03);
 }
 
 

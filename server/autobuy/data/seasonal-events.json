@@ -1,0 +1,99 @@
+{
+    "events": [
+        {
+            "type": "COMMANDER_PRODUCT",
+            "date": "2024-02-09",
+            "name": "Murders at Karlov Manor Commander",
+            "affectedTags": [
+                "commander-staple"
+            ]
+        },
+        {
+            "type": "COMMANDER_PRODUCT",
+            "date": "2024-04-19",
+            "name": "Outlaws of Thunder Junction Commander",
+            "affectedTags": [
+                "commander-staple"
+            ]
+        },
+        {
+            "type": "COMMANDER_PRODUCT",
+            "date": "2024-06-14",
+            "name": "Modern Horizons 3 Commander",
+            "affectedTags": [
+                "commander-staple"
+            ]
+        },
+        {
+            "type": "COMMANDER_PRODUCT",
+            "date": "2024-08-02",
+            "name": "Bloomburrow Commander",
+            "affectedTags": [
+                "commander-staple"
+            ]
+        },
+        {
+            "type": "COMMANDER_PRODUCT",
+            "date": "2024-11-15",
+            "name": "Foundations Commander",
+            "affectedTags": [
+                "commander-staple"
+            ]
+        },
+        {
+            "type": "HOLIDAY",
+            "date": "2024-12-25",
+            "name": "Christmas 2024",
+            "affectedTags": [
+                "all"
+            ]
+        },
+        {
+            "type": "HOLIDAY",
+            "date": "2025-12-25",
+            "name": "Christmas 2025",
+            "affectedTags": [
+                "all"
+            ]
+        },
+        {
+            "type": "SET_RELEASE",
+            "date": "2024-02-09",
+            "name": "Murders at Karlov Manor",
+            "affectedTags": [
+                "standard-legal"
+            ]
+        },
+        {
+            "type": "SET_RELEASE",
+            "date": "2024-11-15",
+            "name": "Foundations",
+            "affectedTags": [
+                "standard-legal"
+            ]
+        },
+        {
+            "type": "BAN_ANNOUNCEMENT",
+            "date": "2024-09-23",
+            "name": "September 2024 Banned and Restricted",
+            "affectedTags": [
+                "modern-legal",
+                "legacy-legal",
+                "commander-legal"
+            ],
+            "affectedFormats": [
+                "modern",
+                "legacy",
+                "commander"
+            ]
+        }
+    ],
+    "reprints": [
+        {
+            "cardId": "sol-ring-foundations",
+            "originalCardId": "sol-ring",
+            "reprintDate": "2024-11-15",
+            "setCode": "fdn"
+        }
+    ]
+}

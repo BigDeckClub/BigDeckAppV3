@@ -44,13 +44,13 @@ const getActivityColor = (activityType) => {
   const colors = {
     card_added: 'text-green-400 bg-green-400/10',
     import_created: 'text-blue-400 bg-blue-400/10',
-    import_completed: 'text-teal-400 bg-teal-400/10',
+    import_completed: 'text-[var(--bda-primary)] bg-[var(--bda-primary)]/10',
     deck_created: 'text-purple-400 bg-purple-400/10',
     deck_deleted: 'text-red-400 bg-red-400/10',
     folder_created: 'text-amber-400 bg-amber-400/10',
     trash_operation: 'text-red-400 bg-red-400/10'
   };
-  return colors[activityType] || 'text-[var(--text-muted)] bg-slate-400/10';
+  return colors[activityType] || 'text-[var(--text-muted)] bg-[var(--muted-surface)]';
 };
 
 export const ActivityFeed = () => {
@@ -96,10 +96,10 @@ export const ActivityFeed = () => {
       <div className="flex flex-col md:flex-row gap-3 items-start md:items-end">
         <div className="flex-1">
           <label className="block text-sm text-[var(--text-muted)] mb-2">Filter by Activity Type</label>
-          <select 
-            value={filterType} 
+          <select
+            value={filterType}
             onChange={(e) => setFilterType(e.target.value)}
-            className="w-full bg-[var(--surface)] border border-[var(--border)] rounded px-3 py-2 text-white text-sm hover:border-teal-500 transition-colors"
+            className="w-full bg-[var(--surface)] border border-[var(--border)] rounded px-3 py-2 text-[var(--bda-text)] text-sm hover:border-[var(--bda-primary)] transition-colors"
           >
             {activityTypeOptions.map(option => (
               <option key={option.value} value={option.value}>
@@ -111,7 +111,7 @@ export const ActivityFeed = () => {
         <button
           onClick={loadActivities}
           disabled={loading}
-          className="px-4 py-2 bg-[var(--muted-surface)] hover:bg-slate-600 text-white rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50"
+          className="px-4 py-2 bg-[var(--muted-surface)] hover:bg-[var(--card-hover)] text-[var(--bda-text)] rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50"
         >
           <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           Refresh
@@ -129,25 +129,25 @@ export const ActivityFeed = () => {
           {activities.map((activity) => {
             const IconComponent = getActivityIcon(activity.activity_type);
             const colorClass = getActivityColor(activity.activity_type);
-            
+
             return (
-              <div 
+              <div
                 key={activity.id}
-                className="flex items-start gap-4 p-4 bg-gradient-to-r from-slate-800 to-slate-900 border border-[var(--border)] rounded-lg hover:border-teal-500 transition-colors"
+                className="flex items-start gap-4 p-4 bg-[var(--bda-card)] border border-[var(--border)] rounded-lg hover:border-[var(--bda-primary)] transition-colors"
               >
                 <div className={`p-2 rounded-lg shrink-0 ${colorClass}`}>
                   <IconComponent className="w-5 h-5" />
                 </div>
-                
+
                 <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-white truncate">{activity.title}</div>
+                  <div className="font-semibold text-[var(--bda-text)] truncate">{activity.title}</div>
                   {activity.description && (
                     <div className="text-sm text-[var(--text-muted)] mt-1">{activity.description}</div>
                   )}
                 </div>
-                
+
                 <div className="text-right shrink-0">
-                  <div className="text-sm text-amber-400">{getRelativeTime(activity.created_at)}</div>
+                  <div className="text-sm text-[var(--bda-primary)]">{getRelativeTime(activity.created_at)}</div>
                 </div>
               </div>
             );
@@ -163,7 +163,7 @@ export const ActivityFeed = () => {
         </div>
       ) : (
         <div className="flex items-center justify-center py-12">
-          <div className="w-8 h-8 animate-spin mx-auto text-teal-400 border-2 border-teal-400 border-t-transparent rounded-full"></div>
+          <div className="w-8 h-8 animate-spin mx-auto text-[var(--bda-primary)] border-2 border-[var(--bda-primary)] border-t-transparent rounded-full"></div>
         </div>
       )}
     </div>

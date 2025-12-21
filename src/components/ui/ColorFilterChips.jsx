@@ -122,11 +122,11 @@ const FilterChip = memo(function FilterChip({
       onKeyDown={handleKeyDown}
       className={`
         inline-flex items-center rounded-full border transition-all duration-200
-        focus:outline-none focus:ring-2 focus:ring-teal-400 focus:ring-offset-2 focus:ring-offset-slate-800
+        focus:outline-none focus:ring-2 focus:ring-[var(--bda-primary)] focus:ring-offset-2 focus:ring-offset-[var(--bg-page)]
         ${sizeClasses[size]}
         ${isSelected
-          ? 'bg-teal-600 border-teal-500 text-white shadow-md'
-          : 'bg-[var(--muted-surface)] border-[var(--border)] text-[var(--text-muted)] hover:bg-slate-600 hover:border-slate-500'
+          ? 'bg-[var(--bda-primary)] border-[var(--bda-primary)] text-[var(--bda-primary-foreground)] shadow-md'
+          : 'bg-[var(--muted-surface)] border-[var(--border)] text-[var(--bda-muted)] hover:bg-[var(--surface)] hover:text-[var(--bda-text)] hover:border-[var(--bda-border)]'
         }
       `}
     >
@@ -279,9 +279,9 @@ export const ColorFilterChips = memo(function ColorFilterChips({
             aria-label="Add color filter"
             className={`
               inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs
-              bg-[var(--muted-surface)] border border-[var(--border)] text-[var(--text-muted)]
-              hover:bg-slate-600 hover:border-slate-500
-              focus:outline-none focus:ring-2 focus:ring-teal-400 focus:ring-offset-2 focus:ring-offset-slate-800
+              bg-[var(--muted-surface)] border border-[var(--border)] text-[var(--bda-muted)]
+              hover:bg-[var(--surface)] hover:text-[var(--bda-text)] hover:border-[var(--bda-border)]
+              focus:outline-none focus:ring-2 focus:ring-[var(--bda-primary)] focus:ring-offset-2 focus:ring-offset-[var(--bg-page)]
               transition-colors
               ${isLoading ? 'opacity-50' : ''}
             `}
@@ -297,7 +297,7 @@ export const ColorFilterChips = memo(function ColorFilterChips({
               type="button"
               onClick={onClearFilters}
               aria-label="Clear all color filters"
-              className="text-xs text-[var(--text-muted)] hover:text-slate-200 underline"
+              className="text-xs text-[var(--bda-muted)] hover:text-[var(--bda-text)] underline"
             >
               Clear
             </button>
@@ -335,9 +335,9 @@ export const ColorFilterChips = memo(function ColorFilterChips({
           aria-haspopup="true"
           className={`
             inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm
-            bg-[var(--muted-surface)] border border-[var(--border)] text-slate-200
-            hover:bg-slate-600 hover:border-slate-500
-            focus:outline-none focus:ring-2 focus:ring-teal-400 focus:ring-offset-2 focus:ring-offset-slate-800
+            bg-[var(--muted-surface)] border border-[var(--border)] text-[var(--bda-text)]
+            hover:bg-[var(--surface)] hover:border-[var(--bda-border)]
+            focus:outline-none focus:ring-2 focus:ring-[var(--bda-primary)] focus:ring-offset-2 focus:ring-offset-[var(--bg-page)]
             transition-colors
             ${isLoading ? 'opacity-50' : ''}
           `}
@@ -365,7 +365,7 @@ export const ColorFilterChips = memo(function ColorFilterChips({
                 <button
                   type="button"
                   onClick={onClearFilters}
-                  className="text-xs text-teal-400 hover:text-teal-300"
+                  className="text-xs text-[var(--bda-primary)] hover:opacity-80"
                 >
                   Clear all
                 </button>
@@ -398,7 +398,7 @@ export const ColorFilterChips = memo(function ColorFilterChips({
             <button
               type="button"
               onClick={onClearFilters}
-              className="text-xs text-teal-400 hover:text-teal-300"
+              className="text-xs text-[var(--bda-primary)] hover:opacity-80"
             >
               Clear filters
             </button>

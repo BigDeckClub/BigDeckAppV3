@@ -36,16 +36,16 @@ const NAV_ITEMS = [
  */
 const Logo = memo(function Logo() {
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-3 select-none group">
       {/* MTG-inspired card stack icon */}
-      <div className="relative w-8 h-8">
-        <div className="absolute inset-0 bg-gradient-to-br from-teal-400 to-cyan-500 rounded-lg transform rotate-6 opacity-60" />
-        <div className="absolute inset-0 bg-gradient-to-br from-teal-500 to-cyan-600 rounded-lg transform -rotate-3 opacity-80" />
-        <div className="absolute inset-0 bg-gradient-to-br from-teal-400 to-cyan-500 rounded-lg flex items-center justify-center">
-          <span className="text-slate-900 font-black text-sm">BD</span>
+      <div className="relative w-8 h-8 transition-transform duration-500 ease-out group-hover:rotate-12 group-hover:scale-110">
+        <div className="absolute inset-0 bg-gradient-to-br from-teal-400 to-cyan-500 rounded-lg transform rotate-6 opacity-60 transition-transform duration-300 group-hover:rotate-12" />
+        <div className="absolute inset-0 bg-gradient-to-br from-teal-500 to-cyan-600 rounded-lg transform -rotate-3 opacity-80 transition-transform duration-300 group-hover:-rotate-6" />
+        <div className="absolute inset-0 bg-gradient-to-br from-teal-400 to-cyan-500 rounded-lg flex items-center justify-center shadow-lg shadow-teal-500/20">
+          <span className="text-slate-900 font-extrabold text-xs tracking-tighter">BD</span>
         </div>
       </div>
-      <span className="hidden sm:block text-lg font-bold bg-gradient-to-r from-teal-400 to-cyan-400 bg-clip-text text-transparent">
+      <span className="hidden sm:block text-xl font-heading font-bold text-gradient tracking-tight">
         BigDeck
       </span>
     </div>
@@ -86,11 +86,11 @@ const NavButton = memo(function NavButton({ item, isActive, onClick }) {
     <button
       onClick={onClick}
       className={`
-        flex items-center gap-2 px-3 py-2 rounded-lg font-medium text-sm transition-all duration-200
-        focus:outline-none focus-visible:ring-2 focus-visible:ring-ui-primary
+        relative flex items-center gap-2 px-3 py-2 rounded-lg font-medium text-sm transition-all duration-300 ease-out
+        focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--bda-primary)]
         ${isActive
-          ? 'bg-ui-card text-ui-primary border border-ui-primary'
-          : 'text-ui-muted hover:text-ui-heading hover:bg-ui-card border border-transparent'
+          ? 'text-[var(--bda-primary)] bg-[var(--bda-primary)]/10 shadow-[0_0_15px_-5px_var(--bda-primary)]'
+          : 'text-[var(--text-muted)] hover:text-[var(--bda-text)] hover:bg-white/5'
         }
       `}
       aria-current={isActive ? 'page' : undefined}
@@ -163,37 +163,33 @@ export const Header = memo(function Header({
   return (
     <>
       {/* Desktop Header */}
-      <header className="hidden md:block sticky top-0 z-50 bg-ui-surface backdrop-blur-xl border-b border-ui-border">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex items-center justify-between h-16">
+      <header className="hidden md:block sticky top-0 z-50 glass-panel border-b border-[var(--glass-border)] transition-all duration-300">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex items-center justify-between h-20">
             {/* Left: Logo */}
             <Logo />
 
-            {/* Center: Navigation */}
-            <nav className="flex items-center gap-1" role="navigation" aria-label="Main navigation">
-              {NAV_ITEMS.map((item) => (
-                <NavButton
-                  key={item.id}
-                  item={item}
-                  isActive={activeTab === item.id}
-                  onClick={() => handleNavClick(item.id)}
-                />
-              ))}
-            </nav>
+            {/* Center: Navigation - Floating Pill */}
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+              <nav className="flex items-center gap-1 p-1 rounded-2xl bg-[var(--surface)]/50 backdrop-blur-md border border-[var(--border)] shadow-lg shadow-black/5" role="navigation">
+                {NAV_ITEMS.map((item) => (
+                  <NavButton
+                    key={item.id}
+                    item={item}
+                    isActive={activeTab === item.id}
+                    onClick={() => handleNavClick(item.id)}
+                  />
+                ))}
+              </nav>
+            </div>
 
             {/* Right: Command Palette + User */}
-            <div className="flex items-center gap-3">
-              <ThemeToggle />
+            <div className="flex items-center gap-4">
               <CommandPaletteTrigger onClick={onOpenCommandPalette} />
-              <button
-                onClick={onShowTutorial}
-                className="p-2 text-ui-muted hover:text-ui-primary rounded-lg hover:bg-ui-card transition-colors"
-                title="Help & Tutorial"
-                aria-label="Open help and tutorial"
-              >
-                <span className="text-lg font-medium">?</span>
-              </button>
-              <UserDropdown setActiveTab={setActiveTab} activeTab={activeTab} />
+              <ThemeToggle />
+              <div className="pl-2 border-l border-[var(--border)]">
+                <UserDropdown setActiveTab={setActiveTab} activeTab={activeTab} />
+              </div>
             </div>
           </div>
         </div>

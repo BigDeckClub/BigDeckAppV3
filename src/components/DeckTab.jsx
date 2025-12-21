@@ -22,17 +22,17 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
   // Import modals visibility state
   const [showImportDecklist, setShowImportDecklist] = useState(false);
   const [showImportArchidekt, setShowImportArchidekt] = useState(false);
-  
+
   // Analysis mode state
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [selectedDeckIds, setSelectedDeckIds] = useState([]);
-  
+
   // Deck editor state
   const [editingDeckForModal, setEditingDeckForModal] = useState(null);
-  
+
   // Archidekt sync state
   const [syncingDeck, setSyncingDeck] = useState(null);
-  
+
   // Decklist import form state
   const [newDeckName, setNewDeckName] = useState('');
   const [newDeckFormat, setNewDeckFormat] = useState('Standard');
@@ -136,13 +136,13 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
   // Handle deck edit save
   const handleSaveDeckEdit = async (updatedCards) => {
     if (!editingDeckForModal) return;
-    
+
     const response = await fetch(`/api/decks/${editingDeckForModal.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ cards: updatedCards })
     });
-    
+
     if (response.ok) {
       await loadDecks();
     } else {
@@ -161,8 +161,8 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
 
   // Toggle deck selection
   const toggleDeckSelection = (deckId) => {
-    setSelectedDeckIds(prev => 
-      prev.includes(deckId) 
+    setSelectedDeckIds(prev =>
+      prev.includes(deckId)
         ? prev.filter(id => id !== deckId)
         : [...prev, deckId]
     );
@@ -187,12 +187,12 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
 
       {isLoading ? (
         <div className="text-center py-12">
-          <div className="w-8 h-8 animate-spin mx-auto text-teal-400 border-2 border-teal-400 border-t-transparent rounded-full"></div>
+          <div className="w-8 h-8 animate-spin mx-auto text-[var(--bda-primary)] border-2 border-[var(--bda-primary)] border-t-transparent rounded-full"></div>
         </div>
       ) : !selectedDeck ? (
         <div className="space-y-4">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6">
-            <h2 className="text-xl md:text-2xl font-bold text-teal-300 flex items-center gap-2">
+            <h2 className="text-xl md:text-2xl font-bold text-[var(--bda-primary)] flex items-center gap-2">
               <BookOpen className="w-5 h-5 md:w-6 md:h-6" />
               Your Decks
             </h2>
@@ -204,11 +204,10 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
                       setShowImportArchidekt(!showImportArchidekt);
                       setShowImportDecklist(false);
                     }}
-                    className={`px-3 sm:px-4 py-2 rounded-lg flex items-center justify-center sm:justify-start gap-2 transition-colors text-[var(--bda-primary-foreground)] text-sm ${
-                      showImportArchidekt
-                        ? 'bg-blue-500 shadow-lg shadow-blue-500/50'
-                        : 'bg-blue-600 hover:bg-blue-700'
-                    }`}
+                    className={`px-3 sm:px-4 py-2 rounded-lg flex items-center justify-center sm:justify-start gap-2 transition-colors text-[var(--bda-primary-foreground)] text-sm ${showImportArchidekt
+                      ? 'bg-blue-500 shadow-lg shadow-blue-500/50'
+                      : 'bg-blue-600 hover:bg-blue-700'
+                      }`}
                   >
                     <Download className="w-4 h-4 flex-shrink-0" />
                     <span className="hidden sm:inline">Import from Archidekt</span>
@@ -219,11 +218,10 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
                       setShowImportDecklist(!showImportDecklist);
                       setShowImportArchidekt(false);
                     }}
-                    className={`px-3 sm:px-4 py-2 rounded-lg flex items-center justify-center sm:justify-start gap-2 transition-colors text-[var(--bda-primary-foreground)] text-sm ${
-                      showImportDecklist
-                        ? 'bg-purple-500 shadow-lg shadow-purple-500/50'
-                        : 'bg-purple-600 hover:bg-purple-700'
-                    }`}
+                    className={`px-3 sm:px-4 py-2 rounded-lg flex items-center justify-center sm:justify-start gap-2 transition-colors text-[var(--bda-primary-foreground)] text-sm ${showImportDecklist
+                      ? 'bg-purple-500 shadow-lg shadow-purple-500/50'
+                      : 'bg-purple-600 hover:bg-purple-700'
+                      }`}
                   >
                     <Download className="w-4 h-4 flex-shrink-0" />
                     <span className="hidden sm:inline">Import Decklist</span>
@@ -241,11 +239,10 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
                       setSelectedDeckIds([]);
                     }
                   }}
-                  className={`px-3 sm:px-4 py-2 rounded-lg flex items-center gap-2 transition-colors text-[var(--bda-primary-foreground)] text-sm font-semibold ${
-                    showAnalysis
-                      ? 'bg-teal-500 shadow-lg shadow-teal-500/50'
-                      : 'bg-teal-600 hover:bg-teal-700'
-                  }`}
+                  className={`px-3 sm:px-4 py-2 rounded-lg flex items-center gap-2 transition-colors text-[var(--bda-primary-foreground)] text-sm font-semibold ${showAnalysis
+                    ? 'bg-[var(--bda-primary)] shadow-lg shadow-[var(--bda-primary)]/50'
+                    : 'bg-[var(--bda-primary)] hover:opacity-90'
+                    }`}
                 >
                   <BarChart3 className="w-4 h-4" />
                   {showAnalysis ? 'Back to Decks' : 'Analyze Decks'}
@@ -285,7 +282,7 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
           ) : showAnalysis ? (
             <>
               {/* Selection Controls */}
-              <div className="bg-[var(--surface)] rounded-lg border border-[var(--border)] p-4 mb-4">
+              <div className="glass-panel rounded-xl p-4 mb-4">
                 <div className="flex items-center justify-between flex-wrap gap-3">
                   <button
                     onClick={toggleSelectAll}
@@ -310,7 +307,7 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
                   )}
                 </div>
               </div>
-              
+
               {/* Deck Selection Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                 {decks.map(deck => {
@@ -319,17 +316,16 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
                     <div
                       key={deck.id}
                       onClick={() => toggleDeckSelection(deck.id)}
-                      className={`cursor-pointer rounded-lg border-2 p-4 transition-all ${
-                        isSelected
-                          ? 'border-teal-500 bg-teal-900/20 ring-2 ring-teal-500/30'
-                          : 'border-[var(--border)] bg-[var(--surface)] hover:border-slate-500'
-                      }`}
+                      className={`cursor-pointer rounded-lg border-2 p-4 transition-all ${isSelected
+                        ? 'border-[var(--bda-primary)] bg-[var(--bda-primary)]/20 ring-2 ring-[var(--bda-primary)]/30'
+                        : 'border-[var(--border)] bg-[var(--surface)] hover:border-[var(--bda-muted)]'
+                        }`}
                     >
                       <div className="flex items-start justify-between mb-2">
                         <h3 className="font-semibold text-slate-100">{deck.name}</h3>
                         <div className="flex-shrink-0">
                           {isSelected ? (
-                            <CheckSquare className="w-5 h-5 text-teal-400" />
+                            <CheckSquare className="w-5 h-5 text-[var(--bda-primary)]" />
                           ) : (
                             <Square className="w-5 h-5 text-[var(--text-muted)]" />
                           )}
@@ -342,7 +338,7 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
                   );
                 })}
               </div>
-              
+
               {/* Analysis View */}
               <DeckAnalysisView
                 decks={decks}

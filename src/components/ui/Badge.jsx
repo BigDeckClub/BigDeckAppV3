@@ -30,7 +30,7 @@ export function Badge({
 
   const variantClasses = {
     default: 'bg-gradient-to-br from-slate-700/70 to-slate-800/50 text-slate-200 border border-[var(--border)]',
-    primary: 'bg-gradient-to-br from-teal-900/70 to-teal-800/50 text-teal-100 border border-teal-700/60 shadow-teal-900/30 hover:shadow-teal-500/20',
+    primary: 'bg-[var(--bda-primary)]/20 text-[var(--bda-primary)] border border-[var(--bda-primary)]/60 shadow-[var(--bda-primary)]/30',
     success: 'bg-gradient-to-br from-green-900/70 to-green-800/50 text-green-100 border border-green-700/60 shadow-green-900/30 hover:shadow-green-500/20',
     warning: 'bg-gradient-to-br from-amber-900/70 to-amber-800/50 text-amber-100 border border-amber-700/60 shadow-amber-900/30 hover:shadow-amber-500/20',
     danger: 'bg-gradient-to-br from-red-900/70 to-red-800/50 text-red-100 border border-red-700/60 shadow-red-900/30 hover:shadow-red-500/20',

@@ -41,3 +41,22 @@ export type PreprocessResult = {
   maxPriceByCard: Map<string, number>
   offers: Offer[]
 }
+
+export type BudgetConfig = {
+  maxTotalSpend: number           // Hard cap on total purchase
+  maxPerSeller: number            // Max spend per seller basket
+  maxPerCard: number              // Max price for any single card
+  maxSpeculativeSpend: number     // Cap on Hot List (non-demand) spending
+  reserveBudgetPercent: number    // Keep X% for Card Kingdom fallback
+  budgetMode?: 'STRICT' | 'SOFT'
+}
+
+export type BudgetResult = {
+  totalSpend: number
+  demandSpend: number
+  speculativeSpend: number
+  reservedBudget: number
+  budgetUtilization: number       // Percentage 0-100
+  warnings: string[]
+  hardBudgetExceeded: boolean
+}

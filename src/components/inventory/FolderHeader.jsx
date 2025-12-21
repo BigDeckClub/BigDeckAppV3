@@ -23,51 +23,51 @@ export const FolderHeader = memo(function FolderHeader({
   isUnsorted
 }) {
   return (
-    <div className="bg-slate-800 rounded-lg border border-slate-600 p-4 mb-4">
+    <div className="bg-[var(--bda-surface)] rounded-lg border border-[var(--bda-border)] p-4 mb-4">
       <div className="flex justify-between items-start">
         <div className="flex-1">
-          <h2 className="text-2xl font-bold text-teal-300">{folderName === 'Uncategorized' ? 'Unsorted' : folderName}</h2>
+          <h2 className="text-2xl font-bold text-[var(--bda-primary)]">{folderName === 'Uncategorized' ? 'Unsorted' : folderName}</h2>
           {editingFolderName === folderName ? (
             <input
               type="text"
               value={editingFolderDesc}
               onChange={(e) => setEditingFolderDesc(e.target.value)}
               onBlur={() => {
-                setFolderMetadata(prev => ({...prev, [folderName]: {description: editingFolderDesc}}));
+                setFolderMetadata(prev => ({ ...prev, [folderName]: { description: editingFolderDesc } }));
                 setEditingFolderName(null);
               }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
-                  setFolderMetadata(prev => ({...prev, [folderName]: {description: editingFolderDesc}}));
+                  setFolderMetadata(prev => ({ ...prev, [folderName]: { description: editingFolderDesc } }));
                   setEditingFolderName(null);
                 }
               }}
               placeholder="Add folder description..."
-              className="w-full mt-1 px-2 py-1 bg-slate-700 border border-slate-600 rounded text-slate-300 placeholder-slate-500 focus:outline-none focus:border-teal-400"
+              className="w-full mt-1 px-2 py-1 bg-[var(--input-bg)] border border-[var(--bda-border)] rounded text-[var(--bda-text)] placeholder-[var(--bda-muted)] focus:outline-none focus:border-[var(--bda-primary)]"
               autoFocus
             />
           ) : (
-            <p 
+            <p
               onClick={() => {
                 setEditingFolderName(folderName);
                 setEditingFolderDesc(folderDesc);
               }}
-              className="text-sm text-slate-400 mt-1 cursor-pointer hover:text-slate-300 transition-colors"
+              className="text-sm text-[var(--bda-muted)] mt-1 cursor-pointer hover:text-[var(--bda-text)] transition-colors"
             >
               {folderDesc || 'Click to add description...'}
             </p>
           )}
           <div className="flex gap-4 mt-3 text-sm">
             <div>
-              <span className="text-slate-400">Cards: </span>
-              <span className="font-semibold text-slate-200">{totalCards}</span>
+              <span className="text-[var(--bda-muted)]">Cards: </span>
+              <span className="font-semibold text-[var(--bda-text)]">{totalCards}</span>
             </div>
             <div>
-              <span className="text-slate-400">Unique: </span>
-              <span className="font-semibold text-slate-200">{uniqueCards}</span>
+              <span className="text-[var(--bda-muted)]">Unique: </span>
+              <span className="font-semibold text-[var(--bda-text)]">{uniqueCards}</span>
             </div>
             <div>
-              <span className="text-slate-400">Total Cost: </span>
+              <span className="text-[var(--bda-muted)]">Total Cost: </span>
               <span className="font-semibold text-green-400">${totalCost.toFixed(2)}</span>
             </div>
           </div>

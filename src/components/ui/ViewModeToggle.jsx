@@ -38,7 +38,7 @@ const ToggleButton = memo(function ToggleButton({ option, isActive, onClick }) {
         relative flex items-center justify-center p-2 rounded-md transition-all duration-150
         focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50
         ${isActive
-          ? 'bg-gradient-to-r from-teal-500/20 to-cyan-500/20 text-teal-400 shadow-sm'
+          ? 'bg-[var(--bda-primary)]/20 text-[var(--bda-primary)] shadow-sm'
           : 'text-[var(--text-muted)] hover:text-white hover:bg-[var(--muted-surface)]'
         }
       `}
@@ -48,7 +48,7 @@ const ToggleButton = memo(function ToggleButton({ option, isActive, onClick }) {
     >
       <Icon className="w-4 h-4" />
       {isActive && (
-        <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-teal-400" />
+        <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[var(--bda-primary)]" />
       )}
     </button>
   );
@@ -91,7 +91,7 @@ export const ViewModeToggle = memo(function ViewModeToggle({
             <span
               className={`
                 ml-1.5 mr-2 text-sm font-medium transition-colors
-                ${activeMode === option.id ? 'text-teal-400' : 'text-[var(--text-muted)]'}
+                ${activeMode === option.id ? 'text-[var(--bda-primary)]' : 'text-[var(--text-muted)]'}
               `}
             >
               {option.label}

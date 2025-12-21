@@ -129,8 +129,8 @@ const TableHeaderCell = memo(function TableHeaderCell({
         ${column.width}
         ${column.align === 'center' ? 'text-center' : ''}
         ${column.align === 'right' ? 'text-right' : ''}
-        ${column.sortable ? 'cursor-pointer hover:text-white select-none' : ''}
-        ${isActive ? 'text-teal-400' : ''}
+        ${column.sortable ? 'cursor-pointer hover:text-[var(--bda-text)] select-none' : ''}
+        ${isActive ? 'text-[var(--bda-primary)]' : ''}
       `}
       onClick={handleClick}
       role={column.sortable ? 'button' : undefined}
@@ -182,7 +182,7 @@ const TableRow = memo(function TableRow({
       className={`
         group cursor-pointer transition-colors
         hover:bg-[var(--surface)]
-        ${isSelected ? 'bg-teal-500/10' : ''}
+        ${isSelected ? 'bg-[var(--bda-primary)]/10' : ''}
       `}
       onClick={() => onCardClick?.(card)}
       role="row"
@@ -196,8 +196,8 @@ const TableRow = memo(function TableRow({
             checked={isSelected}
             onChange={handleSelect}
             onClick={(e) => e.stopPropagation()}
-            className="w-4 h-4 rounded border-[var(--border)] bg-[var(--surface)] text-teal-500
-                       focus:ring-teal-500/50 focus:ring-offset-0 cursor-pointer"
+            className="w-4 h-4 rounded border-[var(--border)] bg-[var(--surface)] text-[var(--bda-primary)]
+                       focus:ring-[var(--bda-primary)]/50 focus:ring-offset-0 cursor-pointer"
             aria-label={`Select ${card.name}`}
           />
         </td>
@@ -259,12 +259,12 @@ const TableRow = memo(function TableRow({
       </td>
 
       {/* Price */}
-      <td className="px-3 py-2 w-24 text-sm text-right text-emerald-400 font-medium">
+      <td className="px-3 py-2 w-24 text-sm text-right text-[var(--bda-primary)] font-medium">
         {formatPrice(price)}
       </td>
 
       {/* Total */}
-      <td className="px-3 py-2 w-24 text-sm text-right text-emerald-400 font-medium">
+      <td className="px-3 py-2 w-24 text-sm text-right text-[var(--bda-primary)] font-medium">
         {formatPrice(totalPrice)}
       </td>
     </tr>
@@ -389,8 +389,8 @@ export const CardTableView = memo(function CardTableView({
                     if (el) el.indeterminate = someSelected && !allSelected;
                   }}
                   onChange={handleSelectAll}
-                  className="w-4 h-4 rounded border-[var(--border)] bg-[var(--surface)] text-teal-500
-                             focus:ring-teal-500/50 focus:ring-offset-0 cursor-pointer"
+                  className="w-4 h-4 rounded border-[var(--border)] bg-[var(--surface)] text-[var(--bda-primary)]
+                             focus:ring-[var(--bda-primary)]/50 focus:ring-offset-0 cursor-pointer"
                   aria-label="Select all cards"
                 />
               </th>
@@ -430,7 +430,7 @@ export const CardTableView = memo(function CardTableView({
                 {totals.totalQty}
               </td>
               <td className="px-3 py-2" />
-              <td className="px-3 py-2 text-sm text-right font-medium text-emerald-400">
+              <td className="px-3 py-2 text-sm text-right font-medium text-[var(--bda-primary)]">
                 {formatPrice(totals.totalValue)}
               </td>
             </tr>

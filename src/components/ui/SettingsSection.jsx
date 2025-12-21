@@ -91,7 +91,7 @@ export const SettingsSection = memo(function SettingsSection({
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
   const badgeColors = {
-    teal: 'bg-teal-500/20 text-teal-400',
+    teal: 'bg-[var(--bda-primary)]/20 text-[var(--bda-primary)]',
     blue: 'bg-blue-500/20 text-blue-400',
     purple: 'bg-purple-500/20 text-purple-400',
     amber: 'bg-amber-500/20 text-amber-400',
@@ -136,8 +136,8 @@ export const SettingsSection = memo(function SettingsSection({
       >
         {/* Icon */}
         {Icon && (
-          <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gradient-to-br from-teal-500/20 to-cyan-500/20 flex items-center justify-center">
-            <Icon className="w-5 h-5 text-teal-400" />
+          <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gradient-to-br from-[var(--bda-primary)]/20 to-[var(--bda-primary)]/10 flex items-center justify-center">
+            <Icon className="w-5 h-5 text-[var(--bda-primary)]" />
           </div>
         )}
 
@@ -215,8 +215,8 @@ export const SettingsCard = memo(function SettingsCard({
         <div className="flex items-center justify-between gap-3 p-4 border-b border-[var(--border)]">
           <div className="flex items-center gap-3">
             {Icon && (
-              <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gradient-to-br from-teal-500/20 to-cyan-500/20 flex items-center justify-center">
-                <Icon className="w-5 h-5 text-teal-400" />
+              <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gradient-to-br from-[var(--bda-primary)]/20 to-[var(--bda-primary)]/10 flex items-center justify-center">
+                <Icon className="w-5 h-5 text-[var(--bda-primary)]" />
               </div>
             )}
             <div>

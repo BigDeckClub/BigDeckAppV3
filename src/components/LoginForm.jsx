@@ -26,7 +26,7 @@ function AnimatedParticles() {
       {particles.map((particle) => (
         <div
           key={particle.id}
-          className="absolute rounded-full bg-gradient-to-br from-teal-400/60 to-cyan-500/40 blur-xl"
+          className="absolute rounded-full bg-gradient-to-br from-[var(--bda-primary)]/60 to-[var(--bda-secondary)]/40 blur-xl"
           style={{
             left: `${particle.left}%`,
             top: `${particle.top}%`,
@@ -74,16 +74,16 @@ function FeatureCard({ feature, index }) {
       onMouseLeave={() => setIsHovered(false)}
     >
       {/* Background glow effect */}
-      <div className="absolute inset-0 bg-gradient-to-br from-teal-500/20 to-cyan-500/20 rounded-xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+      <div className="absolute inset-0 bg-gradient-to-br from-[var(--bda-primary)]/20 to-[var(--bda-secondary)]/20 rounded-xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
       {/* Card */}
-      <div className="relative bg-[var(--surface)] backdrop-blur-sm border border-[var(--border)] hover:border-teal-500/50 rounded-xl p-6 transition-all duration-500 hover:shadow-2xl hover:shadow-teal-500/20 hover:bg-[var(--surface)] transform hover:scale-105">
+      <div className="relative bg-[var(--surface)] backdrop-blur-sm border border-[var(--border)] hover:border-[var(--bda-primary)]/50 rounded-xl p-6 transition-all duration-500 hover:shadow-2xl hover:shadow-[var(--bda-primary)]/20 hover:bg-[var(--surface)] transform hover:scale-105">
         <div className="flex items-start gap-4">
-          <div className={`flex-shrink-0 w-12 h-12 rounded-lg bg-gradient-to-br from-teal-500/30 to-cyan-500/30 border border-teal-500/50 flex items-center justify-center transition-all duration-500 ${isHovered ? 'scale-110' : ''}`}>
-            <Icon className="w-6 h-6 text-teal-400" />
+          <div className={`flex-shrink-0 w-12 h-12 rounded-lg bg-gradient-to-br from-[var(--bda-primary)]/30 to-[var(--bda-secondary)]/30 border border-[var(--bda-primary)]/50 flex items-center justify-center transition-all duration-500 ${isHovered ? 'scale-110' : ''}`}>
+            <Icon className="w-6 h-6 text-[var(--bda-primary)]" />
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="text-white font-semibold mb-1 group-hover:text-teal-300 transition-colors">{feature.title}</h3>
+            <h3 className="text-white font-semibold mb-1 group-hover:text-[var(--bda-primary)] transition-colors">{feature.title}</h3>
             <p className="text-[var(--text-muted)] text-sm leading-relaxed">{feature.description}</p>
           </div>
         </div>
@@ -152,27 +152,27 @@ export function LoginForm({ onSuccess }) {
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 relative overflow-hidden">
       {/* Subtle animated background */}
       <div className="fixed inset-0 opacity-15">
-        <div className="absolute top-0 left-0 w-96 h-96 bg-gradient-to-br from-teal-500/40 to-transparent rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-gradient-to-tl from-cyan-500/40 to-transparent rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-0 left-0 w-96 h-96 bg-gradient-to-br from-[var(--bda-primary)]/40 to-transparent rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-gradient-to-tl from-[var(--bda-secondary)]/40 to-transparent rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
       </div>
 
       <AnimatedParticles />
 
       <div className="relative z-10 flex flex-col lg:flex-row items-stretch min-h-screen">
         {/* Left side - Features (Hidden on mobile) */}
-        <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 bg-gradient-to-b from-teal-950/20 via-slate-900/30 to-slate-950 border-r border-slate-800/50 backdrop-blur-sm">
+        <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 bg-gradient-to-b from-[var(--bda-primary)]/10 via-slate-900/30 to-slate-950 border-r border-slate-800/50 backdrop-blur-sm">
           <div className="space-y-2">
             <div className="flex items-center gap-3 mb-2 animate-fade-up">
               <div className="relative w-12 h-12">
                 {/* Animated glow */}
-                <div className="absolute inset-0 bg-gradient-to-br from-teal-400 to-cyan-500 rounded-lg blur-lg opacity-75 animate-pulse" />
-                <div className="relative w-12 h-12 rounded-lg bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center">
+                <div className="absolute inset-0 bg-gradient-to-br from-[var(--bda-primary)] to-[var(--bda-secondary)] rounded-lg blur-lg opacity-75 animate-pulse" />
+                <div className="relative w-12 h-12 rounded-lg bg-gradient-to-br from-[var(--bda-primary)] to-[var(--bda-secondary)] flex items-center justify-center">
                   <Layers className="w-6 h-6 text-slate-950 font-bold" />
                 </div>
               </div>
               <div>
                 <h1 className="text-4xl font-bold text-white">BigDeck</h1>
-                <span className="text-2xl text-transparent bg-gradient-to-r from-teal-400 to-cyan-500 bg-clip-text">.app</span>
+                <span className="text-2xl text-transparent bg-gradient-to-r from-[var(--bda-primary)] to-[var(--bda-secondary)] bg-clip-text">.app</span>
               </div>
             </div>
             <p className="text-[var(--text-muted)] text-lg">Professional MTG Inventory Management</p>
@@ -186,7 +186,7 @@ export function LoginForm({ onSuccess }) {
           </div>
 
           <div className="space-y-3">
-            <div className="flex items-center gap-2 text-teal-300 animate-shimmer">
+            <div className="flex items-center gap-2 text-[var(--bda-primary)] animate-shimmer">
               <Sparkles className="w-4 h-4" />
               <span className="text-sm font-medium">Track. Analyze. Manage. Optimize.</span>
             </div>
@@ -200,12 +200,12 @@ export function LoginForm({ onSuccess }) {
             <div className="lg:hidden mb-8 text-center animate-fade-up">
               <div className="flex items-center justify-center gap-2 mb-3">
                 <div className="relative w-10 h-10">
-                  <div className="absolute inset-0 bg-gradient-to-br from-teal-400 to-cyan-500 rounded-lg blur-lg opacity-75 animate-pulse" />
-                  <div className="relative w-10 h-10 rounded-lg bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center">
+                  <div className="absolute inset-0 bg-gradient-to-br from-[var(--bda-primary)] to-[var(--bda-secondary)] rounded-lg blur-lg opacity-75 animate-pulse" />
+                  <div className="relative w-10 h-10 rounded-lg bg-gradient-to-br from-[var(--bda-primary)] to-[var(--bda-secondary)] flex items-center justify-center">
                     <Layers className="w-6 h-6 text-slate-950" />
                   </div>
                 </div>
-                <h1 className="text-3xl font-bold text-white">BigDeck<span className="text-transparent bg-gradient-to-r from-teal-400 to-cyan-500 bg-clip-text">.app</span></h1>
+                <h1 className="text-3xl font-bold text-white">BigDeck<span className="text-transparent bg-gradient-to-r from-[var(--bda-primary)] to-[var(--bda-secondary)] bg-clip-text">.app</span></h1>
               </div>
               <p className="text-[var(--text-muted)]">Professional MTG Inventory Management</p>
             </div>
@@ -219,8 +219,8 @@ export function LoginForm({ onSuccess }) {
                     {isSignup ? 'Create Account' : 'Welcome Back'}
                   </h2>
                   <p className="text-[var(--text-muted)]">
-                    {isSignup 
-                      ? 'Start managing your MTG collection today' 
+                    {isSignup
+                      ? 'Start managing your MTG collection today'
                       : 'Sign in to your inventory'}
                   </p>
                 </div>
@@ -263,7 +263,7 @@ export function LoginForm({ onSuccess }) {
                     fullWidth
                     loading={loading}
                     iconRight={!loading ? <ArrowRight className="w-4 h-4" /> : undefined}
-                    className="mt-6 animate-fade-up shadow-lg hover:shadow-xl hover:shadow-teal-500/20"
+                    className="mt-6 animate-fade-up shadow-lg hover:shadow-xl hover:shadow-[var(--bda-primary)]/20"
                     style={{ animationDelay: '0.4s' }}
                   >
                     {loading ? 'Loading...' : isSignup ? 'Create Account' : 'Sign In'}
@@ -277,10 +277,10 @@ export function LoginForm({ onSuccess }) {
                       setIsSignup(!isSignup);
                       setError('');
                     }}
-                    className="text-[var(--text-muted)] hover:text-teal-400 hover:bg-teal-500/10 text-sm font-medium transition px-3 py-1 rounded-lg"
+                    className="text-[var(--text-muted)] hover:text-[var(--bda-primary)] hover:bg-[var(--bda-primary)]/10 text-sm font-medium transition px-3 py-1 rounded-lg"
                   >
-                    {isSignup 
-                      ? 'Already have an account? Sign in' 
+                    {isSignup
+                      ? 'Already have an account? Sign in'
                       : "Don't have an account? Sign up"}
                   </button>
                 </div>

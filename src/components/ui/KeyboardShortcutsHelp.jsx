@@ -14,7 +14,7 @@ import { formatShortcut } from '../../hooks/useKeyboardShortcuts';
  */
 const ShortcutKey = memo(function ShortcutKey({ children }) {
   return (
-    <kbd className="inline-flex items-center justify-center min-w-[28px] h-7 px-2 bg-[var(--muted-surface)] border border-[var(--border)] rounded-md text-sm font-mono text-slate-200 shadow-sm">
+    <kbd className="inline-flex items-center justify-center min-w-[28px] h-7 px-2 bg-[var(--muted-surface)] border border-[var(--border)] rounded-md text-sm font-mono text-[var(--bda-text)] shadow-sm">
       {children}
     </kbd>
   );
@@ -28,13 +28,13 @@ ShortcutKey.propTypes = {
  * Single shortcut row component
  */
 const ShortcutRow = memo(function ShortcutRow({ shortcut, description }) {
-  const formatted = typeof shortcut === 'string' 
-    ? shortcut 
+  const formatted = typeof shortcut === 'string'
+    ? shortcut
     : formatShortcut(shortcut);
-  
+
   // Split by '+' - formatShortcut now always uses '+' separator
   const parts = formatted.split('+');
-  
+
   return (
     <div className="flex items-center justify-between py-2 border-b border-[var(--border)] last:border-b-0">
       <span className="text-[var(--text-muted)]">{description}</span>
@@ -70,7 +70,7 @@ ShortcutRow.propTypes = {
 const ShortcutSection = memo(function ShortcutSection({ title, shortcuts }) {
   return (
     <div className="mb-6 last:mb-0">
-      <h3 className="text-sm font-semibold text-teal-400 uppercase tracking-wider mb-3">
+      <h3 className="text-sm font-semibold text-[var(--bda-primary)] uppercase tracking-wider mb-3">
         {title}
       </h3>
       <div className="bg-[var(--surface)] rounded-lg p-3">
@@ -135,7 +135,7 @@ export const KeyboardShortcutsHelp = memo(function KeyboardShortcutsHelp({
       onClose={onClose}
       title={
         <div className="flex items-center gap-2">
-          <Keyboard className="w-5 h-5 text-teal-400" />
+          <Keyboard className="w-5 h-5 text-[var(--bda-primary)]" />
           <span>Keyboard Shortcuts</span>
         </div>
       }
@@ -145,7 +145,7 @@ export const KeyboardShortcutsHelp = memo(function KeyboardShortcutsHelp({
         <p className="text-[var(--text-muted)] text-sm mb-4">
           Use these keyboard shortcuts to navigate faster and boost your productivity.
         </p>
-        
+
         {KEYBOARD_SHORTCUTS.map((section, index) => (
           <ShortcutSection
             key={index}
@@ -153,7 +153,7 @@ export const KeyboardShortcutsHelp = memo(function KeyboardShortcutsHelp({
             shortcuts={section.shortcuts}
           />
         ))}
-        
+
         <div className="mt-6 pt-4 border-t border-[var(--border)]">
           <p className="text-xs text-[var(--text-muted)] text-center">
             Press <ShortcutKey>Esc</ShortcutKey> to close this dialog

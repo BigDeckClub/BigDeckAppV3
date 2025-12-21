@@ -37,7 +37,7 @@ const formatPercentage = (num) => {
 const TrendIndicator = memo(function TrendIndicator({ value, inverted = false }) {
   if (value === 0 || value === null || value === undefined) {
     return (
-      <span className="inline-flex items-center gap-1 text-ui-muted text-sm">
+      <span className="inline-flex items-center gap-1 text-[var(--bda-muted)] text-sm">
         <Minus className="w-4 h-4" />
         <span>0%</span>
       </span>
@@ -49,9 +49,8 @@ const TrendIndicator = memo(function TrendIndicator({ value, inverted = false })
 
   return (
     <span
-      className={`inline-flex items-center gap-1 text-sm font-medium ${
-        isPositive ? 'text-emerald-400' : 'text-red-400'
-      }`}
+      className={`inline-flex items-center gap-1 text-sm font-medium ${isPositive ? 'text-emerald-400' : 'text-red-400'
+        }`}
     >
       <Icon className="w-4 h-4" />
       <span>{value > 0 ? '+' : ''}{value.toFixed(1)}%</span>
@@ -83,7 +82,7 @@ const Sparkline = memo(function Sparkline({ data, color = 'teal', height = 40 })
     .join(' ');
 
   const colors = {
-    teal: 'stroke-teal-400',
+    teal: 'stroke-[var(--bda-primary)]',
     emerald: 'stroke-emerald-400',
     amber: 'stroke-amber-400',
     red: 'stroke-red-400',
@@ -150,47 +149,53 @@ export const StatsCard = memo(function StatsCard({
   // Color configurations
   const colors = {
     teal: {
-      gradient: 'from-teal-500/20 to-teal-600/5',
-      border: 'border-teal-500/30',
-      text: 'text-teal-400',
-      icon: 'text-teal-400 bg-teal-500/20',
+      gradient: 'bg-gradient-to-br from-[var(--bda-primary)]/10 to-transparent',
+      border: 'border-[var(--bda-primary)]/20',
+      text: 'text-[var(--bda-primary)]',
+      icon: 'text-[var(--bda-primary)] bg-[var(--bda-primary)]/10',
     },
     blue: {
-      gradient: 'from-blue-500/20 to-blue-600/5',
-      border: 'border-blue-500/30',
+      gradient: 'bg-gradient-to-br from-blue-500/10 to-transparent',
+      border: 'border-blue-500/20',
       text: 'text-blue-400',
-      icon: 'text-blue-400 bg-blue-500/20',
+      icon: 'text-blue-400 bg-blue-500/10',
     },
     purple: {
-      gradient: 'from-purple-500/20 to-purple-600/5',
-      border: 'border-purple-500/30',
+      gradient: 'bg-gradient-to-br from-purple-500/10 to-transparent',
+      border: 'border-purple-500/20',
       text: 'text-purple-400',
-      icon: 'text-purple-400 bg-purple-500/20',
+      icon: 'text-purple-400 bg-purple-500/10',
     },
     amber: {
-      gradient: 'from-amber-500/20 to-amber-600/5',
-      border: 'border-amber-500/30',
+      gradient: 'bg-gradient-to-br from-amber-500/10 to-transparent',
+      border: 'border-amber-500/20',
       text: 'text-amber-400',
-      icon: 'text-amber-400 bg-amber-500/20',
+      icon: 'text-amber-400 bg-amber-500/10',
     },
     emerald: {
-      gradient: 'from-emerald-500/20 to-emerald-600/5',
-      border: 'border-emerald-500/30',
+      gradient: 'bg-gradient-to-br from-emerald-500/10 to-transparent',
+      border: 'border-emerald-500/20',
       text: 'text-emerald-400',
-      icon: 'text-emerald-400 bg-emerald-500/20',
+      icon: 'text-emerald-400 bg-emerald-500/10',
     },
     red: {
-      gradient: 'from-red-500/20 to-red-600/5',
-      border: 'border-red-500/30',
+      gradient: 'bg-gradient-to-br from-red-500/10 to-transparent',
+      border: 'border-red-500/20',
       text: 'text-red-400',
-      icon: 'text-red-400 bg-red-500/20',
+      icon: 'text-red-400 bg-red-500/10',
     },
     slate: {
-      gradient: 'from-ui-surface/50 to-ui-surface/50',
-      border: 'border-ui-border',
-      text: 'text-ui-text',
-      icon: 'text-ui-muted bg-ui-surface',
+      gradient: 'bg-[var(--surface)]',
+      border: 'border-[var(--border)]',
+      text: 'text-[var(--text-primary)]',
+      icon: 'text-[var(--text-muted)] bg-[var(--surface)]',
     },
+    primary: { // Alias for teal/brand
+      gradient: 'bg-gradient-to-br from-[var(--bda-primary)]/10 to-transparent',
+      border: 'border-[var(--bda-primary)]/20',
+      text: 'text-[var(--bda-primary)]',
+      icon: 'text-[var(--bda-primary)] bg-[var(--bda-primary)]/10',
+    }
   };
 
   // Size configurations
@@ -203,29 +208,30 @@ export const StatsCard = memo(function StatsCard({
       iconSize: 'w-4 h-4',
     },
     md: {
-      padding: 'p-4',
-      title: 'text-sm',
-      value: 'text-2xl',
-      icon: 'w-10 h-10',
-      iconSize: 'w-5 h-5',
-    },
-    lg: {
       padding: 'p-5',
       title: 'text-sm',
-      value: 'text-3xl',
+      value: 'text-3xl tracking-tight',
       icon: 'w-12 h-12',
       iconSize: 'w-6 h-6',
     },
+    lg: {
+      padding: 'p-6',
+      title: 'text-sm',
+      value: 'text-4xl tracking-tight',
+      icon: 'w-14 h-14',
+      iconSize: 'w-7 h-7',
+    },
   };
 
-  const colorConfig = colors[color];
+  const colorConfig = colors[color] || colors.teal; // Fallback
   const sizeConfig = sizes[size];
 
   // Variant styles
   const variantStyles = {
-    default: `bg-gradient-to-br ${colorConfig.gradient} border ${colorConfig.border}`,
-    solid: `bg-ui-surface border ${colorConfig.border}`,
-    minimal: 'bg-ui-surface/30 border border-ui-border',
+    default: `neo-card ${colorConfig.gradient} ${colorConfig.border}`,
+    solid: `bg-[var(--surface)] border ${colorConfig.border}`,
+    minimal: 'bg-transparent border border-[var(--border)]',
+    glass: 'glass-panel border-white/5',
   };
 
   return (
@@ -244,7 +250,7 @@ export const StatsCard = memo(function StatsCard({
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
           {/* Title */}
-          <p className={`${sizeConfig.title} text-ui-muted font-medium uppercase tracking-wider mb-1`}>
+          <p className={`${sizeConfig.title} text-[var(--bda-muted)] font-medium uppercase tracking-wider mb-1`}>
             {title}
           </p>
 
@@ -260,7 +266,7 @@ export const StatsCard = memo(function StatsCard({
                 <TrendIndicator value={trend} inverted={trendInverted} />
               )}
               {trendLabel && (
-                <span className="text-xs text-ui-muted">{trendLabel}</span>
+                <span className="text-xs text-[var(--bda-muted)]">{trendLabel}</span>
               )}
               {subtitle && !trend && (
                 <span className="text-xs text-ui-muted">{subtitle}</span>

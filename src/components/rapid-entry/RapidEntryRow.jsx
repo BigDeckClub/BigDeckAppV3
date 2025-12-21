@@ -37,13 +37,13 @@ export function RapidEntryRow({
       tabIndex={0}
       onKeyDown={(e) => handleKeyDown(e, rowIndex, 'row')}
       className={`
-        relative rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-teal-400/50
+        relative rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-[var(--bda-primary)]/50
         ${row.status === 'added' ? 'bg-emerald-900/20 border-emerald-500/50' : ''}
         ${row.status === 'pending' ? 'bg-amber-900/20 border-amber-500/50' : ''}
-        ${row.status === 'valid' ? 'bg-[var(--surface)] border-teal-500/50' : ''}
+        ${row.status === 'valid' ? 'bg-[var(--surface)] border-[var(--bda-primary)]/50' : ''}
         ${row.status === 'editing' ? 'bg-[var(--surface)] border-[var(--border)]' : ''}
         ${row.status === 'error' ? 'bg-red-900/20 border-red-500/50' : ''}
-        ${activeRowIndex === rowIndex ? 'ring-1 ring-teal-400/30' : ''}
+        ${activeRowIndex === rowIndex ? 'ring-1 ring-[var(--bda-primary)]/30' : ''}
         ${shakeRowIndex === rowIndex ? 'animate-shake' : ''}
       `}
     >
@@ -53,9 +53,9 @@ export function RapidEntryRow({
           <label className="md:hidden text-xs text-[var(--text-muted)] mb-1 block">Card Name</label>
           <div className="flex gap-2">
             {row.imageUrl && row.status !== 'editing' && (
-              <img 
-                src={row.imageUrl} 
-                alt="" 
+              <img
+                src={row.imageUrl}
+                alt=""
                 className="w-8 h-11 rounded object-cover flex-shrink-0"
               />
             )}
@@ -76,12 +76,12 @@ export function RapidEntryRow({
               className={`
                 flex-1 bg-[var(--muted-surface)] border rounded px-3 py-2 text-sm text-[var(--text-primary)] 
                 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-[var(--accent-600)]
-                ${row.status === 'valid' ? 'border-teal-500' : 'border-[var(--border)]'}
+                ${row.status === 'valid' ? 'border-[var(--bda-primary)]' : 'border-[var(--border)]'}
                 ${row.status === 'added' ? 'opacity-60' : ''}
               `}
             />
           </div>
-          
+
           {/* Search Dropdown */}
           {showDropdown && activeRowIndex === rowIndex && searchResults.length > 0 && row.status !== 'added' && (
             <div className="absolute top-full left-0 right-0 mt-1 bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-xl max-h-60 overflow-y-auto z-30">
@@ -126,7 +126,7 @@ export function RapidEntryRow({
             onChange={(e) => handleSetChange(rowIndex, e.target.value)}
             onKeyDown={(e) => handleKeyDown(e, rowIndex, 'set')}
             disabled={!row.selectedCard || row.status === 'added'}
-            className="w-full bg-[var(--bg-page)] border border-[var(--border)] rounded px-2 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-teal-400 disabled:opacity-50"
+            className="w-full bg-[var(--bg-page)] border border-[var(--border)] rounded px-2 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[var(--bda-primary)] disabled:opacity-50"
           >
             {row.availableSets.length > 0 ? (
               row.availableSets.map(s => (
@@ -186,7 +186,7 @@ export function RapidEntryRow({
               onChange={(e) => updateRowField(rowIndex, 'foil', e.target.checked)}
               onKeyDown={(e) => handleKeyDown(e, rowIndex, 'foil')}
               disabled={row.status === 'added'}
-              className="w-5 h-5 rounded border-[var(--border)] bg-[var(--bg-page)] text-teal-500 focus:ring-teal-400 focus:ring-offset-0 disabled:opacity-50"
+              className="w-5 h-5 rounded border-[var(--border)] bg-[var(--bg-page)] text-[var(--bda-primary)] focus:ring-[var(--bda-primary)] focus:ring-offset-0 disabled:opacity-50"
             />
           </label>
         </div>
@@ -199,7 +199,7 @@ export function RapidEntryRow({
             onChange={(e) => updateRowField(rowIndex, 'quality', e.target.value)}
             onKeyDown={(e) => handleKeyDown(e, rowIndex, 'quality')}
             disabled={row.status === 'added'}
-            className="w-full bg-[var(--bg-page)] border border-[var(--border)] rounded px-2 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-teal-400 disabled:opacity-50"
+            className="w-full bg-[var(--bg-page)] border border-[var(--border)] rounded px-2 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[var(--bda-primary)] disabled:opacity-50"
           >
             {QUALITY_OPTIONS.map(q => (
               <option key={q} value={q}>{q}</option>
@@ -215,7 +215,7 @@ export function RapidEntryRow({
             onChange={(e) => updateRowField(rowIndex, 'folder', e.target.value)}
             onKeyDown={(e) => handleKeyDown(e, rowIndex, 'folder')}
             disabled={row.status === 'added'}
-            className="w-full bg-[var(--bg-page)] border border-[var(--border)] rounded px-2 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-teal-400 disabled:opacity-50"
+            className="w-full bg-[var(--bg-page)] border border-[var(--border)] rounded px-2 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[var(--bda-primary)] disabled:opacity-50"
           >
             {allFolders.map(f => (
               <option key={f} value={f}>{f === 'Uncategorized' ? 'Unsorted' : f}</option>
@@ -238,11 +238,10 @@ export function RapidEntryRow({
           {row.status === 'valid' && (
             <button
               onClick={() => handleAddCardToInventory(rowIndex)}
-              className={`p-1.5 rounded text-white transition-colors ${
-                lotModeEnabled 
-                  ? 'bg-[var(--warning)] hover:bg-[var(--warning)]/90' 
+              className={`p-1.5 rounded text-white transition-colors ${lotModeEnabled
+                  ? 'bg-[var(--warning)] hover:bg-[var(--warning)]/90'
                   : 'bg-[var(--accent-600)] hover:bg-[var(--accent)]'
-              }`}
+                }`}
               title={lotModeEnabled ? "Add to lot (Shift+Enter)" : "Add to inventory (Shift+Enter)"}
             >
               <Plus className="w-4 h-4" />

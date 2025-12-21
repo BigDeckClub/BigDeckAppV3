@@ -15,15 +15,15 @@ import PropTypes from 'prop-types';
  */
 export function FullPageSpinner({ color = 'teal' }) {
   const colorClasses = {
-    teal: 'text-teal-400 border-teal-400',
+    teal: 'text-[var(--bda-primary)] border-[var(--bda-primary)]',
     white: 'text-white border-white',
   };
 
   const classes = colorClasses[color] || colorClasses.teal;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
-      <div 
+    <div className="min-h-screen bg-[var(--bda-bg)] flex items-center justify-center">
+      <div
         className={`w-8 h-8 animate-spin border-2 border-t-transparent rounded-full ${classes}`}
         role="status"
         aria-label="Loading"

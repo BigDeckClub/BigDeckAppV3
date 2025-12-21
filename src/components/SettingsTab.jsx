@@ -13,7 +13,7 @@ import { API_ENDPOINTS } from '../config/api';
 export const SettingsTab = ({ inventory = [] }) => {
   // Tab navigation state
   const [activeTab, setActiveTab] = useState('thresholds');
-  
+
   // Shared threshold settings from custom hook
   const {
     thresholdSettings,
@@ -22,7 +22,7 @@ export const SettingsTab = ({ inventory = [] }) => {
     handleResetSliders,
     handleApplyQuickPreset
   } = useThresholdSettings();
-  
+
   // Sales history for threshold calculations
   const [salesHistory, setSalesHistory] = useState([]);
 
@@ -43,9 +43,9 @@ export const SettingsTab = ({ inventory = [] }) => {
   // Tab button styling helper
   const getTabClassName = (tabName, activeColor) => {
     const baseClasses = 'px-4 py-3 font-medium transition-all whitespace-nowrap';
-    const activeClasses = `border-b-2 ${activeColor} bg-slate-800/50`;
-    const inactiveClasses = 'text-slate-400 hover:text-slate-300';
-    
+    const activeClasses = `border-b-2 ${activeColor} bg-[var(--bda-primary)]/10`;
+    const inactiveClasses = 'text-[var(--text-muted)] hover:text-[var(--bda-text)]';
+
     return `${baseClasses} ${activeTab === tabName ? activeClasses : inactiveClasses}`;
   };
 
@@ -53,7 +53,7 @@ export const SettingsTab = ({ inventory = [] }) => {
     <div className="space-y-6">
       {/* Tab Navigation Bar */}
       <div className="flex gap-2 border-b border-slate-600 pb-0 overflow-x-auto">
-        <button 
+        <button
           onClick={() => setActiveTab('thresholds')}
           className={getTabClassName('thresholds', 'border-purple-500 text-purple-400')}
         >
@@ -62,16 +62,16 @@ export const SettingsTab = ({ inventory = [] }) => {
             Smart Thresholds
           </span>
         </button>
-        <button 
+        <button
           onClick={() => setActiveTab('presets')}
-          className={getTabClassName('presets', 'border-teal-500 text-teal-400')}
+          className={getTabClassName('presets', 'border-[var(--bda-primary)] text-[var(--bda-primary)]')}
         >
           <span className="flex items-center gap-1.5">
             <Zap className="w-4 h-4" />
             Presets
           </span>
         </button>
-        <button 
+        <button
           onClick={() => setActiveTab('account')}
           className={getTabClassName('account', 'border-blue-500 text-blue-400')}
         >

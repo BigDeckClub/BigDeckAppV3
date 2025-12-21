@@ -149,4 +149,3 @@ prisma.config.ts
 migrate/mappings/*.csv
 migrate/unmapped.csv
 .env
-.env

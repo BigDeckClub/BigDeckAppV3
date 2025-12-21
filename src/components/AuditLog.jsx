@@ -45,7 +45,7 @@ const getActionIcon = (actionType) => {
 const getActionColor = (actionType) => {
   const colors = {
     bulk_import: 'text-blue-400 bg-blue-400/10 border-blue-400/30',
-    import_completed: 'text-teal-400 bg-teal-400/10 border-teal-400/30',
+    import_completed: 'text-[var(--bda-primary)] bg-[var(--bda-primary)]/10 border-[var(--bda-primary)]/30',
     trash_empty: 'text-red-400 bg-red-400/10 border-red-400/30',
     item_deleted: 'text-red-400 bg-red-400/10 border-red-400/30',
     deck_created: 'text-purple-400 bg-purple-400/10 border-purple-400/30',
@@ -53,7 +53,7 @@ const getActionColor = (actionType) => {
     folder_created: 'text-amber-400 bg-amber-400/10 border-amber-400/30',
     bulk_folder_move: 'text-amber-400 bg-amber-400/10 border-amber-400/30'
   };
-  return colors[actionType] || 'text-[var(--text-muted)] bg-slate-400/10 border-slate-400/30';
+  return colors[actionType] || 'text-[var(--text-muted)] bg-[var(--muted-surface)] border-[var(--border)]';
 };
 
 /**
@@ -80,27 +80,27 @@ const AuditEntry = ({ entry }) => {
   const [expanded, setExpanded] = useState(false);
   const IconComponent = getActionIcon(entry.action_type);
   const colorClass = getActionColor(entry.action_type);
-  
+
   const metadata = entry.metadata || {};
   const hasMetadata = Object.keys(metadata).length > 0;
-  
+
   return (
     <div className={`border rounded-lg overflow-hidden ${colorClass}`}>
-      <div 
-        className={`flex items-start gap-4 p-4 cursor-pointer hover:bg-white/5 transition-colors ${hasMetadata ? '' : 'cursor-default'}`}
+      <div
+        className={`flex items-start gap-4 p-4 cursor-pointer hover:bg-[var(--card-hover)] transition-colors ${hasMetadata ? '' : 'cursor-default'}`}
         onClick={() => hasMetadata && setExpanded(!expanded)}
       >
         <div className={`p-2 rounded-lg shrink-0 ${colorClass}`}>
           <IconComponent className="w-5 h-5" />
         </div>
-        
+
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-xs font-medium px-2 py-0.5 rounded bg-[var(--muted-surface)] text-[var(--text-muted)]">
               {formatActionType(entry.action_type)}
             </span>
           </div>
-          <div className="font-medium text-white mt-1">{entry.description || 'No description'}</div>
+          <div className="font-medium text-[var(--bda-text)] mt-1">{entry.description || 'No description'}</div>
           {entry.entity_type && (
             <div className="text-xs text-[var(--text-muted)] mt-1">
               {entry.entity_type.charAt(0).toUpperCase() + entry.entity_type.slice(1)}
@@ -108,10 +108,10 @@ const AuditEntry = ({ entry }) => {
             </div>
           )}
         </div>
-        
+
         <div className="flex items-center gap-2 shrink-0">
           <div className="text-right">
-            <div className="text-sm text-amber-400">{getRelativeTime(entry.created_at)}</div>
+            <div className="text-sm text-[var(--bda-primary)]">{getRelativeTime(entry.created_at)}</div>
             <div className="text-xs text-[var(--text-muted)]">
               {new Date(entry.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </div>
@@ -123,7 +123,7 @@ const AuditEntry = ({ entry }) => {
           )}
         </div>
       </div>
-      
+
       {expanded && hasMetadata && (
         <div className="border-t border-[var(--border)] bg-[var(--bg-page)] p-4">
           <div className="text-xs text-[var(--text-muted)] font-medium mb-2">Details</div>
@@ -198,10 +198,10 @@ export const AuditLog = () => {
       <div className="flex flex-col md:flex-row gap-3 items-start md:items-end">
         <div className="flex-1">
           <label className="block text-sm text-[var(--text-muted)] mb-2">Filter by Action Type</label>
-          <select 
-            value={filterType} 
+          <select
+            value={filterType}
             onChange={(e) => setFilterType(e.target.value)}
-            className="w-full bg-[var(--surface)] border border-[var(--border)] rounded px-3 py-2 text-white text-sm hover:border-teal-500 transition-colors"
+            className="w-full bg-[var(--surface)] border border-[var(--border)] rounded px-3 py-2 text-[var(--bda-text)] text-sm hover:border-[var(--bda-primary)] transition-colors"
           >
             {actionTypeOptions.map(option => (
               <option key={option.value} value={option.value}>
@@ -213,7 +213,7 @@ export const AuditLog = () => {
         <button
           onClick={loadEntries}
           disabled={loading}
-          className="px-4 py-2 bg-[var(--muted-surface)] hover:bg-slate-600 text-white rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50"
+          className="px-4 py-2 bg-[var(--muted-surface)] hover:bg-[var(--card-hover)] text-[var(--bda-text)] rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50"
         >
           <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           Refresh
@@ -242,7 +242,7 @@ export const AuditLog = () => {
         </div>
       ) : (
         <div className="flex items-center justify-center py-12">
-          <div className="w-8 h-8 animate-spin mx-auto text-teal-400 border-2 border-teal-400 border-t-transparent rounded-full"></div>
+          <div className="w-8 h-8 animate-spin mx-auto text-[var(--bda-primary)] border-2 border-[var(--bda-primary)] border-t-transparent rounded-full"></div>
         </div>
       )}
     </div>

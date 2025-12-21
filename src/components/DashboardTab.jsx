@@ -105,15 +105,19 @@ function SalesSection() {
 
       {/* Sales List */}
       {sales.length === 0 ? (
-        <div className="bg-[var(--bda-surface)] rounded-lg p-8 border border-[var(--bda-border)] text-center">
-          <p className="text-[var(--bda-muted)]">No sales recorded yet. Start selling items to track profits!</p>
+        <div className="glass-panel rounded-xl p-12 text-center">
+          <div className="w-16 h-16 bg-[var(--surface)] rounded-full flex items-center justify-center mx-auto mb-4">
+            <Receipt className="w-8 h-8 text-[var(--bda-muted)]" />
+          </div>
+          <p className="text-[var(--bda-muted)] text-lg">No sales recorded yet.</p>
+          <p className="text-sm text-[var(--bda-muted)] opacity-70">Start selling items to track profits!</p>
         </div>
       ) : (
-        <div className="bg-[var(--bda-surface)] rounded-lg border border-[var(--bda-border)] overflow-hidden">
+        <div className="glass-panel rounded-xl overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-[var(--bda-surface)]/80 border-b border-[var(--bda-border)]">
+                <tr className="bg-[var(--surface)]/50 border-b border-[var(--glass-border)]">
                   <th className="px-4 py-3 text-left text-[var(--bda-text)] font-semibold">Item</th>
                   <th className="px-4 py-3 text-left text-[var(--bda-text)] font-semibold">Type</th>
                   <th className="px-4 py-3 text-right text-[var(--bda-text)] font-semibold">Qty</th>
@@ -136,25 +140,22 @@ function SalesSection() {
                     <tr key={sale.id} className="border-b border-[var(--bda-border)] hover:bg-[var(--bda-surface)]/50 transition-colors">
                       <td className="px-4 py-3 text-[var(--bda-text)] font-medium">{sale.item_name}</td>
                       <td className="px-4 py-3 text-[var(--bda-muted)]">
-                        <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                          sale.item_type === 'deck'
-                            ? 'bg-teal-600/30 text-teal-300'
-                            : 'bg-blue-600/30 text-blue-300'
-                        }`}>
+                        <span className={`px-2 py-1 rounded text-xs font-semibold ${sale.item_type === 'deck'
+                          ? 'bg-[var(--bda-primary)]/30 text-[var(--bda-primary)]'
+                          : 'bg-blue-600/30 text-blue-300'
+                          }`}>
                           {sale.item_type === 'deck' ? 'Deck' : 'Card'}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-right text-[var(--bda-text)]">{qty}</td>
                       <td className="px-4 py-3 text-right text-orange-300 font-medium">${cogs.toFixed(2)}</td>
                       <td className="px-4 py-3 text-right text-blue-300 font-medium">${revenue.toFixed(2)}</td>
-                      <td className={`px-4 py-3 text-right font-semibold ${
-                        grossProfit >= 0 ? 'text-green-400' : 'text-red-400'
-                      }`}>
+                      <td className={`px-4 py-3 text-right font-semibold ${grossProfit >= 0 ? 'text-green-400' : 'text-red-400'
+                        }`}>
                         ${grossProfit.toFixed(2)}
                       </td>
-                      <td className={`px-4 py-3 text-right font-semibold ${
-                        markup >= 0 ? 'text-green-400' : 'text-red-400'
-                      }`}>
+                      <td className={`px-4 py-3 text-right font-semibold ${markup >= 0 ? 'text-green-400' : 'text-red-400'
+                        }`}>
                         {markup.toFixed(1)}%
                       </td>
                       <td className="px-4 py-3 text-[var(--bda-muted)] text-xs">
@@ -253,7 +254,7 @@ function EbaySalesWidget() {
             <div className="text-xs text-[var(--bda-muted)]">Completed</div>
           </div>
           <div className="bg-[var(--input-bg)] rounded p-3 text-center">
-            <div className="text-2xl font-bold text-teal-400">${(stats.totalRevenue || 0).toFixed(0)}</div>
+            <div className="text-2xl font-bold text-[var(--bda-primary)]">${(stats.totalRevenue || 0).toFixed(0)}</div>
             <div className="text-xs text-[var(--bda-muted)]">Revenue</div>
           </div>
         </div>
@@ -327,7 +328,7 @@ function OverviewSection({ inventory }) {
           lifetimeTotalCards: 0,
           lifetimeTotalValue: 0
         });
-      } catch (error) {}
+      } catch (error) { }
     };
     fetchAnalytics();
   }, []);
@@ -378,7 +379,7 @@ function OverviewSection({ inventory }) {
             title="Total Cards"
             value={formatNumber((cardMetrics && cardMetrics.totalCards) ?? 0)}
             icon={Layers}
-            color="teal"
+            color="primary"
           />
           <StatsCard
             title="Available"
@@ -502,7 +503,7 @@ function OverviewSection({ inventory }) {
               title="Top Sets by Value"
               subtitle="Top 10 sets by purchase value"
               format="currency"
-              color="teal"
+              color="primary"
               height={180}
             />
           </div>
@@ -526,11 +527,11 @@ export const DashboardTab = ({ inventory }) => {
   const [activeSubTab, setActiveSubTab] = useState('overview');
 
   return (
-    <div className="flex-1 p-6 bg-[var(--bg-page)] overflow-y-auto">
+    <div className="flex-1 p-0 overflow-y-auto overflow-x-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-[var(--bda-primary)] flex items-center gap-2">
-          <BarChart3 className="w-6 h-6" />
+      <div className="flex items-center justify-between mb-8">
+        <h2 className="text-3xl font-heading font-bold text-gradient flex items-center gap-3">
+          <BarChart3 className="w-8 h-8 text-[var(--bda-primary)]" />
           Dashboard
         </h2>
       </div>
@@ -543,11 +544,10 @@ export const DashboardTab = ({ inventory }) => {
             <button
               key={tab.id}
               onClick={() => setActiveSubTab(tab.id)}
-              className={`flex-1 px-4 py-2.5 rounded-md font-medium text-sm flex items-center justify-center gap-2 transition-all ${
-                activeSubTab === tab.id
-                  ? 'bg-[var(--bda-primary)] text-[var(--bda-primary-foreground)] shadow-md'
-                  : 'text-[var(--bda-muted)] hover:text-[var(--bda-text)] hover:bg-[var(--card-hover)]'
-              }`}
+              className={`flex-1 px-4 py-2.5 rounded-md font-medium text-sm flex items-center justify-center gap-2 transition-all duration-300 ${activeSubTab === tab.id
+                ? 'bg-[var(--bda-surface)] text-[var(--bda-primary)] shadow-sm'
+                : 'text-[var(--bda-muted)] hover:text-[var(--bda-text)] hover:bg-white/5'
+                }`}
             >
               <IconComponent className="w-4 h-4" />
               <span className="hidden sm:inline">{tab.label}</span>

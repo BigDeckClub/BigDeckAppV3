@@ -90,30 +90,27 @@ export const SalesHistoryTab = () => {
                   const revenue = sale.sell_price * qty;
                   const grossProfit = revenue - cogs;
                   const markup = cogs > 0 ? ((grossProfit / cogs) * 100) : 0;
-                  
+
                   return (
                     <tr key={sale.id} className="border-b border-ui-border hover:bg-ui-surface/50 transition-colors">
                       <td className="px-4 py-3 text-ui-text font-medium">{sale.item_name}</td>
                       <td className="px-4 py-3 text-ui-muted">
-                        <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                          sale.item_type === 'deck' 
-                            ? 'bg-teal-600/30 text-teal-300' 
+                        <span className={`px-2 py-1 rounded text-xs font-semibold ${sale.item_type === 'deck'
+                            ? 'bg-[var(--bda-primary)]/30 text-[var(--bda-primary)]'
                             : 'bg-blue-600/30 text-blue-300'
-                        }`}>
+                          }`}>
                           {sale.item_type === 'deck' ? 'Deck' : 'Card'}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-right text-ui-text">{qty}</td>
                       <td className="px-4 py-3 text-right text-orange-300 font-medium">${cogs.toFixed(2)}</td>
                       <td className="px-4 py-3 text-right text-blue-300 font-medium">${revenue.toFixed(2)}</td>
-                      <td className={`px-4 py-3 text-right font-semibold ${
-                        grossProfit >= 0 ? 'text-green-400' : 'text-red-400'
-                      }`}>
+                      <td className={`px-4 py-3 text-right font-semibold ${grossProfit >= 0 ? 'text-green-400' : 'text-red-400'
+                        }`}>
                         ${grossProfit.toFixed(2)}
                       </td>
-                      <td className={`px-4 py-3 text-right font-semibold ${
-                        markup >= 0 ? 'text-green-400' : 'text-red-400'
-                      }`}>
+                      <td className={`px-4 py-3 text-right font-semibold ${markup >= 0 ? 'text-green-400' : 'text-red-400'
+                        }`}>
                         {markup.toFixed(1)}%
                       </td>
                       <td className="px-4 py-3 text-ui-muted text-xs">

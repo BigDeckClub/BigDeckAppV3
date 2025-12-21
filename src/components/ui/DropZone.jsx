@@ -182,14 +182,14 @@ export const DropZone = memo(function DropZone({
       className={`
         relative rounded-xl border-2 border-dashed transition-all duration-200
         ${isDragging
-          ? 'border-accent bg-accent/5 scale-[1.01]'
+          ? 'border-[var(--bda-primary)] bg-[var(--bda-primary)]/5 scale-[1.01]'
           : hasError
             ? 'border-red-500/50 bg-red-500/5'
             : hasSuccess
               ? 'border-emerald-500/50 bg-emerald-500/5'
               : hasFile
-                ? 'border-teal-500/50 bg-teal-500/5'
-                : 'border-[var(--border)] hover:border-slate-500 hover:bg-[var(--surface)]'
+                ? 'border-[var(--bda-primary)]/50 bg-[var(--bda-primary)]/5'
+                : 'border-[var(--border)] hover:border-[var(--bda-muted)] hover:bg-[var(--surface)]'
         }
         ${disabled || isLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
         ${className}
@@ -218,8 +218,8 @@ export const DropZone = memo(function DropZone({
         {/* Loading state */}
         {isLoading && (
           <>
-            <div className="w-12 h-12 rounded-full border-2 border-teal-400 border-t-transparent animate-spin mb-4" />
-            <p className="text-[var(--text-muted)] font-medium">Processing file...</p>
+            <div className="w-12 h-12 rounded-full border-2 border-[var(--bda-primary)] border-t-transparent animate-spin mb-4" />
+            <p className="text-[var(--bda-muted)] font-medium">Processing file...</p>
           </>
         )}
 
@@ -234,7 +234,7 @@ export const DropZone = memo(function DropZone({
             </p>
             <button
               onClick={handleClear}
-              className="text-sm text-[var(--text-muted)] hover:text-white underline"
+              className="text-sm text-[var(--bda-muted)] hover:text-[var(--bda-text)] underline"
             >
               Try again
             </button>
@@ -254,17 +254,17 @@ export const DropZone = memo(function DropZone({
         {/* File selected state */}
         {!isLoading && !hasError && !hasSuccess && hasFile && (
           <>
-            <div className="w-12 h-12 rounded-full bg-teal-500/20 flex items-center justify-center mb-4">
-              <FileText className="w-6 h-6 text-teal-400" />
+            <div className="w-12 h-12 rounded-full bg-[var(--bda-primary)]/20 flex items-center justify-center mb-4">
+              <FileText className="w-6 h-6 text-[var(--bda-primary)]" />
             </div>
-            <p className="text-white font-medium mb-1">{selectedFile.name}</p>
-            <p className="text-sm text-[var(--text-muted)] mb-3">
+            <p className="text-[var(--bda-text)] font-medium mb-1">{selectedFile.name}</p>
+            <p className="text-sm text-[var(--bda-muted)] mb-3">
               {formatFileSize(selectedFile.size)}
             </p>
             {onClearFile && (
               <button
                 onClick={handleClear}
-                className="flex items-center gap-1.5 text-sm text-[var(--text-muted)] hover:text-red-400 transition-colors"
+                className="flex items-center gap-1.5 text-sm text-[var(--bda-muted)] hover:text-red-400 transition-colors"
               >
                 <X className="w-4 h-4" />
                 Remove file
@@ -279,17 +279,17 @@ export const DropZone = memo(function DropZone({
             <div className={`
               w-14 h-14 rounded-full flex items-center justify-center mb-4 transition-colors
               ${isDragging
-                ? 'bg-accent/20'
+                ? 'bg-[var(--bda-primary)]/20'
                 : 'bg-[var(--surface)]'
               }
             `}>
-              <Upload className={`w-7 h-7 ${isDragging ? 'text-accent' : 'text-[var(--text-muted)]'}`} />
+              <Upload className={`w-7 h-7 ${isDragging ? 'text-[var(--bda-primary)]' : 'text-[var(--bda-muted)]'}`} />
             </div>
-            <p className={`font-medium mb-1 ${isDragging ? 'text-accent' : 'text-white'}`}>
+            <p className={`font-medium mb-1 ${isDragging ? 'text-[var(--bda-primary)]' : 'text-[var(--bda-text)]'}`}>
               {isDragging ? 'Drop to upload' : title}
             </p>
-            <p className="text-sm text-[var(--text-muted)] mb-3">{subtitle}</p>
-            <div className="flex items-center gap-2 text-xs text-[var(--text-muted)]">
+            <p className="text-sm text-[var(--bda-muted)] mb-3">{subtitle}</p>
+            <div className="flex items-center gap-2 text-xs text-[var(--bda-muted)]">
               <span>Supported: {formatLabels}</span>
               <span>•</span>
               <span>Max {formatFileSize(maxSize)}</span>
@@ -300,7 +300,7 @@ export const DropZone = memo(function DropZone({
 
       {/* Drag overlay */}
       {isDragging && (
-        <div className="absolute inset-0 rounded-xl bg-accent/10 pointer-events-none" />
+        <div className="absolute inset-0 rounded-xl bg-[var(--bda-primary)]/10 pointer-events-none" />
       )}
     </div>
   );

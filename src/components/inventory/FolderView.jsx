@@ -31,7 +31,7 @@ export function FolderView({
   // Calculate folder cards and stats
   const { folderCards, availableCardsStats, folderDesc } = useMemo(() => {
     const folderData = groupedByFolder[folderName] || {};
-    
+
     // Helper to check if card is in decklist (handles double-faced cards like "Avatar Aang // Aang, Master of Elements")
     const isInDecklist = (name) => {
       const lowerName = name.toLowerCase();
@@ -42,20 +42,20 @@ export function FolderView({
       }
       return false;
     };
-    
+
     const cards = Object.entries(folderData).filter(([cardName, items]) => {
       const matchesSearch = inventorySearch === '' || cardName.toLowerCase().includes(inventorySearch.toLowerCase());
       const totalQty = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
       const reservedQty = items.reduce((sum, item) => sum + (parseInt(item.reserved_quantity) || 0), 0);
       // Apply decklist filter (handles double-faced cards)
       const inDecklist = isInDecklist(cardName);
-      const matchesDecklistFilter = 
+      const matchesDecklistFilter =
         decklistFilter === 'all' ||
         (decklistFilter === 'in-decklist' && inDecklist) ||
         (decklistFilter === 'not-in-decklist' && !inDecklist);
       return matchesSearch && matchesDecklistFilter && (totalQty - reservedQty) > 0;
     });
-    
+
     const stats = Object.entries(folderData).reduce((acc, [, items]) => {
       const totalQty = items.reduce((s, item) => s + (item.quantity || 0), 0);
       const reservedQty = items.reduce((s, item) => s + (parseInt(item.reserved_quantity) || 0), 0);
@@ -67,12 +67,12 @@ export function FolderView({
       }
       return acc;
     }, { uniqueCount: 0, totalCount: 0, totalCost: 0 });
-    
+
     const desc = folderOps.folderMetadata[folderName]?.description || '';
-    
+
     // Apply sorting to the cards
     const sortedCards = sortCards(cards, sortField, sortDirection);
-    
+
     return { folderCards: sortedCards, availableCardsStats: stats, folderDesc: desc };
   }, [folderName, groupedByFolder, inventorySearch, folderOps.folderMetadata, sortField, sortDirection, decklistFilter, decklistCardNames]);
 
@@ -97,19 +97,19 @@ export function FolderView({
 
   const handleBulkMove = useCallback(async () => {
     if (!targetFolder || selectedCardIds.size === 0) return;
-    
+
     try {
       let successCount = 0;
       for (const cardId of selectedCardIds) {
         await folderOps.moveInventoryItemToFolder(cardId, targetFolder);
         successCount++;
       }
-      
+
       showToast(
         `Moved ${successCount} card${successCount === 1 ? '' : 's'} to ${targetFolder}`,
         TOAST_TYPES.SUCCESS
       );
-      
+
       // Reset selection
       setSelectedCardIds(new Set());
       setShowBulkMove(false);
@@ -140,14 +140,14 @@ export function FolderView({
         onDeleteFolder={onDeleteFolder}
         isUnsorted={folderName === 'Uncategorized'}
       />
-      
+
       {/* Bulk Selection Controls */}
       {folderCards.length > 0 && (
-        <div className="bg-slate-800/50 rounded-lg border border-slate-600 p-3 mb-4 flex flex-wrap items-center gap-3">
+        <div className="bg-[var(--bda-surface)] rounded-lg border border-[var(--bda-border)] p-3 mb-4 flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2">
             <button
               onClick={isAllSelected ? handleDeselectAll : handleSelectAll}
-              className="flex items-center gap-2 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-md transition-colors text-sm font-medium"
+              className="flex items-center gap-2 px-3 py-1.5 bg-[var(--bda-card)] hover:bg-[var(--card-hover)] text-[var(--bda-text)] rounded-md transition-colors text-sm font-medium"
             >
               {isAllSelected ? (
                 <>
@@ -162,33 +162,33 @@ export function FolderView({
               )}
             </button>
             {selectedCardIds.size > 0 && (
-              <span className="text-sm text-slate-400">
+              <span className="text-sm text-[var(--bda-muted)]">
                 {selectedCardIds.size} card{selectedCardIds.size === 1 ? '' : 's'} selected
               </span>
             )}
           </div>
-          
+
           {/* Decklist Filter */}
           {setDecklistFilter && (
             <div className="flex items-center gap-2 ml-auto">
-              <ListFilter className="w-4 h-4 text-slate-400" />
+              <ListFilter className="w-4 h-4 text-[var(--bda-muted)]" />
               <select
                 value={decklistFilter}
                 onChange={(e) => setDecklistFilter(e.target.value)}
-                className="px-3 py-1.5 bg-slate-700 border border-slate-600 text-slate-200 rounded-md text-sm focus:outline-none focus:border-teal-400"
+                className="px-3 py-1.5 bg-[var(--input-bg)] border border-[var(--bda-border)] text-[var(--bda-text)] rounded-md text-sm focus:outline-none focus:border-[var(--bda-primary)]"
               >
                 <option value="all">All Cards</option>
                 <option value="in-decklist">In Decklists</option>
                 <option value="not-in-decklist">Not in Decklists</option>
               </select>
               {decklistFilter !== 'all' && (
-                <span className="text-xs text-teal-400">
+                <span className="text-xs text-[var(--bda-primary)]">
                   {folderCards.length} cards
                 </span>
               )}
             </div>
           )}
-          
+
           {selectedCardIds.size > 0 && (
             <div className="flex items-center gap-2">
               {!showBulkMove ? (
@@ -204,7 +204,7 @@ export function FolderView({
                   <select
                     value={targetFolder}
                     onChange={(e) => setTargetFolder(e.target.value)}
-                    className="px-3 py-1.5 bg-slate-700 border border-slate-600 text-slate-200 rounded-md text-sm focus:outline-none focus:border-teal-400"
+                    className="px-3 py-1.5 bg-[var(--input-bg)] border border-[var(--bda-border)] text-[var(--bda-text)] rounded-md text-sm focus:outline-none focus:border-[var(--bda-primary)]"
                   >
                     <option value="">Select folder...</option>
                     {availableFolders.map(folder => (
@@ -214,7 +214,7 @@ export function FolderView({
                   <button
                     onClick={handleBulkMove}
                     disabled={!targetFolder}
-                    className="px-3 py-1.5 bg-teal-600 hover:bg-teal-500 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded-md transition-colors text-sm font-medium"
+                    className="px-3 py-1.5 bg-[var(--bda-primary)] hover:opacity-90 disabled:bg-[var(--bda-card)] disabled:text-[var(--bda-muted)] text-[var(--bda-primary-foreground)] rounded-md transition-colors text-sm font-medium"
                   >
                     Move
                   </button>
@@ -223,7 +223,7 @@ export function FolderView({
                       setShowBulkMove(false);
                       setTargetFolder('');
                     }}
-                    className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-md transition-colors text-sm"
+                    className="px-3 py-1.5 bg-[var(--bda-card)] hover:bg-[var(--card-hover)] text-[var(--bda-muted)] rounded-md transition-colors text-sm"
                   >
                     Cancel
                   </button>
@@ -233,16 +233,16 @@ export function FolderView({
           )}
         </div>
       )}
-      
+
       {folderCards.length > 0 ? (
-        <CardGrid 
-          cards={folderCards} 
+        <CardGrid
+          cards={folderCards}
           {...cardGridProps}
           selectedCardIds={selectedCardIds}
           setSelectedCardIds={setSelectedCardIds}
         />
       ) : (
-        <p className="text-slate-400 text-center py-12">No cards in this folder.</p>
+        <p className="text-[var(--bda-muted)] text-center py-12">No cards in this folder.</p>
       )}
     </>
   );

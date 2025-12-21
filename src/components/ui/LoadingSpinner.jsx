@@ -31,7 +31,7 @@ export function LoadingSpinner({
   };
 
   const colorClasses = {
-    primary: 'text-teal-500',
+    primary: 'text-[var(--bda-primary)]',
     white: 'text-white',
     slate: 'text-[var(--text-muted)]',
   };

@@ -32,6 +32,15 @@ export const hotSchema = z.object({
   targetInventory: z.number().optional(),
 }).strict()
 
+export const budgetSchema = z.object({
+  maxTotalSpend: z.number().positive(),
+  maxPerSeller: z.number().positive(),
+  maxPerCard: z.number().positive(),
+  maxSpeculativeSpend: z.number().nonnegative(),
+  reserveBudgetPercent: z.number().min(0).max(100),
+  budgetMode: z.enum(['STRICT', 'SOFT']).optional().default('STRICT'),
+}).strict()
+
 export const inputSchema = z.object({
   demands: z.array(demandSchema).max(2000).optional(),
   directives: z.array(directiveSchema).max(500).optional(),
@@ -39,6 +48,7 @@ export const inputSchema = z.object({
   hotList: z.array(hotSchema).max(2000).optional(),
   cardKingdomPrices: z.record(z.number()).optional(),
   currentInventory: z.record(z.number()).optional(),
+  budget: budgetSchema.optional(),
 }).strict()
 
 export default inputSchema

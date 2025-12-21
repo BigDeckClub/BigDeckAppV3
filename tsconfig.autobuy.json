@@ -10,5 +10,8 @@
     "forceConsistentCasingInFileNames": true,
     "declaration": false
   },
-  "include": ["server/autobuy/**/*"]
+  "include": [
+    "server/autobuy/**/*",
+    "server/marketplace/**/*"
+  ]
 }

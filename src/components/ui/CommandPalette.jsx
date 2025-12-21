@@ -72,17 +72,17 @@ const CommandItem = memo(function CommandItem({ command, isSelected, onClick, on
       className={`
         w-full flex items-center gap-3 px-4 py-3 text-left transition-colors duration-100
         ${isSelected
-          ? 'bg-teal-500/10 text-teal-400'
+          ? 'bg-[var(--bda-primary)]/10 text-[var(--bda-primary)]'
           : 'text-[var(--text-muted)] hover:bg-[var(--surface)]'
         }
       `}
       role="option"
       aria-selected={isSelected}
     >
-      <Icon className={`w-5 h-5 ${isSelected ? 'text-teal-400' : 'text-[var(--text-muted)]'}`} />
+      <Icon className={`w-5 h-5 ${isSelected ? 'text-[var(--bda-primary)]' : 'text-[var(--text-muted)]'}`} />
       <span className="flex-1 font-medium">{command.label}</span>
       {isSelected && (
-        <ArrowRight className="w-4 h-4 text-teal-400" />
+        <ArrowRight className="w-4 h-4 text-[var(--bda-primary)]" />
       )}
     </button>
   );
@@ -253,7 +253,7 @@ export const CommandPalette = memo(function CommandPalette({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Search Input */}
-        <div className="flex items-center gap-3 px-4 py-4 border-b border-slate-800">
+        <div className="flex items-center gap-3 px-4 py-4 border-b border-[var(--bda-border)]">
           <Search className="w-5 h-5 text-[var(--text-muted)]" />
           <input
             ref={inputRef}
@@ -310,7 +310,7 @@ export const CommandPalette = memo(function CommandPalette({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between px-4 py-3 border-t border-slate-800 bg-[var(--surface)] text-xs text-[var(--text-muted)]">
+        <div className="flex items-center justify-between px-4 py-3 border-t border-[var(--bda-border)] bg-[var(--surface)] text-xs text-[var(--text-muted)]">
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1">
               <kbd className="px-1.5 py-0.5 bg-[var(--muted-surface)] rounded text-[var(--text-muted)]">↑</kbd>
