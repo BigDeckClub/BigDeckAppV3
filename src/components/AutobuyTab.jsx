@@ -103,6 +103,7 @@ export function AutobuyTab({ inventory, decks }) {
 
   // Deck selection state
   const [selectedDeckIds, setSelectedDeckIds] = useState([]);
+  const [deckQuantities, setDeckQuantities] = useState({}); // { [deckId]: quantity }
 
   // Toggle deck selection
   const toggleDeckSelection = (deckId) => {
@@ -111,6 +112,16 @@ export function AutobuyTab({ inventory, decks }) {
         ? prev.filter(id => id !== deckId)
         : [...prev, deckId]
     );
+  };
+
+  // Handle quantity change
+  const handleQuantityChange = (e, deckId) => {
+    e.stopPropagation();
+    const headers = Math.max(1, parseInt(e.target.value) || 1);
+    setDeckQuantities(prev => ({
+      ...prev,
+      [deckId]: headers
+    }));
   };
 
   // Select all / deselect all
@@ -124,27 +135,106 @@ export function AutobuyTab({ inventory, decks }) {
 
   // Calculate demand summary from inventory and decks using useMemo
   const demandSummary = useMemo(() => {
-    const alertCards = safeInventory.filter(item =>
-      item.low_inventory_alert &&
-      item.quantity < (item.low_inventory_threshold || 0)
-    );
+    // 1. Map inventory for easy lookup
+    const inventoryByName = {};
+    const inventoryById = {};
+    safeInventory.forEach(item => {
+      if (item.name) inventoryByName[normalizeName(item.name)] = item;
+      const id = item.scryfall_id || item.card_id;
+      if (id) inventoryById[id] = item;
+    });
 
+    // 2. Aggregate Needs
+    const cardNeeds = new Map(); // ID -> Max(Threshold, DeckRequirements)
+
+    // Add alert thresholds
+    safeInventory.forEach(item => {
+      if (item.low_inventory_alert && item.quantity < (item.low_inventory_threshold || 0)) {
+        const id = item.scryfall_id || item.card_id;
+        if (id) {
+          cardNeeds.set(id, Math.max(cardNeeds.get(id) || 0, item.low_inventory_threshold || 0));
+        }
+      }
+    });
+
+    // Add selected deck requirements
     const relevantDecks = safeDecks.filter(d => selectedDeckIds.includes(d.id));
-    const deckCards = relevantDecks.flatMap(d => d.cards || []);
+    relevantDecks.forEach(deck => {
+      (deck.cards || []).forEach(card => {
+        let id = card.scryfall_id || card.id;
+        if (!id) {
+          const invItem = inventoryByName[normalizeName(card.name)];
+          if (invItem) id = invItem.scryfall_id || invItem.card_id;
+        }
 
-    const uniqueCardsNeeded = new Set([
-      ...alertCards.map(c => c.scryfall_id || c.card_id),
-      ...deckCards.map(c => c.scryfall_id || c.card_id)
-    ]).size;
+        if (id) {
+          const currentNeed = cardNeeds.get(id) || 0;
+          // Strategy: The total TARGET inventory for this card
+          // Since we want to support multiple decks, we sum up deck requirements?
+          // Or do we assume decks share cards?
+          // The optimizer logic above sums them up: deckNeeds.set(id, (deckNeeds.get(id) || 0) + qty);
+          // But wait, the optimizer logic inside useMemo should mirror the 'runOptimizer' logic.
+          // runOptimizer sums deck needs. Let's do that.
+
+          // Actually, we can't easily sum inside this loop structure without a separate map for deck usage.
+          // Let's create a specific map for deck needs first.
+        }
+      });
+    });
+
+    // Let's restart the logic to be cleaner and match runOptimizer perfectly.
+    const deckNeedsMap = new Map(); // ID -> Total Deck Quantity Needed
+    let deckCardsCount = 0;
+
+    relevantDecks.forEach(deck => {
+      const quantityMultiplier = deckQuantities[deck.id] || 1;
+      (deck.cards || []).forEach(card => {
+        deckCardsCount += quantityMultiplier; // Roughly track total cards needed
+        let id = card.scryfall_id || card.id;
+        if (!id) {
+          const invItem = inventoryByName[normalizeName(card.name)];
+          if (invItem) id = invItem.scryfall_id || invItem.card_id;
+        }
+        if (id) {
+          const qty = parseInt(card.quantity || 1) * quantityMultiplier;
+          deckNeedsMap.set(id, (deckNeedsMap.get(id) || 0) + qty);
+        }
+      });
+    });
+
+    // Now calculate actual "To Buy" / "Missing" count
+    let missingCardCount = 0;
+    const allRelevantIDs = new Set([...cardNeeds.keys(), ...deckNeedsMap.keys()]);
+
+    // We need to re-scan inventory for alerts to be sure we have all IDs
+    safeInventory.forEach(item => {
+      if (item.low_inventory_alert) {
+        const id = item.scryfall_id || item.card_id;
+        if (id) allRelevantIDs.add(id);
+      }
+    });
+
+    allRelevantIDs.forEach(id => {
+      const invItem = inventoryById[id];
+      const owned = invItem ? (invItem.quantity || 0) : 0;
+
+      const alertThreshold = invItem?.low_inventory_alert ? (invItem.low_inventory_threshold || 0) : 0;
+      const deckNeed = deckNeedsMap.get(id) || 0;
+
+      const target = Math.max(alertThreshold, deckNeed);
+      if (target > owned) {
+        missingCardCount++;
+      }
+    });
 
     return {
-      alertCards: alertCards.length,
-      deckCards: deckCards.length,
-      uniqueCardsNeeded,
+      alertCards: safeInventory.filter(i => i.low_inventory_alert && i.quantity < (i.low_inventory_threshold || 0)).length,
+      deckCards: deckCardsCount,
+      uniqueCardsNeeded: missingCardCount,
       totalDecks: safeDecks.length,
       selectedDecks: relevantDecks.length,
     };
-  }, [safeInventory, safeDecks, selectedDeckIds]);
+  }, [safeInventory, safeDecks, selectedDeckIds, deckQuantities]);
 
   // Run the autobuy optimizer
   const runOptimizer = async () => {
@@ -185,6 +275,8 @@ export function AutobuyTab({ inventory, decks }) {
 
       selectedDeckIds.forEach(deckId => {
         const deck = safeDecks.find(d => d.id === deckId);
+        const quantityMultiplier = deckQuantities[deckId] || 1;
+
         if (deck && deck.cards) {
           deck.cards.forEach(card => {
             // Try to find the scryfall ID if missing in deck card
@@ -197,7 +289,7 @@ export function AutobuyTab({ inventory, decks }) {
             }
 
             if (id) {
-              const qty = parseInt(card.quantity || 1);
+              const qty = parseInt(card.quantity || 1) * quantityMultiplier;
               deckNeeds.set(id, (deckNeeds.get(id) || 0) + qty);
             }
           });
@@ -1074,6 +1166,7 @@ export function AutobuyTab({ inventory, decks }) {
                       // Calculate completion for this specific deck locally to show status
                       // (Or rely on passed prop if available, but doing it simple here)
                       const cardCount = deck.cards?.length || 0;
+                      const quantity = deckQuantities[deck.id] || 1;
 
                       return (
                         <div
@@ -1098,7 +1191,21 @@ export function AutobuyTab({ inventory, decks }) {
                             </div>
                             <div className="mt-2 flex items-center justify-between text-xs text-[var(--text-muted)]">
                               <span>{deck.format}</span>
-                              <span>{cardCount} cards</span>
+                              {isSelected ? (
+                                <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                                  <span className="text-[var(--text-primary)]">Qty:</span>
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    max="99"
+                                    value={quantity}
+                                    onChange={(e) => handleQuantityChange(e, deck.id)}
+                                    className="w-12 px-1 py-0.5 text-xs bg-[var(--background)] border border-[var(--border)] rounded text-center focus:border-[var(--primary)] focus:outline-none text-white"
+                                  />
+                                </div>
+                              ) : (
+                                <span>{cardCount} cards</span>
+                              )}
                             </div>
                           </div>
                         </div>
