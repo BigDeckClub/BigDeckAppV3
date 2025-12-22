@@ -76,10 +76,24 @@ export function RapidEntryTable({
 
     // Arrow keys for dropdown navigation
     if (showDropdown && fieldType === 'name' && searchResults.length > 0) {
+      // Create the same view list as rendered in RapidEntryRow
+      const uniqueCards = [];
+      const seen = new Set();
+      for (const card of searchResults) {
+        if (!seen.has(card.name)) {
+          seen.add(card.name);
+          uniqueCards.push(card);
+        }
+      }
+      // Apply the same slice limit as the UI
+      const MAX_VISIBLE_RESULTS = 10;
+      const visibleCards = uniqueCards.slice(0, MAX_VISIBLE_RESULTS);
+      const maxIndex = visibleCards.length - 1;
+
       if (e.key === 'ArrowDown') {
         e.preventDefault();
         e.stopPropagation();
-        setHighlightedResult(prev => Math.min(prev + 1, searchResults.length - 1));
+        setHighlightedResult(prev => Math.min(prev + 1, maxIndex));
         return;
       }
       if (e.key === 'ArrowUp') {
@@ -91,17 +105,9 @@ export function RapidEntryTable({
       if (e.key === 'Enter') {
         e.preventDefault();
         e.stopPropagation();
-        // Get unique cards
-        const uniqueCards = [];
-        const seen = new Set();
-        for (const card of searchResults) {
-          if (!seen.has(card.name)) {
-            seen.add(card.name);
-            uniqueCards.push(card);
-          }
-        }
-        if (uniqueCards[highlightedResult]) {
-          handleSelectCard(rowIndex, uniqueCards[highlightedResult]);
+
+        if (visibleCards[highlightedResult]) {
+          handleSelectCard(rowIndex, visibleCards[highlightedResult]);
         }
         return;
       }
