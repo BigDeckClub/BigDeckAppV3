@@ -20,7 +20,9 @@ import {
   Inbox,
   Tag,
   ShoppingBag,
-  Receipt
+  Receipt,
+  Download,
+  ArrowRight
 } from 'lucide-react';
 import { ChangeLogTab } from './ChangeLogTab';
 import { ActivityFeed } from './ActivityFeed';
@@ -292,7 +294,10 @@ function EbaySalesWidget() {
 /**
  * Overview/Analytics Section Component
  */
-function OverviewSection({ inventory }) {
+/**
+ * Overview/Analytics Section Component
+ */
+function OverviewSection({ inventory, onNavigate }) {
   const formatNumber = (v) => {
     if (v === null || v === undefined) return '—';
     try {
@@ -374,148 +379,172 @@ function OverviewSection({ inventory }) {
     .slice(0, 5);
 
   return (
-    <div className="space-y-6">
-      {/* Key Metrics - Card Stats */}
-      <div>
-        <h3 className="text-sm font-semibold text-[var(--text-muted)] mb-3">Inventory Overview</h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
-          <StatsCard
-            title="Total Cards"
-            value={formatNumber((cardMetrics && cardMetrics.totalCards) ?? 0)}
-            icon={Library}
-            color="primary"
-          />
-          <StatsCard
-            title="Available"
-            value={formatNumber(totalAvailable ?? 0)}
-            icon={Inbox}
-            color="blue"
-          />
-          <StatsCard
-            title="Unique Cards"
-            value={formatNumber((cardMetrics && cardMetrics.uniqueCards) ?? 0)}
-            icon={Fingerprint}
-            color="slate"
-          />
-          <StatsCard
-            title="Sold (60d)"
-            value={formatNumber((cardMetrics && cardMetrics.totalSoldLast60d) ?? 0)}
-            icon={Tag}
-            color="red"
-          />
-          <StatsCard
-            title="Purchased (60d)"
-            value={formatNumber((cardMetrics && cardMetrics.totalPurchasedLast60d) ?? 0)}
-            icon={ShoppingBag}
-            color="emerald"
-          />
-          <StatsCard
-            title="Lifetime Sold"
-            value={formatNumber((cardMetrics && cardMetrics.lifetimeTotalCards) ?? 0)}
-            icon={History}
-            color="amber"
-          />
-        </div>
-
-        {/* Value Metrics */}
-        <h3 className="text-sm font-semibold text-[var(--text-muted)] mb-3">Collection Value</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <StatsCard
-            title="Purchase Value"
-            value={`$${totalValue.toFixed(2)}`}
-            icon={DollarSign}
-            color="blue"
-            subtitle="Based on purchase prices"
-          />
-          <StatsCard
-            title="Card Kingdom"
-            value={`$${(marketValues?.cardkingdom ?? 0).toFixed(2)}`}
-            icon={DollarSign}
-            color="purple"
-            subtitle="Current market value"
-          />
-          <StatsCard
-            title="TCGPlayer"
-            value={`$${(marketValues?.tcgplayer ?? 0).toFixed(2)}`}
-            icon={DollarSign}
-            color="amber"
-            subtitle="Current market value"
-          />
-        </div>
-      </div>
-
-      {/* Cards by Folder and Top Cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-[var(--bda-surface)] border border-[var(--bda-border)] rounded-lg p-4">
-          <h3 className="text-lg font-semibold text-[var(--bda-heading)] mb-4 flex items-center gap-2">
-            <Package className="w-4 h-4 text-[var(--bda-primary)]" />
-            By Folder
-          </h3>
-          <div className="space-y-2">
-            {Object.entries(byFolder).map(([folder, data]) => (
-              <div key={folder} className="flex justify-between items-center text-sm p-2 bg-[var(--input-bg)] rounded">
-                <span className="text-[var(--bda-muted)]">{folder}</span>
-                <div className="flex gap-3">
-                  <span className="text-[var(--bda-primary)] font-semibold">{data.count} cards</span>
-                  <span className="text-[var(--bda-text)]">${data.value.toFixed(2)}</span>
-                </div>
-              </div>
-            ))}
+    <div className="space-y-8 animate-fade-in">
+      {inventory.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-20 text-center glass-panel rounded-xl animate-fade-in border-2 border-dashed border-[var(--bda-border)]">
+          <div className="w-24 h-24 bg-gradient-to-br from-[var(--primary)]/20 to-purple-500/20 rounded-full flex items-center justify-center mb-6 shadow-xl shadow-purple-500/10 ring-1 ring-[var(--primary)]/30">
+            <Library className="w-10 h-10 text-[var(--bda-primary)]" />
           </div>
+          <h3 className="text-2xl font-bold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">Welcome to BigDeck!</h3>
+          <p className="text-[var(--bda-muted)] max-w-md mb-8 text-lg">
+            Your inventory is currently empty. Start by importing cards or adding them manually to see your analytics.
+          </p>
+          <button
+            onClick={() => onNavigate('imports')}
+            className="flex items-center gap-2 px-6 py-3 bg-[var(--primary)] hover:bg-[var(--primary)]/90 text-white rounded-lg font-bold shadow-lg shadow-indigo-500/20 transition-all hover:scale-105 active:scale-95"
+          >
+            <Download className="w-5 h-5" />
+            Add Your First Cards
+            <ArrowRight className="w-4 h-4 ml-1" />
+          </button>
         </div>
+      )}
 
-        {/* Top Cards */}
-        <div className="bg-[var(--bda-surface)] border border-[var(--bda-border)] rounded-lg p-4">
-          <h3 className="text-lg font-semibold text-[var(--bda-heading)] mb-4 flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-[var(--bda-primary)]" />
-            Top 5 Valuable
-          </h3>
-          <div className="space-y-2">
-            {topCards.map((card, idx) => (
-              <div key={card.id} className="flex justify-between items-center text-sm p-2 bg-[var(--input-bg)] rounded">
-                <span className="text-[var(--bda-muted)]">{idx + 1}. {card.name}</span>
-                <div className="text-[var(--bda-text)] font-semibold">${((card.quantity || 0) * (parseFloat(card.purchase_price) || 0)).toFixed(2)}</div>
-              </div>
-            ))}
+      {inventory.length > 0 && (
+        <div>
+          {/* Key Metrics - Card Stats */}
+          <div>
+            <h3 className="text-sm font-semibold text-[var(--text-muted)] mb-3">Inventory Overview</h3>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+              <StatsCard
+                title="Total Cards"
+                value={formatNumber((cardMetrics && cardMetrics.totalCards) ?? 0)}
+                icon={Library}
+                color="primary"
+              />
+              <StatsCard
+                title="Available"
+                value={formatNumber(totalAvailable ?? 0)}
+                icon={Inbox}
+                color="blue"
+              />
+              <StatsCard
+                title="Unique Cards"
+                value={formatNumber((cardMetrics && cardMetrics.uniqueCards) ?? 0)}
+                icon={Fingerprint}
+                color="slate"
+              />
+              <StatsCard
+                title="Sold (60d)"
+                value={formatNumber((cardMetrics && cardMetrics.totalSoldLast60d) ?? 0)}
+                icon={Tag}
+                color="red"
+              />
+              <StatsCard
+                title="Purchased (60d)"
+                value={formatNumber((cardMetrics && cardMetrics.totalPurchasedLast60d) ?? 0)}
+                icon={ShoppingBag}
+                color="emerald"
+              />
+              <StatsCard
+                title="Lifetime Sold"
+                value={formatNumber((cardMetrics && cardMetrics.lifetimeTotalCards) ?? 0)}
+                icon={History}
+                color="amber"
+              />
+            </div>
+
+            {/* Value Metrics */}
+            <h3 className="text-sm font-semibold text-[var(--text-muted)] mb-3">Collection Value</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <StatsCard
+                title="Purchase Value"
+                value={`$${totalValue.toFixed(2)}`}
+                icon={DollarSign}
+                color="blue"
+                subtitle="Based on purchase prices"
+              />
+              <StatsCard
+                title="Card Kingdom"
+                value={`$${(marketValues?.cardkingdom ?? 0).toFixed(2)}`}
+                icon={DollarSign}
+                color="purple"
+                subtitle="Current market value"
+              />
+              <StatsCard
+                title="TCGPlayer"
+                value={`$${(marketValues?.tcgplayer ?? 0).toFixed(2)}`}
+                icon={DollarSign}
+                color="amber"
+                subtitle="Current market value"
+              />
+            </div>
           </div>
-        </div>
-      </div>
 
-      {/* Value by Set */}
-      <div className="bg-[var(--bda-surface)] border border-[var(--bda-border)] rounded-lg p-4">
-        <h3 className="text-lg font-semibold text-[var(--bda-heading)] mb-4 flex items-center gap-2">
-          <DollarSign className="w-4 h-4 text-[var(--bda-primary)]" />
-          Value by Set
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-          {Object.entries(bySet)
-            .sort((a, b) => b[1].value - a[1].value)
-            .map(([set, data]) => (
-              <div key={set} className="p-2 bg-[var(--input-bg)] rounded text-sm">
-                <div className="font-semibold text-[var(--bda-heading)]">{set}</div>
-                <div className="text-xs text-[var(--bda-muted)]">{data.count} cards • ${data.value.toFixed(2)}</div>
+          {/* Cards by Folder and Top Cards */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="bg-[var(--bda-surface)] border border-[var(--bda-border)] rounded-lg p-4">
+              <h3 className="text-lg font-semibold text-[var(--bda-heading)] mb-4 flex items-center gap-2">
+                <Package className="w-4 h-4 text-[var(--bda-primary)]" />
+                By Folder
+              </h3>
+              <div className="space-y-2">
+                {Object.entries(byFolder).map(([folder, data]) => (
+                  <div key={folder} className="flex justify-between items-center text-sm p-2 bg-[var(--input-bg)] rounded">
+                    <span className="text-[var(--bda-muted)]">{folder}</span>
+                    <div className="flex gap-3">
+                      <span className="text-[var(--bda-primary)] font-semibold">{data.count} cards</span>
+                      <span className="text-[var(--bda-text)]">${data.value.toFixed(2)}</span>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-        </div>
-        {/* Trend chart for top sets */}
-        {bySetData.length > 0 && (
-          <div className="mt-4">
-            <TrendChart
-              data={bySetData}
-              dataKey="value"
-              labelKey="label"
-              title="Top Sets by Value"
-              subtitle="Top 10 sets by purchase value"
-              format="currency"
-              color="primary"
-              height={180}
-            />
-          </div>
-        )}
-      </div>
+            </div>
 
-      {/* eBay Sales Widget */}
-      <EbaySalesWidget />
+            {/* Top Cards */}
+            <div className="bg-[var(--bda-surface)] border border-[var(--bda-border)] rounded-lg p-4">
+              <h3 className="text-lg font-semibold text-[var(--bda-heading)] mb-4 flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-[var(--bda-primary)]" />
+                Top 5 Valuable
+              </h3>
+              <div className="space-y-2">
+                {topCards.map((card, idx) => (
+                  <div key={card.id} className="flex justify-between items-center text-sm p-2 bg-[var(--input-bg)] rounded">
+                    <span className="text-[var(--bda-muted)]">{idx + 1}. {card.name}</span>
+                    <div className="text-[var(--bda-text)] font-semibold">${((card.quantity || 0) * (parseFloat(card.purchase_price) || 0)).toFixed(2)}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Value by Set */}
+          <div className="bg-[var(--bda-surface)] border border-[var(--bda-border)] rounded-lg p-4">
+            <h3 className="text-lg font-semibold text-[var(--bda-heading)] mb-4 flex items-center gap-2">
+              <DollarSign className="w-4 h-4 text-[var(--bda-primary)]" />
+              Value by Set
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+              {Object.entries(bySet)
+                .sort((a, b) => b[1].value - a[1].value)
+                .map(([set, data]) => (
+                  <div key={set} className="p-2 bg-[var(--input-bg)] rounded text-sm">
+                    <div className="font-semibold text-[var(--bda-heading)]">{set}</div>
+                    <div className="text-xs text-[var(--bda-muted)]">{data.count} cards • ${data.value.toFixed(2)}</div>
+                  </div>
+                ))}
+            </div>
+            {/* Trend chart for top sets */}
+            {bySetData.length > 0 && (
+              <div className="mt-4">
+                <TrendChart
+                  data={bySetData}
+                  dataKey="value"
+                  labelKey="label"
+                  title="Top Sets by Value"
+                  subtitle="Top 10 sets by purchase value"
+                  format="currency"
+                  color="primary"
+                  height={180}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* eBay Sales Widget */}
+          <EbaySalesWidget />
+        </div>
+      )}
     </div>
   );
 }
@@ -527,7 +556,7 @@ OverviewSection.propTypes = {
 /**
  * Main Dashboard Tab Component - combines Analytics and Sales
  */
-export const DashboardTab = ({ inventory }) => {
+export const DashboardTab = ({ inventory, setActiveTab }) => {
   const [activeSubTab, setActiveSubTab] = useState('overview');
 
   return (
@@ -541,19 +570,19 @@ export const DashboardTab = ({ inventory }) => {
       </div>
 
       {/* Sub-tab Navigation */}
-      <div className="bg-[var(--bda-surface)] rounded-lg p-1 flex gap-1 mb-6">
+      <div className="bg-[var(--bda-primary)]/10 p-1 rounded-xl flex gap-1 mb-6 border border-[var(--bda-primary)]/20 shadow-inner max-w-2xl">
         {DASHBOARD_TABS.map((tab) => {
           const IconComponent = tab.icon;
           return (
             <button
               key={tab.id}
               onClick={() => setActiveSubTab(tab.id)}
-              className={`flex-1 px-4 py-2.5 rounded-md font-medium text-sm flex items-center justify-center gap-2 transition-all duration-300 ${activeSubTab === tab.id
-                ? 'bg-[var(--bda-surface)] text-[var(--bda-primary)] shadow-sm'
-                : 'text-[var(--bda-muted)] hover:text-[var(--bda-text)] hover:bg-white/5'
+              className={`flex-1 px-4 py-2.5 rounded-lg font-medium text-sm flex items-center justify-center gap-2 transition-all duration-300 relative overflow-hidden ${activeSubTab === tab.id
+                ? 'bg-[var(--bda-surface)] text-[var(--bda-primary)] shadow-lg ring-1 ring-black/5 font-bold scale-[1.02]'
+                : 'text-[var(--bda-muted)] hover:text-[var(--bda-text)] hover:bg-[var(--bda-primary)]/5'
                 }`}
             >
-              <IconComponent className="w-4 h-4" />
+              <IconComponent className={`w-4 h-4 ${activeSubTab === tab.id ? 'animate-bounce-subtle' : ''}`} />
               <span className="hidden sm:inline">{tab.label}</span>
             </button>
           );
@@ -561,7 +590,7 @@ export const DashboardTab = ({ inventory }) => {
       </div>
 
       {/* Sub-tab Content */}
-      {activeSubTab === 'overview' && <OverviewSection inventory={inventory} />}
+      {activeSubTab === 'overview' && <OverviewSection inventory={inventory} onNavigate={setActiveTab} />}
       {activeSubTab === 'sales' && <SalesSection />}
       {activeSubTab === 'alerts' && (
         <div className="bg-[var(--bda-surface)] border border-[var(--bda-border)] rounded-lg p-4">

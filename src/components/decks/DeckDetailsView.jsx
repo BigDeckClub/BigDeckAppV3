@@ -39,13 +39,15 @@ export function DeckDetailsView({
       const metadataMap = await fetchMetadata(names);
 
       const enriched = cards.map(card => {
-        const metadata = metadataMap[card.name.toLowerCase().trim()];
+        // metadataMap is keyed by original card name
+        const metadata = metadataMap[card.name];
         if (metadata) {
           return {
             ...card,
             cmc: metadata.cmc,
             mana_value: metadata.cmc,
             colors: metadata.colors,
+            color_identity: metadata.colorIdentity || metadata.colors,
             type_line: metadata.typeLine,
             mana_cost: metadata.manaCost
           };
@@ -147,16 +149,18 @@ export function DeckDetailsView({
 
         {/* Deck Statistics Charts */}
         {deck.cards && deck.cards.length > 0 && (() => {
+          // Use enrichedCards for stats when available (has CMC/color data from MTGJSON)
+          const cardsForStats = enrichedCards.length > 0 ? enrichedCards : deck.cards;
           const totalCards = deck.cards.reduce((s, c) => s + (c.quantity || 1), 0);
           const ownedCount = totalCards - totalMissing;
           const completionPercentage = totalCards > 0 ? (ownedCount / totalCards) * 100 : 100;
-          const averageCmc = deck.cards.reduce((s, c) => s + ((c.cmc || c.converted_mana_cost || 0) * (c.quantity || 1)), 0) / Math.max(1, totalCards);
+          const averageCmc = cardsForStats.reduce((s, c) => s + ((c.cmc || c.mana_value || 0) * (c.quantity || 1)), 0) / Math.max(1, totalCards);
           const typeBreakdown = {};
           return (
             <div className="space-y-4 mb-6">
               {/* Compact stats row */}
               <DeckStatsPanel
-                cards={deck.cards}
+                cards={cardsForStats}
                 totalValue={0}
                 completionPercentage={completionPercentage}
                 missingCount={totalMissing}
@@ -211,8 +215,8 @@ export function DeckDetailsView({
                   <div
                     key={idx}
                     className={`flex justify-between text-sm p-2 rounded ${isMissing
-                        ? 'bg-red-900/40 text-red-200 border border-red-700/30'
-                        : 'bg-[var(--surface)] text-[var(--text-muted)]'
+                      ? 'bg-red-900/40 text-red-200 border border-red-700/30'
+                      : 'bg-[var(--surface)] text-[var(--text-muted)]'
                       }`}
                   >
                     <div className="flex items-center gap-3">

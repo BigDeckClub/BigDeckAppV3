@@ -137,6 +137,8 @@ function MTGInventoryTrackerContent() {
     }
   }, [post, loadInventory, showToast]);
 
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
   if (authLoading) {
     return <FullPageSpinner />;
   }
@@ -157,10 +159,12 @@ function MTGInventoryTrackerContent() {
       <Navigation
         activeTab={activeTab}
         setActiveTab={setActiveTab}
+        isCollapsed={isSidebarCollapsed}
+        onToggleCollapse={() => setIsSidebarCollapsed(prev => !prev)}
       />
 
       {/* Main Content Area - Shifted for Sidebar */}
-      <main className="transition-all duration-300 md:ml-64 p-3 md:p-8 pb-32 md:pb-8 max-w-7xl mx-auto">
+      <main className={`transition-all duration-300 ${isSidebarCollapsed ? 'md:ml-20' : 'md:ml-64'} p-3 md:p-8 pb-32 md:pb-8 max-w-7xl mx-auto`}>
         {isLoading && (
           <div className="text-center py-20 flex justify-center">
             <div className="w-10 h-10 animate-spin text-[var(--primary)] border-2 border-[var(--primary)] border-t-transparent rounded-full shadow-[0_0_15px_rgba(99,102,241,0.5)]"></div>
@@ -181,6 +185,7 @@ function MTGInventoryTrackerContent() {
                     deckRefreshTrigger={deckRefreshTrigger}
                     onSell={handleSell}
                     searchRef={searchInputRef}
+                    onNavigate={setActiveTab}
                   />
                 </Suspense>
               </ErrorBoundaryWithRetry>
@@ -212,7 +217,7 @@ function MTGInventoryTrackerContent() {
 
             {activeTab === "dashboard" && (
               <Suspense fallback={<TabLoadingSpinner />}>
-                <DashboardTab inventory={inventory} />
+                <DashboardTab inventory={inventory} setActiveTab={setActiveTab} />
               </Suspense>
             )}
 

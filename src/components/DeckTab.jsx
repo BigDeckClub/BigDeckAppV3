@@ -275,9 +275,23 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
           )}
 
           {decks.length === 0 ? (
-            <div className="text-center py-12">
-              <BookOpen className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-              <p className="text-[var(--text-muted)]">No decks yet. Create your first deck to get started!</p>
+            <div className="flex flex-col items-center justify-center py-20 text-center glass-panel rounded-xl animate-fade-in border-2 border-dashed border-[var(--bda-border)]">
+              <div className="w-24 h-24 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-full flex items-center justify-center mb-6 shadow-xl shadow-blue-500/10 ring-1 ring-blue-500/30">
+                <BookOpen className="w-10 h-10 text-[var(--bda-primary)]" />
+              </div>
+              <h3 className="text-2xl font-bold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">Your Deck Library is Empty</h3>
+              <p className="text-[var(--bda-muted)] max-w-md mb-8 text-lg">
+                Start by importing a deck from Archidekt or pasting a decklist to begin tracking your collection.
+              </p>
+              <div className="flex gap-4">
+                <button
+                  onClick={() => setShowImportArchidekt(true)}
+                  className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold shadow-lg shadow-blue-500/20 transition-all hover:scale-105 active:scale-95"
+                >
+                  <Download className="w-5 h-5" />
+                  Import from Archidekt
+                </button>
+              </div>
             </div>
           ) : showAnalysis ? (
             <>
@@ -309,7 +323,7 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
               </div>
 
               {/* Deck Selection Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6 animate-fade-in">
                 {decks.map(deck => {
                   const isSelected = selectedDeckIds.includes(deck.id);
                   return (
@@ -347,7 +361,7 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
               />
             </>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 animate-fade-in">
               {decks.map(deck => {
                 // compute deck completion stats using inventoryByName
                 const cards = Array.isArray(deck.cards) ? deck.cards : [];

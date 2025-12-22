@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
-import { X, Menu, Trash2, CheckSquare, Square, FolderInput, ListFilter } from 'lucide-react';
+import { X, Menu, Trash2, CheckSquare, Square, FolderInput, ListFilter, Library, Download, ArrowRight } from 'lucide-react';
 import {
   Breadcrumb,
   CardGrid,
@@ -31,7 +31,8 @@ export const InventoryTab = ({
   setExpandedCards,
   deckRefreshTrigger,
   onSell,
-  searchRef
+  searchRef,
+  onNavigate
 }) => {
   const { confirm } = useConfirm();
   const { post } = useApi();
@@ -634,7 +635,23 @@ export const InventoryTab = ({
                   )}
                 </>
               ) : (
-                <p className="text-[var(--text-muted)] text-center py-12">No cards in inventory yet. Add some from the Add Cards tab!</p>
+                <div className="flex flex-col items-center justify-center py-20 text-center glass-panel rounded-xl animate-fade-in border-2 border-dashed border-[var(--bda-border)]">
+                  <div className="w-24 h-24 bg-gradient-to-br from-[var(--primary)]/20 to-purple-500/20 rounded-full flex items-center justify-center mb-6 shadow-xl shadow-purple-500/10 ring-1 ring-[var(--primary)]/30">
+                    <Library className="w-10 h-10 text-[var(--bda-primary)]" />
+                  </div>
+                  <h3 className="text-2xl font-bold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">Inventory is Empty</h3>
+                  <p className="text-[var(--bda-muted)] max-w-md mb-8 text-lg">
+                    You haven't added any cards yet. Import a list or search for cards to get started.
+                  </p>
+                  <button
+                    onClick={() => onNavigate('imports')}
+                    className="flex items-center gap-2 px-6 py-3 bg-[var(--primary)] hover:bg-[var(--primary)]/90 text-white rounded-lg font-bold shadow-lg shadow-indigo-500/20 transition-all hover:scale-105 active:scale-95"
+                  >
+                    <Download className="w-5 h-5" />
+                    Go to Import
+                    <ArrowRight className="w-4 h-4 ml-1" />
+                  </button>
+                </div>
               )
             ) : activeTab === 'Trash' ? (
               (() => {
@@ -757,7 +774,8 @@ InventoryTab.propTypes = {
   searchRef: PropTypes.oneOfType([
     PropTypes.func,
     PropTypes.shape({ current: PropTypes.any })
-  ])
+  ]),
+  onNavigate: PropTypes.func
 };
 
 export default InventoryTab;
