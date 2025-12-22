@@ -11,6 +11,8 @@ import {
   Menu,
   X,
   Store,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { UserDropdown } from './UserDropdown';
 
@@ -25,8 +27,6 @@ const NAV_ITEMS = [
   { id: 'autobuy', icon: ShoppingCart, label: 'Autobuy' },
   { id: 'marketplace', icon: Store, label: 'Marketplace' },
 ];
-
-const { ChevronLeft, ChevronRight } = require('lucide-react');
 
 /**
  * Sidebar navigation link component

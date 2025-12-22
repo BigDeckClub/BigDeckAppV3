@@ -62,6 +62,7 @@ export function RapidEntryRow({
             <input
               ref={el => inputRefs.current[`name-${rowIndex}`] = el}
               type="text"
+              autoComplete="off"
               placeholder="Search card..."
               value={row.searchQuery}
               onChange={(e) => handleCardNameChange(rowIndex, e.target.value)}
@@ -71,7 +72,10 @@ export function RapidEntryRow({
                   setShowDropdown(true);
                 }
               }}
-              onKeyDown={(e) => handleKeyDown(e, rowIndex, 'name')}
+              onKeyDown={(e) => {
+                console.log('Key pressed:', e.key, 'Row:', rowIndex);
+                handleKeyDown(e, rowIndex, 'name');
+              }}
               disabled={row.status === 'added'}
               className={`
                 flex-1 bg-[var(--muted-surface)] border rounded px-3 py-2 text-sm text-[var(--text-primary)] 
@@ -104,7 +108,7 @@ export function RapidEntryRow({
                       className={`
                         px-4 py-2 cursor-pointer border-b border-[var(--border)] last:border-b-0
                         flex items-center gap-3
-                        ${idx === highlightedResult ? 'bg-[var(--accent)]/30' : 'hover:bg-[var(--accent)]/20'}
+                        ${idx === highlightedResult ? 'bg-[var(--bda-primary)]/30 text-white' : 'hover:bg-[var(--bda-primary)]/10'}
                       `}
                     >
                       {card.imageUrl && (
@@ -239,8 +243,8 @@ export function RapidEntryRow({
             <button
               onClick={() => handleAddCardToInventory(rowIndex)}
               className={`p-1.5 rounded text-white transition-colors ${lotModeEnabled
-                  ? 'bg-[var(--warning)] hover:bg-[var(--warning)]/90'
-                  : 'bg-[var(--accent-600)] hover:bg-[var(--accent)]'
+                ? 'bg-[var(--warning)] hover:bg-[var(--warning)]/90'
+                : 'bg-[var(--accent-600)] hover:bg-[var(--accent)]'
                 }`}
               title={lotModeEnabled ? "Add to lot (Shift+Enter)" : "Add to inventory (Shift+Enter)"}
             >

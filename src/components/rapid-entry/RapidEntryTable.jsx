@@ -76,6 +76,8 @@ export function RapidEntryTable({
 
     // Arrow keys for dropdown navigation
     if (showDropdown && fieldType === 'name' && searchResults.length > 0) {
+      console.log('Handling arrow key. ShowDropdown:', showDropdown, 'Results:', searchResults.length);
+
       // Create the same view list as rendered in RapidEntryRow
       const uniqueCards = [];
       const seen = new Set();

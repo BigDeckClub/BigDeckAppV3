@@ -20,7 +20,7 @@ function stableSort<T>(arr: T[], cmp: (a: T, b: T) => number) {
     .map(x => x.v)
 }
 
-class SellerBasket implements SellerBasketType {
+export class SellerBasket implements SellerBasketType {
   sellerId: string
   marketplace: Marketplace
   items: Map<string, number>

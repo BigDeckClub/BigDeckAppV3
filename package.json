@@ -8,7 +8,7 @@
     "autobuy": "npm run build:autobuy && node bin/run-autobuy.mjs",
     "autobuy:run": "npm run build:autobuy && node bin/run-autobuy.mjs",
     "autobuy:verify": "npm run build:autobuy && node scripts/verify-autobuy.cjs",
-    "dev": "npm run build && node server.js",
+    "dev": "npm run build && npm run build:autobuy && node server.js",
     "build": "vite build",
     "gcp-build": "npm run build",
     "preview": "vite preview",
