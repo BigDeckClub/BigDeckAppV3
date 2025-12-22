@@ -1,6 +1,7 @@
 import React, { memo, useEffect, useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { X, Sparkles, RefreshCw, Plus, Trash2, Image, AlertTriangle, CheckCircle, Wand2 } from 'lucide-react';
+import { useAuthFetch } from '../../hooks/useAuthFetch';
 
 export const EbayListingModal = memo(function EbayListingModal({ open, onClose, deckId, initialPrice, deckName, commander }) {
   const [templates, setTemplates] = useState([]);
@@ -16,6 +17,7 @@ export const EbayListingModal = memo(function EbayListingModal({ open, onClose, 
   const [error, setError] = useState(null);
   const [availability, setAvailability] = useState(null);
   const [availabilityLoading, setAvailabilityLoading] = useState(false);
+  const { authFetch } = useAuthFetch();
 
   useEffect(() => {
     if (!open) return;
@@ -23,7 +25,7 @@ export const EbayListingModal = memo(function EbayListingModal({ open, onClose, 
     (async () => {
       try {
         setError(null);
-        const res = await fetch('/api/ebay/templates?type=title');
+        const res = await authFetch('/api/ebay/templates?type=title');
         if (!res.ok) throw new Error('Failed to load templates');
         const data = await res.json();
         setTemplates(data);
@@ -33,7 +35,7 @@ export const EbayListingModal = memo(function EbayListingModal({ open, onClose, 
         setError('Failed to load templates');
       }
     })();
-  }, [open]);
+  }, [open, authFetch]);
 
   // Check deck availability when modal opens
   useEffect(() => {
@@ -41,7 +43,7 @@ export const EbayListingModal = memo(function EbayListingModal({ open, onClose, 
     (async () => {
       try {
         setAvailabilityLoading(true);
-        const res = await fetch(`/api/ebay/check-availability/${deckId}`);
+        const res = await authFetch(`/api/ebay/check-availability/${deckId}`);
         if (res.ok) {
           const data = await res.json();
           setAvailability(data);
@@ -56,7 +58,7 @@ export const EbayListingModal = memo(function EbayListingModal({ open, onClose, 
         setAvailabilityLoading(false);
       }
     })();
-  }, [open, deckId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [open, deckId, authFetch]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Render title preview when template changes
   useEffect(() => {
@@ -65,7 +67,7 @@ export const EbayListingModal = memo(function EbayListingModal({ open, onClose, 
       try {
         setLoading(true);
         setError(null);
-        const res = await fetch('/api/ebay/templates/render', {
+        const res = await authFetch('/api/ebay/templates/render', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ templateId: selectedTemplateId, deckId }),
@@ -83,14 +85,14 @@ export const EbayListingModal = memo(function EbayListingModal({ open, onClose, 
         setLoading(false);
       }
     })();
-  }, [selectedTemplateId, deckId, open]);
+  }, [selectedTemplateId, deckId, open, authFetch]);
 
   // Generate AI description
   const generateAIDescription = useCallback(async () => {
     try {
       setAiLoading(true);
       setError(null);
-      const res = await fetch('/api/ebay/generate-description', {
+      const res = await authFetch('/api/ebay/generate-description', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ deckId, commander, theme: theme || undefined }),
@@ -107,14 +109,14 @@ export const EbayListingModal = memo(function EbayListingModal({ open, onClose, 
     } finally {
       setAiLoading(false);
     }
-  }, [deckId, commander, theme]);
+  }, [deckId, commander, theme, authFetch]);
 
   // Generate listing image
   const generateImage = useCallback(async () => {
     try {
       setImageGenLoading(true);
       setError(null);
-      const res = await fetch('/api/ebay/generate-image', {
+      const res = await authFetch('/api/ebay/generate-image', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ deckId, commander, theme: theme || undefined }),
@@ -137,7 +139,7 @@ export const EbayListingModal = memo(function EbayListingModal({ open, onClose, 
     } finally {
       setImageGenLoading(false);
     }
-  }, [deckId, commander, theme]);
+  }, [deckId, commander, theme, authFetch]);
 
   // Generate basic description on open
   useEffect(() => {
@@ -173,11 +175,10 @@ export const EbayListingModal = memo(function EbayListingModal({ open, onClose, 
               Checking inventory availability...
             </div>
           ) : availability && (
-            <div className={`p-3 rounded text-sm flex items-center gap-2 ${
-              availability.available
+            <div className={`p-3 rounded text-sm flex items-center gap-2 ${availability.available
                 ? 'bg-green-500/20 text-green-400'
                 : 'bg-yellow-500/20 text-yellow-400'
-            }`}>
+              }`}>
               {availability.available ? (
                 <>
                   <CheckCircle size={16} />
@@ -371,7 +372,7 @@ export const EbayListingModal = memo(function EbayListingModal({ open, onClose, 
                     setError(null);
                     // Filter out empty image URLs
                     const validImageUrls = imageUrls.filter(url => url.trim().length > 0);
-                    const res = await fetch('/api/ebay/listings', {
+                    const res = await authFetch('/api/ebay/listings', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({
