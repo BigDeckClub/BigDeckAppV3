@@ -165,9 +165,23 @@ export function runFullPipeline(opts: {
   }
 
   const offers = opts.offers ?? []
+
+  console.log('[Optimizer] Input Summary:')
+  console.log(`  - Demands: ${pre.demands.length}`)
+  console.log(`  - Offers: ${offers.length}`)
+  console.log(`  - CK Prices Map Size: ${cardKingdomPrices.size}`)
+  if (offers.length > 0) {
+    console.log(`  - Sample Offer:`, JSON.stringify(offers[0], null, 2))
+  }
+  if (pre.demands.length > 0) {
+    console.log(`  - Sample Demand:`, JSON.stringify(pre.demands[0]))
+  }
+
   const { baskets: phase1Baskets, unmet, budgetTracker: phase1Budget } = greedyAllocatePhase1(
     pre.demands, offers, cardKingdomPrices, preferDirectives, 0.1, budgetConfig
   )
+
+  console.log(`[Optimizer] Phase 1 Result: ${phase1Baskets.length} baskets, ${unmet.length} unmet demands`)
 
   const { baskets: phase2Baskets, budgetTracker: phase2Budget } = phase2OptimizeShipping(
     phase1Baskets, offers, unmet, opts.hotList ?? [], directives, pre.maxPriceByCard, currentInventory,

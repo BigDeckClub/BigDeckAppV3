@@ -2,8 +2,12 @@ import express from 'express';
 import fs from 'fs';
 import { asyncHandler } from '../middleware/asyncHandler.js';
 import path from 'path';
-import { pathToFileURL } from 'url';
+import { pathToFileURL, fileURLToPath } from 'url';
 import { pool } from '../db/pool.js';
+
+// ES Module compatibility: Define __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Marketplace module will be loaded dynamically after build
 import { z } from 'zod';
@@ -13,7 +17,14 @@ import inputSchema from '../autobuy/validation.js';
 const router = express.Router();
 
 // Lightweight per-route body parser with size limit to avoid huge uploads
-router.use('/autobuy', express.json({ limit: '200kb' }));
+router.use('/autobuy', express.json({ limit: '10mb' }));
+
+router.use((req, res, next) => {
+  if (req.path.includes('/plan')) {
+    console.log('[Autobuy Debug] Plan request received. Body size:', JSON.stringify(req.body).length);
+  }
+  next();
+});
 
 // Attach database pool to request for all autobuy routes
 router.use(/^\/autobuy/, (req, res, next) => {
@@ -48,6 +59,7 @@ router.post('/autobuy/plan', asyncHandler(async (req, res) => {
   const input = req.body || {};
   const parse = inputSchema.safeParse(input);
   if (!parse.success) {
+    console.error('[Autobuy Plan] Validation failed:', JSON.stringify(parse.error.format(), null, 2));
     return res.status(400).json({ error: 'invalid input', details: parse.error.format() });
   }
 

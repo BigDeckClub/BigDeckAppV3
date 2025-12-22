@@ -39,23 +39,30 @@ function SidebarLink({ item, activeTab, setActiveTab, isCollapsed }) {
     <button
       onClick={() => startTransition(() => setActiveTab(item.id))}
       className={`
-        sidebar-link ${isActive ? 'active' : ''} 
+        sidebar-link group relative w-full transition-all duration-300 overflow-hidden
         ${isCollapsed ? 'justify-center px-2' : 'px-4'} 
-        w-full transition-all duration-200
-        group relative
+        ${isActive
+          ? 'bg-gradient-to-br from-[var(--primary)] to-purple-600 text-white shadow-lg shadow-indigo-500/25 scale-[1.02] font-semibold'
+          : 'text-[var(--text-muted)] hover:text-white hover:bg-white/5'
+        }
       `}
       title={isCollapsed ? item.label : ''}
     >
-      <Icon className={`w-5 h-5 ${isActive ? 'text-[var(--primary)]' : ''} transition-transform group-hover:scale-110`} />
+      <Icon className={`w-5 h-5 transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-110'} ${isActive ? 'text-white' : ''}`} />
       {!isCollapsed && (
-        <span className="font-medium animate-fade-in whitespace-nowrap overflow-hidden">
+        <span className={`transition-opacity whitespace-nowrap overflow-hidden ${isActive ? 'opacity-100' : 'opacity-80 group-hover:opacity-100'}`}>
           {item.label}
         </span>
       )}
 
+      {/* Shine effect on active */}
+      {isActive && (
+        <div className="absolute inset-0 -translate-x-full group-hover:animate-shine bg-gradient-to-r from-transparent via-white/10 to-transparent z-10" />
+      )}
+
       {/* Tooltip for collapsed state */}
       {isCollapsed && (
-        <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2 py-1 bg-black/80 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 whitespace-nowrap">
+        <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 px-2 py-1 bg-black/90 backdrop-blur-sm border border-white/10 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 whitespace-nowrap shadow-xl">
           {item.label}
         </div>
       )}
@@ -115,7 +122,7 @@ export function Navigation({ activeTab, setActiveTab, isCollapsed, onToggleColla
       <aside
         className={`
           hidden md:flex flex-col fixed left-0 top-0 bottom-0 
-          glass-panel border-r border-[var(--glass-border)] z-50
+          bg-black/20 backdrop-blur-xl border-r border-white/5 z-50
           transition-all duration-300 ease-in-out
           ${isCollapsed ? 'w-20' : 'w-64'}
         `}

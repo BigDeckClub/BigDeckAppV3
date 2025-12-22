@@ -585,36 +585,39 @@ export function AutobuyTab({ inventory, decks }) {
           </p>
         </div>
 
-        <div className="justify-self-center flex items-center gap-3 glass-panel p-1">
+        <div className="justify-self-center flex items-center gap-2 bg-white/5 backdrop-blur-md p-1.5 rounded-xl border border-white/10 shadow-lg">
           <button
             onClick={() => setActiveView('optimizer')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeView === 'optimizer'
-              ? 'btn-primary shadow-md'
-              : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--card-hover)]'
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 relative overflow-hidden group ${activeView === 'optimizer'
+              ? 'bg-gradient-to-br from-[var(--primary)] to-purple-600 text-white shadow-lg shadow-indigo-500/25 scale-[1.02]'
+              : 'text-[var(--text-muted)] hover:text-white hover:bg-white/5'
               }`}
           >
-            <LayoutDashboard className="w-4 h-4" />
-            Optimizer
+            <LayoutDashboard className={`w-4 h-4 transition-transform duration-300 ${activeView === 'optimizer' ? 'scale-110' : 'group-hover:scale-110'}`} />
+            <span>Optimizer</span>
+            {activeView === 'optimizer' && <div className="absolute inset-0 -translate-x-full animate-shine bg-gradient-to-r from-transparent via-white/10 to-transparent" />}
           </button>
           <button
             onClick={() => setActiveView('analytics')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeView === 'analytics'
-              ? 'btn-primary shadow-md'
-              : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--card-hover)]'
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 relative overflow-hidden group ${activeView === 'analytics'
+              ? 'bg-gradient-to-br from-[var(--primary)] to-purple-600 text-white shadow-lg shadow-indigo-500/25 scale-[1.02]'
+              : 'text-[var(--text-muted)] hover:text-white hover:bg-white/5'
               }`}
           >
-            <BarChart3 className="w-4 h-4" />
-            Analytics
+            <BarChart3 className={`w-4 h-4 transition-transform duration-300 ${activeView === 'analytics' ? 'scale-110' : 'group-hover:scale-110'}`} />
+            <span>Analytics</span>
+            {activeView === 'analytics' && <div className="absolute inset-0 -translate-x-full animate-shine bg-gradient-to-r from-transparent via-white/10 to-transparent" />}
           </button>
           <button
             onClick={() => setActiveView('config')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeView === 'config'
-              ? 'btn-primary shadow-md'
-              : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--card-hover)]'
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 relative overflow-hidden group ${activeView === 'config'
+              ? 'bg-gradient-to-br from-[var(--primary)] to-purple-600 text-white shadow-lg shadow-indigo-500/25 scale-[1.02]'
+              : 'text-[var(--text-muted)] hover:text-white hover:bg-white/5'
               }`}
           >
-            <Layers className="w-4 h-4" />
-            Config
+            <Layers className={`w-4 h-4 transition-transform duration-300 ${activeView === 'config' ? 'scale-110' : 'group-hover:scale-110'}`} />
+            <span>Config</span>
+            {activeView === 'config' && <div className="absolute inset-0 -translate-x-full animate-shine bg-gradient-to-r from-transparent via-white/10 to-transparent" />}
           </button>
         </div>
 

@@ -25,7 +25,7 @@ export const offerSchema = z.object({
   marketplace: z.string().optional(),
   shipping: shippingSchema.optional(),
   sellerRating: z.number().min(0).max(1).optional(),
-}).strict()
+}).passthrough() // Allow extra fields from scraper like sellerName, condition, quantity
 
 export const hotSchema = z.object({
   cardId: z.string(),

@@ -570,20 +570,26 @@ export const DashboardTab = ({ inventory, setActiveTab }) => {
       </div>
 
       {/* Sub-tab Navigation */}
-      <div className="bg-[var(--bda-primary)]/10 p-1 rounded-xl flex gap-1 mb-6 border border-[var(--bda-primary)]/20 shadow-inner max-w-2xl">
+      <div className="mx-auto bg-white/5 backdrop-blur-md p-1.5 rounded-2xl flex gap-2 mb-8 border border-white/10 shadow-xl max-w-2xl justify-center">
         {DASHBOARD_TABS.map((tab) => {
           const IconComponent = tab.icon;
+          const isActive = activeSubTab === tab.id;
           return (
             <button
               key={tab.id}
               onClick={() => setActiveSubTab(tab.id)}
-              className={`flex-1 px-4 py-2.5 rounded-lg font-medium text-sm flex items-center justify-center gap-2 transition-all duration-300 relative overflow-hidden ${activeSubTab === tab.id
-                ? 'bg-[var(--bda-surface)] text-[var(--bda-primary)] shadow-lg ring-1 ring-black/5 font-bold scale-[1.02]'
-                : 'text-[var(--bda-muted)] hover:text-[var(--bda-text)] hover:bg-[var(--bda-primary)]/5'
+              className={`flex-1 px-4 py-3 rounded-xl font-medium text-sm flex items-center justify-center gap-2.5 transition-all duration-300 relative overflow-hidden group ${isActive
+                ? 'bg-gradient-to-br from-[var(--bda-primary)] to-purple-600 text-white shadow-lg shadow-purple-500/25 scale-[1.02]'
+                : 'text-[var(--bda-muted)] hover:text-white hover:bg-white/5'
                 }`}
             >
-              <IconComponent className={`w-4 h-4 ${activeSubTab === tab.id ? 'animate-bounce-subtle' : ''}`} />
-              <span className="hidden sm:inline">{tab.label}</span>
+              <IconComponent className={`w-4 h-4 transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`} />
+              <span className={`hidden sm:inline transition-opacity ${isActive ? 'opacity-100' : 'opacity-80 group-hover:opacity-100'}`}>{tab.label}</span>
+
+              {/* Shine effect on active */}
+              {isActive && (
+                <div className="absolute inset-0 -translate-x-full group-hover:animate-shine bg-gradient-to-r from-transparent via-white/10 to-transparent z-10" />
+              )}
             </button>
           );
         })}
