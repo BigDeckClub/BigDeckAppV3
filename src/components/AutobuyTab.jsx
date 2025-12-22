@@ -299,46 +299,84 @@ export function AutobuyTab({ inventory, decks }) {
       // Calculate total needed quantity for each card across all selected decks
       const deckNeeds = new Map(); // CardID -> Total Quantity required by selected decks
 
+      // Helper to resolve a unique key for the card
+      const getCardKey = (card) => {
+        return card.scryfall_id || card.card_id || card.id || (card.name ? normalizeName(card.name) : null);
+      };
+
+      // Helper to get inventory quantity for a key
+      const getInventoryQuantity = (key) => {
+        if (inventoryById[key]) return inventoryById[key].quantity || 0;
+        const itemByName = inventoryByName[key];
+        if (itemByName) return itemByName.quantity || 0;
+        return 0;
+      };
+
+      // Helper to get inventory alert threshold for a key
+      const getInventoryAlertThreshold = (key) => {
+        let item = inventoryById[key];
+        if (!item) item = inventoryByName[key];
+        return item && item.low_inventory_alert ? (item.low_inventory_threshold || 0) : 0;
+      };
+
       selectedDeckIds.forEach(deckId => {
         const deck = safeDecks.find(d => d.id === deckId);
         const quantityMultiplier = deckQuantities[deckId] || 1;
 
         if (deck && deck.cards) {
           deck.cards.forEach(card => {
-            // Try to find the scryfall ID if missing in deck card
-            let id = card.scryfall_id || card.id; // Many deck cards stores put ID in 'id' or 'scryfall_id'
-
-            // Fallback: lookup by name in inventory to find ID
+            // Resolve ID
+            let id = card.scryfall_id || card.id;
             if (!id) {
               const invItem = inventoryByName[normalizeName(card.name)];
               if (invItem) id = invItem.scryfall_id || invItem.card_id;
             }
 
-            if (id) {
+            // Use ID or fallback to normalized name
+            const key = id || normalizeName(card.name);
+
+            if (key) {
               const qty = parseInt(card.quantity || 1) * quantityMultiplier;
-              deckNeeds.set(id, (deckNeeds.get(id) || 0) + qty);
+              deckNeeds.set(key, (deckNeeds.get(key) || 0) + qty);
             }
           });
         }
+      });
+
+      const allKeys = new Set([...demandsMap.keys(), ...deckNeeds.keys()]);
+
+      // Ensure specific mapped IDs are included if they have needs
+      deckNeeds.forEach((qty, key) => {
+        allKeys.add(key);
       });
 
       // 3. Merge Deck Needs into Demands
       // Strategy: Total Desired = Max(InventoryThreshold, DeckTotalNeed)
       // ToBuy = Max(0, TotalDesired - CurrentOwned)
 
-      deckNeeds.forEach((neededForDecks, id) => {
-        const currentItem = inventoryById[id];
-        const currentOwned = currentItem ? (currentItem.quantity || 0) : 0;
-        const threshold = currentItem?.low_inventory_alert ? (currentItem.low_inventory_threshold || 0) : 0;
+      allKeys.forEach((key) => {
+        const currentOwned = getInventoryQuantity(key);
+        const threshold = getInventoryAlertThreshold(key); // We can re-fetch this properly if needed, but alert logic above used safeInventory loop.
 
-        const totalTarget = Math.max(threshold, neededForDecks);
+        // Wait, 'demandsMap' above was populated primarily by IDs from the alert loop.
+        // But for deck needs we might have keys that are Names.
+
+        const deckNeeded = deckNeeds.get(key) || 0;
+
+        // If key is present in demandsMap (from alerts), trust that calculation? 
+        // No, we need Max(Alert, Deck).
+        // demandsMap currently holds: (diminished by ownership? No, the code says needed = Max(0, Threshold - Quantity))
+        // So demandsMap holds "To Buy for Alerts".
+
+        // Let's recalculate cleanly:
+        const totalTarget = Math.max(threshold, deckNeeded);
         const toBuy = Math.max(0, totalTarget - currentOwned);
 
         if (toBuy > 0) {
-          // Update demands map if this requirement is higher than alert requirement
-          // (Since we started with alert requirements (Threshold - Owned), and ToBuy = (Max(T, D) - Owned))
-          // We can just overwrite because we calculated the global comprehensive "ToBuy" here.
-          demandsMap.set(id, toBuy);
+          // If we have a robust ID, use it. If only a name, pass Name as cardId?
+          // The planner might need help distinguishing, but let's send whatever key we have.
+          // For now, consistent behavior is better than skipping.
+          demandsMap.set(key, toBuy);
         }
       });
 
