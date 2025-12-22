@@ -1,4 +1,4 @@
-import { ScrapedOffer } from './types';
+import { ScrapedOffer } from './types.js';
 
 interface CacheEntry {
     offers: ScrapedOffer[];

@@ -25,8 +25,6 @@ export async function scrapeTCGPlayerOffers(
             const cached = getCachedOffers(req.name);
             if (cached) {
                 console.log(`[Scraper] Cache hit for ${req.name}`);
-                // We stored them with cardId possibly different if name matches but ID differs?
-                // We should update the cardId to match the current request
                 results.push(...cached.map(o => ({ ...o, cardId: req.scryfallId })));
             } else {
                 cardsToScrape.push(req);
@@ -44,12 +42,11 @@ export async function scrapeTCGPlayerOffers(
 
     let browser: Browser | null = null;
     try {
+        console.log('[Scraper] Launching browser...');
         browser = await chromium.launch({ headless: HEADLESS });
+        console.log('[Scraper] Browser launched. Creating context...');
         const context = await browser.newContext({ userAgent: USER_AGENT });
         const page = await context.newPage();
-
-        // TCGPlayer might have a "Verify you are human" check.
-        // We'll try to handle basic navigation.
 
         for (const card of cardsToScrape) {
             try {
@@ -90,16 +87,14 @@ async function scrapeSingleCard(page: Page, cardName: string): Promise<Omit<Scra
     console.log(`[Scraper] Searching for: ${cardName}`);
 
     // 1. Search for price guide/product
-    // We use the search query param
     const encodedName = encodeURIComponent(cardName);
     await page.goto(`https://www.tcgplayer.com/search/magic/product?productLineName=magic&q=${encodedName}&view=grid`, {
         waitUntil: 'domcontentloaded',
-        timeout: 10000
+        timeout: 15000
     });
 
-    // 2. Click the first product result (usually the most relevant)
-    // Selector for the first result anchor
-    const firstResultSelector = 'div.search-result a';
+    // 2. Click the first product result
+    const firstResultSelector = 'div.search-result a, a.product-card__image';
     try {
         await page.waitForSelector(firstResultSelector, { timeout: 5000 });
     } catch (e) {
@@ -109,97 +104,94 @@ async function scrapeSingleCard(page: Page, cardName: string): Promise<Omit<Scra
 
     // Click and navigate
     await Promise.all([
-        page.waitForLoadState('domcontentloaded'), // Wait for new page load
+        page.waitForLoadState('domcontentloaded'),
         page.click(firstResultSelector)
     ]);
 
     // 3. On Product Page, wait for listings
-    // The listings interact with API, might take a moment.
-    // There is a section "View Sellers" or scrolling down in new layout.
-    // We look for the listings container.
-
-    // Try to wait for an item price
-    const listingSelector = 'section.listing-item'; // This class might vary, let's look for semantic structure or common classes
-    // Actually TCGPlayer classes are like 'listing-item__header', 'listing-item__info' etc.
-
+    const listingSelector = 'section.listing-item';
     try {
-        // Wait a bit for Client Side Render
-        await page.waitForSelector('.listing-item', { timeout: 5000 });
+        await page.waitForSelector(listingSelector, { timeout: 8000 });
     } catch (e) {
-        console.warn(`[Scraper] 0 listings loaded for ${cardName}`);
+        console.warn(`[Scraper] 0 listings loaded for ${cardName} (timeout)`);
         return [];
     }
 
     // 4. Extract Data
-    const listings = await page.$$('.listing-item');
+    const listings = await page.$$(listingSelector);
+    console.log(`[Scraper] Found ${listings.length} listings for ${cardName}`);
+
+    // Regex Patterns
+    const PRICE_REGEX = /\$(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)/g;
+    const SHIPPING_REGEX = /(?:\+(?:\s|\\n)*\$(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)(?:\s|\\n)*Shipping)|(Free Shipping)/i;
+    const QTY_REGEX = /(\d+)\s*(?:available|in stock)/i;
+    const CONDITION_REGEX = /Near Mint|Lightly Played|Moderately Played|Heavily Played|Damaged/i;
 
     for (const listing of listings) {
         try {
-            // Seller Name
-            const sellerEl = await listing.$('.seller-info__name');
-            const sellerName = sellerEl ? await sellerEl.innerText() : 'Unknown';
+            const rawText = await listing.innerText();
+            // console.log(`[Scraper] Raw text: (len=${rawText.length})`); // Minimal debug
 
-            // Price
-            const priceEl = await listing.$('.listing-item__price');
-            const priceText = priceEl ? await priceEl.innerText() : '$0.00';
-            const price = parseFloat(priceText.replace('$', '').replace(',', ''));
+            const priceMatches = [...rawText.matchAll(PRICE_REGEX)];
 
-            // Quantity
-            // Sometimes "3 available" or just input?
-            // Usually there is an "add to cart" section.
-            // Often text like "3 available" is in .listing-item__quantity or similar.
-            // Let's assume 1 if not found for MVP safety, or try to find it.
-            // We often see "Add to Cart" button.
-            const quantityTextEl = await listing.$('.add-to-cart__available');
-            let quantity = 1;
-            if (quantityTextEl) {
-                const txt = await quantityTextEl.innerText();
-                const match = txt.match(/(\d+)\s+available/i);
-                if (match) quantity = parseInt(match[1]);
-            }
-
-            // Shipping
-            const shippingEl = await listing.$('.shipping-messages__price');
+            let price = 0;
             let shippingCost = 0;
-            if (shippingEl) {
-                const shipTxt = await shippingEl.innerText();
-                if (shipTxt.toLowerCase().includes('free')) {
-                    shippingCost = 0;
-                } else {
-                    // "+ $0.99 Shipping"
-                    const match = shipTxt.match(/\$\s*(\d+\.?\d*)/);
-                    if (match) shippingCost = parseFloat(match[1]);
+            let quantity = 1;
+            let condition = 'Unknown';
+            let sellerName = 'Unknown';
+
+            // Find Condition
+            const condMatch = rawText.match(CONDITION_REGEX);
+            if (condMatch) condition = condMatch[0];
+
+            // Find Quantity
+            const qtyMatch = rawText.match(QTY_REGEX);
+            if (qtyMatch) quantity = parseInt(qtyMatch[1]);
+
+            // Find Price & Shipping
+            if (priceMatches.length > 0) {
+                const p1 = parseFloat(priceMatches[0][1].replace(',', ''));
+                price = p1;
+
+                const shipMatch = rawText.match(SHIPPING_REGEX);
+                if (shipMatch) {
+                    if (shipMatch[2]) { // Free Shipping
+                        shippingCost = 0;
+                    } else if (shipMatch[1]) {
+                        shippingCost = parseFloat(shipMatch[1].replace(',', ''));
+                    }
                 }
             }
 
-            // Condition
-            const conditionEl = await listing.$('.listing-item__condition');
-            const condition = conditionEl ? await conditionEl.innerText() : 'Unknown';
+            // Seller Name
+            const sellerEl = await listing.$('.seller-info__name, .seller-view__name, a.seller-name');
+            if (sellerEl) sellerName = await sellerEl.innerText();
 
-            // Filtering criteria (optional)
-            // e.g. skip Damaged?
+            // If price is still 0, try to check if it's "Direct"
+            if (price === 0 && rawText.includes('Direct by TCGplayer')) {
+                // Price might be hidden or different
+            }
 
-            offers.push({
-                sellerId: sellerName, // Use name as ID for now
-                sellerName,
-                price,
-                quantity,
-                shipping: {
-                    base: shippingCost,
-                    freeAt: shippingCost === 0 && (price >= 5.00) ? 5.00 : undefined // Heuristic
-                },
-                condition,
-                sellerRating: 1.0 // Default robust
-            });
+            // Filtering
+            if (price > 0) {
+                offers.push({
+                    sellerId: sellerName,
+                    sellerName,
+                    price,
+                    quantity,
+                    shipping: {
+                        base: shippingCost,
+                        freeAt: shippingCost === 0 && (price >= 5.00) ? 5.00 : undefined
+                    },
+                    condition,
+                    sellerRating: 1.0
+                });
+            }
 
         } catch (e) {
-            // single listing fail
+            console.error('[Scraper] Error parsing listing:', e);
         }
     }
-
-    // Limit to reasonable number per card to save bandwidth/memory? 
-    // Maybe top 10 cheapest?
-    // They are usually sorted by price+shipping asc by TCGPlayer default.
 
     return offers.slice(0, 15);
 }
