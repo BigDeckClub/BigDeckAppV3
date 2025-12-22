@@ -95,6 +95,7 @@ export function AutobuyTab({ inventory, decks }) {
   // State
   const [activeView, setActiveView] = useState('optimizer'); // 'optimizer' | 'analytics' | 'config'
   const [loading, setLoading] = useState(false);
+  const [progressStatus, setProgressStatus] = useState(''); // 'scraping', 'planning', 'analyzing'
   const [error, setError] = useState(null);
   const [plan, setPlan] = useState(null);
   const [expandedBaskets, setExpandedBaskets] = useState(new Set());
@@ -267,6 +268,7 @@ export function AutobuyTab({ inventory, decks }) {
     setLoading(true);
     setError(null);
     setPlan(null);
+    setProgressStatus('Initializing...');
 
     try {
       // Build demands from inventory alerts AND selected decks
@@ -299,26 +301,6 @@ export function AutobuyTab({ inventory, decks }) {
       // Calculate total needed quantity for each card across all selected decks
       const deckNeeds = new Map(); // CardID -> Total Quantity required by selected decks
 
-      // Helper to resolve a unique key for the card
-      const getCardKey = (card) => {
-        return card.scryfall_id || card.card_id || card.id || (card.name ? normalizeName(card.name) : null);
-      };
-
-      // Helper to get inventory quantity for a key
-      const getInventoryQuantity = (key) => {
-        if (inventoryById[key]) return inventoryById[key].quantity || 0;
-        const itemByName = inventoryByName[key];
-        if (itemByName) return itemByName.quantity || 0;
-        return 0;
-      };
-
-      // Helper to get inventory alert threshold for a key
-      const getInventoryAlertThreshold = (key) => {
-        let item = inventoryById[key];
-        if (!item) item = inventoryByName[key];
-        return item && item.low_inventory_alert ? (item.low_inventory_threshold || 0) : 0;
-      };
-
       selectedDeckIds.forEach(deckId => {
         const deck = safeDecks.find(d => d.id === deckId);
         const quantityMultiplier = deckQuantities[deckId] || 1;
@@ -344,38 +326,31 @@ export function AutobuyTab({ inventory, decks }) {
       });
 
       const allKeys = new Set([...demandsMap.keys(), ...deckNeeds.keys()]);
-
-      // Ensure specific mapped IDs are included if they have needs
-      deckNeeds.forEach((qty, key) => {
-        allKeys.add(key);
-      });
+      deckNeeds.forEach((qty, key) => allKeys.add(key));
 
       // 3. Merge Deck Needs into Demands
-      // Strategy: Total Desired = Max(InventoryThreshold, DeckTotalNeed)
-      // ToBuy = Max(0, TotalDesired - CurrentOwned)
+      // Helper to get needed info
+      const getInventoryQuantity = (key) => {
+        if (inventoryById[key]) return inventoryById[key].quantity || 0;
+        const itemByName = inventoryByName[key];
+        if (itemByName) return itemByName.quantity || 0;
+        return 0;
+      };
+      const getInventoryAlertThreshold = (key) => {
+        let item = inventoryById[key];
+        if (!item) item = inventoryByName[key];
+        return item && item.low_inventory_alert ? (item.low_inventory_threshold || 0) : 0;
+      };
 
       allKeys.forEach((key) => {
         const currentOwned = getInventoryQuantity(key);
-        const threshold = getInventoryAlertThreshold(key); // We can re-fetch this properly if needed, but alert logic above used safeInventory loop.
-
-        // Wait, 'demandsMap' above was populated primarily by IDs from the alert loop.
-        // But for deck needs we might have keys that are Names.
-
+        const threshold = getInventoryAlertThreshold(key);
         const deckNeeded = deckNeeds.get(key) || 0;
 
-        // If key is present in demandsMap (from alerts), trust that calculation? 
-        // No, we need Max(Alert, Deck).
-        // demandsMap currently holds: (diminished by ownership? No, the code says needed = Max(0, Threshold - Quantity))
-        // So demandsMap holds "To Buy for Alerts".
-
-        // Let's recalculate cleanly:
         const totalTarget = Math.max(threshold, deckNeeded);
         const toBuy = Math.max(0, totalTarget - currentOwned);
 
         if (toBuy > 0) {
-          // If we have a robust ID, use it. If only a name, pass Name as cardId?
-          // The planner might need help distinguishing, but let's send whatever key we have.
-          // For now, consistent behavior is better than skipping.
           demandsMap.set(key, toBuy);
         }
       });
@@ -414,16 +389,16 @@ export function AutobuyTab({ inventory, decks }) {
       // Fetch real marketplace offers for demanded cards
       let offers = [];
       const cardIds = demands.map(d => d.cardId).filter(Boolean);
+
       if (cardIds.length > 0) {
+        setProgressStatus(`Scraping live prices for ${cardIds.length} cards...`);
         try {
           // Prepare card requests for scraper
           const cardRequests = demands.map(d => {
-            // Try to find name from inventory/decks context
             const id = d.cardId;
-            let name = id; // Fallback if ID is name
+            let name = id;
             let scryfallId = id;
 
-            // Check inventory
             if (inventoryById[id]) {
               name = inventoryById[id].name;
               scryfallId = inventoryById[id].scryfall_id || id;
@@ -432,10 +407,6 @@ export function AutobuyTab({ inventory, decks }) {
               name = item.name;
               scryfallId = item.scryfall_id || id;
             }
-
-            // If we still just have an ID that looks like a UUID, we might be in trouble if we don't have the name.
-            // But usually we build demands from known items.
-
             return { name, scryfallId };
           });
 
@@ -460,6 +431,8 @@ export function AutobuyTab({ inventory, decks }) {
         }
       }
 
+      setProgressStatus('Generating optimal purchase plan...');
+
       const requestBody = {
         demands,
         offers,
@@ -467,7 +440,6 @@ export function AutobuyTab({ inventory, decks }) {
         cardKingdomPrices,
         currentInventory,
         directives: [],
-        // Add budget config if enabled
         ...(preferences.enableBudgetLimits && {
           budget: {
             maxTotalSpend: preferences.maxTotalSpend,
@@ -499,6 +471,7 @@ export function AutobuyTab({ inventory, decks }) {
       setPlan(result);
 
       // Successfully generated plan - start tracking run
+      setProgressStatus('Finalizing analytics...');
       try {
         const analyticsItems = [];
         if (result.baskets) {
@@ -529,7 +502,6 @@ export function AutobuyTab({ inventory, decks }) {
 
         if (runResp.ok) {
           const runData = await runResp.json();
-          // Attach runId to plan for later updates
           setPlan(prev => ({
             ...prev,
             meta: { ...prev.meta, runId: runData.runId }
@@ -537,12 +509,12 @@ export function AutobuyTab({ inventory, decks }) {
         }
       } catch (analyticsErr) {
         console.error('Failed to start analytics run', analyticsErr);
-        // Don't fail the whole operation if analytics fails
       }
     } catch (err) {
       setError(err.message || 'Failed to run optimizer');
     } finally {
       setLoading(false);
+      setProgressStatus('');
     }
   };
 
@@ -597,8 +569,9 @@ export function AutobuyTab({ inventory, decks }) {
   return (
     <div className="autobuy-tab space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
+      {/* Header */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr] items-center gap-4">
+        <div className="justify-self-start">
           <h2 className="text-2xl font-bold text-white flex items-center gap-2">
             <ShoppingCart className="w-7 h-7 text-emerald-400" />
             Auto-Buy Optimizer
@@ -608,7 +581,7 @@ export function AutobuyTab({ inventory, decks }) {
           </p>
         </div>
 
-        <div className="flex items-center gap-3 glass-panel p-1">
+        <div className="justify-self-center flex items-center gap-3 glass-panel p-1">
           <button
             onClick={() => setActiveView('optimizer')}
             className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeView === 'optimizer'
@@ -641,37 +614,39 @@ export function AutobuyTab({ inventory, decks }) {
           </button>
         </div>
 
-        {activeView === 'optimizer' && (
-          <div className="flex gap-2">
-            <button
-              onClick={() => setShowSettings(!showSettings)}
-              className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${showSettings
-                ? 'bg-[var(--surface-active)] text-white'
-                : 'bg-[var(--surface)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--card-hover)] border border-[var(--border)]'
-                }`}
-            >
-              <Settings className="w-4 h-4" />
-              Settings
-            </button>
-            <button
-              onClick={runOptimizer}
-              disabled={loading}
-              className="px-6 py-2 btn-primary disabled:opacity-50 disabled:cursor-not-allowed rounded-lg flex items-center gap-2 font-medium transition-colors shadow-lg shadow-[var(--accent)]/20"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Optimizing...
-                </>
-              ) : (
-                <>
-                  <Play className="w-4 h-4" />
-                  Run Optimizer
-                </>
-              )}
-            </button>
-          </div>
-        )}
+        <div className="justify-self-end flex gap-2">
+          {activeView === 'optimizer' && (
+            <>
+              <button
+                onClick={() => setShowSettings(!showSettings)}
+                className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${showSettings
+                  ? 'bg-[var(--surface-active)] text-white'
+                  : 'bg-[var(--surface)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--card-hover)] border border-[var(--border)]'
+                  }`}
+              >
+                <Settings className="w-4 h-4" />
+                Settings
+              </button>
+              <button
+                onClick={runOptimizer}
+                disabled={loading}
+                className="px-6 py-2 btn-primary disabled:opacity-50 disabled:cursor-not-allowed rounded-lg flex items-center gap-2 font-medium transition-colors shadow-lg shadow-[var(--accent)]/20"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    {progressStatus || 'Optimizing...'}
+                  </>
+                ) : (
+                  <>
+                    <Play className="w-4 h-4" />
+                    Run Optimizer
+                  </>
+                )}
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {activeView === 'optimizer' ? (
