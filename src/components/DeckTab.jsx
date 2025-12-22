@@ -18,7 +18,7 @@ import { DeckCardTile } from './ui';
 import { normalizeName, computeCompletion } from '../utils/deckHelpers';
 
 
-export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
+export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate, decks: externalDecks, onReloadDecks }) => {
   // Import modals visibility state
   const [showImportDecklist, setShowImportDecklist] = useState(false);
   const [showImportArchidekt, setShowImportArchidekt] = useState(false);
@@ -61,7 +61,12 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
     previewCopyToDeck,
     executeCopyToDeck,
     cancelCopyToDeck
-  } = useDeckOperations({ onDeckCreatedOrDeleted, onInventoryUpdate });
+  } = useDeckOperations({
+    onDeckCreatedOrDeleted,
+    onInventoryUpdate,
+    externalDecks,
+    onReloadDecks
+  });
 
   // Archidekt import hook
   const {
@@ -449,7 +454,9 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate }) => {
 
 DeckTab.propTypes = {
   onDeckCreatedOrDeleted: PropTypes.func,
-  onInventoryUpdate: PropTypes.func
+  onInventoryUpdate: PropTypes.func,
+  decks: PropTypes.array,
+  onReloadDecks: PropTypes.func
 };
 
 export default DeckTab;

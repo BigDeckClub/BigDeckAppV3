@@ -13,15 +13,18 @@ const API_BASE = '/api';
  * @param {Function} options.onInventoryUpdate - Callback to refresh inventory
  * @returns {Object} - Hook state and functions
  */
-export function useDeckOperations({ onDeckCreatedOrDeleted, onInventoryUpdate }) {
+export function useDeckOperations({ onDeckCreatedOrDeleted, onInventoryUpdate, externalDecks, onReloadDecks }) {
   const { showToast } = useToast();
   const { confirm } = useConfirm();
 
-  const [decks, setDecks] = useState([]);
+  const [internalDecks, setInternalDecks] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedDeck, setSelectedDeck] = useState(null);
   const [editingDeck, setEditingDeck] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
+
+  // Use external decks if provided, otherwise fallback to internal state
+  const decks = externalDecks || internalDecks;
 
   // Copy to deck state
   const [showCopyModal, setShowCopyModal] = useState(false);
@@ -29,24 +32,28 @@ export function useDeckOperations({ onDeckCreatedOrDeleted, onInventoryUpdate })
   const [copyDeckName, setCopyDeckName] = useState('');
   const [isCopying, setIsCopying] = useState(false);
 
-  // Load decks from API
+  // Load decks from API (if no external loader provided)
   const loadDecks = useCallback(async () => {
+    if (onReloadDecks) {
+      await onReloadDecks();
+      return;
+    }
     try {
       setIsLoading(true);
       const response = await fetchWithAuth(`${API_BASE}/decks`);
       if (response.ok) {
         const data = await response.json();
-        setDecks(Array.isArray(data) ? data : []);
+        setInternalDecks(Array.isArray(data) ? data : []);
       } else {
-        setDecks([]);
+        setInternalDecks([]);
       }
     } catch (error) {
-      setDecks([]);
+      setInternalDecks([]);
       showToast('Failed to load decks', TOAST_TYPES.ERROR);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [onReloadDecks, showToast]);
 
   // Load decks on mount
   useEffect(() => {
@@ -61,7 +68,7 @@ export function useDeckOperations({ onDeckCreatedOrDeleted, onInventoryUpdate })
       confirmText: 'Delete',
       variant: 'danger'
     });
-    
+
     if (confirmed) {
       try {
         const response = await fetchWithAuth(`${API_BASE}/decks/${id}`, { method: 'DELETE' });
@@ -71,7 +78,7 @@ export function useDeckOperations({ onDeckCreatedOrDeleted, onInventoryUpdate })
             setSelectedDeck(null);
           }
           showToast('Deck deleted!', TOAST_TYPES.SUCCESS);
-          
+
           onDeckCreatedOrDeleted?.();
           onInventoryUpdate?.();
         }
@@ -171,9 +178,9 @@ export function useDeckOperations({ onDeckCreatedOrDeleted, onInventoryUpdate })
 
       await loadDecks();
       showToast(`Deck created with ${cards.length} cards!`, TOAST_TYPES.SUCCESS);
-      
+
       onInventoryUpdate?.();
-      
+
       return true;
     } catch (error) {
       showToast('Error creating deck', TOAST_TYPES.ERROR);
@@ -189,7 +196,7 @@ export function useDeckOperations({ onDeckCreatedOrDeleted, onInventoryUpdate })
 
   const executeCopyToDeck = useCallback(async () => {
     if (!copyingDeck || !copyDeckName.trim()) return;
-    
+
     setIsCopying(true);
     try {
       const response = await fetchWithAuth(`${API_BASE}/decks/${copyingDeck.id}/copy-to-inventory`, {
@@ -197,20 +204,20 @@ export function useDeckOperations({ onDeckCreatedOrDeleted, onInventoryUpdate })
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: copyDeckName })
       });
-      
+
       if (!response.ok) throw new Error('Failed to copy deck');
-      
+
       const result = await response.json();
-      
+
       setShowCopyModal(false);
       setCopyingDeck(null);
       setCopyDeckName('');
       setSuccessMessage(`Deck created! ${result.reservedCount} cards reserved, ${result.missingCount} cards missing.`);
       setTimeout(() => setSuccessMessage(''), 5000);
-      
+
       onDeckCreatedOrDeleted?.();
       onInventoryUpdate?.();
-      
+
     } catch (error) {
       showToast('Error copying deck to inventory', TOAST_TYPES.ERROR);
     } finally {
@@ -233,7 +240,7 @@ export function useDeckOperations({ onDeckCreatedOrDeleted, onInventoryUpdate })
     editingDeck,
     setEditingDeck,
     successMessage,
-    
+
     // Copy modal state
     showCopyModal,
     copyingDeck,

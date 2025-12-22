@@ -33,7 +33,7 @@ const AutobuyTab = lazy(() => import("./components/AutobuyTab"));
 function MTGInventoryTrackerContent() {
   // ALL hooks must be called before any conditional returns
   const { user, loading: authLoading } = useAuth();
-  const { post } = useApi();
+  const { post, get } = useApi();
   const { showToast } = useToast();
 
   // Custom hooks for extracted functionality
@@ -59,6 +59,7 @@ function MTGInventoryTrackerContent() {
   const [showKeyboardHelp, setShowKeyboardHelp] = useState(false);
 
   const [allSets, setAllSets] = useState([]);
+  const [decks, setDecks] = useState([]); // Hoisted deck state
   const [successMessage, setSuccessMessage] = useState("");
   const [expandedCards, setExpandedCards] = useState({});
 
@@ -113,6 +114,20 @@ function MTGInventoryTrackerContent() {
     }
   }, [showToast]);
 
+  const loadDecks = useCallback(async (options = {}) => {
+    const { silentError = false } = options;
+    try {
+      const data = await get('/decks');
+      setDecks(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('[APP] Failed to load decks:', error);
+      // Don't show toast for decks usually unless requested, to avoid spam on initial load if fails
+      if (!silentError) {
+        // showToast('Failed to load decks', TOAST_TYPES.WARNING);
+      }
+    }
+  }, [get]);
+
   useEffect(() => {
     if (!user) return;
     const loadAllData = async () => {
@@ -120,11 +135,12 @@ function MTGInventoryTrackerContent() {
       await Promise.all([
         loadInventory({ silentError: true }),
         loadAllSets({ silentError: true }),
+        loadDecks({ silentError: true }),
       ]);
       setIsLoading(false);
     };
     loadAllData();
-  }, [user, loadInventory, loadAllSets]);
+  }, [user, loadInventory, loadAllSets, loadDecks]);
 
   const handleSell = useCallback(async (saleData) => {
     try {
@@ -132,6 +148,7 @@ function MTGInventoryTrackerContent() {
       if (saleData.itemType === 'deck') {
         setDeckRefreshTrigger(prev => prev + 1);
         await loadInventory();
+        await loadDecks({ silentError: true }); // Reload decks after sale
       }
       showToast(`${saleData.itemName} sold successfully!`, TOAST_TYPES.SUCCESS);
     } catch (_error) {
@@ -213,7 +230,7 @@ function MTGInventoryTrackerContent() {
             {activeTab === "autobuy" && (
               <ErrorBoundaryWithRetry>
                 <Suspense fallback={<TabLoadingSpinner />}>
-                  <AutobuyTab inventory={inventory} />
+                  <AutobuyTab inventory={inventory} decks={decks} />
                 </Suspense>
               </ErrorBoundaryWithRetry>
             )}
@@ -227,7 +244,12 @@ function MTGInventoryTrackerContent() {
             {activeTab === "decks" && (
               <Suspense fallback={<TabLoadingSpinner />}>
                 <DeckTab
-                  onDeckCreatedOrDeleted={() => setDeckRefreshTrigger(prev => prev + 1)}
+                  decks={decks}
+                  onReloadDecks={loadDecks}
+                  onDeckCreatedOrDeleted={() => {
+                    setDeckRefreshTrigger(prev => prev + 1);
+                    loadDecks();
+                  }}
                   onInventoryUpdate={loadInventory}
                 />
               </Suspense>
