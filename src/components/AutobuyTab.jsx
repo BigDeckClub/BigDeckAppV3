@@ -411,6 +411,7 @@ export function AutobuyTab({ inventory, decks }) {
           });
 
           // Call Playwright Scraper
+          console.log('[Autobuy] Invoking TCGPlayer scraper for', cardRequests.length, 'cards');
           const scraperResp = await fetch('/api/autobuy/scrape-tcgplayer', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -420,6 +421,7 @@ export function AutobuyTab({ inventory, decks }) {
           if (scraperResp.ok) {
             const { offers: scrapedOffers, errors } = await scraperResp.json();
             offers = scrapedOffers || [];
+            console.log('[Autobuy] Scraper returned', offers.length, 'offers. Errors:', errors);
             if (errors?.length > 0) {
               console.warn('Scraper reported errors:', errors);
             }
@@ -430,6 +432,8 @@ export function AutobuyTab({ inventory, decks }) {
           console.warn('Could not scrape offers:', offerErr);
         }
       }
+
+      console.log('[Autobuy] Sending to planner. Demands:', demands.length, 'Offers:', offers.length);
 
       setProgressStatus('Generating optimal purchase plan...');
 

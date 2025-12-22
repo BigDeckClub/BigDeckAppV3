@@ -56,7 +56,8 @@ export async function scrapeTCGPlayerOffers(
                 const normalizedOffers = offers.map(o => ({
                     ...o,
                     cardId: card.scryfallId,
-                    marketplace: 'TCG' as const
+                    marketplace: 'TCG' as const,
+                    quantityAvailable: o.quantity // Optimizer expects quantityAvailable
                 }));
 
                 setCachedOffers(card.name, normalizedOffers);
@@ -181,7 +182,10 @@ async function scrapeSingleCard(page: Page, cardName: string): Promise<Omit<Scra
                     quantity,
                     shipping: {
                         base: shippingCost,
-                        freeAt: shippingCost === 0 && (price >= 5.00) ? 5.00 : undefined
+                        // TCGPlayer standard heuristic: Sellers often offer free shipping >$5
+                        // We inject this to allow the "Optimistic Shipping" planner logic to consider this seller
+                        // even if the single card shipping cost is high.
+                        freeAt: 5.00
                     },
                     condition,
                     sellerRating: 1.0

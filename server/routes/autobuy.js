@@ -975,33 +975,38 @@ router.get('/autobuy/analytics/profit/:cardId', asyncHandler(async (req, res) =>
  * Trigger Playwright scraper to fetch live TCGPlayer offers.
  * Body: { cardNames: string[], skipCache?: boolean }
  */
-router.post('/autobuy/scrape-tcgplayer', asyncHandler(async (req, res) => {
+// TCGPlayer Scraper Endpoint (Playwright)
+router.post('/autobuy/scrape-tcgplayer', async (req, res) => {
   const { cardRequests, skipCache } = req.body;
 
   if (!cardRequests || !Array.isArray(cardRequests)) {
-    return res.status(400).json({ error: 'cardRequests array is required (name, scryfallId)' });
+    return res.status(400).json({ error: 'Missing cardRequests array' });
   }
 
-  // Load scraper module dynamically
-  const scraperPath = path.join(process.cwd(), 'dist', 'server', 'scraper', 'tcgplayer.js');
-  let scraperModule;
-  try {
-    scraperModule = await import(pathToFileURL(scraperPath).href);
-  } catch (e) {
-    // If running in dev mode without full build, might need to try source path if using ts-node/tsx (unlikely here)
-    // Or just fail if not built
-    return res.status(500).json({ error: 'Scraper module not available - run build:autobuy' });
-  }
+  console.log(`[API] Received scrape request for ${cardRequests.length} cards`);
 
   try {
-    const result = await scraperModule.scrapeTCGPlayerOffers(cardRequests, { skipCache });
-    res.json(result);
-  } catch (err) {
-    console.error('Scraper error:', err);
-    res.status(500).json({ error: err.message || 'Scraper failed' });
+    // Dynamic import of the scraper module (built TS file)
+    // Adjust path based on where 'server/routes' is relative to 'dist/server/scraper'
+    // Usually: server/routes/autobuy.js -> ../../dist/server/scraper/tcgplayer.js
+    const scraperPath = path.resolve(__dirname, '../../dist/server/scraper/tcgplayer.js');
+    console.log(`[API] Loading scraper from: ${scraperPath}`);
+
+    const scraperModule = await import(`file://${scraperPath}`);
+
+    if (!scraperModule.scrapeTCGPlayerOffers) {
+      throw new Error('Scraper module missing scrapeTCGPlayerOffers export');
+    }
+
+    const { offers, errors } = await scraperModule.scrapeTCGPlayerOffers(cardRequests, { skipCache });
+
+    console.log(`[API] Scrape complete. Found ${offers.length} offers.`);
+    res.json({ offers, errors });
+
+  } catch (error) {
+    console.error('[API] Scraper failed:', error);
+    res.status(500).json({ error: error.message, details: error.toString() });
   }
-}));
+});
 
 export default router;
-
-
