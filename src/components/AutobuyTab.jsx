@@ -416,34 +416,47 @@ export function AutobuyTab({ inventory, decks }) {
       const cardIds = demands.map(d => d.cardId).filter(Boolean);
       if (cardIds.length > 0) {
         try {
-          // Also include card lookup info for better marketplace matching
-          const cardLookups = safeInventory
-            .filter(item => cardIds.includes(item.scryfall_id || item.card_id))
-            .map(item => ({
-              scryfallId: item.scryfall_id || item.card_id,
-              cardName: item.name || item.card_name,
-              setCode: item.set_code || item.set?.editioncode,
-            }));
+          // Prepare card requests for scraper
+          const cardRequests = demands.map(d => {
+            // Try to find name from inventory/decks context
+            const id = d.cardId;
+            let name = id; // Fallback if ID is name
+            let scryfallId = id;
 
-          const offerResp = await fetch('/api/autobuy/fetch-offers', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ cardIds, cardLookups }),
+            // Check inventory
+            if (inventoryById[id]) {
+              name = inventoryById[id].name;
+              scryfallId = inventoryById[id].scryfall_id || id;
+            } else if (inventoryByName[normalizeName(id)]) {
+              const item = inventoryByName[normalizeName(id)];
+              name = item.name;
+              scryfallId = item.scryfall_id || id;
+            }
+
+            // If we still just have an ID that looks like a UUID, we might be in trouble if we don't have the name.
+            // But usually we build demands from known items.
+
+            return { name, scryfallId };
           });
 
-          if (offerResp.ok) {
-            const { offers: fetchedOffers, errors } = await offerResp.json();
-            offers = fetchedOffers || [];
-            // Log any marketplace errors but don't fail the request
+          // Call Playwright Scraper
+          const scraperResp = await fetch('/api/autobuy/scrape-tcgplayer', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cardRequests, skipCache: false }),
+          });
+
+          if (scraperResp.ok) {
+            const { offers: scrapedOffers, errors } = await scraperResp.json();
+            offers = scrapedOffers || [];
             if (errors?.length > 0) {
-              console.warn('Some marketplaces returned errors:', errors);
+              console.warn('Scraper reported errors:', errors);
             }
           } else {
-            console.warn('Failed to fetch marketplace offers, proceeding with CK fallback');
+            console.warn('Scraper failed', await scraperResp.text());
           }
         } catch (offerErr) {
-          console.warn('Could not fetch marketplace offers:', offerErr);
-          // Continue without offers - optimizer will use CK fallback
+          console.warn('Could not scrape offers:', offerErr);
         }
       }
 

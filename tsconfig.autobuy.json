@@ -12,6 +12,7 @@
   },
   "include": [
     "server/autobuy/**/*",
-    "server/marketplace/**/*"
+    "server/marketplace/**/*",
+    "server/scraper/**/*"
   ]
 }

@@ -968,5 +968,40 @@ router.get('/autobuy/analytics/profit/:cardId', asyncHandler(async (req, res) =>
   }
 }));
 
+
+/**
+ * POST /api/autobuy/scrape-tcgplayer
+ * 
+ * Trigger Playwright scraper to fetch live TCGPlayer offers.
+ * Body: { cardNames: string[], skipCache?: boolean }
+ */
+router.post('/autobuy/scrape-tcgplayer', asyncHandler(async (req, res) => {
+  const { cardRequests, skipCache } = req.body;
+
+  if (!cardRequests || !Array.isArray(cardRequests)) {
+    return res.status(400).json({ error: 'cardRequests array is required (name, scryfallId)' });
+  }
+
+  // Load scraper module dynamically
+  const scraperPath = path.join(process.cwd(), 'dist', 'server', 'scraper', 'tcgplayer.js');
+  let scraperModule;
+  try {
+    scraperModule = await import(pathToFileURL(scraperPath).href);
+  } catch (e) {
+    // If running in dev mode without full build, might need to try source path if using ts-node/tsx (unlikely here)
+    // Or just fail if not built
+    return res.status(500).json({ error: 'Scraper module not available - run build:autobuy' });
+  }
+
+  try {
+    const result = await scraperModule.scrapeTCGPlayerOffers(cardRequests, { skipCache });
+    res.json(result);
+  } catch (err) {
+    console.error('Scraper error:', err);
+    res.status(500).json({ error: err.message || 'Scraper failed' });
+  }
+}));
+
 export default router;
+
 
