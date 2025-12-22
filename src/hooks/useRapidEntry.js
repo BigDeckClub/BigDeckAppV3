@@ -1,9 +1,12 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useRowState, createEmptyRow, parseQuantityFromInput, QUALITY_OPTIONS } from './useRowState';
 import { useLotMode } from './useLotMode';
 
 // Re-export for backwards compatibility
 export { QUALITY_OPTIONS, createEmptyRow };
+
+// Debounce delay for search (ms) - reduced for faster autocomplete API
+const SEARCH_DEBOUNCE_MS = 150;
 
 /**
  * Custom hook for managing rapid entry table state and handlers
@@ -17,6 +20,9 @@ export function useRapidEntry({
 }) {
   // Sub-hooks
   const rowState = useRowState();
+
+  // Ref for debouncing search
+  const searchTimeoutRef = useRef(null);
 
   // Added cards tracking (for duplicate detection and totals)
   const [addedCards, setAddedCards] = useState([]);
@@ -45,7 +51,16 @@ export function useRapidEntry({
     [addedCards]
   );
 
-  // Handle card name input change
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Handle card name input change with debounced search
   const handleCardNameChange = useCallback((rowIndex, value) => {
     const { quantity, cardName } = parseQuantityFromInput(value);
 
@@ -60,14 +75,28 @@ export function useRapidEntry({
     rowState.setActiveRowIndex(rowIndex);
     rowState.setHighlightedResult(0);
 
-    // Trigger search
-    if (cardName.length >= 2) {
-      handleSearch(cardName);
+    // Clear any pending search
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
     }
-  }, [handleSearch, rowState]);
+
+    // Debounced search trigger
+    if (cardName.length >= 2) {
+      // Show dropdown immediately so arrow keys work when results arrive
+      setShowDropdown(true);
+
+      // Trigger search immediately - the autocomplete API is fast enough
+      // Removing debounce for more responsive feel
+      handleSearch(cardName);
+    } else {
+      // Hide dropdown if query is too short
+      setShowDropdown(false);
+    }
+  }, [handleSearch, rowState, setShowDropdown]);
 
   // Handle selecting a card from search results
-  const handleSelectCard = useCallback((rowIndex, card) => {
+  // Fetches full card details (prints/sets) from Scryfall for the selected card
+  const handleSelectCard = useCallback(async (rowIndex, card) => {
     // Check for duplicates in current session
     const isDuplicate = addedCards.some(
       added => added.cardName.toLowerCase() === card.name.toLowerCase()
@@ -77,33 +106,73 @@ export function useRapidEntry({
       rowState.setDuplicateWarning({ rowIndex, cardName: card.name });
     }
 
-    // Filter available sets for this card
-    const cardSets = searchResults
-      .filter(r => r.name === card.name)
-      .reduce((acc, r) => {
-        if (!acc.find(s => s.set === r.set)) {
-          acc.push({ set: r.set, setName: r.setName, imageUrl: r.imageUrl });
-        }
-        return acc;
-      }, []);
-
+    // Start with what we have
     rowState.updateRow(rowIndex, {
       cardName: card.name,
       searchQuery: card.name,
       selectedCard: card,
-      set: card.set,
-      setName: card.setName,
-      availableSets: cardSets,
-      imageUrl: card.imageUrl,
+      set: card.set || '',
+      setName: card.setName || '',
+      availableSets: [],
+      imageUrl: card.imageUrl || null,
       status: 'valid',
     });
 
     setShowDropdown(false);
     rowState.setHighlightedResult(0);
 
-    // Focus on quantity field
+    // Focus on quantity field immediately (don't wait for API)
     rowState.focusInput(`qty-${rowIndex}`);
-  }, [addedCards, searchResults, setShowDropdown, rowState]);
+
+    // Fetch full card details in the background (for sets and images)
+    // This is the "second phase" of our two-phase search
+    try {
+      const response = await fetch(
+        `https://api.scryfall.com/cards/search?q=!"${encodeURIComponent(card.name)}"&unique=prints`
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        const prints = data.data || [];
+
+        if (prints.length > 0) {
+          // Build available sets list
+          const cardSets = prints.reduce((acc, print) => {
+            const setCode = print.set.toUpperCase();
+            if (!acc.find(s => s.set === setCode)) {
+              acc.push({
+                set: setCode,
+                setName: print.set_name,
+                imageUrl: print.image_uris?.small || print.card_faces?.[0]?.image_uris?.small,
+              });
+            }
+            return acc;
+          }, []);
+
+          // Get the first print's details
+          const firstPrint = prints[0];
+          const imageUrl = firstPrint.image_uris?.small || firstPrint.card_faces?.[0]?.image_uris?.small;
+
+          // Update the row with full details
+          rowState.updateRow(rowIndex, {
+            set: firstPrint.set.toUpperCase(),
+            setName: firstPrint.set_name,
+            availableSets: cardSets,
+            imageUrl: imageUrl,
+            selectedCard: {
+              ...card,
+              set: firstPrint.set.toUpperCase(),
+              setName: firstPrint.set_name,
+              imageUrl: imageUrl,
+            },
+          });
+        }
+      }
+    } catch (error) {
+      // Non-critical error - user can still proceed without full details
+      console.warn('Could not fetch card details:', error);
+    }
+  }, [addedCards, setShowDropdown, rowState]);
 
   // Handle set change
   const handleSetChange = useCallback((rowIndex, setCode) => {

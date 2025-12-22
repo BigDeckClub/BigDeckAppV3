@@ -1,12 +1,18 @@
 /**
  * Card search hook for handling MTG card searches
  * @module hooks/useCardSearch
+ * 
+ * Optimizations:
+ * - Uses Scryfall autocomplete API (faster than full search)
+ * - AbortController cancels stale requests
+ * - Aggressive caching reduces API calls
+ * - Two-phase: autocomplete first, fetch details on selection
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useDebounce } from '../utils/useDebounce';
 import { scoreCardMatch } from '../utils/searchScoring';
-import { getCachedSearch, setCachedSearch, getPopularCardMatches } from '../utils/popularCards';
+import { getCachedSearch, setCachedSearch, getPopularCardMatches, POPULAR_CARDS } from '../utils/popularCards';
 
 /**
  * @typedef {Object} CardSearchResult
@@ -34,22 +40,26 @@ import { getCachedSearch, setCachedSearch, getPopularCardMatches } from '../util
  * Includes debouncing, caching, and smart result ranking
  * 
  * @param {Object} [options] - Hook options
- * @param {number} [options.debounceMs=300] - Debounce delay in milliseconds
+ * @param {number} [options.debounceMs=150] - Debounce delay in milliseconds
  * @param {number} [options.maxResults=15] - Maximum number of results to return
  * @returns {UseCardSearchResult}
  */
 export function useCardSearch(options = {}) {
-  const { debounceMs = 300, maxResults = 15 } = options;
+  const { debounceMs = 150, maxResults = 15 } = options;
 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [searchIsLoading, setSearchIsLoading] = useState(false);
 
+  // Ref for AbortController to cancel pending requests
+  const abortControllerRef = useRef(null);
+
   const debouncedSearchQuery = useDebounce(searchQuery, debounceMs);
 
   /**
-   * Perform a card search against the Scryfall API
+   * Perform a fast card name autocomplete against Scryfall
+   * Uses the autocomplete endpoint which is much faster than full search
    * @param {string} query - Search query
    */
   const handleSearch = useCallback(async (query) => {
@@ -59,7 +69,7 @@ export function useCardSearch(options = {}) {
       return;
     }
 
-    // Check cache first
+    // Check cache first (before showing loading state for better UX)
     const cached = getCachedSearch(query);
     if (cached) {
       setSearchResults(cached);
@@ -67,47 +77,53 @@ export function useCardSearch(options = {}) {
       return;
     }
 
+    // Cancel any pending request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
+
     setSearchIsLoading(true);
+
     try {
-      const response = await fetch(
-        `https://api.scryfall.com/cards/search?q=${encodeURIComponent(query)}&unique=prints`
+      // Use autocomplete API first - it's MUCH faster (~50ms vs ~300ms)
+      const autocompleteResponse = await fetch(
+        `https://api.scryfall.com/cards/autocomplete?q=${encodeURIComponent(query)}`,
+        { signal: abortControllerRef.current.signal }
       );
 
-      if (!response.ok) {
+      if (!autocompleteResponse.ok) {
         setSearchResults([]);
         setShowDropdown(false);
         return;
       }
 
-      const data = await response.json();
+      const autocompleteData = await autocompleteResponse.json();
+      const cardNames = autocompleteData.data || [];
 
-      let results = (data.data || []).map((card) => ({
-        name: card.name,
-        set: card.set.toUpperCase(),
-        setName: card.set_name,
-        rarity: card.rarity,
-        imageUrl: card.image_uris?.small || card.card_faces?.[0]?.image_uris?.small,
-      }));
-
-      // Deduplicate by card name, keeping the first (usually most recent) printing
-      // This ensures each unique card appears only once in results
-      const uniqueByName = new Map();
-      for (const card of results) {
-        if (!uniqueByName.has(card.name)) {
-          uniqueByName.set(card.name, card);
-        }
+      if (cardNames.length === 0) {
+        setSearchResults([]);
+        setShowDropdown(false);
+        setSearchIsLoading(false);
+        return;
       }
-      results = [...uniqueByName.values()];
+
+      // Create lightweight results from autocomplete (no images yet - faster!)
+      // We'll fetch full details when user selects a card
+      let results = cardNames.slice(0, maxResults).map(name => ({
+        name,
+        set: '',
+        setName: '',
+        rarity: '',
+        imageUrl: null, // Will be loaded on selection
+      }));
 
       // Sort by relevance score
       results = results.sort((a, b) => {
         const scoreA = scoreCardMatch(a.name, query);
         const scoreB = scoreCardMatch(b.name, query);
-        return scoreB - scoreA; // Descending order
+        return scoreB - scoreA;
       });
-
-      // Limit to top results
-      results = results.slice(0, maxResults);
 
       // Cache the results
       setCachedSearch(query, results);
@@ -115,8 +131,12 @@ export function useCardSearch(options = {}) {
       setSearchResults(results);
       setShowDropdown(results.length > 0);
     } catch (error) {
-      setSearchResults([]);
-      setShowDropdown(false);
+      // Ignore abort errors (expected when cancelling)
+      if (error.name !== 'AbortError') {
+        console.error('Search error:', error);
+        setSearchResults([]);
+        setShowDropdown(false);
+      }
     } finally {
       setSearchIsLoading(false);
     }
@@ -139,6 +159,15 @@ export function useCardSearch(options = {}) {
     }
   }, [debouncedSearchQuery, searchQuery, handleSearch]);
 
+  // Cleanup AbortController on unmount
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
+
   /**
    * Clear search query, results, and close dropdown
    */
@@ -146,6 +175,10 @@ export function useCardSearch(options = {}) {
     setSearchQuery('');
     setSearchResults([]);
     setShowDropdown(false);
+    // Cancel any pending request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
   }, []);
 
   return {
@@ -161,3 +194,4 @@ export function useCardSearch(options = {}) {
 }
 
 export default useCardSearch;
+
