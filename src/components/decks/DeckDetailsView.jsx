@@ -155,9 +155,16 @@ export function DeckDetailsView({
           const ownedCount = totalCards - totalMissing;
           const completionPercentage = totalCards > 0 ? (ownedCount / totalCards) * 100 : 100;
           const averageCmc = cardsForStats.reduce((s, c) => s + ((c.cmc || c.mana_value || 0) * (c.quantity || 1)), 0) / Math.max(1, totalCards);
+          const uniqueColors = new Set();
+          cardsForStats.forEach(c => {
+            const cid = c.color_identity || c.colors || [];
+            if (Array.isArray(cid)) cid.forEach(color => uniqueColors.add(color));
+          });
+          const deckColorIdentity = ['W', 'U', 'B', 'R', 'G', 'C'].filter(c => uniqueColors.has(c));
+
           const typeBreakdown = {};
           return (
-            <div className="space-y-4 mb-6">
+            <div className="space-y-4 mb-4">
               {/* Compact stats row */}
               <DeckStatsPanel
                 cards={cardsForStats}
@@ -171,17 +178,24 @@ export function DeckDetailsView({
               />
               {/* Charts row */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <ManaCurveChart
-                  cards={enrichedCards.length > 0 ? enrichedCards : deck.cards}
-                  showStats={true}
-                  title="Mana Curve"
-                />
-                <DeckColorPie
-                  cards={enrichedCards.length > 0 ? enrichedCards : deck.cards}
-                  showLegend={true}
-                  size="md"
-                  title="Color Distribution"
-                />
+                <div className="h-full">
+                  <ManaCurveChart
+                    cards={enrichedCards.length > 0 ? enrichedCards : deck.cards}
+                    showStats={true}
+                    title="Mana Curve"
+                    className="h-full flex flex-col justify-between"
+                  />
+                </div>
+                <div className="h-full">
+                  <DeckColorPie
+                    cards={enrichedCards.length > 0 ? enrichedCards : deck.cards}
+                    colorIdentity={deckColorIdentity}
+                    showLegend={true}
+                    size="md"
+                    title="Color Distribution"
+                    className="h-full flex flex-col justify-between"
+                  />
+                </div>
               </div>
             </div>
           );

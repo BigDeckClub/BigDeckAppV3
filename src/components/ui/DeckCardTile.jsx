@@ -21,7 +21,7 @@ import {
   MoreVertical,
   Copy,
 } from 'lucide-react';
-import DeckColorGradientBar from '../decks/DeckColorGradientBar';
+import ManaSymbol from './ManaSymbol';
 import { ensureCardMetadata, getCachedMetadata } from '../../hooks/useScryfallCache';
 
 /**
@@ -59,38 +59,7 @@ const getCompletionBg = (percentage) => {
 /**
  * Mana symbol component
  */
-const ManaSymbol = memo(function ManaSymbol({ symbol, size = 'sm' }) {
-  const colors = {
-    W: 'bg-mtg-W-dark text-[var(--bda-heading)]',
-    U: 'bg-mtg-U text-white',
-    B: 'bg-mtg-B-light text-white',
-    R: 'bg-mtg-R text-white',
-    G: 'bg-mtg-G text-white',
-    C: 'bg-mtg-C text-[var(--bda-heading)]',
-  };
 
-  const sizes = {
-    sm: 'w-5 h-5 text-xs',
-    md: 'w-6 h-6 text-sm',
-  };
-
-  return (
-    <span
-      className={`
-        inline-flex items-center justify-center rounded-full font-bold
-        ${colors[symbol] || 'bg-[var(--bda-muted)] text-white'}
-        ${sizes[size]}
-      `}
-    >
-      {symbol}
-    </span>
-  );
-});
-
-ManaSymbol.propTypes = {
-  symbol: PropTypes.string.isRequired,
-  size: PropTypes.oneOf(['sm', 'md']),
-};
 
 /**
  * Action button component
@@ -216,6 +185,93 @@ export const DeckCardTile = memo(function DeckCardTile({
     setShowActions(false);
   }, [deck]);
 
+  // COLOR LOGIC START
+
+  // 1. Trigger enrichment if needed
+  React.useEffect(() => {
+    let keys = (colorIdentity && colorIdentity.length > 0) ? colorIdentity : [];
+    if ((!keys || keys.length === 0) && Array.isArray(deck.cards)) {
+      const set = new Set();
+      deck.cards.forEach((c) => {
+        const cardColors = c.color_identity || c.colors || [];
+        (cardColors || []).forEach((ch) => set.add(String(ch).toUpperCase()));
+      });
+      keys = Array.from(set);
+    }
+
+    // Only enrich if still empty and we have cards
+    if ((!keys || keys.length === 0) && Array.isArray(deck.cards) && deck.cards.length > 0) {
+      const fetchColors = async () => {
+        try {
+          const unique = deck.cards.map(c => ({ name: c.name, set: c.set })).slice(0, 20);
+          const metaMap = await ensureCardMetadata(unique);
+          const sset = new Set();
+
+          let foundNew = false;
+          deck.cards.forEach(c => {
+            const key = `${(c.name || '').toLowerCase().trim()}|${(c.set || '').toLowerCase().trim()}`;
+            const meta = metaMap[key] || getCachedMetadata(c.name, c.set);
+            if (meta?.color_identity) {
+              meta.color_identity.forEach(ci => sset.add(String(ci).toUpperCase()));
+              foundNew = true;
+            }
+          });
+
+          if (foundNew) {
+            deck.__scryfall_enriched = true;
+            const ev = new CustomEvent('deck-enriched', { detail: { deckId: deck.id } });
+            window.dispatchEvent(ev);
+          }
+        } catch (e) {
+          // ignore
+        }
+      };
+      fetchColors();
+    }
+  }, [deck, colorIdentity]);
+
+  // 2. Compute Colors for Display
+  const deckColors = React.useMemo(() => {
+    let keys = (colorIdentity && colorIdentity.length > 0) ? colorIdentity.slice() : [];
+
+    // Fallback to deriving from cards
+    if ((!keys || keys.length === 0) && Array.isArray(deck.cards)) {
+      const set = new Set();
+      deck.cards.forEach((c) => {
+        // Check standard props
+        const cardColors = c.color_identity || c.colors || [];
+        (cardColors || []).forEach((ch) => set.add(String(ch).toUpperCase()));
+
+        // Also check cached metadata if available (for newly enriched cards)
+        if (cardColors.length === 0) {
+          const meta = getCachedMetadata(c.name, c.set);
+          if (meta?.color_identity) {
+            meta.color_identity.forEach(ci => set.add(String(ci).toUpperCase()));
+          }
+        }
+      });
+      keys = Array.from(set);
+    }
+
+    // Sort WUBRG order
+    const order = { 'W': 0, 'U': 1, 'B': 2, 'R': 3, 'G': 4, 'C': 5 };
+    keys.sort((a, b) => (order[a] ?? 10) - (order[b] ?? 10));
+
+    // Default to Colorless only if we have confirmed cards but no colors found
+    // Note: If deck has no cards, maybe don't show C? 
+    // User said "it says colorless, this is wrong", implying it SHOULD have colors. 
+    // If we return [], it won't render anything (which is better than lying).
+    // EXCEPT if it really IS a colorless deck (Eldrazi).
+    // If we have cards and processed them and found NO colors, then it IS colorless.
+    if (keys.length === 0 && deck.cards?.length > 0) {
+      return ['C'];
+    }
+
+    return keys;
+  }, [deck, colorIdentity, deck.cards]); // tick is implicitly handled by component re-render on event
+
+  // COLOR LOGIC END
+
   return (
     <div
       className={`
@@ -228,72 +284,16 @@ export const DeckCardTile = memo(function DeckCardTile({
       `}
       onClick={() => onSelect?.(deck)}
     >
-      {/* Top color gradient strip (deck color pie) */}
-      <div className="absolute top-0 left-0 right-0 z-20">
-        {(() => {
-          // Compute color keys: prefer provided colorIdentity, otherwise derive from cards
-          let keys = (colorIdentity && colorIdentity.length > 0) ? colorIdentity.slice() : [];
-          if ((!keys || keys.length === 0) && Array.isArray(deck.cards)) {
-            const set = new Set();
-            deck.cards.forEach((c) => {
-              const cardColors = c.color_identity || c.colors || [];
-              (cardColors || []).forEach((ch) => set.add(String(ch).toUpperCase()));
-            });
-            keys = Array.from(set);
-          }
-          // If still empty, try to enrich via client-side Scryfall cache (async)
-          if ((!keys || keys.length === 0) && Array.isArray(deck.cards) && deck.cards.length > 0) {
-            (async () => {
-              try {
-                const unique = deck.cards.map(c => ({ name: c.name, set: c.set })).slice(0, 20);
-                const metaMap = await ensureCardMetadata(unique);
-                const sset = new Set();
-                deck.cards.forEach(c => {
-                  const key = `${(c.name || '').toLowerCase().trim()}|${(c.set || '').toLowerCase().trim()}`;
-                  const meta = metaMap[key] || getCachedMetadata(c.name, c.set);
-                  (meta?.color_identity || []).forEach(ci => sset.add(String(ci).toUpperCase()));
-                });
-                const newKeys = Array.from(sset);
-                if (newKeys.length > 0) {
-                  // Force re-render by updating a dummy state via a custom event on deck
-                  // Note: using a small trick: set a property and trigger a reflow by dispatching an event
-                  // Better approach is to lift state; this is minimal to avoid broad refactors.
-                  deck.__scryfall_enriched = true;
-                  const ev = new CustomEvent('deck-enriched', { detail: { deckId: deck.id } });
-                  window.dispatchEvent(ev);
-                }
-              } catch (e) {
-                // ignore
-              }
-            })();
-          }
-          if (!keys || keys.length === 0) keys = ['C'];
-
-          // Map single-letter mana symbols to pie token keys expected by the gradient bar
-          const letterToKey = { W: 'white', U: 'blue', B: 'black', R: 'red', G: 'green', C: 'colorless' };
-          const mapped = (keys || []).map((k) => {
-            if (!k) return 'colorless';
-            const up = String(k).toUpperCase();
-            return letterToKey[up] || String(k).toLowerCase();
-          });
-
-          return (
-            <>
-              <DeckColorGradientBar
-                colors={mapped}
-                height={process.env.NODE_ENV !== 'production' ? 12 : 6}
-                radius={12}
-                debug={process.env.NODE_ENV !== 'production'}
-                className="z-20"
-              />
-              {process.env.NODE_ENV !== 'production' && (
-                <div className="absolute top-3 left-3 text-[10px] text-[var(--bda-text)] bg-black/30 px-2 py-0.5 rounded z-40">
-                  <div>Keys: {mapped.join(', ')}</div>
-                </div>
-              )}
-            </>
-          );
-        })()}
+      {/* Top color symbols */}
+      <div className="absolute top-4 left-4 z-20 flex gap-1 transition-all">
+        {deckColors.map((color) => (
+          <ManaSymbol
+            key={color}
+            symbol={color}
+            size="sm"
+            className="shadow-sm hover:scale-110 transition-transform cursor-help"
+          />
+        ))}
       </div>
 
       {/* Completion indicator bar */}
@@ -409,13 +409,7 @@ export const DeckCardTile = memo(function DeckCardTile({
         </div>
 
         {/* Color identity */}
-        {colorIdentity.length > 0 && (
-          <div className="flex items-center gap-1 mt-3">
-            {colorIdentity.map((color) => (
-              <ManaSymbol key={color} symbol={color} />
-            ))}
-          </div>
-        )}
+
       </div>
 
       {/* Stats */}

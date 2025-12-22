@@ -62,8 +62,8 @@ const PieSegment = memo(function PieSegment({
   return (
     <path
       d={path}
-      stroke="var(--bda-border)"
-      strokeWidth="1"
+      stroke="var(--surface)"
+      strokeWidth="2"
       className="transition-all duration-200 cursor-pointer"
       style={{
         fill: config.color,
@@ -267,17 +267,19 @@ export const DeckColorPie = memo(function DeckColorPie({
             {/* Center text */}
             <text
               x="50"
-              y="48"
+              y="45"
               textAnchor="middle"
-              className="text-2xl font-bold fill-white"
+              dominantBaseline="middle"
+              className="text-2xl font-bold fill-white pointer-events-none"
             >
               {totalCards}
             </text>
             <text
               x="50"
-              y="58"
+              y="62"
               textAnchor="middle"
-              className="text-[8px] fill-slate-500 uppercase tracking-wider"
+              dominantBaseline="middle"
+              className="text-[8px] fill-slate-500 uppercase tracking-wider pointer-events-none"
             >
               cards
             </text>
