@@ -26,6 +26,7 @@ import {
   Layers,
   Calendar,
 } from 'lucide-react';
+import { StatsCard } from './ui';
 
 /**
  * AutobuyTab - Enhanced Auto-Buy Optimization Interface
@@ -930,20 +931,48 @@ export function AutobuyTab({ inventory, decks }) {
 
           {/* Initial State */}
           {!plan && !loading && !error && (
-            <div className="surface p-12 text-center">
-              <ShoppingCart className="w-16 h-16 text-[var(--text-muted)] mx-auto mb-4" />
-              <h3 className="text-xl font-medium text-[var(--text-primary)]">Ready to Optimize</h3>
-              <p className="text-[var(--text-secondary)] mt-2 max-w-md mx-auto">
-                Click "Run Optimizer" to analyze your inventory, deck requirements, and
-                find the best deals across marketplaces
-              </p>
-              <button
-                onClick={runOptimizer}
-                className="mt-6 px-6 py-3 btn-primary text-white rounded-lg flex items-center gap-2 font-medium transition-colors mx-auto shadow-lg shadow-[var(--accent)]/30"
-              >
-                <Play className="w-5 h-5" />
-                Run Optimizer
-              </button>
+            <div className="space-y-6 animate-fade-in">
+              {/* Demand Summary */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <StatsCard
+                  title="Items Needed"
+                  value={demandSummary.uniqueCardsNeeded}
+                  icon={ShoppingCart}
+                  color="emerald"
+                  subtitle="Unique cards across decks & alerts"
+                />
+                <StatsCard
+                  title="Low Inventory Alerts"
+                  value={demandSummary.alertCards}
+                  icon={AlertTriangle}
+                  color="amber"
+                  subtitle="Cards below threshold"
+                />
+                <StatsCard
+                  title="Decks Analysis"
+                  value={demandSummary.totalDecks}
+                  icon={LayoutDashboard}
+                  color="blue"
+                  subtitle={`${demandSummary.queuedDecks} queued decks included`}
+                />
+              </div>
+
+              <div className="glass-panel p-12 text-center border-2 border-dashed border-[var(--border)]">
+                <div className="w-20 h-20 bg-[var(--primary)]/10 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-[var(--primary)]/5 ring-1 ring-[var(--primary)]/20">
+                  <Play className="w-10 h-10 text-[var(--primary)] pl-1" />
+                </div>
+                <h3 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400 mb-3">Ready to Optimize</h3>
+                <p className="text-[var(--text-secondary)] text-lg max-w-xl mx-auto mb-8">
+                  Click "Run Optimizer" to analyze your inventory against requirements and find the best purchase strategy across TCGPlayer, Card Kingdom, and ManaBox.
+                </p>
+                <button
+                  onClick={runOptimizer}
+                  className="px-8 py-4 btn-primary text-white rounded-xl flex items-center gap-3 font-bold text-lg transition-all hover:scale-105 active:scale-95 mx-auto shadow-xl shadow-[var(--accent)]/30"
+                >
+                  <Play className="w-6 h-6" />
+                  Run Optimizer Engine
+                </button>
+              </div>
             </div>
           )}
 
