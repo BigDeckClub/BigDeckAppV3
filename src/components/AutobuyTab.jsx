@@ -183,43 +183,69 @@ export function AutobuyTab({ inventory, decks }) {
     });
 
     // Let's restart the logic to be cleaner and match runOptimizer perfectly.
-    const deckNeedsMap = new Map(); // ID -> Total Deck Quantity Needed
+    const deckNeedsMap = new Map(); // ID (or Name) -> Total Deck Quantity Needed
     let deckCardsCount = 0;
+
+    // Helper to resolve a unique key for the card
+    const getCardKey = (card) => {
+      // Prefer Scryfall ID, then database ID, then Name
+      return card.scryfall_id || card.card_id || card.id || (card.name ? normalizeName(card.name) : null);
+    };
+
+    // Helper to get inventory quantity for a key
+    const getInventoryQuantity = (key) => {
+      if (inventoryById[key]) return inventoryById[key].quantity || 0;
+      // Fallback to name lookup if key is a normalized name
+      const itemByName = inventoryByName[key];
+      if (itemByName) return itemByName.quantity || 0;
+      return 0;
+    };
+
+    // Helper to check if inventory item has alert for a key
+    const getInventoryAlertThreshold = (key) => {
+      let item = inventoryById[key];
+      if (!item) item = inventoryByName[key]; // Check if key itself is a normalized name
+      return item && item.low_inventory_alert ? (item.low_inventory_threshold || 0) : 0;
+    };
 
     relevantDecks.forEach(deck => {
       const quantityMultiplier = deckQuantities[deck.id] || 1;
       (deck.cards || []).forEach(card => {
-        deckCardsCount += quantityMultiplier; // Roughly track total cards needed
+        deckCardsCount += quantityMultiplier;
+
+        // Resolve ID
         let id = card.scryfall_id || card.id;
         if (!id) {
           const invItem = inventoryByName[normalizeName(card.name)];
           if (invItem) id = invItem.scryfall_id || invItem.card_id;
         }
-        if (id) {
+
+        // If still no ID, use Name as key
+        const key = id || normalizeName(card.name);
+
+        if (key) {
           const qty = parseInt(card.quantity || 1) * quantityMultiplier;
-          deckNeedsMap.set(id, (deckNeedsMap.get(id) || 0) + qty);
+          deckNeedsMap.set(key, (deckNeedsMap.get(key) || 0) + qty);
         }
       });
     });
 
     // Now calculate actual "To Buy" / "Missing" count
     let missingCardCount = 0;
-    const allRelevantIDs = new Set([...cardNeeds.keys(), ...deckNeedsMap.keys()]);
+    const allRelevantKeys = new Set([...cardNeeds.keys(), ...deckNeedsMap.keys()]);
 
-    // We need to re-scan inventory for alerts to be sure we have all IDs
+    // Add alert cards
     safeInventory.forEach(item => {
       if (item.low_inventory_alert) {
-        const id = item.scryfall_id || item.card_id;
-        if (id) allRelevantIDs.add(id);
+        const key = item.scryfall_id || item.card_id || normalizeName(item.name);
+        if (key) allRelevantKeys.add(key);
       }
     });
 
-    allRelevantIDs.forEach(id => {
-      const invItem = inventoryById[id];
-      const owned = invItem ? (invItem.quantity || 0) : 0;
-
-      const alertThreshold = invItem?.low_inventory_alert ? (invItem.low_inventory_threshold || 0) : 0;
-      const deckNeed = deckNeedsMap.get(id) || 0;
+    allRelevantKeys.forEach(key => {
+      const owned = getInventoryQuantity(key);
+      const alertThreshold = getInventoryAlertThreshold(key);
+      const deckNeed = deckNeedsMap.get(key) || 0;
 
       const target = Math.max(alertThreshold, deckNeed);
       if (target > owned) {
