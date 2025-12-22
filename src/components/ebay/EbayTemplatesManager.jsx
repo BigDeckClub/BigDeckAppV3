@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
+import { useAuthFetch } from '../../hooks/useAuthFetch';
 
 export default function EbayTemplatesManager({ onClose }) {
   const [templates, setTemplates] = useState([]);
@@ -12,6 +13,7 @@ export default function EbayTemplatesManager({ onClose }) {
   const [editName, setEditName] = useState('');
   const [editContent, setEditContent] = useState('');
   const [savingId, setSavingId] = useState(null);
+  const { authFetch } = useAuthFetch();
 
   useEffect(() => {
     fetchTemplates();
@@ -21,7 +23,7 @@ export default function EbayTemplatesManager({ onClose }) {
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch(`/api/ebay/templates?type=${encodeURIComponent(type)}`);
+      const res = await authFetch(`/api/ebay/templates?type=${encodeURIComponent(type)}`);
       if (!res.ok) throw new Error('Failed to fetch templates');
       const data = await res.json();
       setTemplates(data);
@@ -36,7 +38,7 @@ export default function EbayTemplatesManager({ onClose }) {
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch('/api/ebay/templates', {
+      const res = await authFetch('/api/ebay/templates', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ template_type: type, template_name: name, template_content: content })
@@ -74,7 +76,7 @@ export default function EbayTemplatesManager({ onClose }) {
     try {
       setSavingId(id);
       setError(null);
-      const res = await fetch(`/api/ebay/templates/${id}`, {
+      const res = await authFetch(`/api/ebay/templates/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ template_name: editName, template_content: editContent, template_type: type })
@@ -94,7 +96,7 @@ export default function EbayTemplatesManager({ onClose }) {
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch(`/api/ebay/templates/${id}`, { method: 'DELETE' });
+      const res = await authFetch(`/api/ebay/templates/${id}`, { method: 'DELETE' });
       const j = await res.json();
       if (!res.ok) throw new Error(j?.error || 'Delete failed');
       fetchTemplates();

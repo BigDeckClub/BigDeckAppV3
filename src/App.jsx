@@ -100,13 +100,16 @@ function MTGInventoryTrackerContent() {
   // Register keyboard shortcuts
   useKeyboardShortcuts(shortcuts, { enabled: !!user });
 
-  const loadAllSets = useCallback(async () => {
+  const loadAllSets = useCallback(async (options = {}) => {
+    const { silentError = false } = options;
     try {
       const validSets = await getAllSets();
       setAllSets(validSets);
     } catch (error) {
       console.error('[APP] Failed to load sets:', error);
-      showToast('Failed to load card sets. Some features may be limited.', TOAST_TYPES.WARNING);
+      if (!silentError) {
+        showToast('Failed to load card sets. Some features may be limited.', TOAST_TYPES.WARNING);
+      }
     }
   }, [showToast]);
 
@@ -115,8 +118,8 @@ function MTGInventoryTrackerContent() {
     const loadAllData = async () => {
       setIsLoading(true);
       await Promise.all([
-        loadInventory(),
-        loadAllSets(),
+        loadInventory({ silentError: true }),
+        loadAllSets({ silentError: true }),
       ]);
       setIsLoading(false);
     };

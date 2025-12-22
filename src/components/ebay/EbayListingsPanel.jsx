@@ -1,6 +1,7 @@
 import React, { memo, useEffect, useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { Package, Truck, CheckCircle, Clock, AlertCircle, ExternalLink, RefreshCw, Upload } from 'lucide-react';
+import { useAuthFetch } from '../../hooks/useAuthFetch';
 
 const STATUS_CONFIG = {
   draft: { label: 'Draft', color: 'text-gray-400', bg: 'bg-gray-500/20', icon: Clock },
@@ -32,6 +33,7 @@ export const EbayListingsPanel = memo(function EbayListingsPanel({ onSelectListi
   const [error, setError] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
   const [actionLoading, setActionLoading] = useState(null);
+  const { authFetch } = useAuthFetch();
 
   const fetchListings = useCallback(async () => {
     try {
@@ -40,7 +42,7 @@ export const EbayListingsPanel = memo(function EbayListingsPanel({ onSelectListi
       const url = statusFilter === 'all'
         ? '/api/ebay/listings'
         : `/api/ebay/listings?status=${encodeURIComponent(statusFilter)}`;
-      const res = await fetch(url);
+      const res = await authFetch(url);
       if (!res.ok) throw new Error('Failed to fetch listings');
       const data = await res.json();
       setListings(data);
@@ -49,7 +51,7 @@ export const EbayListingsPanel = memo(function EbayListingsPanel({ onSelectListi
     } finally {
       setLoading(false);
     }
-  }, [statusFilter]);
+  }, [statusFilter, authFetch]);
 
   useEffect(() => {
     fetchListings();
@@ -58,7 +60,7 @@ export const EbayListingsPanel = memo(function EbayListingsPanel({ onSelectListi
   const handleCreatePicklist = async (listingId) => {
     try {
       setActionLoading(listingId);
-      const res = await fetch(`/api/ebay/listings/${listingId}/create-picklist`, { method: 'POST' });
+      const res = await authFetch(`/api/ebay/listings/${listingId}/create-picklist`, { method: 'POST' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to create pick list');
       await fetchListings();
@@ -72,7 +74,7 @@ export const EbayListingsPanel = memo(function EbayListingsPanel({ onSelectListi
   const handleMarkShipped = async (listingId) => {
     try {
       setActionLoading(listingId);
-      const res = await fetch(`/api/ebay/listings/${listingId}/mark-shipped`, { method: 'POST' });
+      const res = await authFetch(`/api/ebay/listings/${listingId}/mark-shipped`, { method: 'POST' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to mark as shipped');
       await fetchListings();
@@ -89,7 +91,7 @@ export const EbayListingsPanel = memo(function EbayListingsPanel({ onSelectListi
     }
     try {
       setActionLoading(listingId);
-      const res = await fetch(`/api/ebay/listings/${listingId}/complete`, { method: 'POST' });
+      const res = await authFetch(`/api/ebay/listings/${listingId}/complete`, { method: 'POST' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to complete sale');
       await fetchListings();
@@ -103,7 +105,7 @@ export const EbayListingsPanel = memo(function EbayListingsPanel({ onSelectListi
   const handlePublish = async (listingId) => {
     try {
       setActionLoading(listingId);
-      const res = await fetch(`/api/ebay/listings/${listingId}/publish`, { method: 'POST' });
+      const res = await authFetch(`/api/ebay/listings/${listingId}/publish`, { method: 'POST' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to publish listing');
       await fetchListings();

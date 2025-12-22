@@ -28,14 +28,17 @@ export function InventoryProvider({ children }) {
   /**
    * Load all inventory items from the API
    */
-  const loadInventory = useCallback(async () => {
+  const loadInventory = useCallback(async (options = {}) => {
+    const { silentError = false } = options;
     try {
       const data = await get('/inventory');
       const sortedData = (data || []).sort((a, b) => a.name.localeCompare(b.name));
       setInventory(sortedData);
     } catch (error) {
       console.error('[INVENTORY] Failed to load inventory:', error);
-      showToast('Failed to load inventory. Please refresh the page.', TOAST_TYPES.ERROR);
+      if (!silentError) {
+        showToast('Failed to load inventory. Please refresh the page.', TOAST_TYPES.ERROR);
+      }
       setInventory([]);
     }
   }, [get, showToast]);

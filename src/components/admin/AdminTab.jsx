@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link2, Unlink, RefreshCw, CheckCircle, XCircle, Plus } from 'lucide-react';
+import { useAuthFetch } from '../../hooks/useAuthFetch';
 import EbayTemplatesManager from '../ebay/EbayTemplatesManager';
 import EbayListingsPanel from '../ebay/EbayListingsPanel';
 import EbayOrderFulfillment from '../ebay/EbayOrderFulfillment';
@@ -14,12 +15,13 @@ export default function AdminTab() {
   const [syncResult, setSyncResult] = useState(null);
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [listingsPanelKey, setListingsPanelKey] = useState(0);
+  const { authFetch } = useAuthFetch();
 
   // Fetch eBay connection status
   const fetchEbayStatus = useCallback(async () => {
     try {
       setStatusLoading(true);
-      const res = await fetch('/api/ebay/status');
+      const res = await authFetch('/api/ebay/status');
       if (res.ok) {
         const data = await res.json();
         setEbayStatus(data);
@@ -29,7 +31,7 @@ export default function AdminTab() {
     } finally {
       setStatusLoading(false);
     }
-  }, []);
+  }, [authFetch]);
 
   useEffect(() => {
     fetchEbayStatus();
@@ -37,7 +39,7 @@ export default function AdminTab() {
 
   const handleConnectEbay = async () => {
     try {
-      const res = await fetch('/api/ebay/auth');
+      const res = await authFetch('/api/ebay/auth');
       if (res.ok) {
         const data = await res.json();
         if (data.authUrl) {
@@ -52,7 +54,7 @@ export default function AdminTab() {
   const handleDisconnectEbay = async () => {
     if (!confirm('Are you sure you want to disconnect your eBay account?')) return;
     try {
-      const res = await fetch('/api/ebay/disconnect', { method: 'POST' });
+      const res = await authFetch('/api/ebay/disconnect', { method: 'POST' });
       if (res.ok) {
         setEbayStatus(prev => ({ ...prev, connected: false, ebayUserId: null }));
       }
@@ -65,7 +67,7 @@ export default function AdminTab() {
     try {
       setSyncLoading(true);
       setSyncResult(null);
-      const res = await fetch('/api/ebay/sync-orders', { method: 'POST' });
+      const res = await authFetch('/api/ebay/sync-orders', { method: 'POST' });
       const data = await res.json();
       if (res.ok) {
         setSyncResult({ success: true, message: `Synced ${data.salesSynced} orders from ${data.ordersChecked} checked` });
@@ -169,8 +171,8 @@ export default function AdminTab() {
         <button
           onClick={() => { setActiveSection('listings'); setSelectedListing(null); }}
           className={`px-4 py-2 rounded-t text-sm font-medium transition ${activeSection === 'listings'
-              ? 'bg-[var(--surface)] text-[var(--bda-text)] border-b-2 border-teal-400'
-              : 'text-[var(--text-muted)] hover:text-[var(--bda-text)]'
+            ? 'bg-[var(--surface)] text-[var(--bda-text)] border-b-2 border-teal-400'
+            : 'text-[var(--text-muted)] hover:text-[var(--bda-text)]'
             }`}
         >
           Listings & Orders
@@ -178,8 +180,8 @@ export default function AdminTab() {
         <button
           onClick={() => { setActiveSection('templates'); setSelectedListing(null); }}
           className={`px-4 py-2 rounded-t text-sm font-medium transition ${activeSection === 'templates'
-              ? 'bg-[var(--surface)] text-[var(--bda-text)] border-b-2 border-teal-400'
-              : 'text-[var(--text-muted)] hover:text-[var(--bda-text)]'
+            ? 'bg-[var(--surface)] text-[var(--bda-text)] border-b-2 border-teal-400'
+            : 'text-[var(--text-muted)] hover:text-[var(--bda-text)]'
             }`}
         >
           Templates

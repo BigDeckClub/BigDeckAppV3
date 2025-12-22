@@ -284,28 +284,30 @@ export const DeckCardTile = memo(function DeckCardTile({
       `}
       onClick={() => onSelect?.(deck)}
     >
-      {/* Top color symbols */}
-      <div className="absolute top-4 left-4 z-20 flex gap-1 transition-all">
-        {deckColors.map((color) => (
-          <ManaSymbol
-            key={color}
-            symbol={color}
-            size="sm"
-            className="shadow-sm hover:scale-110 transition-transform cursor-help"
-          />
-        ))}
-      </div>
-
-      {/* Completion indicator bar */}
-      <div className="absolute top-0 left-0 right-0 h-1 bg-[var(--bda-border)]">
-        <div
-          className={`h-full bg-gradient-to-r ${getCompletionBg(completionPercentage)} to-transparent transition-all duration-500`}
-          style={{ width: `${Math.min(100, completionPercentage)}%` }}
-        />
-      </div>
-
       {/* Header */}
       <div className="p-4 pb-3">
+        {/* Mana Symbols (Flow Layout) */}
+        {deckColors.length > 0 && deckColors[0] !== 'C' && (
+          <div className="flex gap-1 mb-2">
+            {deckColors.map((color) => (
+              <ManaSymbol
+                key={color}
+                symbol={color}
+                size="sm"
+                className="shadow-sm hover:scale-110 transition-transform cursor-help"
+              />
+            ))}
+          </div>
+        )}
+        {/* Show colorless only if explicitly colorless deck, but maybe user wants it visible? 
+            Original logic had [C] if no colors found. Let's keep showing it if present.
+        */}
+        {deckColors.length === 1 && deckColors[0] === 'C' && (
+          <div className="flex gap-1 mb-2">
+            <ManaSymbol symbol="C" size="sm" className="shadow-sm hover:scale-110 transition-transform cursor-help" />
+          </div>
+        )}
+
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
             {isEditing ? (

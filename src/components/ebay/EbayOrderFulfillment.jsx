@@ -1,19 +1,21 @@
 import React, { memo, useEffect, useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { ArrowLeft, Package, Truck, CheckCircle, AlertTriangle, MapPin, DollarSign } from 'lucide-react';
+import { useAuthFetch } from '../../hooks/useAuthFetch';
 
 export const EbayOrderFulfillment = memo(function EbayOrderFulfillment({ listing, onBack, onComplete }) {
   const [picklist, setPicklist] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const { authFetch } = useAuthFetch();
 
   const fetchPicklist = useCallback(async () => {
     if (!listing?.id) return;
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch(`/api/ebay/listings/${listing.id}/picklist`);
+      const res = await authFetch(`/api/ebay/listings/${listing.id}/picklist`);
       if (!res.ok) throw new Error('Failed to fetch pick list');
       const data = await res.json();
       setPicklist(data);
@@ -22,7 +24,7 @@ export const EbayOrderFulfillment = memo(function EbayOrderFulfillment({ listing
     } finally {
       setLoading(false);
     }
-  }, [listing?.id]);
+  }, [listing?.id, authFetch]);
 
   useEffect(() => {
     fetchPicklist();
@@ -31,7 +33,7 @@ export const EbayOrderFulfillment = memo(function EbayOrderFulfillment({ listing
   const handleMarkShipped = async () => {
     try {
       setActionLoading(true);
-      const res = await fetch(`/api/ebay/listings/${listing.id}/mark-shipped`, { method: 'POST' });
+      const res = await authFetch(`/api/ebay/listings/${listing.id}/mark-shipped`, { method: 'POST' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to mark as shipped');
       await fetchPicklist();
@@ -48,7 +50,7 @@ export const EbayOrderFulfillment = memo(function EbayOrderFulfillment({ listing
     }
     try {
       setActionLoading(true);
-      const res = await fetch(`/api/ebay/listings/${listing.id}/complete`, { method: 'POST' });
+      const res = await authFetch(`/api/ebay/listings/${listing.id}/complete`, { method: 'POST' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to complete sale');
       onComplete?.(data);

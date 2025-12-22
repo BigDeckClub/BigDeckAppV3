@@ -1,6 +1,7 @@
 import React, { memo, useEffect, useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { X, Check, AlertTriangle, Loader2 } from 'lucide-react';
+import { useAuthFetch } from '../../hooks/useAuthFetch';
 
 export const EbayBulkListingModal = memo(function EbayBulkListingModal({ open, onClose, onComplete }) {
   const [decks, setDecks] = useState([]);
@@ -10,13 +11,14 @@ export const EbayBulkListingModal = memo(function EbayBulkListingModal({ open, o
   const [creating, setCreating] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
+  const { authFetch } = useAuthFetch();
 
   // Fetch available decks
   const fetchDecks = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch('/api/decks');
+      const res = await authFetch('/api/decks');
       if (!res.ok) throw new Error('Failed to fetch decks');
       const data = await res.json();
       // Filter to only decklists (not deck instances)
@@ -26,7 +28,7 @@ export const EbayBulkListingModal = memo(function EbayBulkListingModal({ open, o
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [authFetch]);
 
   useEffect(() => {
     if (open) {
@@ -62,7 +64,7 @@ export const EbayBulkListingModal = memo(function EbayBulkListingModal({ open, o
     try {
       setCreating(true);
       setError(null);
-      const res = await fetch('/api/ebay/bulk-create-listings', {
+      const res = await authFetch('/api/ebay/bulk-create-listings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -181,9 +183,8 @@ export const EbayBulkListingModal = memo(function EbayBulkListingModal({ open, o
                   {decks.map(deck => (
                     <label
                       key={deck.id}
-                      className={`flex items-center gap-3 p-2 rounded cursor-pointer hover:bg-[var(--muted-surface)] ${
-                        selectedDeckIds.has(deck.id) ? 'bg-teal-500/20' : ''
-                      }`}
+                      className={`flex items-center gap-3 p-2 rounded cursor-pointer hover:bg-[var(--muted-surface)] ${selectedDeckIds.has(deck.id) ? 'bg-teal-500/20' : ''
+                        }`}
                     >
                       <input
                         type="checkbox"
