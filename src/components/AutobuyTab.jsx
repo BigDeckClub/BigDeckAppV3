@@ -18,6 +18,7 @@ import {
   DollarSign,
   Truck,
   Tag,
+  Zap,
   TrendingUp,
   AlertCircle,
   Info,
@@ -27,6 +28,7 @@ import {
   Calendar,
   CheckSquare,
   Square,
+  Copy,
 } from 'lucide-react';
 import { StatsCard } from './ui';
 import { normalizeName } from '../utils/deckHelpers';
@@ -66,6 +68,9 @@ export function AutobuyTab({ inventory, decks }) {
     reserveBudgetPercent: 10,      // Keep X% for Card Kingdom fallback
     enableBudgetLimits: false,     // Toggle budget enforcement
     budgetMode: 'STRICT',          // 'STRICT' or 'SOFT'
+    graceAmount: 0,                // Number of extra copies allowed for shipping
+    tcgplayerEmail: '',            // Auto-login email
+    tcgplayerPassword: '',         // Auto-login password
   };
 
   // Load preferences from localStorage on mount
@@ -522,6 +527,49 @@ export function AutobuyTab({ inventory, decks }) {
     }
   };
 
+  // Launch Assisted Checkout (Local Playwright)
+  const handleAssistedCheckout = async (basket) => {
+    if (!basket || !basket.items || basket.items.length === 0) return;
+
+    // Prepare product list
+    const products = basket.items.map(i => ({
+      name: resolveCardName(i.cardId),
+      quantity: i.quantity
+    }));
+
+    // Check credentials
+    const { tcgplayerEmail, tcgplayerPassword } = preferences;
+    const hasCredentials = tcgplayerEmail && tcgplayerPassword;
+
+    // Notify User
+    const confirmLaunch = window.confirm(
+      `Launch TCGPlayer Assisted Checkout for ${products.length} items?` +
+      `\n\nThis will open a new browser window.` +
+      (hasCredentials ? `\nAuto-login will act with your provided credentials.` : `\nPlease log in manually if prompted.`)
+    );
+    if (!confirmLaunch) return;
+
+    try {
+      const resp = await fetch('/api/autobuy/automation/tcgplayer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          products,
+          credentials: hasCredentials ? { email: tcgplayerEmail, password: tcgplayerPassword } : undefined
+        })
+      });
+
+      if (resp.ok) {
+        // Success
+      } else {
+        const err = await resp.json();
+        alert(`Failed to launch automation: ${err.error || 'Unknown error'}`);
+      }
+    } catch (e) {
+      alert(`Network error launching automation: ${e.message}`);
+    }
+  };
+
   // Toggle basket expansion
   const toggleBasket = (sellerId) => {
     setExpandedBaskets(prev => {
@@ -553,16 +601,55 @@ export function AutobuyTab({ inventory, decks }) {
     return colors[marketplace] || 'bg-slate-500/20 text-slate-400 border-slate-500/30';
   };
 
+  // Helper to resolve card name from ID
+  const resolveCardName = useCallback((id) => {
+    // Try inventory first
+    if (safeInventory) { // Check safeInventory which is the prop
+      const item = safeInventory.find(i => (i.scryfall_id === id || i.card_id === id));
+      if (item && item.name) return item.name;
+    }
+    // Try decks
+    if (safeDecks) {
+      for (const deck of safeDecks) {
+        const card = deck.cards?.find(c => (c.scryfall_id === id || c.id === id));
+        if (card && card.name) return card.name;
+      }
+    }
+    // Fallback: If ID looks like a name (not a UUID), return it
+    if (!id.match(/^[0-9a-f]{8}-/)) return id;
+    return "Unknown Card";
+  }, [safeInventory, safeDecks]);
+
   // Get marketplace deep link
   const getMarketplaceLink = (basket) => {
     const { marketplace, items } = basket;
+
+    if (marketplace === 'TCG') {
+      // Format: qty Name||qty Name
+      const massEntryList = items?.map(i => {
+        const name = resolveCardName(i.cardId);
+        return `${i.quantity} ${name}`;
+      }).join('||');
+      return `https://www.tcgplayer.com/massentry?c=${encodeURIComponent(massEntryList)}`;
+    }
+
+    // Default fallback (UUIDs might work for CK builder?)
     const cardIds = items?.map(i => i.cardId).join(',') || '';
 
     switch (marketplace) {
-      case 'TCG':
-        return `https://www.tcgplayer.com/massentry?c=${encodeURIComponent(cardIds)}`;
       case 'CK':
-        return `https://www.cardkingdom.com/builder?cards=${encodeURIComponent(cardIds)}`;
+        // CK Builder often needs exact names or specific IDs. 
+        // Using names is safer for general link if IDs aren't CK IDs
+        const ckList = items?.map(i => {
+          const name = resolveCardName(i.cardId);
+          // CK Builder URL format is often ?cards=1 Name|2 Name
+          // But let's verify. Standard builder usually takes a form.
+          // Fallback to simple list if we can't do better.
+          return name;
+        }).join('||');
+        // CK doesn't have a simple public "mass entry url" like TCGPlayer.
+        // It has a deck builder import.
+        return `https://www.cardkingdom.com/builder?cards=${encodeURIComponent(ckList)}`;
       case 'MANABOX':
         return `https://manabox.app/`;
       default:
@@ -892,6 +979,26 @@ export function AutobuyTab({ inventory, decks }) {
                       <p className="text-xs text-slate-500">Cap on Hot List (non-demand) spending</p>
                     </div>
 
+                    {/* Grace Amount */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-slate-300">
+                        Grace Amount
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <span className="text-slate-400">#</span>
+                        <input
+                          type="number"
+                          min="0"
+                          max="20"
+                          step="1"
+                          value={preferences.graceAmount}
+                          onChange={(e) => setPreferences(p => ({ ...p, graceAmount: Number(e.target.value) }))}
+                          className="flex-1 input"
+                        />
+                      </div>
+                      <p className="text-xs text-slate-500">Max extra copies to reach free shipping</p>
+                    </div>
+
                     {/* Reserve Budget Percent */}
                     <div className="space-y-2">
                       <label className="text-sm font-medium text-slate-300">
@@ -914,6 +1021,40 @@ export function AutobuyTab({ inventory, decks }) {
                     </div>
                   </div>
                 )}
+              </div>
+
+              {/* Automation Credentials */}
+              <div className="border-t border-slate-700 pt-4 mt-4">
+                <h4 className="text-md font-semibold text-white flex items-center gap-2 mb-4">
+                  <Zap className="w-4 h-4 text-emerald-400" />
+                  Automation Credentials (Optional)
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-slate-300">TCGPlayer Email</label>
+                    <input
+                      type="email"
+                      value={preferences.tcgplayerEmail || ''}
+                      onChange={(e) => setPreferences(p => ({ ...p, tcgplayerEmail: e.target.value }))}
+                      className="w-full input"
+                      placeholder="user@example.com"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-slate-300">TCGPlayer Password</label>
+                    <input
+                      type="password"
+                      value={preferences.tcgplayerPassword || ''}
+                      onChange={(e) => setPreferences(p => ({ ...p, tcgplayerPassword: e.target.value }))}
+                      className="w-full input"
+                      placeholder="••••••••"
+                    />
+                  </div>
+                </div>
+                <p className="text-xs text-amber-500/80 mt-2 flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3" />
+                  Credentials are stored locally in your browser and only used for the "Auto-Cart" feature.
+                </p>
               </div>
             </div>
           )}
@@ -1132,6 +1273,18 @@ export function AutobuyTab({ inventory, decks }) {
 
                         {/* Action Buttons */}
                         <div className="px-4 py-3 border-t border-[var(--border)] flex justify-end gap-2">
+                          <button
+                            onClick={() => {
+                              const list = (basket.items || []).map(i => `${i.quantity} ${resolveCardName(i.cardId)}`).join('\n');
+                              navigator.clipboard.writeText(list);
+                              // Could add a toast here, but simple alerts work for now or just rely on user knowing
+                              alert('Copied list to clipboard!');
+                            }}
+                            className="px-4 py-2 bg-[var(--muted-surface)] hover:bg-[var(--card-hover)] text-[var(--text-primary)] border border-[var(--border)] rounded-lg flex items-center gap-2 text-sm transition-colors"
+                          >
+                            <Copy className="w-4 h-4" />
+                            Copy List
+                          </button>
                           <a
                             href={getMarketplaceLink(basket)}
                             target="_blank"
@@ -1141,6 +1294,16 @@ export function AutobuyTab({ inventory, decks }) {
                             <ExternalLink className="w-4 h-4" />
                             Open in {basket.marketplace}
                           </a>
+                          {basket.marketplace === 'TCG' && (
+                            <button
+                              onClick={() => handleAssistedCheckout(basket)}
+                              className="px-4 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 rounded-lg flex items-center gap-2 text-sm transition-colors"
+                              title="Launch Assisted Checkout Browser"
+                            >
+                              <Zap className="w-4 h-4" />
+                              Auto-Cart
+                            </button>
+                          )}
                         </div>
                       </div>
                     )}

@@ -55,12 +55,37 @@ const preferencesSchema = z.object({
  * Run the autobuy optimizer with provided demands, offers, and configuration.
  * This is the raw optimizer endpoint - caller must provide all data.
  */
+// Helper to load substitution service
+async function loadSubstitutionService() {
+  const servicePath = path.join(process.cwd(), 'dist', 'server', 'autobuy', 'substitutionService.js');
+  try {
+    const mod = await import(pathToFileURL(servicePath).href);
+    return mod.default || mod; // functions are exported directly on default object or named exports
+  } catch (e) {
+    console.error('Failed to load substitution service:', e.message);
+    return null;
+  }
+}
+
 router.post('/autobuy/plan', asyncHandler(async (req, res) => {
   const input = req.body || {};
   const parse = inputSchema.safeParse(input);
   if (!parse.success) {
     console.error('[Autobuy Plan] Validation failed:', JSON.stringify(parse.error.format(), null, 2));
     return res.status(400).json({ error: 'invalid input', details: parse.error.format() });
+  }
+
+  // Load substitution groups from DB
+  let subGroups = input.substitutionGroups || [];
+  if (req.db && subGroups.length === 0) {
+    const subService = await loadSubstitutionService();
+    if (subService && subService.getSubstitutionGroupsForIPS) {
+      try {
+        subGroups = await subService.getSubstitutionGroupsForIPS(req.db);
+      } catch (e) {
+        console.error('Failed to fetch substitution groups from DB:', e);
+      }
+    }
   }
 
   const p = path.join(process.cwd(), 'dist', 'server', 'autobuy', 'optimizer.js');
@@ -79,6 +104,9 @@ router.post('/autobuy/plan', asyncHandler(async (req, res) => {
       hotList: input.hotList || [],
       cardKingdomPrices: ckPrices,
       currentInventory,
+      budget: input.budget,
+      graceAmount: input.graceAmount || 0,
+      substitutionGroups: subGroups,
     });
     res.json(plan);
   } catch (err) {
@@ -1020,5 +1048,41 @@ router.post('/autobuy/scrape-tcgplayer', async (req, res) => {
     res.status(500).json({ error: error.message, details: error.toString() });
   }
 });
+
+// Automated Checkout Route
+async function loadAutomationService() {
+  // Try loading from dist first (production/compiled)
+  const distPath = path.join(process.cwd(), 'dist', 'server', 'automation', 'tcgplayer.js');
+  // Fallback to source map if needed, but usually we rely on dist for TS
+  try {
+    const mod = await import(pathToFileURL(distPath).href);
+    return mod;
+  } catch (e) {
+    console.error('Failed to load automation service:', e.message);
+    return null;
+  }
+}
+
+router.post('/automation/tcgplayer', asyncHandler(async (req, res) => {
+  const { products, credentials } = req.body;
+  if (!products || !Array.isArray(products) || products.length === 0) {
+    return res.status(400).json({ error: 'Invalid products list' });
+  }
+
+  const automation = await loadAutomationService();
+  if (!automation) {
+    return res.status(500).json({ error: 'Automation service unavailable (Build required?)' });
+  }
+
+  // Fire and forget? No, we await launch, but launch returns quickly after setup.
+  // The browser remains open.
+  try {
+    const result = await automation.launchTcgPlayerMassEntry(products, credentials);
+    res.json({ success: true, message: 'Browser launched', details: result });
+  } catch (e) {
+    console.error('Automation launch failed:', e);
+    res.status(500).json({ error: 'Failed to launch automation', details: e.message });
+  }
+}));
 
 export default router;

@@ -288,8 +288,7 @@ export function determineTier(
 export function calculateCardIPS(
     card: CardMetrics,
     substitutionGroups: SubstitutionGroup[] = [],
-    config: IPSConfig = DEFAULT_IPS_CONFIG,
-    seasonalityFactor?: number
+    config: IPSConfig = DEFAULT_IPS_CONFIG
 ): IPSResult {
     const demandRate = calculateDemandRate(card, config)
     const liquidity = calculateLiquidity(card)
@@ -298,10 +297,6 @@ export function calculateCardIPS(
 
     // Core IPS formula
     let ips = (demandRate * liquidity * substitutability) / (card.currentInventory + 1) * marginSafety
-
-    // Apply seasonality factor if provided
-    const effectiveSeasonality = seasonalityFactor ?? 1.0
-    ips *= effectiveSeasonality
 
     const tier = determineTier(ips, liquidity, marginSafety, config)
     const targetInventory = calculateTargetInventory(demandRate, config)
@@ -315,7 +310,6 @@ export function calculateCardIPS(
     if (card.lowInventoryAlertEnabled) reasons.push('Low inventory alert enabled')
     if (deficit > 0) reasons.push(`Deficit: ${deficit} units`)
     if (marginSafety > 0.2) reasons.push(`Good margin: ${(marginSafety * 100).toFixed(0)}%`)
-    if (effectiveSeasonality !== 1.0) reasons.push(`Seasonality: ${effectiveSeasonality.toFixed(2)}x`)
 
     return {
         cardId: card.cardId,

@@ -50,6 +50,11 @@ export const inputSchema = z.object({
   cardKingdomPrices: z.record(z.number()).optional(),
   currentInventory: z.record(z.number()).optional(),
   budget: budgetSchema.optional(),
+  graceAmount: z.number().int().nonnegative().default(0),
+  substitutionGroups: z.array(z.object({
+    groupId: z.string(),
+    cards: z.array(z.string())
+  })).optional(),
 }).strict()
 
 export default inputSchema

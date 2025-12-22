@@ -145,12 +145,16 @@ export function runFullPipeline(opts: {
   cardKingdomPrices?: Map<string, number>
   currentInventory?: Map<string, number>
   budget?: BudgetConfig
+  graceAmount?: number
+  substitutionGroups?: { groupId: string; cards: string[] }[]
 }) {
   const directives = opts.directives ?? []
   validateDirectives(directives)
   const cardKingdomPrices = opts.cardKingdomPrices ?? new Map()
   const currentInventory = opts.currentInventory ?? new Map()
   const budgetConfig = opts.budget
+  const graceAmount = opts.graceAmount ?? 0
+  const substitutionGroups = opts.substitutionGroups ?? []
 
   const pre = preprocessDemands(opts.demands, directives, cardKingdomPrices, currentInventory)
 
@@ -170,6 +174,9 @@ export function runFullPipeline(opts: {
   console.log(`  - Demands: ${pre.demands.length}`)
   console.log(`  - Offers: ${offers.length}`)
   console.log(`  - CK Prices Map Size: ${cardKingdomPrices.size}`)
+  console.log(`  - Grace Amount: ${graceAmount}`)
+  console.log(`  - Substitution Groups: ${substitutionGroups.length}`)
+
   if (offers.length > 0) {
     console.log(`  - Sample Offer:`, JSON.stringify(offers[0], null, 2))
   }
@@ -185,7 +192,8 @@ export function runFullPipeline(opts: {
 
   const { baskets: phase2Baskets, budgetTracker: phase2Budget } = phase2OptimizeShipping(
     phase1Baskets, offers, unmet, opts.hotList ?? [], directives, pre.maxPriceByCard, currentInventory,
-    budgetConfig, phase1Budget.demandSpend, cardKingdomPrices
+    budgetConfig, phase1Budget.demandSpend, cardKingdomPrices,
+    graceAmount, substitutionGroups
   )
 
   const { baskets: phase3Baskets } = phase3LocalImprovement(phase2Baskets, offers, cardKingdomPrices)
@@ -427,7 +435,9 @@ export function phase2OptimizeShipping(
   currentInventory: Map<string, number>,
   budgetConfig?: BudgetConfig,
   currentDemandSpend: number = 0,
-  cardKingdomPrices: Map<string, number> = new Map()
+  cardKingdomPrices: Map<string, number> = new Map(),
+  graceAmount: number = 0,
+  substitutionGroups: { groupId: string; cards: string[] }[] = []
 ) {
   // Budget limits for speculative spending
   const maxSpeculativeSpend = budgetConfig?.maxSpeculativeSpend ?? Infinity
@@ -455,6 +465,29 @@ export function phase2OptimizeShipping(
 
   const hotMap = new Map<string, { IPS: number; target?: number }>()
   for (const h of hotList) hotMap.set(h.cardId, { IPS: h.IPS, target: h.targetInventory })
+
+  // Pre-process substitution groups
+  const substitutionsMap = new Map<string, string[]>() // cardId -> substitutes
+  const cardToGroupMap = new Map<string, { groupId: string, cards: string[] }>() // cardId -> group
+  for (const group of substitutionGroups) {
+    for (const cardId of group.cards) {
+      cardToGroupMap.set(cardId, group)
+      const others = group.cards.filter(c => c !== cardId)
+      if (others.length > 0) substitutionsMap.set(cardId, others)
+    }
+  }
+
+  // Track ALL demanded cards (met or unmet) for Grace Amount logic
+  const allDemandedCardIds = new Set(maxPriceByCard.keys())
+
+  // Find "Active Groups" - groups that contain at least one demanded card
+  const activeGroups = new Set<{ groupId: string, cards: string[] }>()
+  for (const cardId of allDemandedCardIds) {
+    const g = cardToGroupMap.get(cardId)
+    if (g) activeGroups.add(g)
+  }
+
+
 
   // helper: rebuild SellerBasket from plain input
   const basketsMap = new Map<string, SellerBasket>()
@@ -500,51 +533,103 @@ export function phase2OptimizeShipping(
     const candidates: { cardId: string; price: number; available: number; priority: number; reasonSrc: string; isSpeculative: boolean; ratio: number }[] = []
 
     // helper to push candidate if meets price/margin/budget rules
-    const pushIfValid = (cardId: string, price: number, avail: number, priority: number, reasonSrc: string, isSpeculative: boolean) => {
+    const pushIfValid = (cardId: string, price: number, avail: number, priority: number, reasonSrc: string, isSpeculative: boolean, maxPriceOverride?: number) => {
       const maxP = maxPriceByCard.get(cardId)
-      if (maxP === undefined) return
-      const margin = maxP - price
+      // Allow substitutions/hotlist/filler (speculative) to check price against maxPerCard if implicit
+      if (maxP === undefined && !maxPriceOverride && !isSpeculative) return
+
+      const checkPrice = maxPriceOverride ?? maxP ?? maxPerCard
+      const margin = checkPrice - price
       if (margin <= 0) return
       // Check per-card budget
       if (price > maxPerCard) return
 
       // Calculate CR Ratio using Retail Price (with fallback)
       const retail = cardKingdomPrices.get(cardId) ?? 0
-      const ratio = retail > 0 ? price / retail : price
+      const ratio = retail > 0 ? price / retail : 1.1
 
-      // Filter: For speculative items (Priority > 1), reject if Ratio > 1.0 (bad value)
-      if (priority > 1 && ratio > 1.0) return
+      // Filter: For speculative items (Priority > 1.5), reject if Ratio > 1.0 (bad value)
+      if (priority > 1.5 && ratio > 1.0) return
 
       candidates.push({ cardId, price, available: avail, priority, reasonSrc, isSpeculative, ratio })
     }
 
-    // unmet demand candidates (highest priority, not speculative)
+    // 1. Unmet demand candidates (highest priority, not speculative)
     for (const o of sellerOffers) {
-      const avail = o.quantityAvailable
-      if (avail <= 0) continue
+      if (o.quantityAvailable <= 0) continue
       if (unmetMap.has(o.cardId)) {
         // Priority 1
-        pushIfValid(o.cardId, o.price, avail, 1, 'DEMAND', false)
+        pushIfValid(o.cardId, o.price, o.quantityAvailable, 1, 'DEMAND', false)
       }
     }
 
-    // hot list candidates (speculative)
-    for (const o of sellerOffers) {
-      const h = hotMap.get(o.cardId)
-      if (!h) continue
-      const target = h.target ?? Infinity
-      const curr = currentInventory.get(o.cardId) ?? 0
-      const deficit = Math.max(0, target - curr)
-      if (deficit <= 0) continue
-      // Priority 2
-      pushIfValid(o.cardId, o.price, Math.min(o.quantityAvailable, deficit), 2, 'HOT_LIST', true)
+    // 1.5 Substitution candidates (for UNMET demands)
+    for (const [unmetCardId, _] of unmetMap.entries()) {
+      const substitutes = substitutionsMap.get(unmetCardId)
+      if (substitutes) {
+        for (const subId of substitutes) {
+          const subOffer = sellerOffers.find(o => o.cardId === subId && o.quantityAvailable > 0)
+          if (subOffer) {
+            const demandMax = maxPriceByCard.get(unmetCardId)
+            // Use substitute price checks
+            if (demandMax !== undefined && subOffer.price <= demandMax && subOffer.price <= maxPerCard) {
+              const retail = cardKingdomPrices.get(subId) ?? 0
+              const ratio = retail > 0 ? subOffer.price / retail : subOffer.price
+              candidates.push({
+                cardId: subId,
+                price: subOffer.price,
+                available: subOffer.quantityAvailable,
+                priority: 1.5,
+                reasonSrc: `SUBSTITUTION_FOR_${unmetCardId}`,
+                isSpeculative: false,
+                ratio
+              })
+            }
+          }
+        }
+      }
     }
 
-    // SHIP_ONLY directives (speculative)
+    // Iterate offers once for other categories to support Arbitrage (picking best from group)
     for (const o of sellerOffers) {
-      // Priority 5 (Lowest?) Or maintain existing. Using 5 as placeholder from original code?
-      // Original code used 5.
-      if (shipOnlySet.has(o.cardId)) pushIfValid(o.cardId, o.price, o.quantityAvailable, 5, 'SHIP_ONLY', true)
+      if (o.quantityAvailable <= 0) continue
+
+      const groupId = cardToGroupMap.get(o.cardId)
+      const group = groupId ? activeGroups.has(groupId) : false
+
+      // 3. Smart Filler (Priority 1.8) - Substitutes for active demands
+      if (group) {
+        // It's a member of an active substitution group
+        pushIfValid(o.cardId, o.price, o.quantityAvailable, 1.8, 'SMART_FILLER', true)
+      }
+
+      // 4. Hot list candidates (Priority 2)
+      const h = hotMap.get(o.cardId)
+      if (h) {
+        const target = h.target ?? Infinity
+        const curr = currentInventory.get(o.cardId) ?? 0
+        const deficit = Math.max(0, target - curr)
+        if (deficit > 0) {
+          pushIfValid(o.cardId, o.price, Math.min(o.quantityAvailable, deficit), 2, 'HOT_LIST', true)
+        }
+      }
+
+      // 5. SHIP_ONLY directives (Priority 5)
+      if (shipOnlySet.has(o.cardId)) {
+        pushIfValid(o.cardId, o.price, o.quantityAvailable, 5, 'SHIP_ONLY', true)
+      }
+
+      // 6. Grace Arbitrage (Priority 3)
+      if (graceAmount > 0) {
+        if (allDemandedCardIds.has(o.cardId)) {
+          // Direct match
+          pushIfValid(o.cardId, o.price, Math.min(o.quantityAvailable, graceAmount), 3, 'GRACE_AMOUNT', true)
+        } else if (group) {
+          // Substitution match (Arbitrage)
+          // If any card in this group is demanded, this card can serve as Grace
+          pushIfValid(o.cardId, o.price, Math.min(o.quantityAvailable, graceAmount), 3, 'GRACE_ARBITRAGE', true)
+        }
+      }
     }
 
     if (candidates.length === 0) continue
@@ -560,6 +645,8 @@ export function phase2OptimizeShipping(
       return a.cardId < b.cardId ? -1 : 1
     })
 
+
+
     const initialTotal = basket.cardSubtotal + basket.shippingCost
     const deltaNeeded = basket.freeAt - basket.cardSubtotal
     const currentSellerTotal = sellerSpend.get(sellerId) ?? 0
@@ -573,18 +660,30 @@ export function phase2OptimizeShipping(
     for (const c of candidates) {
       if (runningSubtotal >= basket.freeAt) break
 
-      // Check if speculative addition would exceed speculative budget
-      if (c.isSpeculative && runningSpeculative + c.price > maxSpeculativeSpend) continue
+      // take up to available units or enough to trigger free shipping
+      const neededForFree = Math.max(0, basket.freeAt - runningSubtotal)
+      const unitsForFree = Math.ceil(neededForFree / c.price)
 
-      // Check if speculative addition would exceed TOTAL budget (Strict rule for speculative)
-      if (c.isSpeculative && totalSpend + c.price > maxTotalDetail) continue
+      // Calculate max affordable by various budgets
+      let maxAffordable = c.available
+      if (c.isSpeculative) {
+        const budgetRem = maxSpeculativeSpend - runningSpeculative
+        maxAffordable = Math.min(maxAffordable, Math.floor(budgetRem / c.price))
 
-      // Check if addition would exceed per-seller budget
-      if (runningSellerTotal + c.price > maxPerSeller) continue
+        const totalRem = maxTotalDetail - totalSpend
+        maxAffordable = Math.min(maxAffordable, Math.floor(totalRem / c.price))
+      }
 
-      // take up to available units; but keep deterministic: try 1 unit first
-      const take = 1
-      // respect hot list target deficit cap already in available
+      const sellerRem = maxPerSeller - runningSellerTotal
+      maxAffordable = Math.min(maxAffordable, Math.floor(sellerRem / c.price))
+
+      if (maxAffordable <= 0) continue
+
+      // Take enough to clear shipping, capped by availability/budget
+      // If we are filling with cheap items, we might need multiple.
+      const take = Math.min(maxAffordable, unitsForFree)
+      if (take <= 0) continue
+
       runningSubtotal += c.price * take
       if (c.isSpeculative) runningSpeculative += c.price * take
       runningSellerTotal += c.price * take
@@ -616,10 +715,16 @@ export function phase2OptimizeShipping(
         sellerSpend.set(sellerId, (sellerSpend.get(sellerId) ?? 0) + a.price * qtyToAdd)
 
         // adjust unmetMap if we satisfied demand
-        if (unmetMap.has(a.cardId)) {
-          const rem = unmetMap.get(a.cardId)! - qtyToAdd
-          if (rem <= 0) unmetMap.delete(a.cardId)
-          else unmetMap.set(a.cardId, rem)
+        // Check if this was a substitution
+        let demandCardId = a.cardId
+        if (a.reason.startsWith('SUBSTITUTION_FOR_')) {
+          demandCardId = a.reason.replace('SUBSTITUTION_FOR_', '')
+        }
+
+        if (unmetMap.has(demandCardId)) {
+          const rem = unmetMap.get(demandCardId)! - qtyToAdd
+          if (rem <= 0) unmetMap.delete(demandCardId)
+          else unmetMap.set(demandCardId, rem)
         }
       }
     }
