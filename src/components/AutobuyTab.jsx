@@ -25,8 +25,11 @@ import {
   LayoutDashboard,
   Layers,
   Calendar,
+  CheckSquare,
+  Square,
 } from 'lucide-react';
 import { StatsCard } from './ui';
+import { normalizeName } from '../utils/deckHelpers';
 
 /**
  * AutobuyTab - Enhanced Auto-Buy Optimization Interface
@@ -95,19 +98,39 @@ export function AutobuyTab({ inventory, decks }) {
   const [error, setError] = useState(null);
   const [plan, setPlan] = useState(null);
   const [expandedBaskets, setExpandedBaskets] = useState(new Set());
+
   const [showSettings, setShowSettings] = useState(false);
 
+  // Deck selection state
+  const [selectedDeckIds, setSelectedDeckIds] = useState([]);
+
+  // Toggle deck selection
+  const toggleDeckSelection = (deckId) => {
+    setSelectedDeckIds(prev =>
+      prev.includes(deckId)
+        ? prev.filter(id => id !== deckId)
+        : [...prev, deckId]
+    );
+  };
+
+  // Select all / deselect all
+  const toggleSelectAllDecks = () => {
+    if (selectedDeckIds.length === safeDecks.length) {
+      setSelectedDeckIds([]);
+    } else {
+      setSelectedDeckIds(safeDecks.map(d => d.id));
+    }
+  };
+
   // Calculate demand summary from inventory and decks using useMemo
-  // This avoids the useEffect -> setState cycle that was causing infinite re-renders
   const demandSummary = useMemo(() => {
     const alertCards = safeInventory.filter(item =>
       item.low_inventory_alert &&
       item.quantity < (item.low_inventory_threshold || 0)
     );
 
-    const deckCards = safeDecks
-      .filter(d => d.status === 'active' || (preferences.includeQueuedDecks && d.status === 'queued'))
-      .flatMap(d => d.cards || []);
+    const relevantDecks = safeDecks.filter(d => selectedDeckIds.includes(d.id));
+    const deckCards = relevantDecks.flatMap(d => d.cards || []);
 
     const uniqueCardsNeeded = new Set([
       ...alertCards.map(c => c.scryfall_id || c.card_id),
@@ -118,10 +141,10 @@ export function AutobuyTab({ inventory, decks }) {
       alertCards: alertCards.length,
       deckCards: deckCards.length,
       uniqueCardsNeeded,
-      totalDecks: safeDecks.filter(d => d.status === 'active').length,
-      queuedDecks: safeDecks.filter(d => d.status === 'queued').length,
+      totalDecks: safeDecks.length,
+      selectedDecks: relevantDecks.length,
     };
-  }, [safeInventory, safeDecks, preferences.includeQueuedDecks]);
+  }, [safeInventory, safeDecks, selectedDeckIds]);
 
   // Run the autobuy optimizer
   const runOptimizer = async () => {
@@ -130,13 +153,81 @@ export function AutobuyTab({ inventory, decks }) {
     setPlan(null);
 
     try {
-      // Build demands from inventory alerts
-      const demands = safeInventory
-        .filter(item => item.low_inventory_alert && item.quantity < (item.low_inventory_threshold || 0))
-        .map(item => ({
-          cardId: item.scryfall_id || item.card_id || item.id?.toString(),
-          quantity: Math.max(1, (item.low_inventory_threshold || 1) - item.quantity),
-        }));
+      // Build demands from inventory alerts AND selected decks
+      const demandsMap = new Map(); // CardID -> Quantity Needed
+
+      // 1. Process Inventory Inventory Alerts (Thresholds)
+      safeInventory.forEach(item => {
+        if (item.low_inventory_alert && item.quantity < (item.low_inventory_threshold || 0)) {
+          const id = item.scryfall_id || item.card_id || item.id?.toString();
+          if (id) {
+            const needed = Math.max(0, (item.low_inventory_threshold || 1) - item.quantity);
+            if (needed > 0) {
+              demandsMap.set(id, needed);
+            }
+          }
+        }
+      });
+
+      // 2. Process Selected Decks
+      // Create a map of current inventory by normalized name to match deck cards
+      const inventoryByName = {};
+      const inventoryById = {};
+
+      safeInventory.forEach(item => {
+        if (item.name) inventoryByName[normalizeName(item.name)] = item;
+        const id = item.scryfall_id || item.card_id;
+        if (id) inventoryById[id] = item;
+      });
+
+      // Calculate total needed quantity for each card across all selected decks
+      const deckNeeds = new Map(); // CardID -> Total Quantity required by selected decks
+
+      selectedDeckIds.forEach(deckId => {
+        const deck = safeDecks.find(d => d.id === deckId);
+        if (deck && deck.cards) {
+          deck.cards.forEach(card => {
+            // Try to find the scryfall ID if missing in deck card
+            let id = card.scryfall_id || card.id; // Many deck cards stores put ID in 'id' or 'scryfall_id'
+
+            // Fallback: lookup by name in inventory to find ID
+            if (!id) {
+              const invItem = inventoryByName[normalizeName(card.name)];
+              if (invItem) id = invItem.scryfall_id || invItem.card_id;
+            }
+
+            if (id) {
+              const qty = parseInt(card.quantity || 1);
+              deckNeeds.set(id, (deckNeeds.get(id) || 0) + qty);
+            }
+          });
+        }
+      });
+
+      // 3. Merge Deck Needs into Demands
+      // Strategy: Total Desired = Max(InventoryThreshold, DeckTotalNeed)
+      // ToBuy = Max(0, TotalDesired - CurrentOwned)
+
+      deckNeeds.forEach((neededForDecks, id) => {
+        const currentItem = inventoryById[id];
+        const currentOwned = currentItem ? (currentItem.quantity || 0) : 0;
+        const threshold = currentItem?.low_inventory_alert ? (currentItem.low_inventory_threshold || 0) : 0;
+
+        const totalTarget = Math.max(threshold, neededForDecks);
+        const toBuy = Math.max(0, totalTarget - currentOwned);
+
+        if (toBuy > 0) {
+          // Update demands map if this requirement is higher than alert requirement
+          // (Since we started with alert requirements (Threshold - Owned), and ToBuy = (Max(T, D) - Owned))
+          // We can just overwrite because we calculated the global comprehensive "ToBuy" here.
+          demandsMap.set(id, toBuy);
+        }
+      });
+
+      const demands = Array.from(demandsMap.entries()).map(([cardId, quantity]) => ({
+        cardId,
+        quantity
+      }));
 
       // Build CK prices from inventory
       const cardKingdomPrices = {};
@@ -508,16 +599,6 @@ export function AutobuyTab({ inventory, decks }) {
                       className="rounded border-slate-600 bg-slate-700 text-emerald-500 focus:ring-emerald-500"
                     />
                     <span className="text-sm text-slate-300">Allow Hot List filler cards</span>
-                  </label>
-
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={preferences.includeQueuedDecks}
-                      onChange={(e) => setPreferences(p => ({ ...p, includeQueuedDecks: e.target.checked }))}
-                      className="rounded border-[var(--border)] bg-[var(--muted-surface)] text-[var(--accent)] focus:ring-[var(--accent)]"
-                    />
-                    <span className="text-sm text-[var(--text-secondary)]">Include queued decks</span>
                   </label>
 
                   <label className="flex items-center gap-2 cursor-pointer">
@@ -949,12 +1030,82 @@ export function AutobuyTab({ inventory, decks }) {
                   subtitle="Cards below threshold"
                 />
                 <StatsCard
-                  title="Decks Analysis"
-                  value={demandSummary.totalDecks}
+                  title="Decks Selected"
+                  value={demandSummary.selectedDecks}
                   icon={LayoutDashboard}
                   color="blue"
-                  subtitle={`${demandSummary.queuedDecks} queued decks included`}
+                  subtitle={`${demandSummary.totalDecks} total built/queued decks`}
                 />
+              </div>
+
+              {/* Deck Selection Section */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                    <Layers className="w-5 h-5 text-[var(--accent)]" />
+                    Select Decks to Optimize
+                  </h3>
+                  {safeDecks.length > 0 && (
+                    <button
+                      onClick={toggleSelectAllDecks}
+                      className="text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors flex items-center gap-1"
+                    >
+                      {selectedDeckIds.length === safeDecks.length ? (
+                        <>
+                          <Square className="w-4 h-4" /> Deselect All
+                        </>
+                      ) : (
+                        <>
+                          <CheckSquare className="w-4 h-4" /> Select All
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
+
+                {safeDecks.length === 0 ? (
+                  <div className="p-8 text-center border-2 border-dashed border-[var(--border)] rounded-xl bg-[var(--surface)]/50">
+                    <p className="text-[var(--text-muted)]">No decks found. Import or create decks to optimize them.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                    {safeDecks.map(deck => {
+                      const isSelected = selectedDeckIds.includes(deck.id);
+                      // Calculate completion for this specific deck locally to show status
+                      // (Or rely on passed prop if available, but doing it simple here)
+                      const cardCount = deck.cards?.length || 0;
+
+                      return (
+                        <div
+                          key={deck.id}
+                          onClick={() => toggleDeckSelection(deck.id)}
+                          className={`
+                             cursor-pointer relative overflow-hidden rounded-lg border transition-all duration-200 group
+                             ${isSelected
+                              ? 'bg-[var(--primary)]/10 border-[var(--primary)] shadow-[0_0_15px_rgba(16,185,129,0.15)]'
+                              : 'bg-[var(--surface)] border-[var(--border)] hover:border-[var(--text-muted)] hover:bg-[var(--card-hover)]'
+                            }
+                           `}
+                        >
+                          <div className="p-3">
+                            <div className="flex items-start justify-between gap-2">
+                              <h4 className={`font-medium truncate pr-4 ${isSelected ? 'text-white' : 'text-[var(--text-primary)]'}`}>
+                                {deck.name}
+                              </h4>
+                              <div className={`flex-shrink-0 transition-colors ${isSelected ? 'text-[var(--primary)]' : 'text-[var(--text-muted)] group-hover:text-[var(--text-secondary)]'}`}>
+                                {isSelected ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
+                              </div>
+                            </div>
+                            <div className="mt-2 flex items-center justify-between text-xs text-[var(--text-muted)]">
+                              <span>{deck.format}</span>
+                              <span>{cardCount} cards</span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               <div className="glass-panel p-12 text-center border-2 border-dashed border-[var(--border)]">
