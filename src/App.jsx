@@ -18,14 +18,14 @@ import { useCardSearch } from "./hooks/useCardSearch";
 import { getAllSets } from "./utils/scryfallApi";
 import { FullPageSpinner, KeyboardShortcutsHelp } from "./components/ui";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
-import { AIChatWidget } from "./components/AIChatWidget";
+
 
 // Lazy load tab components for code splitting
 const InventoryTab = lazy(() => import("./components/InventoryTab"));
 const ImportTab = lazy(() => import("./components/ImportTab"));
 const DashboardTab = lazy(() => import("./components/DashboardTab"));
 const DeckTab = lazy(() => import("./components/DeckTab"));
-const AITab = lazy(() => import("./components/AITab"));
+const DeckBuilderTab = lazy(() => import("./components/aidbuilder/AIDeckBuilder"));
 const SettingsTab = lazy(() => import("./components/SettingsTab"));
 const AdminTab = lazy(() => import("./components/admin/AdminTab"));
 const AutobuyTab = lazy(() => import("./components/AutobuyTab"));
@@ -257,7 +257,7 @@ function MTGInventoryTrackerContent() {
 
             {activeTab === "ai" && (
               <Suspense fallback={<TabLoadingSpinner />}>
-                <AITab />
+                <DeckBuilderTab />
               </Suspense>
             )}
 
@@ -280,7 +280,7 @@ function MTGInventoryTrackerContent() {
       <ToastContainer />
       <ConfirmDialog />
       <OfflineBanner />
-      <AIChatWidget isAuthenticated={!!user} />
+
     </div>
   );
 }

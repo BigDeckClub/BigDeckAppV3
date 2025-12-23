@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { runFullPipeline } from './optimizer'
-import type { Demand, Offer } from './types'
+import { runFullPipeline } from './optimizer.js'
+import type { Demand, Offer } from './types.js'
 
 describe('Optimizer Refinement: Grace & Substitutions', () => {
 

@@ -11,6 +11,10 @@ export interface ScrapedOffer {
     };
     condition?: string;
     sellerRating?: number; // 0-1 scale
+    // Internal API fields
+    sellerKey?: string;
+    sku?: string;
+    itemKey?: string;
 }
 
 export interface ScraperResult {

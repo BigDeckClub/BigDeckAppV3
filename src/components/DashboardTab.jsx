@@ -410,7 +410,7 @@ function OverviewSection({ inventory, onNavigate }) {
                 title="Total Cards"
                 value={formatNumber((cardMetrics && cardMetrics.totalCards) ?? 0)}
                 icon={Library}
-                color="primary"
+                color="purple"
               />
               <StatsCard
                 title="Available"
@@ -534,7 +534,7 @@ function OverviewSection({ inventory, onNavigate }) {
                   title="Top Sets by Value"
                   subtitle="Top 10 sets by purchase value"
                   format="currency"
-                  color="primary"
+                  color="purple"
                   height={180}
                 />
               </div>

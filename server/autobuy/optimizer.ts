@@ -208,7 +208,7 @@ export function runFullPipeline(opts: {
   const plan = phase5FinalizePlan(phase4Baskets, {}, budgetConfig, {
     demandSpend: phase1Budget.demandSpend,
     speculativeSpend: phase2Budget.speculativeSpend,
-  })
+  }, cardKingdomPrices)
   return plan
 }
 
@@ -989,7 +989,8 @@ export function phase5FinalizePlan(
   basketsIn: SellerBasketType[],
   meta: { runId?: string; createdAt?: string } = {},
   budgetConfig?: BudgetConfig,
-  spendTracker?: { demandSpend: number; speculativeSpend: number }
+  spendTracker?: { demandSpend: number; speculativeSpend: number },
+  cardKingdomPrices?: Map<string, number>
 ) {
   // Validate and compute totals deterministically
   const baskets = basketsIn.map(b => ({
@@ -1004,12 +1005,37 @@ export function phase5FinalizePlan(
       acc[cid] = rs.slice()
       return acc
     }, {} as Record<string, string[]>),
+    retailTotal: 0,
+    costRatio: 0,
+    isProfitable: true // default
   }))
 
   // deterministic sort by sellerId
   baskets.sort((a, b) => (a.sellerId < b.sellerId ? -1 : a.sellerId > b.sellerId ? 1 : 0))
 
   const overallTotal = baskets.reduce((s, bx) => s + bx.totalCost, 0)
+
+  // Profitability Validation
+  const maxCostRatio = budgetConfig?.maxCostRatio ?? 0.7
+  if (cardKingdomPrices) {
+    baskets.forEach(b => {
+      let retail = 0
+      b.items.forEach(item => {
+        const p = cardKingdomPrices.get(item.cardId) ?? 0
+        retail += p * item.quantity
+      })
+      b.retailTotal = retail
+
+      if (retail > 0) {
+        b.costRatio = b.totalCost / retail
+        b.isProfitable = b.costRatio <= maxCostRatio
+      } else {
+        // Unknown retail
+        b.costRatio = 0
+        b.isProfitable = true
+      }
+    })
+  }
 
   // Budget validation
   let budgetResult: BudgetResult | undefined

@@ -39,6 +39,7 @@ export const budgetSchema = z.object({
   maxPerCard: z.number().positive(),
   maxSpeculativeSpend: z.number().nonnegative(),
   reserveBudgetPercent: z.number().min(0).max(100),
+  maxCostRatio: z.number().min(0.1).max(2.0).default(0.7),
   budgetMode: z.enum(['STRICT', 'SOFT']).optional().default('STRICT'),
 }).strict()
 

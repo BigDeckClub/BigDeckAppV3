@@ -28,6 +28,9 @@ export type SellerBasket = {
   freeShippingTriggered: boolean
   totalCost: number
   reasons: Map<string, string[]>
+  retailTotal?: number
+  costRatio?: number
+  isProfitable?: boolean
 }
 
 export type ManualDirective = {
@@ -48,6 +51,7 @@ export type BudgetConfig = {
   maxPerCard: number              // Max price for any single card
   maxSpeculativeSpend: number     // Cap on Hot List (non-demand) spending
   reserveBudgetPercent: number    // Keep X% for Card Kingdom fallback
+  maxCostRatio?: number           // Max acceptable COST / RETAIL ratio (0.1 - 2.0)
   budgetMode?: 'STRICT' | 'SOFT'
 }
 

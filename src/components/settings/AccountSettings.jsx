@@ -4,6 +4,7 @@ import { useToast, TOAST_TYPES } from '../../context/ToastContext';
 import { api } from '../../utils/apiClient';
 import { SettingsSection, Toggle } from '../ui';
 import { EbaySettings } from './EbaySettings';
+import { TcgPlayerSettings } from './TcgPlayerSettings';
 
 /**
  * AccountSettings component - Account settings tab
@@ -58,6 +59,10 @@ export const AccountSettings = () => {
       >
         <p className="text-[var(--text-muted)] text-sm">More account options coming soon...</p>
       </SettingsSection>
+
+
+      {/* TCGPlayer Settings Section */}
+      <TcgPlayerSettings />
 
       {/* eBay Integration Section */}
       <EbaySettings />
@@ -126,8 +131,8 @@ export const AccountSettings = () => {
               onClick={handleBackfillScryfallIds}
               disabled={isBackfilling}
               className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${isBackfilling
-                  ? 'bg-[var(--muted-surface)] text-[var(--text-muted)] cursor-not-allowed'
-                  : 'bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-400 hover:to-cyan-400 text-[var(--text-primary)] shadow-lg shadow-teal-500/25'
+                ? 'bg-[var(--muted-surface)] text-[var(--text-muted)] cursor-not-allowed'
+                : 'bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-400 hover:to-cyan-400 text-[var(--text-primary)] shadow-lg shadow-teal-500/25'
                 }`}
             >
               {isBackfilling ? (
@@ -146,8 +151,8 @@ export const AccountSettings = () => {
             {/* Backfill Result Display */}
             {backfillResult && !isBackfilling && (
               <div className={`mt-4 p-3 rounded-lg border ${backfillResult.error
-                  ? 'bg-red-900/20 border-red-600/30 text-red-300'
-                  : 'bg-green-900/20 border-green-600/30 text-green-300'
+                ? 'bg-red-900/20 border-red-600/30 text-red-300'
+                : 'bg-green-900/20 border-green-600/30 text-green-300'
                 }`}>
                 <div className="flex items-start gap-2">
                   {backfillResult.error ? (

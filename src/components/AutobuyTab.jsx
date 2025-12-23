@@ -31,6 +31,8 @@ import {
   Copy,
 } from 'lucide-react';
 import { StatsCard } from './ui';
+import { AutomationLaunchModal } from './autobuy/AutomationLaunchModal';
+import { api } from '../utils/apiClient';
 import { normalizeName } from '../utils/deckHelpers';
 
 /**
@@ -71,7 +73,12 @@ export function AutobuyTab({ inventory, decks }) {
     graceAmount: 0,                // Number of extra copies allowed for shipping
     tcgplayerEmail: '',            // Auto-login email
     tcgplayerPassword: '',         // Auto-login password
+    maxCostRatio: 0.7,             // Max cost % of retail (0.1 - 2.0)
   };
+
+  const [showLaunchModal, setShowLaunchModal] = useState(false);
+  const [launchBasket, setLaunchBasket] = useState(null);
+  const [scrapeProgress, setScrapeProgress] = useState(null); // { current, total, offersFound }
 
   // Load preferences from localStorage on mount
   const [preferences, setPreferences] = useState(() => {
@@ -396,46 +403,78 @@ export function AutobuyTab({ inventory, decks }) {
       const cardIds = demands.map(d => d.cardId).filter(Boolean);
 
       if (cardIds.length > 0) {
-        setProgressStatus(`Scraping live prices for ${cardIds.length} cards...`);
-        try {
-          // Prepare card requests for scraper
-          const cardRequests = demands.map(d => {
-            const id = d.cardId;
-            let name = id;
-            let scryfallId = id;
+        setProgressStatus(`Starting scrape for ${cardIds.length} cards...`);
 
-            if (inventoryById[id]) {
-              name = inventoryById[id].name;
-              scryfallId = inventoryById[id].scryfall_id || id;
-            } else if (inventoryByName[normalizeName(id)]) {
-              const item = inventoryByName[normalizeName(id)];
-              name = item.name;
-              scryfallId = item.scryfall_id || id;
-            }
-            return { name, scryfallId };
-          });
+        // Prepare card requests
+        const allRequests = demands.map(d => {
+          const id = d.cardId;
+          let name = id;
+          let scryfallId = id;
 
-          // Call Playwright Scraper
-          console.log('[Autobuy] Invoking TCGPlayer scraper for', cardRequests.length, 'cards');
-          const scraperResp = await fetch('/api/autobuy/scrape-tcgplayer', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ cardRequests, skipCache: false }),
-          });
-
-          if (scraperResp.ok) {
-            const { offers: scrapedOffers, errors } = await scraperResp.json();
-            offers = scrapedOffers || [];
-            console.log('[Autobuy] Scraper returned', offers.length, 'offers. Errors:', errors);
-            if (errors?.length > 0) {
-              console.warn('Scraper reported errors:', errors);
-            }
-          } else {
-            console.warn('Scraper failed', await scraperResp.text());
+          if (inventoryById[id]) {
+            name = inventoryById[id].name;
+            scryfallId = inventoryById[id].scryfall_id || id;
+          } else if (inventoryByName[normalizeName(id)]) {
+            const item = inventoryByName[normalizeName(id)];
+            name = item.name;
+            scryfallId = item.scryfall_id || id;
           }
-        } catch (offerErr) {
-          console.warn('Could not scrape offers:', offerErr);
+          return { name, scryfallId };
+        });
+
+        // Chunking Logic
+        const BATCH_SIZE = 5; // Scrape 5 cards at a time
+        const totalCards = allRequests.length;
+        let processedCount = 0;
+        let errors = [];
+
+        // Progress State
+        const startTime = Date.now();
+
+        for (let i = 0; i < totalCards; i += BATCH_SIZE) {
+          const batch = allRequests.slice(i, i + BATCH_SIZE);
+          const currentBatchNum = Math.floor(i / BATCH_SIZE) + 1;
+          const totalBatches = Math.ceil(totalCards / BATCH_SIZE);
+
+          // Calculate ETA
+          let etaMsg = "";
+          if (processedCount > 0) {
+            const elapsed = Date.now() - startTime;
+            const msPerCard = elapsed / processedCount;
+            const remaining = totalCards - processedCount;
+            const etaSec = Math.ceil((remaining * msPerCard) / 1000);
+            etaMsg = `(~${etaSec}s remaining)`;
+          }
+
+          setProgressStatus(`Scraping Batch ${currentBatchNum}/${totalBatches} ${etaMsg}... Found ${offers.length} offers so far.`);
+          setScrapeProgress({ current: processedCount, total: totalCards, offersFound: offers.length });
+
+          try {
+            console.log(`[Autobuy] Scraping batch ${currentBatchNum}:`, batch.map(b => b.name));
+            const scraperResp = await fetch('/api/autobuy/scrape-tcgplayer', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ cardRequests: batch, skipCache: false }),
+            });
+
+            if (scraperResp.ok) {
+              const { offers: batchOffers, errors: batchErrors } = await scraperResp.json();
+              if (batchOffers) offers = [...offers, ...batchOffers];
+              if (batchErrors) errors = [...errors, ...batchErrors];
+            } else {
+              console.warn(`Batch ${currentBatchNum} failed:`, await scraperResp.text());
+            }
+          } catch (e) {
+            console.error(`Batch ${currentBatchNum} error:`, e);
+          }
+
+          processedCount += batch.length;
+          // Short delay to be nice to the server/rate limits if needed, 
+          // though the backend scraper likely has its own delays.
+          await new Promise(r => setTimeout(r, 500));
         }
+
+        setScrapeProgress(null); // Reset progress UI
       }
 
       console.log('[Autobuy] Sending to planner. Demands:', demands.length, 'Offers:', offers.length);
@@ -527,36 +566,49 @@ export function AutobuyTab({ inventory, decks }) {
     }
   };
 
-  // Launch Assisted Checkout (Local Playwright)
-  const handleAssistedCheckout = async (basket) => {
+  // Launch Assisted Checkout (Opens Modal)
+  const handleAssistedCheckout = (basket) => {
     if (!basket || !basket.items || basket.items.length === 0) return;
+    setLaunchBasket(basket);
+    setShowLaunchModal(true);
+  };
 
-    // Prepare product list
+  // Actual Launch Logic (Called from Modal)
+  const handleLaunchConfirm = async ({ accountId, mode }) => {
+    if (!launchBasket) return;
+    const basket = launchBasket;
+
+    // Prepare product list with Seller Name and Keys
     const products = basket.items.map(i => ({
       name: resolveCardName(i.cardId),
-      quantity: i.quantity
+      quantity: i.quantity,
+      sellerName: basket.sellerId,
+      // Internal API keys
+      sku: i.sku,
+      sellerKey: i.sellerKey
     }));
 
-    // Check credentials
+    // Check local credentials fallback
     const { tcgplayerEmail, tcgplayerPassword } = preferences;
-    const hasCredentials = tcgplayerEmail && tcgplayerPassword;
+    const hasLocalCredentials = tcgplayerEmail && tcgplayerPassword;
 
-    // Notify User
-    const confirmLaunch = window.confirm(
-      `Launch TCGPlayer Assisted Checkout for ${products.length} items?` +
-      `\n\nThis will open a new browser window.` +
-      (hasCredentials ? `\nAuto-login will act with your provided credentials.` : `\nPlease log in manually if prompted.`)
-    );
-    if (!confirmLaunch) return;
+    // determine payload
+    const payload = {
+      products,
+      mode: mode || 'DIRECT'
+    };
+
+    if (accountId) {
+      payload.accountId = accountId; // Backend will lookup
+    } else if (hasLocalCredentials) {
+      payload.credentials = { email: tcgplayerEmail, password: tcgplayerPassword };
+    }
 
     try {
       const resp = await fetch('/api/autobuy/automation/tcgplayer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          products,
-          credentials: hasCredentials ? { email: tcgplayerEmail, password: tcgplayerPassword } : undefined
-        })
+        body: JSON.stringify(payload)
       });
 
       if (resp.ok) {
@@ -999,6 +1051,33 @@ export function AutobuyTab({ inventory, decks }) {
                       <p className="text-xs text-slate-500">Max extra copies to reach free shipping</p>
                     </div>
 
+                    {/* Max Cost Ratio */}
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <label className="text-sm font-medium text-slate-300">
+                          Max Cost % of Retail
+                        </label>
+                        <span className="text-xs text-emerald-400 font-medium bg-emerald-400/10 px-2 py-0.5 rounded">
+                          Target Savings: {Math.max(0, 100 - Math.round(preferences.maxCostRatio * 100))}%+
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="range"
+                          min="10"
+                          max="120"
+                          step="1"
+                          value={Math.round(preferences.maxCostRatio * 100)}
+                          onChange={(e) => setPreferences(p => ({ ...p, maxCostRatio: Number(e.target.value) / 100 }))}
+                          className="flex-1 accent-[var(--accent)]"
+                        />
+                        <span className="text-white font-mono w-12 text-right text-sm">
+                          {Math.round(preferences.maxCostRatio * 100)}%
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-500">Only buy if total cost is below this % of Card Kingdom retail.</p>
+                    </div>
+
                     {/* Reserve Budget Percent */}
                     <div className="space-y-2">
                       <label className="text-sm font-medium text-slate-300">
@@ -1081,6 +1160,9 @@ export function AutobuyTab({ inventory, decks }) {
                       <div className="text-sm text-slate-400">Total Cost</div>
                       <div className="text-3xl font-bold text-emerald-400">
                         {formatCurrency(plan.summary?.overallTotal)}
+                      </div>
+                      <div className="text-xs text-slate-500 mt-1">
+                        Retail: {formatCurrency((plan.baskets || []).reduce((acc, b) => acc + (b.retailTotal || 0), 0))}
                       </div>
                     </div>
                     {/* Mark as Purchased Button */}
@@ -1228,8 +1310,23 @@ export function AutobuyTab({ inventory, decks }) {
                       <div className="flex items-center gap-4">
                         <div className="text-right">
                           <div className="text-white font-medium">{formatCurrency(basket.totalCost)}</div>
+                          {basket.retailTotal > 0 && (
+                            <div className="text-xs flex flex-col items-end gap-0.5 mt-1">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-slate-500 line-through text-[10px]">{formatCurrency(basket.retailTotal)}</span>
+                                <span className={`px-1.5 py-0 rounded text-[10px] font-bold ${basket.isProfitable ? "bg-emerald-500/20 text-emerald-400" : "bg-amber-500/20 text-amber-400"}`}>
+                                  {Math.round((1 - basket.costRatio) * 100)}% Off
+                                </span>
+                              </div>
+                              {!basket.isProfitable && (
+                                <span className="text-[10px] text-amber-400 flex items-center gap-1">
+                                  <AlertTriangle className="w-3 h-3" /> Low Value
+                                </span>
+                              )}
+                            </div>
+                          )}
                           {basket.shippingCost > 0 && (
-                            <div className="text-xs text-slate-400">
+                            <div className="text-xs text-slate-400 mt-1">
                               +{formatCurrency(basket.shippingCost)} shipping
                             </div>
                           )}
@@ -1472,6 +1569,14 @@ export function AutobuyTab({ inventory, decks }) {
 
         </div>
       )}
+      {/* Automation Launch Modal */}
+      <AutomationLaunchModal
+        isOpen={showLaunchModal}
+        onClose={() => setShowLaunchModal(false)}
+        basket={launchBasket}
+        onLaunch={handleLaunchConfirm}
+        preferences={preferences}
+      />
     </div>
   );
 }

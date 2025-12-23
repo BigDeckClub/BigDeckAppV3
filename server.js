@@ -17,6 +17,23 @@ import { fileURLToPath } from 'url';
 
 console.log('[BOOT] Core imports loaded');
 
+// Debug Env Loading
+import dotenv from 'dotenv';
+const result = dotenv.config();
+if (result.error) {
+  console.log('[BOOT] Dotenv error:', result.error);
+}
+console.log('[BOOT] Dotenv parsed keys:', result.parsed ? Object.keys(result.parsed) : 'none');
+console.log('[BOOT] GEMINI_API_KEY present:', !!process.env.GEMINI_API_KEY);
+if (process.env.GEMINI_API_KEY) {
+  console.log('[BOOT] GEMINI_API_KEY length:', process.env.GEMINI_API_KEY.length);
+  // Log first/last chars to verify (safe-ish for debug)
+  const k = process.env.GEMINI_API_KEY;
+  console.log('[BOOT] GEMINI_API_KEY hint:', `${k.substring(0, 4)}...${k.substring(k.length - 4)}`);
+} else {
+  console.warn('[BOOT] WARNING: GEMINI_API_KEY is MISSING from process.env');
+}
+
 // Database and initialization
 import { pool } from './server/db/pool.js';
 import { initializeDatabase } from './server/db/init.js';
@@ -51,7 +68,7 @@ app.set('trust proxy', 1);
 
 // ========== SECURITY MIDDLEWARE ==========
 // Configure allowed origins from environment variable
-const allowedOrigins = process.env.ALLOWED_ORIGINS 
+const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim())
   : ['http://localhost:5000', 'http://localhost:3000'];
 
@@ -86,7 +103,7 @@ app.use(cors({
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
-    
+
     // Allow GitHub Codespaces forwarded URLs
     if (origin.endsWith('.app.github.dev')) {
       return callback(null, true);
@@ -201,20 +218,20 @@ async function startServer() {
     let shutdownTimeout;
     const gracefulShutdown = async (signal) => {
       console.log(`\n[SERVER] Received ${signal}. Starting graceful shutdown...`);
-      
+
       // Stop accepting new connections
       server.close(async (err) => {
         if (err) {
           console.error('[SERVER] Error during server close:', err);
         }
-        
+
         console.log('[SERVER] HTTP server closed');
-        
+
         // Clear the forced shutdown timeout
         if (shutdownTimeout) {
           clearTimeout(shutdownTimeout);
         }
-        
+
         // Close database pool
         try {
           await pool.end();
@@ -222,11 +239,11 @@ async function startServer() {
         } catch (dbError) {
           console.error('[SERVER] Error closing database pool:', dbError);
         }
-        
+
         console.log('[SERVER] ✓ Graceful shutdown complete');
         process.exit(0);
       });
-      
+
       // Force exit after 30 seconds if graceful shutdown fails
       shutdownTimeout = setTimeout(() => {
         console.error('[SERVER] Forced shutdown after timeout');

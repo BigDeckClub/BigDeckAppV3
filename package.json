@@ -43,8 +43,8 @@
     "vitest": "^1.3.0"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@supabase/supabase-js": "^2.86.0",
-    "bigdeck-ai": "https://github.com/BigDeckClub/BigDeckAI/archive/refs/heads/main.tar.gz",
     "body-parser": "^2.2.0",
     "compression": "^1.8.1",
     "cors": "^2.8.5",

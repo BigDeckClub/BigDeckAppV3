@@ -135,7 +135,7 @@ export const TrendChart = memo(function TrendChart({
     const chartWidth = 100; // Percentage-based
 
     const points = data.map((d, i) => ({
-      x: (i / (data.length - 1)) * chartWidth,
+      x: data.length > 1 ? (i / (data.length - 1)) * chartWidth : chartWidth / 2,
       y: padding + chartHeight - ((d[dataKey] - min) / range) * chartHeight,
       value: d[dataKey],
       label: d[labelKey],
@@ -223,9 +223,8 @@ export const TrendChart = memo(function TrendChart({
               {formatValue(data[data.length - 1]?.[dataKey], format)}
             </span>
             <span
-              className={`inline-flex items-center gap-1 text-sm font-medium ${
-                trend.isPositive ? 'text-emerald-400' : 'text-red-400'
-              }`}
+              className={`inline-flex items-center gap-1 text-sm font-medium ${trend.isPositive ? 'text-emerald-400' : 'text-red-400'
+                }`}
             >
               {trend.isPositive ? (
                 <TrendingUp className="w-4 h-4" />

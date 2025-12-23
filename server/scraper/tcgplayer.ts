@@ -168,6 +168,24 @@ async function scrapeSingleCard(page: Page, cardName: string): Promise<Omit<Scra
             const sellerEl = await listing.$('.seller-info__name, .seller-view__name, a.seller-name');
             if (sellerEl) sellerName = await sellerEl.innerText();
 
+            // Extract IDs for API usage
+            let sellerKey = '';
+            let productSkuId = '';
+
+            // Try to find Add to Cart button which usually holds the metadata
+            const btn = await listing.$('button.add-to-cart, button[data-seller-key], button[data-product-sku-id]');
+            if (btn) {
+                const sKey = await btn.getAttribute('data-seller-key');
+                const pSku = await btn.getAttribute('data-product-sku-id');
+                const idAttr = await btn.getAttribute('id'); // Sometimes id="price-button-{sku}"
+
+                if (sKey) sellerKey = sKey;
+                if (pSku) productSkuId = pSku;
+                else if (idAttr && idAttr.includes('price-button-')) {
+                    productSkuId = idAttr.replace('price-button-', '');
+                }
+            }
+
             // If price is still 0, try to check if it's "Direct"
             if (price === 0 && rawText.includes('Direct by TCGplayer')) {
                 // Price might be hidden or different
@@ -188,7 +206,11 @@ async function scrapeSingleCard(page: Page, cardName: string): Promise<Omit<Scra
                         freeAt: 5.00
                     },
                     condition,
-                    sellerRating: 1.0
+                    sellerRating: 1.0,
+                    // Internal API fields
+                    itemKey: sellerKey, // Using 'itemKey' as generic bucket, but real field is needed
+                    sellerKey,
+                    sku: productSkuId
                 });
             }
 

@@ -13,6 +13,7 @@ import {
   Store,
   ChevronLeft,
   ChevronRight,
+  Sparkles,
 } from 'lucide-react';
 import { UserDropdown } from './UserDropdown';
 
@@ -24,6 +25,7 @@ const NAV_ITEMS = [
   { id: 'imports', icon: Download, label: 'Add Cards' },
   { id: 'inventory', icon: Layers, label: 'Inventory' },
   { id: 'decks', icon: BookOpen, label: 'Decks' },
+  { id: 'ai', icon: Sparkles, label: 'Orb' },
   { id: 'autobuy', icon: ShoppingCart, label: 'Autobuy' },
   { id: 'marketplace', icon: Store, label: 'Marketplace' },
 ];

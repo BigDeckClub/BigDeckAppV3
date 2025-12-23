@@ -20,6 +20,7 @@ import scryfallProxyRouter from './scryfallProxy.js';
 import ebayRouter from './ebay.js';
 import autobuyRouter from './autobuy.js';
 import cardsRouter from './cards.js';
+import tcgplayerRouter from './tcgplayer.js';
 
 export function registerRoutes(app) {
   // Health check (no /api prefix)
@@ -41,13 +42,33 @@ export function registerRoutes(app) {
   app.use('/api', authRouter);
   app.use('/api', lotsRouter);
   app.use('/api', historyRouter);
-  app.use('/api', aiRouter);
+
+  console.log('[ROUTES] Registering AI router at /api/ai');
+  console.log('[ROUTES] AI Router type:', typeof aiRouter);
+  console.log('[ROUTES] AI Router stack length:', aiRouter?.stack?.length || 'N/A');
+
+  // Log all routes in the AI router
+  if (aiRouter?.stack) {
+    console.log('[ROUTES] AI Router routes:');
+    aiRouter.stack.forEach((layer, i) => {
+      const route = layer.route;
+      if (route) {
+        const methods = Object.keys(route.methods).join(',').toUpperCase();
+        console.log(`  ${i + 1}. ${methods} ${route.path}`);
+      }
+    });
+  }
+
+  app.use('/api/ai', aiRouter);
+  console.log('[ROUTES] AI router registered');
+
   app.use('/api', communityThemesRouter);
   app.use('/api', assetsRouter);
   app.use('/api', adminRouter);
   app.use('/api', ebayRouter);
   app.use('/api', autobuyRouter);
   app.use('/api', cardsRouter);
+  app.use('/api', tcgplayerRouter);
   // Internal diagnostics (no API prefix)
   app.use('/internal', diagnosticsRouter);
 }
@@ -70,4 +91,5 @@ export {
   assetsRouter,
   diagnosticsRouter,
   ebayRouter,
+  tcgplayerRouter,
 };

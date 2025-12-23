@@ -97,6 +97,57 @@ router.post('/autobuy/plan', asyncHandler(async (req, res) => {
     }
     const ckPrices = new Map(Object.entries(input.cardKingdomPrices || {}));
     const currentInventory = new Map(Object.entries(input.currentInventory || {}));
+
+    // Backfill missing CK prices from DB if possible
+    // Collect ALL card IDs from demands AND offers
+    const allCardIds = new Set();
+    (input.demands || []).forEach(d => allCardIds.add(d.cardId));
+    (input.offers || []).forEach(o => allCardIds.add(o.cardId));
+
+    const missingIds = Array.from(allCardIds).filter(id => !ckPrices.has(id) || ckPrices.get(id) === 0);
+
+    if (req.db && missingIds.length > 0) {
+      try {
+        const priceRes = await req.db.query(
+          'SELECT scryfall_id, ck_price FROM inventory WHERE scryfall_id = ANY($1)',
+          [missingIds]
+        );
+        priceRes.rows.forEach(row => {
+          if (row.ck_price > 0) {
+            ckPrices.set(row.scryfall_id, parseFloat(row.ck_price));
+          }
+        });
+        console.log(`[Autobuy] Backfilled ${priceRes.rows.length} prices from inventory for ${missingIds.length} missing IDs.`);
+      } catch (e) {
+        console.warn('Failed to backfill CK prices from inventory:', e.message);
+      }
+    }
+
+    // Use MTGJSON service to get prices for remaining cards not in inventory
+    const stillMissingIds = Array.from(allCardIds).filter(id => !ckPrices.has(id) || ckPrices.get(id) === 0);
+    if (stillMissingIds.length > 0) {
+      try {
+        const mtgjsonPath = path.join(process.cwd(), 'server', 'mtgjsonPriceService.js');
+        const { mtgjsonService } = await import(pathToFileURL(mtgjsonPath).href);
+
+        if (mtgjsonService.isReady && mtgjsonService.isReady()) {
+          let mtgjsonFilledCount = 0;
+          stillMissingIds.forEach(id => {
+            const prices = mtgjsonService.getPricesByScryfallId(id);
+            if (prices && prices.cardkingdom > 0) {
+              ckPrices.set(id, prices.cardkingdom);
+              mtgjsonFilledCount++;
+            }
+          });
+          console.log(`[Autobuy] Backfilled ${mtgjsonFilledCount} prices from MTGJSON for ${stillMissingIds.length} remaining IDs. Total ckPrices: ${ckPrices.size}`);
+        } else {
+          console.log('[Autobuy] MTGJSON service not ready, skipping MTGJSON price lookup');
+        }
+      } catch (e) {
+        console.warn('Failed to use MTGJSON for price backfill:', e.message);
+      }
+    }
+
     const plan = optimizer.runFullPipeline({
       demands: input.demands || [],
       directives: input.directives || [],
@@ -1049,35 +1100,69 @@ router.post('/autobuy/scrape-tcgplayer', async (req, res) => {
   }
 });
 
-// Automated Checkout Route
+// Load automation service dynamically
 async function loadAutomationService() {
-  // Try loading from dist first (production/compiled)
-  const distPath = path.join(process.cwd(), 'dist', 'server', 'automation', 'tcgplayer.js');
-  // Fallback to source map if needed, but usually we rely on dist for TS
   try {
-    const mod = await import(pathToFileURL(distPath).href);
-    return mod;
+    // Determine path based on environment
+    // In dev, use ts-node or similar? In prod, use compiled JS.
+    // For now, assume compiled JS exists in dist/server/automation/tcgplayer.js
+    // OR just use dynamic import of the source if using ts-node/tsx.
+    // Given the setup, we likely import the compiled version.
+    const modulePath = path.resolve(__dirname, '../automation/tcgplayer.js');
+    if (fs.existsSync(modulePath)) {
+      const module = await import('file:///' + modulePath);
+      return module;
+    }
+    // Fallback for dev environment without build?
+    // User is running npm run dev which builds autobuy.
+    const distPath = path.resolve(__dirname, '../../dist/server/automation/tcgplayer.js');
+    if (fs.existsSync(distPath)) {
+      const module = await import('file:///' + distPath);
+      return module;
+    }
+    return null;
   } catch (e) {
     console.error('Failed to load automation service:', e.message);
     return null;
   }
 }
 
+import tcgplayerAccountService from '../services/tcgplayerAccountService.js';
+
 router.post('/automation/tcgplayer', asyncHandler(async (req, res) => {
-  const { products, credentials } = req.body;
+  const { products, credentials, accountId, mode } = req.body;
+
   if (!products || !Array.isArray(products) || products.length === 0) {
     return res.status(400).json({ error: 'Invalid products list' });
   }
 
   const automation = await loadAutomationService();
   if (!automation) {
-    return res.status(500).json({ error: 'Automation service unavailable (Build required?)' });
+    return res.status(500).json({ error: 'Automation service unavailable. Run npm run build:autobuy' });
   }
 
-  // Fire and forget? No, we await launch, but launch returns quickly after setup.
-  // The browser remains open.
   try {
-    const result = await automation.launchTcgPlayerMassEntry(products, credentials);
+    // Resolve Credentials
+    let finalCredentials = credentials;
+
+    if (accountId) {
+      const stored = await tcgplayerAccountService.getAccountCredentials(req.userId, accountId);
+      if (stored) {
+        finalCredentials = stored;
+      } else {
+        console.warn(`TCGPlayer account ${accountId} not found for user ${req.userId}`);
+      }
+    }
+
+    // Determine launcher
+    const launcher = automation.launchTcgPlayerAutomation || automation.launchTcgPlayerMassEntry;
+
+    // Launch
+    const result = await launcher(products, {
+      credentials: finalCredentials,
+      mode: mode || 'MASS_ENTRY'
+    });
+
     res.json({ success: true, message: 'Browser launched', details: result });
   } catch (e) {
     console.error('Automation launch failed:', e);
