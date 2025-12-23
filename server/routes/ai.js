@@ -656,7 +656,7 @@ Format: JSON { "cards": [{ "name": "Card Name", "category": "Ramp/Draw/Removal",
       // ========== VALIDATION & ITERATION LOOP ==========
       const maxCardPrice = budget ? (budget * 0.7 / 64) * 3 : Infinity; // Max single card = 3x average
       let validationIterations = 0;
-      const maxValidationIterations = 3;
+      const maxValidationIterations = 10; // Increased to allow more aggressive budget cuts
 
       while (validationIterations < maxValidationIterations) {
         validationIterations++;
@@ -664,8 +664,8 @@ Format: JSON { "cards": [{ "name": "Card Name", "category": "Ramp/Draw/Removal",
         // Calculate current totals
         const spellCards = deckData.cards.filter(c => c.category !== 'Land');
         const landCards = deckData.cards.filter(c => c.category === 'Land');
-        const totalCards = deckData.cards.reduce((s, c) => s + (c.quantity || 1), 0);
-        const totalPrice = deckData.cards.reduce((s, c) => s + ((c.tcgPrice || 0) * (c.quantity || 1)), 0);
+        const totalCards = deckData.cards.reduce((s, c) => s + Number(c.quantity || 1), 0);
+        const totalPrice = deckData.cards.reduce((s, c) => s + ((c.tcgPrice || 0) * Number(c.quantity || 1)), 0);
 
         console.log(`[AI] Validation #${validationIterations}: ${totalCards} cards, $${totalPrice.toFixed(2)} total`);
 
@@ -687,10 +687,10 @@ Format: JSON { "cards": [{ "name": "Card Name", "category": "Ramp/Draw/Removal",
             .filter(c => c.category !== 'Commander' && c.tcgPrice > maxCardPrice)
             .sort((a, b) => (b.tcgPrice || 0) - (a.tcgPrice || 0));
 
-          // Remove up to 5 expensive cards per iteration
+          // Remove up to 10 expensive cards per iteration (increased from 5)
           let removed = 0;
           for (const card of expensiveCards) {
-            if (removed >= 5) break;
+            if (removed >= 10) break;
             const idx = deckData.cards.findIndex(c => c.name === card.name);
             if (idx !== -1) {
               console.log(`[AI] Removing expensive card: ${card.name} ($${card.tcgPrice})`);
@@ -700,14 +700,35 @@ Format: JSON { "cards": [{ "name": "Card Name", "category": "Ramp/Draw/Removal",
           }
         }
 
-        // OPTION 3: Emergency fillers - Guarantee exactly 100 cards (NO LANDS)
-        const currentTotal = deckData.cards.reduce((s, c) => s + (c.quantity || 1), 0);
-        const cardsNeeded = 100 - currentTotal;
+        // Handle Card Count
+        const currentTotal = deckData.cards.reduce((s, c) => s + Number(c.quantity || 1), 0);
 
+        // Case A: Too many cards (rare, but possible)
+        if (currentTotal > 100) {
+          const toRemove = currentTotal - 100;
+          console.log(`[AI] Creating space: Removing ${toRemove} cheapest/weakest cards...`);
+          // Remove cheapest non-synergy/non-land cards first
+          const candidates = deckData.cards
+            .filter(c => c.category !== 'Land' && c.category !== 'Commander' && c.category !== 'Synergy')
+            .sort((a, b) => (a.tcgPrice || 0) - (b.tcgPrice || 0));
+
+          let cut = 0;
+          for (const card of candidates) {
+            if (cut >= toRemove) break;
+            const idx = deckData.cards.findIndex(c => c.name === card.name);
+            if (idx !== -1) {
+              deckData.cards.splice(idx, 1);
+              cut++;
+            }
+          }
+        }
+
+        // Case B: Too few cards (Fill holes)
+        const cardsNeeded = 100 - deckData.cards.reduce((s, c) => s + Number(c.quantity || 1), 0);
         if (cardsNeeded > 0) {
           console.log(`[AI] Need ${cardsNeeded} more cards, adding emergency fillers...`);
 
-          // Colorless artifacts that work in any deck (sorted by typical price low to high)
+          // Colorless artifacts that work in any deck (Huge list to prevent dupes)
           const emergencyFillers = [
             'Sol Ring', 'Arcane Signet', 'Mind Stone', 'Thought Vessel',
             'Commander\'s Sphere', 'Fellwar Stone', 'Wayfarer\'s Bauble',
@@ -719,7 +740,15 @@ Format: JSON { "cards": [{ "name": "Card Name", "category": "Ramp/Draw/Removal",
             'Marble Diamond', 'Charcoal Diamond', 'Guardian Idol',
             'Burnished Hart', 'Solemn Simulacrum', 'Pilgrim\'s Eye',
             'Palladium Myr', 'Plague Myr', 'Silver Myr', 'Gold Myr',
-            'Iron Myr', 'Copper Myr', 'Leaden Myr', 'Alloy Myr'
+            'Iron Myr', 'Copper Myr', 'Leaden Myr', 'Alloy Myr',
+            'Manakin', 'Millikin', 'Ornithopter. of Paradise',
+            'Prophetic Prism', 'Network Terminal', 'Letter of Acceptance',
+            'Spare Supplies', 'Ecologist\'s Terrarium', 'Traveler\'s Amulet',
+            'Renegade Map', 'Expedition Map', 'Soul-Guide Lantern',
+            'Relic of Progenitus', 'Tormod\'s Crypt', 'Scrabbling Claws',
+            'Claws of Gix', 'Dragon\'s Claw', 'Wurmskin Forger',
+            'Bonesplitter', 'Short Sword', 'Darksteel Axe', 'Accorder\'s Shield',
+            'Cathar\'s Shield', 'Kite Shield', 'Spidersilk Net'
           ];
 
           const seenFillers = new Set(deckData.cards.map(c => c.name.toLowerCase()));
@@ -738,7 +767,6 @@ Format: JSON { "cards": [{ "name": "Card Name", "category": "Ramp/Draw/Removal",
               added++;
             }
           }
-
           console.log(`[AI] Added ${added} emergency fillers`);
         }
       }
