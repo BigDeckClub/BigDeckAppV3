@@ -225,14 +225,36 @@ router.post('/generate', authenticate, async (req, res) => {
           role: "user", content: `Identify the Magic: The Gathering Commander card name from this prompt.
 If it's a nickname (e.g., "Sad Robot"), return the real card name (e.g., "Solemn Simulacrum").
 If it helps, "Goose Mother" is "The Goose Mother".
-Return ONLY the exact card name.
+
+If the user is asking for a TYPE of deck but didn't name a commander (e.g. "Build me a dragon deck"), return "SUGGEST".
+
+Return ONLY the exact card name or "SUGGEST".
 
 Prompt: ${userPrompt}`
         }],
         model: "gpt-4o",
       });
       commanderName = completion.choices[0].message.content.trim();
-      console.log(`[AI] Extracted Name: "${commanderName}"`);
+
+      // Handle Suggestion Case
+      if (commanderName === 'SUGGEST' || commanderName.includes('no specific Commander')) {
+        console.log(`[AI] No commander named, asking for suggestion...`);
+        const suggestion = await api.chat.completions.create({
+          messages: [{
+            role: "user",
+            content: `Recommend the SINGLE BEST Magic: The Gathering Legendary Creature to be the commander for this request.
+Return ONLY the exact card name.
+
+Request: ${userPrompt}`
+          }],
+          model: "gpt-4o",
+        });
+        commanderName = suggestion.choices[0].message.content.trim();
+        console.log(`[AI] Suggested Commander: "${commanderName}"`);
+      } else {
+        console.log(`[AI] Extracted Name: "${commanderName}"`);
+      }
+
       strategyHint = userPrompt;
     } else {
       console.log(`[AI] Using provided name directly: "${commanderName}"`);
