@@ -653,6 +653,101 @@ Format: JSON { "cards": [{ "name": "Card Name", "category": "Ramp/Draw/Removal",
         }
       });
 
+      // ========== VALIDATION & ITERATION LOOP ==========
+      const maxCardPrice = budget ? (budget * 0.7 / 64) * 3 : Infinity; // Max single card = 3x average
+      let validationIterations = 0;
+      const maxValidationIterations = 3;
+
+      while (validationIterations < maxValidationIterations) {
+        validationIterations++;
+
+        // Calculate current totals
+        const spellCards = deckData.cards.filter(c => c.category !== 'Land');
+        const landCards = deckData.cards.filter(c => c.category === 'Land');
+        const totalCards = deckData.cards.reduce((s, c) => s + (c.quantity || 1), 0);
+        const totalPrice = deckData.cards.reduce((s, c) => s + ((c.tcgPrice || 0) * (c.quantity || 1)), 0);
+
+        console.log(`[AI] Validation #${validationIterations}: ${totalCards} cards, $${totalPrice.toFixed(2)} total`);
+
+        // Check if we're within constraints
+        const budgetOk = !budget || totalPrice <= budget * 1.15; // 15% tolerance
+        const countOk = totalCards === 100;
+
+        if (budgetOk && countOk) {
+          console.log(`[AI] Deck passes validation!`);
+          break;
+        }
+
+        // OPTION 2: Price-aware - Remove expensive cards if over budget
+        if (!budgetOk && budget) {
+          console.log(`[AI] Over budget ($${totalPrice.toFixed(2)} > $${budget}), removing expensive cards...`);
+
+          // Sort non-commander spells by price descending
+          const expensiveCards = spellCards
+            .filter(c => c.category !== 'Commander' && c.tcgPrice > maxCardPrice)
+            .sort((a, b) => (b.tcgPrice || 0) - (a.tcgPrice || 0));
+
+          // Remove up to 5 expensive cards per iteration
+          let removed = 0;
+          for (const card of expensiveCards) {
+            if (removed >= 5) break;
+            const idx = deckData.cards.findIndex(c => c.name === card.name);
+            if (idx !== -1) {
+              console.log(`[AI] Removing expensive card: ${card.name} ($${card.tcgPrice})`);
+              deckData.cards.splice(idx, 1);
+              removed++;
+            }
+          }
+        }
+
+        // OPTION 3: Emergency fillers - Guarantee exactly 100 cards (NO LANDS)
+        const currentTotal = deckData.cards.reduce((s, c) => s + (c.quantity || 1), 0);
+        const cardsNeeded = 100 - currentTotal;
+
+        if (cardsNeeded > 0) {
+          console.log(`[AI] Need ${cardsNeeded} more cards, adding emergency fillers...`);
+
+          // Colorless artifacts that work in any deck (sorted by typical price low to high)
+          const emergencyFillers = [
+            'Sol Ring', 'Arcane Signet', 'Mind Stone', 'Thought Vessel',
+            'Commander\'s Sphere', 'Fellwar Stone', 'Wayfarer\'s Bauble',
+            'Swiftfoot Boots', 'Lightning Greaves', 'Whispersilk Cloak',
+            'Skullclamp', 'Mask of Memory', 'Rogue\'s Gloves',
+            'Hedron Archive', 'Worn Powerstone', 'Thran Dynamo',
+            'Everflowing Chalice', 'Prismatic Lens', 'Star Compass',
+            'Coldsteel Heart', 'Sky Diamond', 'Fire Diamond', 'Moss Diamond',
+            'Marble Diamond', 'Charcoal Diamond', 'Guardian Idol',
+            'Burnished Hart', 'Solemn Simulacrum', 'Pilgrim\'s Eye',
+            'Palladium Myr', 'Plague Myr', 'Silver Myr', 'Gold Myr',
+            'Iron Myr', 'Copper Myr', 'Leaden Myr', 'Alloy Myr'
+          ];
+
+          const seenFillers = new Set(deckData.cards.map(c => c.name.toLowerCase()));
+          let added = 0;
+
+          for (const filler of emergencyFillers) {
+            if (added >= cardsNeeded) break;
+            if (!seenFillers.has(filler.toLowerCase())) {
+              seenFillers.add(filler.toLowerCase());
+              deckData.cards.push({
+                name: filler,
+                quantity: 1,
+                category: 'Ramp',
+                reason: 'Emergency filler'
+              });
+              added++;
+            }
+          }
+
+          console.log(`[AI] Added ${added} emergency fillers`);
+        }
+      }
+
+      // Final count verification
+      const finalTotal = deckData.cards.reduce((s, c) => s + (c.quantity || 1), 0);
+      const finalPrice = deckData.cards.reduce((s, c) => s + ((c.tcgPrice || 0) * (c.quantity || 1)), 0);
+      console.log(`[AI] Final deck: ${finalTotal} cards, $${finalPrice.toFixed(2)} TCG Market`);
+
       // Log price stats for debugging
       let cardsWithCkPrice = 0, cardsWithTcgPrice = 0;
       deckData.cards.forEach(card => {
