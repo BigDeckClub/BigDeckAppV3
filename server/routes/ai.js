@@ -442,12 +442,21 @@ Format: JSON { "cards": [{ "name": "Card Name", "category": "Ramp/Draw/Removal",
     console.log(`[AI] Total merged unique non-land spells: ${currentSpells}`);
 
     // STEP A: Force Spell count to exactly 64
+    // Helper to check color identity validity
+    const commanderColors = new Set(colorId);
+    const isValidColorIdentity = async (cardName) => {
+      // Colorless cards (artifacts, etc) are always valid
+      // For now, we'll validate during Scryfall enrichment and skip validation during filling
+      // to avoid API calls for each filler card
+      return true; // We'll filter invalid cards during enrichment
+    };
+
     if (currentSpells < targetSpells) {
-      console.log(`[AI] Filling spells to 64...`);
+      console.log(`[AI] Filling spells to 64... (need ${targetSpells - currentSpells} more)`);
       const fillSources = [
         ...(edhrecSpecific?.highSynergy || []),
         ...(edhrecSpecific?.topCards || []),
-        ...(goldfish?.cards || []),
+        ...(goldfish?.popularCards || []),
         ...(edhrecDefault?.highSynergy || []),
         ...(edhrecDefault?.topCards || []),
         ...(edhrecSpecific?.creatures || []),
@@ -457,8 +466,14 @@ Format: JSON { "cards": [{ "name": "Card Name", "category": "Ramp/Draw/Removal",
         ...(edhrecSpecific?.sorceries || []),
         ...(edhrecDefault?.sorceries || []),
         ...(edhrecSpecific?.utilityArtifacts || []),
-        ...(edhrecDefault?.utilityArtifacts || [])
+        ...(edhrecDefault?.utilityArtifacts || []),
+        ...(edhrecSpecific?.enchantments || []),
+        ...(edhrecDefault?.enchantments || []),
+        ...(edhrecSpecific?.manaArtifacts || []),
+        ...(edhrecDefault?.manaArtifacts || [])
       ];
+
+      console.log(`[AI] Fill sources available: ${fillSources.length} cards`);
 
       for (const cardName of fillSources) {
         if (currentSpells >= targetSpells) break;
@@ -560,19 +575,54 @@ Format: JSON { "cards": [{ "name": "Card Name", "category": "Ramp/Draw/Removal",
           const scryfallData = await scryfallRes.json();
           (scryfallData.data || []).forEach(card => {
             const prices = mtgjsonService.getPricesByScryfallId(card.id);
+
+            // Parse Scryfall prices (they come as strings like "1.23")
+            const scryfallUsdPrice = card.prices?.usd ? parseFloat(card.prices.usd) : 0;
+
+            // Use MTGJSON prices if available, fallback to Scryfall
+            const tcgPrice = prices.tcgplayer || scryfallUsdPrice || 0;
+            const ckPrice = prices.cardkingdom || 0;
+
             cardMap.set(card.name.toLowerCase(), {
               scryfallId: card.id,
               cmc: card.cmc || 0,
               colors: (card.colors || []).join(''),
+              colorIdentity: card.color_identity || [],
               cardType: card.type_line?.split('—')[0]?.trim() || 'Unknown',
-              tcgPrice: prices.tcgplayer || card.prices?.usd || 0,
-              ckPrice: prices.cardkingdom || 0
+              tcgPrice: tcgPrice,
+              ckPrice: ckPrice
             });
           });
         }
       }
 
-      // Apply metadata to deck cards
+      // Filter out cards that violate commander color identity
+      const commanderColorSet = new Set(colorId);
+      let removedForColorIdentity = 0;
+
+      deckData.cards = deckData.cards.filter(card => {
+        // Skip validation for commander and lands
+        if (card.category === 'Commander' || card.category === 'Land') return true;
+
+        const meta = cardMap.get(card.name.toLowerCase());
+        if (!meta) return true; // Keep cards we couldn't validate
+
+        // Check if all colors in the card's color identity are in the commander's
+        const cardColorIdentity = meta.colorIdentity || [];
+        const isValid = cardColorIdentity.every(color => commanderColorSet.has(color) || commanderColorSet.size === 0);
+
+        if (!isValid) {
+          removedForColorIdentity++;
+          console.log(`[AI] Removed ${card.name} - color identity [${cardColorIdentity.join(',')}] violates commander colors [${colorId.join(',')}]`);
+        }
+        return isValid;
+      });
+
+      if (removedForColorIdentity > 0) {
+        console.log(`[AI] Removed ${removedForColorIdentity} cards for color identity violations`);
+      }
+
+      // Apply metadata to remaining deck cards
       deckData.cards.forEach(card => {
         const meta = cardMap.get(card.name.toLowerCase());
         if (meta) {
@@ -584,6 +634,14 @@ Format: JSON { "cards": [{ "name": "Card Name", "category": "Ramp/Draw/Removal",
           card.ckPrice = meta.ckPrice;
         }
       });
+
+      // Log price stats for debugging
+      let cardsWithCkPrice = 0, cardsWithTcgPrice = 0;
+      deckData.cards.forEach(card => {
+        if (card.ckPrice && card.ckPrice > 0) cardsWithCkPrice++;
+        if (card.tcgPrice && card.tcgPrice > 0) cardsWithTcgPrice++;
+      });
+      console.log(`[AI] Price coverage: ${cardsWithTcgPrice}/${deckData.cards.length} TCG, ${cardsWithCkPrice}/${deckData.cards.length} CK`);
 
       console.log(`[AI] Enriched ${cardMap.size} unique cards with Scryfall metadata and prices`);
     } catch (err) {
