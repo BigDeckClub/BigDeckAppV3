@@ -336,9 +336,27 @@ Task: Generate a brief strategy description (1-2 sentences) and 3 core themes fo
 Format: JSON { "description": "...", "themes": ["theme1", "theme2", "theme3"] }`;
 
     // --- PASS 2: THE HEART (34 Synergy Cards) ---
+    // Calculate per-card budget guidance
+    let budgetGuidance = '';
+    if (budget) {
+      const avgCardBudget = (budget * 0.7) / 64; // 70% of budget for 64 spells
+      let maxSingleCard = Math.min(avgCardBudget * 4, budget * 0.15); // Max single card is 4x avg or 15% of total
+      if (budget <= 100) {
+        budgetGuidance = `STRICT BUDGET: $${budget} total. Max $3 per card. NO expensive staples. Use budget alternatives (e.g., Llanowar Elves over Birds of Paradise, Swords to Plowshares over Path to Exile alternatives).`;
+      } else if (budget <= 300) {
+        budgetGuidance = `BUDGET: $${budget} total. Average $3-5 per card, max $10 for key pieces. Prefer budget-friendly options. Avoid cards over $10.`;
+      } else if (budget <= 600) {
+        budgetGuidance = `MODERATE BUDGET: $${budget} total. Average $5-10 per card, max $20 for key pieces. Can include some mid-range staples.`;
+      } else if (budget <= 1000) {
+        budgetGuidance = `GOOD BUDGET: $${budget} total. Average $10-15 per card, max $40 for key pieces. Include quality staples.`;
+      } else {
+        budgetGuidance = `HIGH BUDGET: $${budget}+ total. Include premium staples and expensive cards. Optimize for power.`;
+      }
+    }
+
     const heartPrompt = `You are a Grandmaster MTG Deck Builder.
 Commander: ${commanderCard.name}
-Target Budget: $${budget || 'No limit'}
+${budgetGuidance}
 Themes: [[THEMES]]
 Strategy: [[DESCRIPTION]]
 
@@ -348,7 +366,7 @@ STRICT RULES:
 2. NO MANA ROCKS (Wait for Pass 3).
 3. NO GENERIC DRAW/REMOVAL (Wait for Pass 3).
 4. FOCUS ONLY ON SYNERGY WITH ${commanderCard.name}.
-5. BUDGET: Honor the $${budget || 'No limit'} budget by choosing appropriate cards from the context.
+5. ${budgetGuidance || 'No budget limit - optimize for power.'}
 6. Inventory First: ${inventoryList}
 7. Context: ${combinedContext}
 
@@ -357,19 +375,19 @@ Format: JSON { "cards": [{ "name": "Card Name", "category": "Synergy", "quantity
     // --- PASS 3: THE ENGINE (30 Staples) ---
     const enginePrompt = `You are a Grandmaster MTG Deck Builder.
 Commander: ${commanderCard.name}
-Target Budget: $${budget || 'No limit'}
+${budgetGuidance}
 Strategy: [[DESCRIPTION]]
 
 Task: Generate EXACTLY 30 non-land staple cards to power the deck's engine.
 STRICT BREAKDOWN: 
-- 10 Ramp Cards (Artifacts/Green spells)
+- 10 Ramp Cards (Artifacts/Green spells if in color identity)
 - 10 Draw Cards
 - 10 Removal Cards (Single target/Board wipes)
 
 STRICT RULES:
 1. NO LANDS.
 2. NO SYNERGY CARDS (Wait for Pass 2).
-3. BUDGET: Honor the $${budget || 'No limit'} budget. Pick cheaper alternatives (e.g., Cultivate over Sylvan Library) if necessary.
+3. ${budgetGuidance || 'No budget limit - optimize for power.'}
 4. Inventory First: ${inventoryList}
 5. Context: ${combinedContext}
 
