@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link2, Unlink, RefreshCw, CheckCircle, XCircle, Plus } from 'lucide-react';
+import Card from '../ui/Card';
 import { useAuthFetch } from '../../hooks/useAuthFetch';
 import EbayTemplatesManager from '../ebay/EbayTemplatesManager';
 import EbayListingsPanel from '../ebay/EbayListingsPanel';
@@ -104,7 +105,7 @@ export default function AdminTab() {
       <p className="text-sm text-[var(--text-muted)]">Manage eBay listings, templates, and order fulfillment.</p>
 
       {/* eBay Connection Status */}
-      <div className="bg-[var(--surface)] border border-[var(--border)] rounded-lg p-4">
+      <Card className="p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className={`w-3 h-3 rounded-full ${ebayStatus?.connected ? 'bg-green-500' : 'bg-gray-500'}`} />
@@ -164,7 +165,7 @@ export default function AdminTab() {
             {syncResult.message}
           </div>
         )}
-      </div>
+      </Card>
 
       {/* Section Tabs */}
       <div className="flex gap-2 border-b border-[var(--border)] pb-2">

@@ -127,14 +127,14 @@ export const EbayListingsPanel = memo(function EbayListingsPanel({ onSelectListi
   };
 
   return (
-    <div className="bg-[var(--surface)] rounded-lg p-4">
-      <div className="flex items-center justify-between mb-4">
+    <Card className="p-4" header={
+      <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">eBay Listings</h3>
         <div className="flex items-center gap-2">
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="rounded border p-2 text-sm bg-[var(--muted-surface)] text-[var(--bda-text)]"
+            className="rounded border border-[var(--border)] p-2 text-sm bg-[var(--bg-secondary)] text-[var(--text-main)] outline-none focus:border-[var(--primary)]"
           >
             <option value="all">All Statuses</option>
             <option value="draft">Draft</option>
@@ -146,57 +146,64 @@ export const EbayListingsPanel = memo(function EbayListingsPanel({ onSelectListi
           <button
             onClick={fetchListings}
             disabled={loading}
-            className="p-2 rounded hover:bg-[var(--muted-surface)] transition"
+            className="p-2 rounded hover:bg-[var(--bg-secondary)] transition border border-transparent hover:border-[var(--border)]"
             title="Refresh"
           >
             <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
           </button>
         </div>
       </div>
-
+    }>
       {error && (
-        <div className="mb-4 p-3 bg-red-500/20 text-red-400 rounded text-sm">
+        <div className="mb-4 p-3 bg-red-500/20 text-red-400 rounded text-sm border border-red-500/30">
           {error}
           <button onClick={() => setError(null)} className="ml-2 underline">Dismiss</button>
         </div>
       )}
 
       {loading && listings.length === 0 ? (
-        <div className="text-center py-8 text-[var(--text-muted)]">Loading listings...</div>
+        <div className="text-center py-12 text-[var(--text-muted)] flex flex-col items-center gap-3">
+          <RefreshCw className="animate-spin text-[var(--primary)]" size={24} />
+          <p>Loading listings...</p>
+        </div>
       ) : listings.length === 0 ? (
-        <div className="text-center py-8 text-[var(--text-muted)]">
-          No listings found. Create a listing from the Decks tab.
+        <div className="text-center py-12 text-[var(--text-muted)] border-2 border-dashed border-[var(--border)] rounded-lg">
+          <p>No listings found.</p>
+          <p className="text-xs mt-1">Create a listing from the Decks tab.</p>
         </div>
       ) : (
         <div className="space-y-3">
           {listings.map((listing) => (
             <div
               key={listing.id}
-              className="border border-[var(--border)] rounded-lg p-4 hover:bg-[var(--muted-surface)] transition"
+              className="border border-[var(--border)] rounded-lg p-4 hover:bg-[var(--bg-secondary)] transition bg-[var(--bg-secondary)]/30 backdrop-blur-sm"
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <h4 className="font-medium truncate">{listing.title || listing.deck_name || 'Untitled'}</h4>
+                    <h4 className="font-medium truncate text-[var(--text-main)]">{listing.title || listing.deck_name || 'Untitled'}</h4>
                     <StatusBadge status={listing.status} />
                   </div>
                   <div className="text-sm text-[var(--text-muted)] space-y-1">
-                    <div>Price: {formatPrice(listing.price)}</div>
-                    <div>Created: {formatDate(listing.created_at)}</div>
-                    {listing.sold_at && <div>Sold: {formatDate(listing.sold_at)}</div>}
-                    {listing.ebay_buyer_username && <div>Buyer: {listing.ebay_buyer_username}</div>}
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-[var(--text-main)]">{formatPrice(listing.price)}</span>
+                      {listing.quantity > 1 && <span className="text-xs bg-[var(--bg-secondary)] px-1.5 py-0.5 rounded">x{listing.quantity}</span>}
+                    </div>
+                    <div className="text-xs">Created: {formatDate(listing.created_at)}</div>
+                    {listing.sold_at && <div className="text-xs text-yellow-500/80">Sold: {formatDate(listing.sold_at)}</div>}
+                    {listing.ebay_buyer_username && <div className="text-xs text-blue-400">Buyer: {listing.ebay_buyer_username}</div>}
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-2 shrink-0">
                   {listing.status === 'draft' && (
                     <button
                       onClick={() => handlePublish(listing.id)}
                       disabled={actionLoading === listing.id}
-                      className="flex items-center gap-1 bg-teal-600 text-white px-3 py-1.5 text-sm rounded hover:bg-teal-700"
+                      className="flex items-center gap-1 bg-teal-600 text-white px-3 py-1.5 text-xs rounded hover:bg-teal-700 shadow-sm transition-all hover:shadow-teal-500/20"
                     >
                       <Upload size={14} />
-                      {actionLoading === listing.id ? 'Publishing...' : 'Publish to eBay'}
+                      {actionLoading === listing.id ? 'Publishing...' : 'Publish'}
                     </button>
                   )}
 
@@ -204,7 +211,7 @@ export const EbayListingsPanel = memo(function EbayListingsPanel({ onSelectListi
                     <button
                       onClick={() => handleCreatePicklist(listing.id)}
                       disabled={actionLoading === listing.id}
-                      className="btn-primary px-3 py-1.5 text-sm rounded"
+                      className="btn-primary px-3 py-1.5 text-xs rounded !min-h-[auto]"
                     >
                       {actionLoading === listing.id ? 'Creating...' : 'Create Pick List'}
                     </button>
@@ -214,7 +221,7 @@ export const EbayListingsPanel = memo(function EbayListingsPanel({ onSelectListi
                     <button
                       onClick={() => handleCreatePicklist(listing.id)}
                       disabled={actionLoading === listing.id}
-                      className="btn-primary px-3 py-1.5 text-sm rounded"
+                      className="btn-primary px-3 py-1.5 text-xs rounded !min-h-[auto]"
                     >
                       {actionLoading === listing.id ? 'Creating...' : 'Create Pick List'}
                     </button>
@@ -224,14 +231,14 @@ export const EbayListingsPanel = memo(function EbayListingsPanel({ onSelectListi
                     <>
                       <button
                         onClick={() => onSelectListing?.(listing)}
-                        className="bg-blue-600 text-white px-3 py-1.5 text-sm rounded hover:bg-blue-700"
+                        className="bg-blue-600 text-white px-3 py-1.5 text-xs rounded hover:bg-blue-700 shadow-sm"
                       >
                         View Pick List
                       </button>
                       <button
                         onClick={() => handleMarkShipped(listing.id)}
                         disabled={actionLoading === listing.id}
-                        className="bg-purple-600 text-white px-3 py-1.5 text-sm rounded hover:bg-purple-700"
+                        className="bg-purple-600 text-white px-3 py-1.5 text-xs rounded hover:bg-purple-700 shadow-sm"
                       >
                         {actionLoading === listing.id ? 'Updating...' : 'Mark Shipped'}
                       </button>
@@ -242,7 +249,7 @@ export const EbayListingsPanel = memo(function EbayListingsPanel({ onSelectListi
                     <button
                       onClick={() => handleComplete(listing.id)}
                       disabled={actionLoading === listing.id}
-                      className="bg-green-600 text-white px-3 py-1.5 text-sm rounded hover:bg-green-700"
+                      className="bg-green-600 text-white px-3 py-1.5 text-xs rounded hover:bg-green-700 shadow-sm"
                     >
                       {actionLoading === listing.id ? 'Completing...' : 'Complete Sale'}
                     </button>
@@ -253,7 +260,7 @@ export const EbayListingsPanel = memo(function EbayListingsPanel({ onSelectListi
                       href={listing.listing_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-400 hover:underline text-sm flex items-center gap-1"
+                      className="text-blue-400 hover:text-blue-300 text-xs flex items-center gap-1 justify-end transition-colors"
                     >
                       <ExternalLink size={12} />
                       View on eBay
@@ -265,7 +272,7 @@ export const EbayListingsPanel = memo(function EbayListingsPanel({ onSelectListi
           ))}
         </div>
       )}
-    </div>
+    </Card>
   );
 });
 

@@ -28,10 +28,15 @@
   /* BDA Variable Mapping for Compatibility */
   --bda-bg: var(--bg-app);
   --bda-surface: var(--glass-surface);
+  --bda-card: var(--glass-surface);
   --bda-border: var(--glass-border);
   --bda-text: var(--text-main);
+  --bda-heading: var(--text-main);
   --bda-muted: var(--text-muted);
   --bda-primary: var(--primary);
+  --bda-primary-foreground: #ffffff;
+  --bda-accent: var(--primary);
+  --bda-ring: var(--primary-glow);
 
   --surface: var(--glass-surface);
   --border: var(--glass-border);

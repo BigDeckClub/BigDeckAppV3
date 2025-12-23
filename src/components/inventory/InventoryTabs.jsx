@@ -31,23 +31,22 @@ export const InventoryTabs = memo(function InventoryTabs({
       <div className="flex gap-1 w-full md:w-auto overflow-x-auto flex-wrap bg-ui-surface/50 rounded-lg p-1 md:p-1.5 border border-ui-border">
         <button
           onClick={() => { setActiveTab('all'); setSidebarOpen(false); }}
-          className={`px-4 py-2 text-sm md:text-base font-medium transition-all duration-300 whitespace-nowrap rounded-lg ${
-            activeTab === 'all'
+          className={`px-4 py-2 text-sm md:text-base font-medium transition-all duration-300 whitespace-nowrap rounded-lg ${activeTab === 'all'
               ? 'bg-ui-primary text-ui-primary-foreground shadow-lg'
-                  : 'text-ui-muted hover:text-ui-text hover:bg-ui-surface/30'
-          }`}
+              : 'text-ui-muted hover:text-ui-text hover:bg-ui-surface/30'
+            }`}
         >
           All Cards
         </button>
-        
+
         {/* Folder Tabs */}
         {openFolders.map((folderName, index) => (
-          <div 
+          <div
             key={`folder-tab-${folderName}`}
             className="flex items-center group"
             draggable
             onDragStart={(e) => {
-              setDraggedTabData({type: 'folder', index});
+              setDraggedTabData({ type: 'folder', index });
               e.dataTransfer.effectAllowed = 'move';
             }}
             onDragOver={(e) => {
@@ -71,10 +70,9 @@ export const InventoryTabs = memo(function InventoryTabs({
             <button
               type="button"
               onClick={() => setActiveTab(folderName)}
-              className={`px-4 py-2 text-sm md:text-base font-medium transition-all duration-300 whitespace-nowrap cursor-grab active:cursor-grabbing rounded-lg ${
-                  activeTab === folderName
-                    ? 'bg-ui-primary text-ui-primary-foreground shadow-lg'
-                    : 'text-ui-muted hover:text-ui-text hover:bg-ui-surface/30'
+              className={`px-4 py-2 text-sm md:text-base font-medium transition-all duration-300 whitespace-nowrap cursor-grab active:cursor-grabbing rounded-lg ${activeTab === folderName
+                  ? 'bg-ui-primary text-ui-primary-foreground shadow-lg'
+                  : 'text-ui-muted hover:text-ui-text hover:bg-ui-surface/30'
                 }`}
             >
               <Folder className="w-4 h-4 mr-1" />
@@ -104,12 +102,12 @@ export const InventoryTabs = memo(function InventoryTabs({
           const deck = deckInstances.find(d => d.id === deckId);
           if (!deck) return null;
           return (
-            <div 
-              key={`deck-tab-${deckId}`} 
+            <div
+              key={`deck-tab-${deckId}`}
               className="flex items-center"
               draggable
               onDragStart={(e) => {
-                setDraggedTabData({type: 'deck', index});
+                setDraggedTabData({ type: 'deck', index });
                 e.dataTransfer.effectAllowed = 'move';
               }}
               onDragOver={(e) => {
@@ -132,10 +130,9 @@ export const InventoryTabs = memo(function InventoryTabs({
             >
               <button
                 onClick={() => setActiveTab(`deck-${deckId}`)}
-                className={`px-4 py-2 text-sm md:text-base font-medium transition-all duration-300 whitespace-nowrap cursor-grab active:cursor-grabbing rounded-lg ${
-                    activeTab === `deck-${deckId}`
-                      ? 'bg-ui-accent text-ui-primary-foreground shadow-lg'
-                      : 'text-ui-muted hover:text-ui-text hover:bg-ui-surface/30'
+                className={`px-4 py-2 text-sm md:text-base font-medium transition-all duration-300 whitespace-nowrap cursor-grab active:cursor-grabbing rounded-lg ${activeTab === `deck-${deckId}`
+                    ? 'bg-ui-accent text-ui-primary-foreground shadow-lg'
+                    : 'text-ui-muted hover:text-ui-text hover:bg-ui-surface/30'
                   }`}
               >
                 {deck.name}
@@ -151,7 +148,7 @@ export const InventoryTabs = memo(function InventoryTabs({
           );
         })}
       </div>
-      
+
       {/* Sort and View Controls */}
       <div className="flex gap-2 items-center">
         {/* Sort Controls */}
@@ -167,12 +164,12 @@ export const InventoryTabs = memo(function InventoryTabs({
         <ViewModeToggle
           activeMode={
             viewMode === 'card' ? VIEW_MODES.GALLERY :
-            viewMode === 'image' ? VIEW_MODES.GALLERY :
-            viewMode === 'list' ? VIEW_MODES.LIST :
-            viewMode === 'table' ? VIEW_MODES.TABLE :
-            VIEW_MODES.GALLERY
+              viewMode === 'image' ? VIEW_MODES.GALLERY :
+                viewMode === 'list' ? VIEW_MODES.LIST :
+                  viewMode === 'table' ? VIEW_MODES.TABLE :
+                    VIEW_MODES.GALLERY
           }
-          onChange={(mode) => setViewMode(mode === VIEW_MODES.GALLERY ? 'card' : mode)}
+          onChange={(mode) => setViewMode(mode === VIEW_MODES.GALLERY ? 'image' : mode)}
         />
       </div>
     </div>

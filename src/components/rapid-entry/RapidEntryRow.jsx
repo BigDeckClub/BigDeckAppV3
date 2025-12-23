@@ -88,7 +88,7 @@ export function RapidEntryRow({
 
           {/* Search Dropdown */}
           {showDropdown && activeRowIndex === rowIndex && searchResults.length > 0 && row.status !== 'added' && (
-            <div className="absolute top-full left-0 right-0 mt-1 bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-xl max-h-60 overflow-y-auto z-30">
+            <div className="absolute top-full left-0 right-0 mt-1 bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-xl max-h-60 overflow-y-auto z-[100]">
               {searchIsLoading && (
                 <div className="px-4 py-3 text-sm text-[var(--text-muted)]">Searching...</div>
               )}
@@ -108,7 +108,10 @@ export function RapidEntryRow({
                       className={`
                         px-4 py-2 cursor-pointer border-b border-[var(--border)] last:border-b-0
                         flex items-center gap-3
-                        ${idx === highlightedResult ? 'bg-[var(--bda-primary)]/30 text-white' : 'hover:bg-[var(--bda-primary)]/10'}
+                        ${idx === highlightedResult
+                          ? 'bg-[var(--bda-primary)] text-white'
+                          : 'text-[var(--text-main)] hover:bg-[var(--bg-secondary)]'
+                        }
                       `}
                     >
                       {card.imageUrl && (

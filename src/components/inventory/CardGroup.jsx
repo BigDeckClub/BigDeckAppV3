@@ -179,6 +179,14 @@ export const CardGroup = memo(function CardGroup({
     hidePreview();
   }, [hidePreview]);
 
+  // Handle forcing retry of image load
+  const handleRetryImage = (e) => {
+    e.stopPropagation();
+    setImageError(false);
+    setImageLoading(true);
+    setSkipSetCode(false); // Reset this variable to try with set code again first
+  };
+
   // Get the first item's image URI or set code for preview
   const firstItem = items[0];
   const previewImageUri = firstItem?.image_uri || firstItem?.image_uris?.normal || null;
@@ -372,9 +380,15 @@ export const CardGroup = memo(function CardGroup({
                 loading="lazy"
               />
             ) : (
-              <div className="absolute inset-0 bg-slate-800 flex flex-col items-center justify-center text-slate-400 p-4">
-                <ImageOff className="w-10 h-10 mb-2" />
-                <span className="text-xs text-center line-clamp-2">{cardName}</span>
+              <div className="absolute inset-0 bg-slate-800 flex flex-col items-center justify-center text-slate-400 p-4 group-hover:bg-slate-750 transition-colors">
+                <ImageOff className="w-8 h-8 mb-2 opacity-50" />
+                <span className="text-[10px] text-center line-clamp-2 mb-2 px-1">{cardName}</span>
+                <button
+                  onClick={handleRetryImage}
+                  className="px-2 py-1 bg-slate-700 hover:bg-slate-600 text-xs rounded text-slate-300 transition-colors z-20"
+                >
+                  Retry
+                </button>
               </div>
             )}
 
