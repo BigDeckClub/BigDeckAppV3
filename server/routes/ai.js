@@ -85,6 +85,17 @@ async function getCommanderDetails(query) {
     if (response.ok) {
       return await response.json();
     }
+
+    // Try search (for partial names or nicknames)
+    response = await fetch(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(query)}&unique=cards&order=edhrec`);
+    if (response.ok) {
+      const data = await response.json();
+      if (data.data && data.data.length > 0) {
+        console.log(`[AI] Scryfall search found: ${data.data[0].name}`);
+        return data.data[0];
+      }
+    }
+
     return null;
   } catch (err) {
     console.error('Scryfall lookup failed:', err);
@@ -204,14 +215,27 @@ router.post('/generate', authenticate, async (req, res) => {
     let commanderName = userPrompt;
     let strategyHint = theme || '';
 
-    // If prompt is long, ask AI to extract commander
-    if (userPrompt.length > 30 || userPrompt.includes(' deck')) {
+    // Robust extraction: If prompt clearly isn't just a name, or is long
+    const needsExtraction = userPrompt.length > 20 || /build|make|create|deck|commander|based on|theme/i.test(userPrompt);
+
+    if (needsExtraction) {
+      console.log(`[AI] Extracting commander from: "${userPrompt}"`);
       const completion = await api.chat.completions.create({
-        messages: [{ role: "user", content: `Extract the Commander name from this prompt. Return ONLY the card name.\n\nPrompt: ${userPrompt}` }],
+        messages: [{
+          role: "user", content: `Identify the Magic: The Gathering Commander card name from this prompt.
+If it's a nickname (e.g., "Sad Robot"), return the real card name (e.g., "Solemn Simulacrum").
+If it helps, "Goose Mother" is "The Goose Mother".
+Return ONLY the exact card name.
+
+Prompt: ${userPrompt}`
+        }],
         model: "gpt-4o",
       });
       commanderName = completion.choices[0].message.content.trim();
+      console.log(`[AI] Extracted Name: "${commanderName}"`);
       strategyHint = userPrompt;
+    } else {
+      console.log(`[AI] Using provided name directly: "${commanderName}"`);
     }
 
     // 2. Get Commander Details (Scryfall)
