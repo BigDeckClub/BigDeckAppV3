@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 
 class ErrorBoundaryWithRetry extends React.Component {
@@ -9,8 +10,9 @@ class ErrorBoundaryWithRetry extends React.Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    // Log error to console for debugging
-    console.error('Error caught by boundary:', error, errorInfo);
+    // Log error with component stack for debugging
+    console.error('[ErrorBoundaryWithRetry] Caught an error:', error);
+    console.error('[ErrorBoundaryWithRetry] Component stack:', errorInfo?.componentStack);
   }
 
   handleRetry = () => {
@@ -41,5 +43,9 @@ class ErrorBoundaryWithRetry extends React.Component {
     return <React.Fragment key={this.state.retryKey}>{this.props.children}</React.Fragment>;
   }
 }
+
+ErrorBoundaryWithRetry.propTypes = {
+  children: PropTypes.node.isRequired,
+};
 
 export default ErrorBoundaryWithRetry;
