@@ -26,6 +26,7 @@ export default function AIDeckBuilder() {
     const [loadingStep, setLoadingStep] = useState(0);
     const [result, setResult] = useState(null);
     const [viewMode, setViewMode] = useState('grid'); // 'list' | 'grid'
+    const [activeMobileTab, setActiveMobileTab] = useState('deck'); // 'deck' | 'stats'
     const [budget, setBudget] = useState(200); // Dollar budget
     const [useBudget, setUseBudget] = useState(false); // Budget toggle
 
@@ -122,7 +123,7 @@ export default function AIDeckBuilder() {
     // ... (rest of logic) ...
 
     return (
-        <div className="h-full flex flex-col p-4 gap-4 max-w-7xl mx-auto">
+        <div className="md:h-full flex flex-col p-4 gap-4 max-w-7xl mx-auto">
             {/* Header / Input Section */}
             <Card className="p-6">
                 <div className="flex items-center gap-3 mb-6">
@@ -236,10 +237,28 @@ export default function AIDeckBuilder() {
 
             {/* Results Section */}
             {result && (
-                <div className="flex-1 overflow-hidden flex flex-col gap-4 animate-fade-in">
+                <div className="flex-1 md:overflow-hidden flex flex-col gap-4 animate-fade-in">
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                        <h2 className="text-xl font-bold">{result.commander.name}</h2>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-col gap-1 w-full md:w-auto">
+                            <h2 className="text-xl font-bold">{result.commander.name}</h2>
+                            {/* Mobile Tabs */}
+                            <div className="flex md:hidden bg-[var(--bg-secondary)] p-1 rounded-lg border border-[var(--border)] w-full">
+                                <button
+                                    onClick={() => setActiveMobileTab('deck')}
+                                    className={`flex-1 py-1.5 px-3 rounded-md text-sm font-medium transition-all ${activeMobileTab === 'deck' ? 'bg-[var(--surface-highlight)] text-white shadow-sm' : 'text-[var(--text-muted)]'}`}
+                                >
+                                    Decklist
+                                </button>
+                                <button
+                                    onClick={() => setActiveMobileTab('stats')}
+                                    className={`flex-1 py-1.5 px-3 rounded-md text-sm font-medium transition-all ${activeMobileTab === 'stats' ? 'bg-[var(--surface-highlight)] text-white shadow-sm' : 'text-[var(--text-muted)]'}`}
+                                >
+                                    Analysis
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 w-full md:w-auto justify-between md:justify-end">
                             <div className="bg-[var(--bg-secondary)] p-1 rounded-lg border border-[var(--border)] flex gap-1">
                                 <button
                                     onClick={() => setViewMode('list')}
@@ -255,104 +274,106 @@ export default function AIDeckBuilder() {
                                 </button>
                             </div>
                             <Button onClick={handleSaveDeck} variant="secondary">
-                                <Save className="w-4 h-4 mr-2" /> Save to My Decks
+                                <Save className="w-4 h-4 mr-2" /> <span className="hidden sm:inline">Save Deck</span><span className="sm:hidden">Save</span>
                             </Button>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-full overflow-hidden">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:h-full md:overflow-hidden">
                         {/* Main Deck Display */}
-                        <Card className="col-span-2 flex flex-col h-full overflow-hidden">
-                            <div className="p-4 border-b border-[var(--border)] bg-[var(--surface-highlight)]">
-                                <h3 className="font-semibold">Suggested Decklist</h3>
-                                <p className="text-sm text-[var(--text-muted)]">{result.deck.description}</p>
-                            </div>
+                        <div className={`col-span-2 flex flex-col md:h-full md:overflow-hidden ${activeMobileTab === 'deck' ? 'block' : 'hidden md:flex'}`}>
+                            <Card className="flex flex-col h-full md:overflow-hidden">
+                                <div className="p-4 border-b border-[var(--border)] bg-[var(--surface-highlight)]">
+                                    <h3 className="font-semibold">Suggested Decklist</h3>
+                                    <p className="text-sm text-[var(--text-muted)]">{result.deck.description}</p>
+                                </div>
 
-                            <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
-                                {viewMode === 'list' ? (
-                                    <div className="space-y-1">
-                                        {displayCards.map((card, idx) => {
-                                            const ownedQty = checkOwnership(card.name);
-                                            const isOwned = ownedQty > 0 || card.isCommander;
-                                            return (
-                                                <div key={idx} className={`flex items-center justify-between p-2 rounded hover:bg-[var(--bg-secondary)] group ${isOwned ? 'bg-green-500/5' : ''} ${card.isCommander ? 'border border-amber-500/20 bg-amber-500/5' : ''}`}>
-                                                    <div className="flex items-center gap-3">
-                                                        <div className={`w-5 h-5 rounded-full flex items-center justify-center ${isOwned ? 'bg-green-500/20 text-green-400' : 'bg-slate-700 text-slate-400'}`}>
-                                                            {isOwned ? <Check className="w-3 h-3" /> : <ShoppingCart className="w-3 h-3" />}
+                                <div className="flex-1 p-4 custom-scrollbar md:overflow-y-auto min-h-[500px] md:min-h-0">
+                                    {viewMode === 'list' ? (
+                                        <div className="space-y-1">
+                                            {displayCards.map((card, idx) => {
+                                                const ownedQty = checkOwnership(card.name);
+                                                const isOwned = ownedQty > 0 || card.isCommander;
+                                                return (
+                                                    <div key={idx} className={`flex items-center justify-between p-2 rounded hover:bg-[var(--bg-secondary)] group ${isOwned ? 'bg-green-500/5' : ''} ${card.isCommander ? 'border border-amber-500/20 bg-amber-500/5' : ''}`}>
+                                                        <div className="flex items-center gap-3">
+                                                            <div className={`w-5 h-5 rounded-full flex items-center justify-center ${isOwned ? 'bg-green-500/20 text-green-400' : 'bg-slate-700 text-slate-400'}`}>
+                                                                {isOwned ? <Check className="w-3 h-3" /> : <ShoppingCart className="w-3 h-3" />}
+                                                            </div>
+                                                            <div className="flex items-center gap-2">
+                                                                <span className={`font-medium ${card.isCommander ? 'text-amber-400' : ''}`}>{card.quantity}x {card.name}</span>
+                                                                <span className="text-xs text-[var(--text-muted)] px-2 py-0.5 rounded bg-[var(--bg-secondary)] border border-[var(--border)]">{card.category}</span>
+                                                            </div>
                                                         </div>
-                                                        <div className="flex items-center gap-2">
-                                                            <span className={`font-medium ${card.isCommander ? 'text-amber-400' : ''}`}>{card.quantity}x {card.name}</span>
-                                                            <span className="text-xs text-[var(--text-muted)] px-2 py-0.5 rounded bg-[var(--bg-secondary)] border border-[var(--border)]">{card.category}</span>
-                                                        </div>
+                                                        {card.reason && (
+                                                            <div className="text-xs text-[var(--text-muted)] opacity-0 group-hover:opacity-100 transition-opacity italic max-w-[40%] text-right truncate">
+                                                                {card.reason}
+                                                            </div>
+                                                        )}
                                                     </div>
-                                                    {card.reason && (
-                                                        <div className="text-xs text-[var(--text-muted)] opacity-0 group-hover:opacity-100 transition-opacity italic max-w-[40%] text-right truncate">
-                                                            {card.reason}
+                                                );
+                                            })}
+                                        </div>
+                                    ) : (
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                                            {displayCards.map((card, idx) => {
+                                                const inventoryItem = inventory.find(c => c.name.toLowerCase() === card.name.toLowerCase());
+                                                // Fallback for image: Inventory -> Scryfall Named -> Placeholder
+                                                const imageUrl = inventoryItem?.image_url || `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(card.name)}&format=image`;
+                                                const isOwned = !!inventoryItem || card.isCommander;
+
+                                                return (
+                                                    <div key={idx} className={`relative group aspect-[2.5/3.5] bg-[var(--bg-secondary)] rounded-lg overflow-hidden border border-[var(--border)] shadow-sm hover:shadow-lg transition-all hover:-translate-y-1 ${card.isCommander ? 'ring-2 ring-amber-500 shadow-amber-500/20' : ''}`}>
+                                                        <img
+                                                            src={imageUrl}
+                                                            alt={card.name}
+                                                            loading="lazy"
+                                                            className="w-full h-full object-cover"
+                                                            onError={(e) => { e.target.src = 'https://cards.scryfall.io/large/front/4/0/409c938e-9ac8-4100-84c4-f63b03657af3.jpg?1562854638'; }}
+                                                        />
+
+                                                        {/* Card Overlay Info */}
+                                                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent p-2 pt-6 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end">
+                                                            <p className={`text-xs font-bold truncate ${card.isCommander ? 'text-amber-400' : 'text-white'}`}>{card.name}</p>
+                                                            <p className="text-gray-300 text-[10px]">{card.category}</p>
                                                         </div>
-                                                    )}
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                ) : (
-                                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                                        {displayCards.map((card, idx) => {
-                                            const inventoryItem = inventory.find(c => c.name.toLowerCase() === card.name.toLowerCase());
-                                            // Fallback for image: Inventory -> Scryfall Named -> Placeholder
-                                            const imageUrl = inventoryItem?.image_url || `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(card.name)}&format=image`;
-                                            const isOwned = !!inventoryItem || card.isCommander;
 
-                                            return (
-                                                <div key={idx} className={`relative group aspect-[2.5/3.5] bg-[var(--bg-secondary)] rounded-lg overflow-hidden border border-[var(--border)] shadow-sm hover:shadow-lg transition-all hover:-translate-y-1 ${card.isCommander ? 'ring-2 ring-amber-500 shadow-amber-500/20' : ''}`}>
-                                                    <img
-                                                        src={imageUrl}
-                                                        alt={card.name}
-                                                        loading="lazy"
-                                                        className="w-full h-full object-cover"
-                                                        onError={(e) => { e.target.src = 'https://cards.scryfall.io/large/front/4/0/409c938e-9ac8-4100-84c4-f63b03657af3.jpg?1562854638'; }}
-                                                    />
+                                                        {/* Indicators */}
+                                                        {isOwned && (
+                                                            <div className="absolute top-1 right-1 bg-green-500 text-white rounded-full p-0.5 shadow-md transform scale-90">
+                                                                <Check className="w-3 h-3" />
+                                                            </div>
+                                                        )}
+                                                        {!isOwned && (
+                                                            <div className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-1 shadow-md backdrop-blur-sm">
+                                                                <ShoppingCart className="w-3 h-3" />
+                                                            </div>
+                                                        )}
 
-                                                    {/* Card Overlay Info */}
-                                                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent p-2 pt-6 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end">
-                                                        <p className={`text-xs font-bold truncate ${card.isCommander ? 'text-amber-400' : 'text-white'}`}>{card.name}</p>
-                                                        <p className="text-gray-300 text-[10px]">{card.category}</p>
+                                                        {/* Quantity Badge */}
+                                                        {card.quantity > 1 && (
+                                                            <div className="absolute top-1 left-1 bg-black/60 text-white text-[10px] font-bold px-1.5 py-0.5 rounded backdrop-blur-sm border border-white/10">
+                                                                x{card.quantity}
+                                                            </div>
+                                                        )}
+
+                                                        {/* Commander Badge */}
+                                                        {card.isCommander && (
+                                                            <div className="absolute top-1 left-1 bg-amber-500 text-black text-[9px] font-bold px-1.5 py-0.5 rounded shadow-lg">
+                                                                CMD
+                                                            </div>
+                                                        )}
                                                     </div>
-
-                                                    {/* Indicators */}
-                                                    {isOwned && (
-                                                        <div className="absolute top-1 right-1 bg-green-500 text-white rounded-full p-0.5 shadow-md transform scale-90">
-                                                            <Check className="w-3 h-3" />
-                                                        </div>
-                                                    )}
-                                                    {!isOwned && (
-                                                        <div className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-1 shadow-md backdrop-blur-sm">
-                                                            <ShoppingCart className="w-3 h-3" />
-                                                        </div>
-                                                    )}
-
-                                                    {/* Quantity Badge */}
-                                                    {card.quantity > 1 && (
-                                                        <div className="absolute top-1 left-1 bg-black/60 text-white text-[10px] font-bold px-1.5 py-0.5 rounded backdrop-blur-sm border border-white/10">
-                                                            x{card.quantity}
-                                                        </div>
-                                                    )}
-
-                                                    {/* Commander Badge */}
-                                                    {card.isCommander && (
-                                                        <div className="absolute top-1 left-1 bg-amber-500 text-black text-[9px] font-bold px-1.5 py-0.5 rounded shadow-lg">
-                                                            CMD
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                )}
-                            </div>
-                        </Card>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </div>
+                            </Card>
+                        </div>
 
                         {/* Stats / Info Side */}
-                        <div className="flex flex-col gap-4 overflow-y-auto custom-scrollbar">
+                        <div className={`flex flex-col gap-4 md:overflow-y-auto custom-scrollbar ${activeMobileTab === 'stats' ? 'block' : 'hidden md:flex'}`}>
                             {/* Inventory Match */}
                             <Card className="p-4">
                                 <h3 className="font-semibold mb-2">Inventory Match</h3>

@@ -353,6 +353,8 @@ select:focus {
   max-width: 480px;
   /* Limit width on tablets */
   padding: 0 1rem 0.5rem 1rem;
+  align-items: center;
+  /* Align items for orb centering */
 }
 
 .mobile-nav-item {
@@ -394,6 +396,48 @@ select:focus {
 
 .mobile-nav-item.active .mobile-nav-label {
   opacity: 1;
+}
+
+/* Orb Button Enhancement */
+.mobile-nav-item.is-orb {
+  justify-content: center;
+}
+
+.mobile-nav-item.is-orb .mobile-nav-icon {
+  width: 32px;
+  height: 32px;
+  margin-bottom: 2px;
+  filter: drop-shadow(0 0 8px rgba(168, 85, 247, 0.4));
+}
+
+.mobile-nav-item.is-orb.active .mobile-nav-icon {
+  filter: drop-shadow(0 0 15px rgba(168, 85, 247, 0.8));
+  transform: scale(1.1) translateY(-4px);
+  color: #c084fc;
+  /* Bright purple */
+}
+
+.mobile-nav-item.is-orb.active::after {
+  background: #c084fc;
+  box-shadow: 0 0 10px #c084fc;
+}
+
+@keyframes orb-pulse {
+
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+
+  50% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+}
+
+.mobile-nav-item.is-orb.active .mobile-nav-icon {
+  animation: orb-pulse 3s infinite ease-in-out;
 }
 
 /* Active Indicator Dot for Mobile Nav */

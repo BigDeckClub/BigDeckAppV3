@@ -6,6 +6,7 @@ import StreamJsonParser from 'stream-json';
 import StreamObject from 'stream-json/streamers/StreamObject.js';
 import Pick from 'stream-json/filters/Pick.js';
 import streamChainPkg from 'stream-chain';
+import { Storage } from '@google-cloud/storage';
 
 const { chain } = streamChainPkg;
 
@@ -16,12 +17,26 @@ const { pick } = Pick;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Storage configuration
 const CACHE_FILE = path.join(__dirname, '..', '.mtgjson-cache.json');
+const GCS_BUCKET = 'bigdeck-cache';
+const GCS_CACHE_FILE = 'mtgjson-cache.json';
 const MTGJSON_PRICES_URL = 'https://mtgjson.com/api/v5/AllPricesToday.json';
 const MTGJSON_IDENTIFIERS_URL = 'https://mtgjson.com/api/v5/AllIdentifiers.json';
 const CACHE_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours
 const PRICES_TIMEOUT_MS = 120000; // 2 minutes for price data
 const IDENTIFIERS_TIMEOUT_MS = 300000; // 5 minutes for larger identifiers file
+
+// Initialize GCS (uses Application Default Credentials in Cloud Run)
+let gcsStorage = null;
+let gcsBucket = null;
+try {
+  gcsStorage = new Storage();
+  gcsBucket = gcsStorage.bucket(GCS_BUCKET);
+  console.log('[MTGJSON] GCS storage initialized');
+} catch (err) {
+  console.warn('[MTGJSON] GCS not available, using local cache only:', err.message);
+}
 
 class MtgjsonPriceService {
   constructor() {
@@ -67,11 +82,42 @@ class MtgjsonPriceService {
   }
 
   /**
-   * Load cached price data from disk
+   * Load cached price data from GCS or local disk
    */
   async loadCacheFromDisk() {
+    let cacheContent = null;
+    let source = null;
+
+    // Try GCS first
+    if (gcsBucket) {
+      try {
+        const file = gcsBucket.file(GCS_CACHE_FILE);
+        const [exists] = await file.exists();
+        if (exists) {
+          const [content] = await file.download();
+          cacheContent = content.toString('utf8');
+          source = 'GCS';
+        }
+      } catch (err) {
+        console.warn('[MTGJSON] Failed to load from GCS:', err.message);
+      }
+    }
+
+    // Fall back to local file
+    if (!cacheContent) {
+      try {
+        cacheContent = await fs.readFile(CACHE_FILE, 'utf8');
+        source = 'local disk';
+      } catch (err) {
+        if (err.code !== 'ENOENT') {
+          console.error('[MTGJSON] Failed to load cache from disk:', err.message);
+        }
+        return; // No cache available
+      }
+    }
+
+    // Parse and load cache
     try {
-      const cacheContent = await fs.readFile(CACHE_FILE, 'utf8');
       const cache = JSON.parse(cacheContent);
 
       if (cache.timestamp && cache.prices) {
@@ -83,28 +129,45 @@ class MtgjsonPriceService {
         if (cache.cardData) {
           this.cardDataByName = new Map(Object.entries(cache.cardData));
         }
-        console.log(`[MTGJSON] Loaded ${this.priceData.size} price entries, ${this.scryfallToMtgjsonMap.size} ID mappings, and ${this.cardDataByName.size} card data entries from cache`);
+        console.log(`[MTGJSON] Loaded ${this.priceData.size} price entries, ${this.scryfallToMtgjsonMap.size} ID mappings, and ${this.cardDataByName.size} card data entries from ${source}`);
       }
     } catch (err) {
-      if (err.code !== 'ENOENT') {
-        console.error('[MTGJSON] Failed to load cache from disk:', err.message);
-      }
+      console.error('[MTGJSON] Failed to parse cache:', err.message);
     }
   }
 
   /**
-   * Save price data to disk cache
+   * Save price data to GCS and local disk
    */
   async saveCacheToDisk() {
+    const cache = {
+      timestamp: this.lastFetchTime,
+      prices: Object.fromEntries(this.priceData),
+      scryfallMap: Object.fromEntries(this.scryfallToMtgjsonMap),
+      cardData: Object.fromEntries(this.cardDataByName)
+    };
+    const cacheJson = JSON.stringify(cache);
+
+    // Save to GCS (primary for Cloud Run)
+    if (gcsBucket) {
+      try {
+        const file = gcsBucket.file(GCS_CACHE_FILE);
+        await file.save(cacheJson, {
+          contentType: 'application/json',
+          metadata: {
+            cacheControl: 'no-cache'
+          }
+        });
+        console.log(`[MTGJSON] Saved cache to GCS (${Math.round(cacheJson.length / 1024 / 1024)}MB)`);
+      } catch (err) {
+        console.error('[MTGJSON] Failed to save cache to GCS:', err.message);
+      }
+    }
+
+    // Save to local disk (secondary for local dev)
     try {
-      const cache = {
-        timestamp: this.lastFetchTime,
-        prices: Object.fromEntries(this.priceData),
-        scryfallMap: Object.fromEntries(this.scryfallToMtgjsonMap),
-        cardData: Object.fromEntries(this.cardDataByName)
-      };
-      await fs.writeFile(CACHE_FILE, JSON.stringify(cache), 'utf8');
-      console.log(`[MTGJSON] Saved ${this.priceData.size} price entries, ${this.scryfallToMtgjsonMap.size} ID mappings, and ${this.cardDataByName.size} card data entries to cache`);
+      await fs.writeFile(CACHE_FILE, cacheJson, 'utf8');
+      console.log(`[MTGJSON] Saved ${this.priceData.size} price entries, ${this.scryfallToMtgjsonMap.size} ID mappings, and ${this.cardDataByName.size} card data entries to local cache`);
     } catch (err) {
       console.error('[MTGJSON] Failed to save cache to disk:', err.message);
     }

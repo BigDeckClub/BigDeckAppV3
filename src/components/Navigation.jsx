@@ -22,10 +22,10 @@ import { UserDropdown } from './UserDropdown';
  */
 const NAV_ITEMS = [
   { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  { id: 'ai', icon: Sparkles, label: 'Orb' },
   { id: 'imports', icon: Download, label: 'Add Cards' },
   { id: 'inventory', icon: Layers, label: 'Inventory' },
   { id: 'decks', icon: BookOpen, label: 'Decks' },
-  { id: 'ai', icon: Sparkles, label: 'Orb' },
   { id: 'autobuy', icon: ShoppingCart, label: 'Autobuy' },
   { id: 'marketplace', icon: Store, label: 'Marketplace' },
 ];
@@ -90,12 +90,14 @@ function MobileNavButton({ item, activeTab, setActiveTab }) {
   const Icon = item.icon;
   const isActive = activeTab === item.id;
 
+  const isOrb = item.id === 'ai';
+
   return (
     <button
       onClick={() => startTransition(() => setActiveTab(item.id))}
-      className={`mobile-nav-item ${isActive ? 'active' : ''}`}
+      className={`mobile-nav-item ${isActive ? 'active' : ''} ${isOrb ? 'is-orb' : ''}`}
     >
-      <Icon className="w-6 h-6 mobile-nav-icon" />
+      <Icon className={`w-6 h-6 mobile-nav-icon`} />
       <span className="mobile-nav-label">{item.label}</span>
       {/* Active state indicator is handled by CSS ::after pseudo-element */}
     </button>
