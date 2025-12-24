@@ -813,11 +813,11 @@ router.post('/deck-instances/:id/release', authenticate, validateId, async (req,
     // Get all reservations for this deck before deleting
     const reservationsResult = await pool.query('SELECT inventory_item_id FROM deck_reservations WHERE deck_id = $1', [id]);
     
-    // Move all reserved cards back to Uncategorized and clear reserved_quantity
+    // Move all reserved cards back to Uncategorized
     if (reservationsResult.rows.length > 0) {
       const inventoryIds = reservationsResult.rows.map(r => r.inventory_item_id);
       const placeholders = inventoryIds.map((_, i) => `$${i + 1}`).join(',');
-      await pool.query(`UPDATE inventory SET folder = 'Uncategorized', reserved_quantity = 0 WHERE id IN (${placeholders})`, inventoryIds);
+      await pool.query(`UPDATE inventory SET folder = 'Uncategorized' WHERE id IN (${placeholders})`, inventoryIds);
     }
     
     await pool.query('DELETE FROM deck_reservations WHERE deck_id = $1', [id]);

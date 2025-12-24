@@ -3,6 +3,8 @@ import { useInventory } from '../../context/InventoryContext';
 import { useApi } from '../../hooks/useApi';
 import { useToast, TOAST_TYPES } from '../../context/ToastContext';
 import { Sparkles, Save, Search, RefreshCw, Check, ShoppingCart } from 'lucide-react';
+import { buildCartUrl } from '../../utils/marketplaceUrls';
+import { TCGPlayerBrandIcon, CardKingdomBrandIcon } from '../icons/VendorIcons';
 import Card from '../ui/Card';
 import Button from '../ui/Button';
 
@@ -29,6 +31,8 @@ export default function AIDeckBuilder() {
     const [activeMobileTab, setActiveMobileTab] = useState('deck'); // 'deck' | 'stats'
     const [budget, setBudget] = useState(200); // Dollar budget
     const [useBudget, setUseBudget] = useState(false); // Budget toggle
+    const [showPrintModal, setShowPrintModal] = useState(false); // Print options modal
+    const [inventoryOnly, setInventoryOnly] = useState(false); // Inventory-only mode
 
     // Animate through loading steps
     useEffect(() => {
@@ -42,6 +46,10 @@ export default function AIDeckBuilder() {
         return () => clearInterval(interval);
     }, [loading]);
 
+
+
+
+
     const handleGenerate = async (e) => {
         e.preventDefault();
         if (!prompt) return;
@@ -54,7 +62,8 @@ export default function AIDeckBuilder() {
                 commander: prompt,
                 theme: 'General Prompt',
                 budget: useBudget ? budget : null, // Only send if enabled
-                bracket: 3 // Default mid-power, can be specified in prompt
+                bracket: 3, // Default mid-power, can be specified in prompt
+                inventoryOnly: inventoryOnly // Inventory-only mode
             });
 
             setResult(data);
@@ -66,11 +75,24 @@ export default function AIDeckBuilder() {
         }
     };
 
-    // Helper to check ownership (mocked or from context)
+    // Helper to check ownership and availability
     const checkOwnership = (cardName) => {
         const found = inventory.find(c => c.name.toLowerCase() === cardName.toLowerCase());
-        return found ? found.quantity : 0;
+        if (!found) return { total: 0, reserved: 0, available: 0 };
+
+        const total = parseInt(found.quantity) || 0;
+        const reserved = parseInt(found.reserved_quantity) || 0;
+        const available = total - reserved;
+
+        return { total, reserved, available };
     };
+
+    // Calculate available cards for inventory-only mode warning
+    const availableCount = inventory.filter(c => {
+        const total = parseInt(c.quantity) || 0;
+        const reserved = parseInt(c.reserved_quantity) || 0;
+        return (total - reserved) > 0;
+    }).length;
 
     const handleSaveDeck = async () => {
         if (!result) return;
@@ -102,6 +124,68 @@ export default function AIDeckBuilder() {
         } catch (error) {
             console.error('Failed to save deck', error);
             showToast('Failed to save deck. Please try again.', TOAST_TYPES.ERROR);
+        }
+    };
+
+    const handlePrintProxies = async (mode) => {
+        if (!result) return;
+
+        let cardsToPrint;
+
+        if (mode === 'all') {
+            // Print all cards in the deck
+            cardsToPrint = result.deck.cards;
+        } else if (mode === 'missing') {
+            // Print only cards with total quantity less than needed
+            cardsToPrint = result.deck.cards.filter(card => {
+                const { total } = checkOwnership(card.name);
+                const neededQty = card.quantity || 1;
+                return total < neededQty;
+            }).map(card => {
+                const { total } = checkOwnership(card.name);
+                const neededQty = card.quantity || 1;
+                return {
+                    ...card,
+                    quantity: neededQty - total // Only print what's missing
+                };
+            });
+        } else if (mode === 'unavailable') {
+            // Print cards that are missing OR reserved (unavailable = missing + reserved)
+            cardsToPrint = result.deck.cards.filter(card => {
+                const { available } = checkOwnership(card.name);
+                const neededQty = card.quantity || 1;
+                return available < neededQty;
+            }).map(card => {
+                const { available } = checkOwnership(card.name);
+                const neededQty = card.quantity || 1;
+                return {
+                    ...card,
+                    quantity: neededQty - available // Print unavailable quantity
+                };
+            });
+        }
+
+        if (!cardsToPrint || cardsToPrint.length === 0) {
+            showToast('No cards to print!', TOAST_TYPES.INFO);
+            return;
+        }
+
+        const totalCardsToPrint = cardsToPrint.reduce((sum, c) => sum + (c.quantity || 1), 0);
+
+        try {
+            // TODO: Integrate actual payment gateway here
+            // For now, just show confirmation and proceed
+            // When ready, add Stripe/PayPal integration:
+            // const paymentResult = await processPayment(cost);
+            // if (!paymentResult.success) return;
+
+            showToast(`Generating ${totalCardsToPrint} proxy cards...`, TOAST_TYPES.INFO);
+            const { generateProxyPDF } = await import('../../utils/proxyGenerator');
+            await generateProxyPDF(cardsToPrint);
+            showToast('Proxy PDF generated successfully!', TOAST_TYPES.SUCCESS);
+        } catch (error) {
+            console.error('Failed to generate proxies', error);
+            showToast('Failed to generate proxies. Please try again.', TOAST_TYPES.ERROR);
         }
     };
 
@@ -186,6 +270,27 @@ export default function AIDeckBuilder() {
                                     <span>$500</span>
                                     <span>$2000</span>
                                 </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Inventory-Only Mode Toggle */}
+                    <div className="flex flex-col gap-2">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={inventoryOnly}
+                                onChange={(e) => setInventoryOnly(e.target.checked)}
+                                className="w-4 h-4 rounded border-[var(--border)] bg-[var(--bg-secondary)] accent-purple-600"
+                            />
+                            <span className="text-sm text-[var(--text-muted)]">
+                                Build using ONLY my inventory (no external cards)
+                            </span>
+                        </label>
+                        {inventoryOnly && availableCount < 64 && (
+                            <div className="text-sm text-amber-600 bg-amber-600/10 border border-amber-600/20 rounded p-2">
+                                ⚠️ Warning: You have only {availableCount} available cards.
+                                Commander decks need 64+ non-land spells. The AI may not generate a complete deck.
                             </div>
                         )}
                     </div>
@@ -276,6 +381,12 @@ export default function AIDeckBuilder() {
                             <Button onClick={handleSaveDeck} variant="secondary">
                                 <Save className="w-4 h-4 mr-2" /> <span className="hidden sm:inline">Save Deck</span><span className="sm:hidden">Save</span>
                             </Button>
+                            <Button onClick={() => setShowPrintModal(true)} variant="primary" className="bg-amber-600 hover:bg-amber-700">
+                                <div className="flex items-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                                    <span className="hidden sm:inline">Print Proxies</span><span className="sm:hidden">Print</span>
+                                </div>
+                            </Button>
                         </div>
                     </div>
 
@@ -292,8 +403,8 @@ export default function AIDeckBuilder() {
                                     {viewMode === 'list' ? (
                                         <div className="space-y-1">
                                             {displayCards.map((card, idx) => {
-                                                const ownedQty = checkOwnership(card.name);
-                                                const isOwned = ownedQty > 0 || card.isCommander;
+                                                const { total } = checkOwnership(card.name);
+                                                const isOwned = total > 0 || card.isCommander;
                                                 return (
                                                     <div key={idx} className={`flex items-center justify-between p-2 rounded hover:bg-[var(--bg-secondary)] group ${isOwned ? 'bg-green-500/5' : ''} ${card.isCommander ? 'border border-amber-500/20 bg-amber-500/5' : ''}`}>
                                                         <div className="flex items-center gap-3">
@@ -378,10 +489,60 @@ export default function AIDeckBuilder() {
                             <Card className="p-4">
                                 <h3 className="font-semibold mb-2">Inventory Match</h3>
                                 <div className="text-3xl font-bold text-green-400">
-                                    {result.deck.cards.reduce((sum, c) => checkOwnership(c.name) > 0 ? sum + c.quantity : sum, 0)} / {result.deck.cards.reduce((sum, c) => sum + (c.quantity || 1), 0)}
+                                    {result.deck.cards.reduce((sum, c) => {
+                                        const { total } = checkOwnership(c.name);
+                                        return total > 0 ? sum + (c.quantity || 1) : sum;
+                                    }, 0)} / {result.deck.cards.reduce((sum, c) => sum + (c.quantity || 1), 0)}
                                 </div>
                                 <p className="text-sm text-[var(--text-muted)]">Cards owned</p>
                             </Card>
+
+                            {/* Inventory-Only Mode Stats */}
+                            {result.deck.inventoryStats && (
+                                <Card className="p-4 bg-[var(--bg-secondary)]">
+                                    <h3 className="font-semibold mb-2">Inventory Usage</h3>
+                                    <div className="text-2xl font-bold text-purple-400">
+                                        {result.deck.inventoryStats.fromInventory} / {result.deck.inventoryStats.total}
+                                    </div>
+                                    <p className="text-sm text-[var(--text-muted)]">
+                                        {result.deck.inventoryStats.percentage}% from your inventory
+                                    </p>
+                                </Card>
+                            )}
+
+                            {/* Inventory-Only Mode Warnings */}
+                            {result.deck.inventoryWarning && (
+                                <Card className="p-4 bg-amber-600/10 border-amber-600/20">
+                                    <h3 className="font-semibold text-amber-600 mb-2 flex items-center gap-2">
+                                        <span>⚠️</span> Inventory-Only Mode Warning
+                                    </h3>
+                                    <p className="text-sm mb-3">{result.deck.inventoryWarning.message}</p>
+                                    {result.deck.inventoryWarning.invalidCards.length > 0 && (
+                                        <details className="mt-2">
+                                            <summary className="text-sm cursor-pointer font-medium mb-2">
+                                                Cards not in inventory ({result.deck.inventoryWarning.invalidCards.length})
+                                            </summary>
+                                            <ul className="mt-1 text-xs list-disc list-inside space-y-1 max-h-32 overflow-y-auto custom-scrollbar">
+                                                {result.deck.inventoryWarning.invalidCards.map((card, idx) => (
+                                                    <li key={idx}>{card}</li>
+                                                ))}
+                                            </ul>
+                                        </details>
+                                    )}
+                                    {result.deck.inventoryWarning.insufficientCards.length > 0 && (
+                                        <details className="mt-2">
+                                            <summary className="text-sm cursor-pointer font-medium mb-2">
+                                                Insufficient quantity ({result.deck.inventoryWarning.insufficientCards.length})
+                                            </summary>
+                                            <ul className="mt-1 text-xs list-disc list-inside space-y-1 max-h-32 overflow-y-auto custom-scrollbar">
+                                                {result.deck.inventoryWarning.insufficientCards.map((card, idx) => (
+                                                    <li key={idx}>{card.name} (need {card.needed}, have {card.available})</li>
+                                                ))}
+                                            </ul>
+                                        </details>
+                                    )}
+                                </Card>
+                            )}
 
                             {/* Quick Stats */}
                             <Card className="p-4">
@@ -401,7 +562,10 @@ export default function AIDeckBuilder() {
                                     </div>
                                     <div className="bg-[var(--bg-secondary)] p-3 rounded-lg">
                                         <div className="text-xl font-bold text-red-400">
-                                            {result.deck.cards.reduce((sum, c) => checkOwnership(c.name) === 0 ? sum + (c.quantity || 1) : sum, 0)}
+                                            {result.deck.cards.reduce((sum, c) => {
+                                                const { total } = checkOwnership(c.name);
+                                                return total === 0 ? sum + (c.quantity || 1) : sum;
+                                            }, 0)}
                                         </div>
                                         <div className="text-xs text-[var(--text-muted)]">Cards to Buy</div>
                                     </div>
@@ -415,17 +579,56 @@ export default function AIDeckBuilder() {
 
                                 <h4 className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-2">Estimated Market Cost</h4>
                                 <div className="space-y-2">
-                                    <div className="flex justify-between items-center bg-[var(--bg-secondary)] p-2 rounded border border-[var(--border)]">
-                                        <span className="text-xs">TCGPlayer Market</span>
-                                        <span className="font-mono text-sm text-green-400">
-                                            ${result.deck.cards.reduce((sum, c) => sum + (parseFloat(c.tcgPrice) || 0) * (c.quantity || 1), 0).toFixed(2)}
-                                        </span>
-                                    </div>
-                                    <div className="flex justify-between items-center bg-[var(--bg-secondary)] p-2 rounded border border-[var(--border)]">
-                                        <span className="text-xs">Card Kingdom</span>
-                                        <span className="font-mono text-sm text-blue-400">
-                                            ${result.deck.cards.reduce((sum, c) => sum + (parseFloat(c.ckPrice) || 0) * (c.quantity || 1), 0).toFixed(2)}
-                                        </span>
+                                    <div className="flex flex-col gap-3 mt-2">
+                                        <button
+                                            onClick={() => window.open(buildCartUrl('tcgplayer', result.deck.cards), '_blank')}
+                                            className="group relative flex items-center justify-between p-3 rounded-lg border border-[var(--border)] bg-[var(--bg-primary)] hover:border-blue-500/50 hover:bg-blue-500/5 transition-all w-full overflow-hidden"
+                                        >
+                                            <div className="flex items-center gap-3 relative z-10">
+                                                <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center group-hover:bg-blue-500/20 transition-colors">
+                                                    <TCGPlayerBrandIcon className="w-5 h-5" />
+                                                </div>
+                                                <div className="text-left">
+                                                    <div className="text-xs text-[var(--text-muted)] group-hover:text-blue-400 transition-colors">Buy from</div>
+                                                    <div className="font-semibold text-sm">TCGPlayer</div>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-3 relative z-10">
+                                                <div className="text-right">
+                                                    <div className="text-sm font-bold text-blue-400">
+                                                        ${result.deck.cards.reduce((sum, c) => sum + (parseFloat(c.tcgPrice) || 0) * (c.quantity || 1), 0).toFixed(2)}
+                                                    </div>
+                                                    <div className="text-[10px] text-[var(--text-muted)]">Market Price</div>
+                                                </div>
+                                                <ShoppingCart className="w-4 h-4 text-[var(--text-muted)] group-hover:text-blue-400 transition-colors" />
+                                            </div>
+                                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-500/5 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+                                        </button>
+
+                                        <button
+                                            onClick={() => window.open(buildCartUrl('cardkingdom', result.deck.cards), '_blank')}
+                                            className="group relative flex items-center justify-between p-3 rounded-lg border border-[var(--border)] bg-[var(--bg-primary)] hover:border-amber-500/50 hover:bg-amber-500/5 transition-all w-full overflow-hidden"
+                                        >
+                                            <div className="flex items-center gap-3 relative z-10">
+                                                <div className="w-8 h-8 rounded-full bg-amber-500/10 flex items-center justify-center group-hover:bg-amber-500/20 transition-colors">
+                                                    <CardKingdomBrandIcon className="w-5 h-5" />
+                                                </div>
+                                                <div className="text-left">
+                                                    <div className="text-xs text-[var(--text-muted)] group-hover:text-amber-400 transition-colors">Buy from</div>
+                                                    <div className="font-semibold text-sm">Card Kingdom</div>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-3 relative z-10">
+                                                <div className="text-right">
+                                                    <div className="text-sm font-bold text-amber-400">
+                                                        ${result.deck.cards.reduce((sum, c) => sum + (parseFloat(c.ckPrice) || 0) * (c.quantity || 1), 0).toFixed(2)}
+                                                    </div>
+                                                    <div className="text-[10px] text-[var(--text-muted)]">Market Price</div>
+                                                </div>
+                                                <ShoppingCart className="w-4 h-4 text-[var(--text-muted)] group-hover:text-amber-400 transition-colors" />
+                                            </div>
+                                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-amber-500/5 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+                                        </button>
                                     </div>
                                 </div>
                             </Card>
@@ -534,6 +737,181 @@ export default function AIDeckBuilder() {
                                 </div>
                             </Card>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Print Proxies Modal */}
+            {showPrintModal && result && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg max-w-md w-full p-6">
+                        <h2 className="text-xl font-bold mb-4">Print Proxy Cards</h2>
+
+                        {(() => {
+                            const totalCards = result.deck.cards.reduce((sum, c) => sum + (c.quantity || 1), 0);
+
+                            // Calculate missing cards (don't own at all)
+                            const missingCount = result.deck.cards.reduce((sum, card) => {
+                                const { total } = checkOwnership(card.name);
+                                const neededQty = card.quantity || 1;
+                                return sum + Math.max(0, neededQty - total);
+                            }, 0);
+
+                            // Calculate unavailable cards (missing + reserved)
+                            const unavailableCount = result.deck.cards.reduce((sum, card) => {
+                                const { available } = checkOwnership(card.name);
+                                const neededQty = card.quantity || 1;
+                                return sum + Math.max(0, neededQty - available);
+                            }, 0);
+
+                            const ownedCount = totalCards - missingCount;
+                            const reservedCount = unavailableCount - missingCount;
+
+                            return (
+                                <>
+                                    <div className="space-y-3 mb-6">
+                                        <div className="p-4 bg-[var(--bg-secondary)] rounded-lg">
+                                            <div className="flex items-center justify-between text-sm mb-2">
+                                                <span className="text-[var(--text-muted)]">Total cards in deck:</span>
+                                                <span className="font-semibold">{totalCards}</span>
+                                            </div>
+                                            <div className="flex items-center justify-between text-sm mb-2">
+                                                <span className="text-[var(--text-muted)]">Cards you own:</span>
+                                                <span className="font-semibold text-green-400">{ownedCount}</span>
+                                            </div>
+                                            <div className="flex items-center justify-between text-sm mb-2">
+                                                <span className="text-[var(--text-muted)]">Missing cards:</span>
+                                                <span className="font-semibold text-amber-400">{missingCount}</span>
+                                            </div>
+                                            {reservedCount > 0 && (
+                                                <div className="flex items-center justify-between text-sm">
+                                                    <span className="text-[var(--text-muted)]">Reserved in decks:</span>
+                                                    <span className="font-semibold text-blue-400">{reservedCount}</span>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <button
+                                            onClick={() => {
+                                                setShowPrintModal(false);
+                                                handlePrintProxies('all');
+                                            }}
+                                            className="w-full p-4 bg-[var(--bg-secondary)] hover:bg-[var(--surface-highlight)] border border-[var(--border)] rounded-lg text-left transition-colors"
+                                        >
+                                            <div className="flex items-center justify-between">
+                                                <div>
+                                                    <div className="font-semibold">Print All Cards</div>
+                                                    <div className="text-sm text-[var(--text-muted)]">{totalCards} cards total</div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <div className="text-lg font-bold text-amber-400">${(totalCards * 0.01).toFixed(2)}</div>
+                                                    <div className="text-xs text-[var(--text-muted)]">$0.01/card</div>
+                                                </div>
+                                            </div>
+                                        </button>
+
+                                        <button
+                                            onClick={() => {
+                                                if (missingCount === 0) return;
+                                                setShowPrintModal(false);
+                                                handlePrintProxies('missing');
+                                            }}
+                                            disabled={missingCount === 0}
+                                            className={`w-full p-4 border rounded-lg text-left transition-colors ${missingCount > 0
+                                                ? 'bg-amber-600/10 hover:bg-amber-600/20 border-amber-600/30 cursor-pointer'
+                                                : 'bg-[var(--bg-secondary)]/50 border-[var(--border)]/50 cursor-not-allowed opacity-50'
+                                                }`}
+                                        >
+                                            <div className="flex items-center justify-between">
+                                                <div>
+                                                    <div className="font-semibold flex items-center gap-2">
+                                                        Print Missing Cards Only
+                                                        {missingCount > 0 && (
+                                                            <span className="px-2 py-0.5 bg-amber-600 text-white text-xs rounded-full">Recommended</span>
+                                                        )}
+                                                        {missingCount === 0 && (
+                                                            <span className="px-2 py-0.5 bg-green-600/50 text-[var(--text-muted)] text-xs rounded-full flex items-center gap-1">
+                                                                <Check className="w-3 h-3" />
+                                                                All Owned
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <div className="text-sm text-[var(--text-muted)]">
+                                                        {missingCount > 0
+                                                            ? `${missingCount} cards you don't own`
+                                                            : 'You already own all cards in this deck'
+                                                        }
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    {missingCount > 0 ? (
+                                                        <>
+                                                            <div className="text-lg font-bold text-amber-400">${(missingCount * 0.01).toFixed(2)}</div>
+                                                            <div className="text-xs text-green-400">Save ${((totalCards - missingCount) * 0.01).toFixed(2)}</div>
+                                                        </>
+                                                    ) : (
+                                                        <div className="text-sm text-[var(--text-muted)]">—</div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </button>
+
+                                        <button
+                                            onClick={() => {
+                                                if (unavailableCount === 0) return;
+                                                setShowPrintModal(false);
+                                                handlePrintProxies('unavailable');
+                                            }}
+                                            disabled={unavailableCount === 0}
+                                            className={`w-full p-4 border rounded-lg text-left transition-colors ${unavailableCount > 0
+                                                ? 'bg-blue-600/10 hover:bg-blue-600/20 border-blue-600/30 cursor-pointer'
+                                                : 'bg-[var(--bg-secondary)]/50 border-[var(--border)]/50 cursor-not-allowed opacity-50'
+                                                }`}
+                                        >
+                                            <div className="flex items-center justify-between">
+                                                <div>
+                                                    <div className="font-semibold flex items-center gap-2">
+                                                        Print Unavailable Cards
+                                                        {unavailableCount > missingCount && (
+                                                            <span className="px-2 py-0.5 bg-blue-600 text-white text-xs rounded-full">Best Value</span>
+                                                        )}
+                                                        {unavailableCount === 0 && (
+                                                            <span className="px-2 py-0.5 bg-green-600/50 text-[var(--text-muted)] text-xs rounded-full flex items-center gap-1">
+                                                                <Check className="w-3 h-3" />
+                                                                All Available
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <div className="text-sm text-[var(--text-muted)]">
+                                                        {unavailableCount > 0
+                                                            ? `${unavailableCount} cards (${missingCount} missing + ${reservedCount} reserved)`
+                                                            : 'All cards are available in your inventory'
+                                                        }
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    {unavailableCount > 0 ? (
+                                                        <>
+                                                            <div className="text-lg font-bold text-blue-400">${(unavailableCount * 0.01).toFixed(2)}</div>
+                                                            <div className="text-xs text-green-400">Save ${((totalCards - unavailableCount) * 0.01).toFixed(2)}</div>
+                                                        </>
+                                                    ) : (
+                                                        <div className="text-sm text-[var(--text-muted)]">—</div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </button>
+                                    </div>
+
+                                    <button
+                                        onClick={() => setShowPrintModal(false)}
+                                        className="w-full py-2 text-[var(--text-muted)] hover:text-white transition-colors"
+                                    >
+                                        Cancel
+                                    </button>
+                                </>
+                            );
+                        })()}
                     </div>
                 </div>
             )}

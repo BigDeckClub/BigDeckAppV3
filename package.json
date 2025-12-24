@@ -53,6 +53,7 @@
     "express": "^5.1.0",
     "express-rate-limit": "^8.2.1",
     "helmet": "^8.1.0",
+    "jspdf": "^3.0.4",
     "lucide-react": "^0.554.0",
     "morgan": "^1.10.1",
     "multer": "^2.0.2",

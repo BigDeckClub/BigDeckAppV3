@@ -103,13 +103,26 @@ async function getCommanderDetails(query) {
   }
 }
 
-// Helper: Get relevant inventory
+// Helper: Get relevant inventory with availability tracking
 async function getInventoryForDeck(userId) {
   const query = `
-    SELECT name, quantity, image_url 
-    FROM inventory 
-    WHERE user_id = $1 
-    ORDER BY purchase_price DESC NULLS LAST 
+    SELECT
+      i.name,
+      i.quantity,
+      COALESCE(
+        (SELECT SUM(dr.quantity_reserved)
+         FROM deck_reservations dr
+         WHERE dr.inventory_item_id = i.id), 0
+      ) as reserved_quantity,
+      i.quantity - COALESCE(
+        (SELECT SUM(dr.quantity_reserved)
+         FROM deck_reservations dr
+         WHERE dr.inventory_item_id = i.id), 0
+      ) as available_quantity,
+      i.image_url
+    FROM inventory i
+    WHERE i.user_id = $1
+    ORDER BY i.purchase_price DESC NULLS LAST
     LIMIT 300
   `;
   const result = await pool.query(query, [userId]);
@@ -202,7 +215,7 @@ async function getEdhrecRecommendations(commanderName, budgetType = null) {
 router.post('/generate', authenticate, async (req, res) => {
   console.log('[AI] (OpenAI) /generate endpoint hit!');
 
-  const { commander: userPrompt, theme, budget, bracket } = req.body;
+  const { commander: userPrompt, theme, budget, bracket, inventoryOnly = false } = req.body;
 
   if (!userPrompt) {
     return res.status(400).json({ error: 'Prompt is required' });
@@ -225,6 +238,7 @@ router.post('/generate', authenticate, async (req, res) => {
           role: "user", content: `Identify the Magic: The Gathering Commander card name from this prompt.
 If it's a nickname (e.g., "Sad Robot"), return the real card name (e.g., "Solemn Simulacrum").
 If it helps, "Goose Mother" is "The Goose Mother".
+If the user mentions a character that might be from a recent set (e.g. "Avatar Aang", "Lara Croft"), return THAT NAME exactly, even if you are not sure it exists as a card.
 
 If the user is asking for a TYPE of deck but didn't name a commander (e.g. "Build me a dragon deck"), return "SUGGEST".
 
@@ -275,7 +289,36 @@ Request: ${userPrompt}`
 
     // 3. Get User Inventory Context
     const inventory = await getInventoryForDeck(req.userId);
-    const inventoryList = inventory.map(c => c.name).join(', ');
+
+    // Separate available cards from reserved cards
+    const availableCards = inventory
+      .filter(c => c.available_quantity > 0)
+      .map(c => c.available_quantity > 1 ? `${c.name} (x${c.available_quantity})` : c.name);
+
+    const reservedCards = inventory
+      .filter(c => c.reserved_quantity > 0)
+      .map(c => c.reserved_quantity > 1 ? `${c.name} (x${c.reserved_quantity} reserved)` : `${c.name} (reserved)`);
+
+    const inventoryContext = inventoryOnly
+      ? `
+**STRICT CONSTRAINT - INVENTORY-ONLY MODE:**
+You MUST build this deck using ONLY the cards listed below. Do NOT suggest ANY cards outside this list.
+Use the EXACT card names provided in the list.
+If you cannot build a complete 100-card deck with these cards, include as many as possible and stop.
+
+**YOUR AVAILABLE CARDS (ONLY USE THESE):**
+${availableCards.join(', ') || 'None - CANNOT BUILD DECK'}
+
+**YOUR RESERVED CARDS (DO NOT USE - already in other decks):**
+${reservedCards.join(', ') || 'None'}
+`.trim()
+      : `
+**YOUR AVAILABLE CARDS (Prioritize these - they're ready to use):**
+${availableCards.join(', ') || 'None'}
+
+**YOUR RESERVED CARDS (Avoid these - already in other decks):**
+${reservedCards.join(', ') || 'None'}
+`.trim();
 
     // 4. Get EDHREC Recommendations (real data!)
     let edhrecType = null;
@@ -361,7 +404,14 @@ ${goldfish.popularCards.slice(0, 40).join(', ')}
     }
 
     // Combine contexts
-    const combinedContext = edhrecContext + goldfishContext + `
+    const combinedContext = inventoryOnly
+      ? edhrecContext + goldfishContext + `
+**INVENTORY-ONLY MODE ACTIVE:**
+The EDHREC and MTGGoldfish data above is for reference only.
+DO NOT suggest these cards unless they appear in YOUR AVAILABLE CARDS.
+Your primary constraint is to use ONLY cards from YOUR AVAILABLE CARDS list.
+`
+      : edhrecContext + goldfishContext + `
 **IMPORTANT: Build the deck primarily from the EDHREC and MTGGoldfish cards listed above! Only use cards NOT in these lists if absolutely necessary.**
 `;
 
@@ -413,7 +463,7 @@ STRICT RULES:
 3. NO GENERIC DRAW/REMOVAL (Wait for Pass 3).
 4. FOCUS ONLY ON SYNERGY WITH ${commanderCard.name}.
 5. ${budgetGuidance || 'No budget limit - optimize for power.'}
-6. Inventory First: ${inventoryList}
+6. ${inventoryContext}
 7. Context: ${combinedContext}
 
 Format: JSON { "cards": [{ "name": "Card Name", "category": "Synergy", "quantity": 1 }] } (Exactly 34 cards)`;
@@ -425,7 +475,7 @@ ${budgetGuidance}
 Strategy: [[DESCRIPTION]]
 
 Task: Generate EXACTLY 30 non-land staple cards to power the deck's engine.
-STRICT BREAKDOWN: 
+STRICT BREAKDOWN:
 - 10 Ramp Cards (Artifacts/Green spells if in color identity)
 - 10 Draw Cards
 - 10 Removal Cards (Single target/Board wipes)
@@ -434,7 +484,7 @@ STRICT RULES:
 1. NO LANDS.
 2. NO SYNERGY CARDS (Wait for Pass 2).
 3. ${budgetGuidance || 'No budget limit - optimize for power.'}
-4. Inventory First: ${inventoryList}
+4. ${inventoryContext}
 5. Context: ${combinedContext}
 
 Format: JSON { "cards": [{ "name": "Card Name", "category": "Ramp/Draw/Removal", "quantity": 1 }] } (Exactly 30 cards)`;
@@ -541,7 +591,24 @@ Format: JSON { "cards": [{ "name": "Card Name", "category": "Ramp/Draw/Removal",
 
       for (const cardName of fillSources) {
         if (currentSpells >= targetSpells) break;
+
+        // STRICT INVENTORY CHECK
         const normalized = cardName.toLowerCase().trim();
+        let quantityAvailable = 0;
+
+        if (inventoryOnly) {
+          const invItem = inventory.find(i => i.name.toLowerCase() === normalized);
+          if (invItem) {
+            quantityAvailable = invItem.available_quantity;
+          }
+          // Check if we've already used some of this card in the deck
+          const usedCount = seenNames.has(normalized) ? 1 : 0; // Simplified tracking (since we only add 1s for fillers)
+
+          if (quantityAvailable <= usedCount) {
+            continue; // Skip if we don't have it or already used it
+          }
+        }
+
         if (!seenNames.has(normalized)) {
           seenNames.add(normalized);
           allSpells.push({ name: cardName, quantity: 1, category: 'Synergy', reason: 'Auto-filler synergy' });
@@ -833,6 +900,48 @@ Format: JSON { "cards": [{ "name": "Card Name", "category": "Ramp/Draw/Removal",
       console.log(`[AI] Enriched ${cardMap.size} unique cards with Scryfall metadata and prices`);
     } catch (err) {
       console.warn('[AI] Scryfall enrichment failed:', err.message);
+    }
+
+    // Validate inventory-only mode compliance
+    if (inventoryOnly) {
+      const invalidCards = [];
+      const insufficientCards = [];
+
+      deckData.cards.forEach(card => {
+        const inventoryCard = inventory.find(
+          i => i.name.toLowerCase() === card.name.toLowerCase()
+        );
+
+        if (!inventoryCard) {
+          invalidCards.push(card.name);
+        } else if (inventoryCard.available_quantity < (card.quantity || 1)) {
+          insufficientCards.push({
+            name: card.name,
+            needed: card.quantity || 1,
+            available: inventoryCard.available_quantity
+          });
+        }
+      });
+
+      // If there are violations, add a warning to the response
+      if (invalidCards.length > 0 || insufficientCards.length > 0) {
+        deckData.inventoryWarning = {
+          invalidCards,
+          insufficientCards,
+          message: `Inventory-only mode: ${invalidCards.length} cards not in inventory, ${insufficientCards.length} cards with insufficient quantity.`
+        };
+      }
+
+      // Calculate inventory usage stats
+      const totalCards = deckData.cards.length;
+      const inventoryCards = totalCards - invalidCards.length;
+      deckData.inventoryStats = {
+        total: totalCards,
+        fromInventory: inventoryCards,
+        percentage: Math.round((inventoryCards / totalCards) * 100)
+      };
+
+      console.log(`[AI] Inventory-only mode: ${inventoryCards}/${totalCards} cards from inventory (${deckData.inventoryStats.percentage}%)`);
     }
 
     res.json({

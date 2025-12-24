@@ -177,7 +177,13 @@ app.use('/api', (req, res) => {
 // ========== CATCH-ALL HANDLER - SPA ROUTING ==========
 // Must come after API routes and before error handling
 app.use((req, res, next) => {
+  // Skip API routes
   if (req.path.startsWith('/api/')) {
+    return next();
+  }
+
+  // Skip asset files - let express.static handle them or 404
+  if (req.path.startsWith('/assets/') || req.path.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$/)) {
     return next();
   }
 
