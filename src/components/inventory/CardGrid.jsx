@@ -14,6 +14,7 @@ export const CardGrid = memo(function CardGrid({
   editingId,
   editForm,
   setEditForm,
+  setEditingId,
   startEditingItem,
   updateInventoryItem,
   deleteInventoryItem,
@@ -45,6 +46,7 @@ export const CardGrid = memo(function CardGrid({
             editingId={editingId}
             editForm={editForm}
             setEditForm={setEditForm}
+            setEditingId={setEditingId}
             startEditingItem={startEditingItem}
             updateInventoryItem={updateInventoryItem}
             deleteInventoryItem={deleteInventoryItem}
@@ -76,6 +78,7 @@ export const CardGrid = memo(function CardGrid({
             editingId={editingId}
             editForm={editForm}
             setEditForm={setEditForm}
+            setEditingId={setEditingId}
             startEditingItem={startEditingItem}
             updateInventoryItem={updateInventoryItem}
             deleteInventoryItem={deleteInventoryItem}
@@ -132,6 +135,7 @@ CardGrid.propTypes = {
   editingId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   editForm: PropTypes.object.isRequired,
   setEditForm: PropTypes.func.isRequired,
+  setEditingId: PropTypes.func,
   startEditingItem: PropTypes.func.isRequired,
   updateInventoryItem: PropTypes.func.isRequired,
   deleteInventoryItem: PropTypes.func.isRequired,

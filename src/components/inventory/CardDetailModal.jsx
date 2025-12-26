@@ -19,6 +19,7 @@ export const CardDetailModal = memo(function CardDetailModal({
   editingId,
   editForm,
   setEditForm,
+  setEditingId,
   startEditingItem,
   updateInventoryItem,
   deleteInventoryItem,
@@ -30,7 +31,6 @@ export const CardDetailModal = memo(function CardDetailModal({
   const [togglingId, setTogglingId] = useState(null);
   const [settingThresholdId, setSettingThresholdId] = useState(null);
   const [thresholdInput, setThresholdInput] = useState({});
-  const [salesHistory, setSalesHistory] = useState([]);
   const [thresholdSettings, setThresholdSettings] = useState({ baseStock: 10, landMultiplier: 10, velocityWeeks: 4 });
   const [imageError, setImageError] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
@@ -40,7 +40,6 @@ export const CardDetailModal = memo(function CardDetailModal({
   // Refs for focus management
   const modalRef = useRef(null);
   const previousActiveElement = useRef(null);
-  const salesFetchedRef = useRef(false);
 
   // Get all focusable elements within a container
   const getFocusableElements = useCallback((container) => {
@@ -132,23 +131,6 @@ export const CardDetailModal = memo(function CardDetailModal({
     }
   }, []);
 
-  // Load sales history only when modal opens (and only once per open)
-  useEffect(() => {
-    if (!isOpen) {
-      salesFetchedRef.current = false;
-      return;
-    }
-
-    if (salesFetchedRef.current) return;
-    salesFetchedRef.current = true;
-
-    authFetch('/api/sales')
-      .then(res => res.json())
-      .then(data => {
-        setSalesHistory(data || []);
-      })
-      .catch(err => console.error('[CardDetailModal] Error loading sales:', err));
-  }, [isOpen, authFetch]);
 
   // Reset image state when card changes
   useEffect(() => {
@@ -258,6 +240,9 @@ export const CardDetailModal = memo(function CardDetailModal({
 
   const handleCancelEdit = () => {
     setEditForm({});
+    if (setEditingId) {
+      setEditingId(null);
+    }
   };
 
   const handleSaveEdit = (itemId) => {
@@ -406,7 +391,6 @@ export const CardDetailModal = memo(function CardDetailModal({
                     settingThresholdId={settingThresholdId}
                     thresholdInput={thresholdInput}
                     setThresholdInput={setThresholdInput}
-                    salesHistory={salesHistory}
                     thresholdSettings={thresholdSettings}
                     createdFolders={createdFolders}
                   />
@@ -497,6 +481,7 @@ CardDetailModal.propTypes = {
   editingId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   editForm: PropTypes.object.isRequired,
   setEditForm: PropTypes.func.isRequired,
+  setEditingId: PropTypes.func,
   startEditingItem: PropTypes.func.isRequired,
   updateInventoryItem: PropTypes.func.isRequired,
   deleteInventoryItem: PropTypes.func.isRequired,

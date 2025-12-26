@@ -51,6 +51,7 @@ export const CardGroup = memo(function CardGroup({
   editingId,
   editForm,
   setEditForm,
+  setEditingId,
   startEditingItem,
   updateInventoryItem,
   deleteInventoryItem,
@@ -203,6 +204,7 @@ export const CardGroup = memo(function CardGroup({
         editingId={editingId}
         editForm={editForm}
         setEditForm={setEditForm}
+        setEditingId={setEditingId}
         startEditingItem={startEditingItem}
         updateInventoryItem={updateInventoryItem}
         deleteInventoryItem={deleteInventoryItem}
@@ -348,9 +350,14 @@ export const CardGroup = memo(function CardGroup({
               e.dataTransfer.setData('skuData', JSON.stringify(items[0]));
             }
           }}
-          className={`relative rounded-xl overflow-hidden border ${allItemsSelected ? 'border-[var(--bda-primary)] ring-2 ring-[var(--bda-primary)]/50' : 'border-slate-600 hover:border-[var(--bda-primary)]'} transition-all duration-300 cursor-grab active:cursor-grabbing group hover:shadow-2xl hover:shadow-[var(--bda-primary)]/30 hover:-translate-y-1 active:scale-95`}
+          className={`relative rounded-xl overflow-hidden border transition-all duration-300 cursor-grab active:cursor-grabbing group hover:shadow-2xl hover:shadow-[var(--bda-primary)]/30 hover:-translate-y-1 active:scale-95 ${allItemsSelected ? 'border-[var(--bda-primary)] ring-4 ring-[var(--bda-primary)]/40 shadow-[0_0_20px_rgba(139,92,246,0.3)] scale-[0.98]' : 'border-slate-600 hover:border-[var(--bda-primary)]'}`}
           onClick={handleOpenModal}
         >
+          {/* Selected Overlay */}
+          {allItemsSelected && (
+            <div className="absolute inset-0 bg-[var(--bda-primary)]/20 z-10 pointer-events-none mix-blend-overlay border-[3px] border-[var(--bda-primary)] rounded-xl" />
+          )}
+
           {/* Card Image */}
           <div className="aspect-[5/7] bg-slate-800 relative">
             {/* Loading skeleton */}
@@ -509,13 +516,23 @@ export const CardGroup = memo(function CardGroup({
     return false; // Force re-render
   }
 
+  // Check if selection state changed for this card
+  // We need to check if ANY item in this group changed its presence in the set
+  const prevSelected = prevProps.items.map(i => prevProps.selectedCardIds?.has(i.id)).join(',');
+  const nextSelected = nextProps.items.map(i => nextProps.selectedCardIds?.has(i.id)).join(',');
+
+  if (prevSelected !== nextSelected) {
+    return false;
+  }
+
   // For other prop changes, use shallow comparison
   return (
     prevProps.cardName === nextProps.cardName &&
     prevProps.viewMode === nextProps.viewMode &&
     prevProps.items.length === nextProps.items.length &&
     prevProps.editingId === nextProps.editingId &&
-    prevProps.expandedCards === nextProps.expandedCards
+    prevProps.expandedCards === nextProps.expandedCards &&
+    prevProps.selectedCardIds === nextProps.selectedCardIds // Check reference too just in case
   );
 });
 
@@ -528,6 +545,7 @@ CardGroup.propTypes = {
   editingId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   editForm: PropTypes.object.isRequired,
   setEditForm: PropTypes.func.isRequired,
+  setEditingId: PropTypes.func,
   startEditingItem: PropTypes.func.isRequired,
   updateInventoryItem: PropTypes.func.isRequired,
   deleteInventoryItem: PropTypes.func.isRequired,

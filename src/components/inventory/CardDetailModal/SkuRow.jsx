@@ -1,7 +1,6 @@
 import React, { memo } from 'react';
 import PropTypes from 'prop-types';
 import { Bell, BellOff, Package, DollarSign, Calendar, Hash, FolderOpen, Save, XCircle, Edit2, Trash2 } from 'lucide-react';
-import { calculateSmartThreshold } from '../../../utils/thresholdCalculator';
 import { formatCurrency, formatDate } from '../../../utils/cardHelpers';
 import { Button } from '../../ui/Button';
 
@@ -24,7 +23,6 @@ export const SkuRow = memo(function SkuRow({
   settingThresholdId,
   thresholdInput,
   setThresholdInput,
-  salesHistory,
   thresholdSettings,
   createdFolders
 }) {
@@ -108,10 +106,6 @@ export const SkuRow = memo(function SkuRow({
       </div>
     );
   }
-
-  const smartThreshold = salesHistory.length > 0
-    ? calculateSmartThreshold(item, salesHistory, thresholdSettings)
-    : null;
 
   return (
     <div
@@ -217,11 +211,6 @@ export const SkuRow = memo(function SkuRow({
                 className="w-20 bg-ui-card border border-ui-border rounded-lg px-2 py-1.5 text-ui-text text-sm text-center min-h-[36px] focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
                 disabled={settingThresholdId === item.id}
               />
-              {smartThreshold && (
-                <div className="text-xs text-ui-muted">
-                  Suggested: <span className="text-yellow-300 font-medium">{smartThreshold.suggested}</span>
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -273,7 +262,6 @@ SkuRow.propTypes = {
   settingThresholdId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   thresholdInput: PropTypes.object.isRequired,
   setThresholdInput: PropTypes.func.isRequired,
-  salesHistory: PropTypes.array.isRequired,
   thresholdSettings: PropTypes.object.isRequired,
   createdFolders: PropTypes.array.isRequired
 };
