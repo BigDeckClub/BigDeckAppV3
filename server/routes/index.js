@@ -6,19 +6,17 @@ import importsRouter from './imports.js';
 import analyticsRouter from './analytics.js';
 import decksRouter from './decks.js';
 import foldersRouter from './folders.js';
-import salesRouter from './sales.js';
 import settingsRouter from './settings.js';
 import authRouter from './auth.js';
 import lotsRouter from './lots.js';
-import historyRouter from './history.js';
 import aiRouter from './ai.js';
 import communityThemesRouter from './communityThemes.js';
 import assetsRouter from './assets.js';
 import adminRouter from './admin.js';
 import diagnosticsRouter from './diagnostics.js';
 import scryfallProxyRouter from './scryfallProxy.js';
-import ebayRouter from './ebay.js';
-import autobuyRouter from './autobuy.js';
+
+
 import cardsRouter from './cards.js';
 import tcgplayerRouter from './tcgplayer.js';
 
@@ -37,11 +35,9 @@ export function registerRoutes(app) {
   app.use('/api', analyticsRouter);
   app.use('/api', decksRouter);
   app.use('/api', foldersRouter);
-  app.use('/api', salesRouter);
   app.use('/api', settingsRouter);
   app.use('/api', authRouter);
   app.use('/api', lotsRouter);
-  app.use('/api', historyRouter);
 
   console.log('[ROUTES] Registering AI router at /api/ai');
   console.log('[ROUTES] AI Router type:', typeof aiRouter);
@@ -65,8 +61,8 @@ export function registerRoutes(app) {
   app.use('/api', communityThemesRouter);
   app.use('/api', assetsRouter);
   app.use('/api', adminRouter);
-  app.use('/api', ebayRouter);
-  app.use('/api', autobuyRouter);
+
+
   app.use('/api', cardsRouter);
   app.use('/api', tcgplayerRouter);
   // Internal diagnostics (no API prefix)
@@ -81,15 +77,13 @@ export {
   analyticsRouter,
   decksRouter,
   foldersRouter,
-  salesRouter,
   settingsRouter,
   authRouter,
   lotsRouter,
-  historyRouter,
   aiRouter,
   communityThemesRouter,
   assetsRouter,
   diagnosticsRouter,
-  ebayRouter,
+
   tcgplayerRouter,
 };

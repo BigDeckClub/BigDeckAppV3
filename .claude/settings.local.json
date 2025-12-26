@@ -2,7 +2,26 @@
   "permissions": {
     "allow": [
       "Bash(npm run build:*)",
-      "Bash(timeout 5 npm start)"
+      "Bash(timeout 5 npm start)",
+      "Bash(curl:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(tasklist:*)",
+      "Bash(npm run dev:*)",
+      "Bash(timeout:*)",
+      "Bash(cat:*)",
+      "Bash(taskkill:*)",
+      "Bash(python -m json.tool:*)",
+      "Bash(git log:*)",
+      "Bash(ls:*)",
+      "Bash(dir:*)",
+      "Bash(copy favicon.svg vite.svg)",
+      "Bash(node --version:*)",
+      "Bash(grep:*)",
+      "Bash(ping:*)",
+      "Bash(Get-Content \"C:\\\\Users\\\\kapa1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\d--Big-Deck-BigDeckAppV3\\\\tasks\\\\ba00e4f.output\" -Tail 50)",
+      "Bash(test:*)",
+      "Bash(Get-Content \"C:\\\\Users\\\\kapa1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\d--Big-Deck-BigDeckAppV3\\\\tasks\\\\ba3ac43.output\" -Tail 50)"
     ]
   }
 }

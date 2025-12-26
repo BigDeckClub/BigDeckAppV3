@@ -1,6 +1,6 @@
 import React, { memo, useState, useMemo } from 'react';
 import PropTypes from 'prop-types';
-import { Trash2, X, ChevronDown, Wand2, DollarSign, ShoppingCart } from 'lucide-react';
+import { Trash2, X, ChevronDown, Wand2, ShoppingCart } from 'lucide-react';
 import { getSetDisplayName } from '../../utils/cardHelpers';
 import { BuyCardsModal } from '../buy/BuyCardsModal';
 import { BuyButton } from '../buy/BuyButton';
@@ -24,8 +24,6 @@ export const DeckDetailView = memo(function DeckDetailView({
   autoFillSingleCard,
   releaseDeck,
   moveCardSkuToDeck,
-  setSellModalData,
-  setShowSellModal,
   sortField = 'name',
   sortDirection = 'asc'
 }) {
@@ -336,22 +334,6 @@ export const DeckDetailView = memo(function DeckDetailView({
                 <Wand2 className="w-4 h-4" />
               </button>
               <button
-                onClick={() => {
-                  setSellModalData({
-                    itemType: 'deck',
-                    itemId: deck.id,
-                    itemName: deck.name,
-                    purchasePrice: parseFloat(deckDetails.totalCost) || 0,
-                    quantity: deckDetails.reservedCount || 1
-                  });
-                  setShowSellModal(true);
-                }}
-                className="bg-gradient-to-br from-green-600 to-green-700 hover:from-green-500 hover:to-green-600 text-white p-2 rounded-lg transition-all duration-200 hover:shadow-lg hover:shadow-green-500/30 flex items-center"
-                title="Sell deck and track profit"
-              >
-                <DollarSign className="w-4 h-4" />
-              </button>
-              <button
                 onClick={() => releaseDeck(deck.id)}
                 className="bg-gradient-to-br from-slate-700 to-slate-800 hover:from-red-600 hover:to-red-700 text-[var(--text-muted)] hover:text-white p-2 rounded-lg transition-all duration-200 hover:shadow-lg hover:shadow-red-500/30 flex items-center"
                 title="Delete deck and return cards to unsorted"
@@ -457,8 +439,6 @@ DeckDetailView.propTypes = {
   autoFillSingleCard: PropTypes.func.isRequired,
   releaseDeck: PropTypes.func.isRequired,
   moveCardSkuToDeck: PropTypes.func.isRequired,
-  setSellModalData: PropTypes.func.isRequired,
-  setShowSellModal: PropTypes.func.isRequired,
   sortField: PropTypes.oneOf(['name', 'price', 'quantity', 'set', 'dateAdded']),
   sortDirection: PropTypes.oneOf(['asc', 'desc'])
 };

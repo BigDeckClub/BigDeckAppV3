@@ -1,10 +1,10 @@
 import React, { memo } from 'react';
 import PropTypes from 'prop-types';
-import { DollarSign, Trash2 } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 
 /**
  * FolderHeader - Header component for folder view
- * Shows folder name, description, stats, sell button, and delete button
+ * Shows folder name, description, stats, and delete button
  */
 export const FolderHeader = memo(function FolderHeader({
   folderName,
@@ -17,8 +17,6 @@ export const FolderHeader = memo(function FolderHeader({
   editingFolderDesc,
   setEditingFolderDesc,
   setFolderMetadata,
-  setSellModalData,
-  setShowSellModal,
   onDeleteFolder,
   isUnsorted
 }) {
@@ -72,33 +70,15 @@ export const FolderHeader = memo(function FolderHeader({
             </div>
           </div>
         </div>
-        <div className="flex gap-2">
+        {!isUnsorted && onDeleteFolder && (
           <button
-            onClick={() => {
-              setSellModalData({
-                itemType: 'folder',
-                itemId: null,
-                itemName: folderName,
-                purchasePrice: totalCost,
-                quantity: totalCards
-              });
-              setShowSellModal(true);
-            }}
-            className="bg-green-600 hover:bg-green-500 text-white p-2 rounded transition-colors flex items-center"
-            title="Sell this folder"
+            onClick={() => onDeleteFolder(folderName)}
+            className="bg-red-600 hover:bg-red-500 text-white p-2 rounded transition-colors flex items-center"
+            title="Delete this folder"
           >
-            <DollarSign className="w-4 h-4" />
+            <Trash2 className="w-4 h-4" />
           </button>
-          {!isUnsorted && onDeleteFolder && (
-            <button
-              onClick={() => onDeleteFolder(folderName)}
-              className="bg-red-600 hover:bg-red-500 text-white p-2 rounded transition-colors flex items-center"
-              title="Delete this folder"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-          )}
-        </div>
+        )}
       </div>
     </div>
   );
@@ -115,8 +95,6 @@ FolderHeader.propTypes = {
   editingFolderDesc: PropTypes.string.isRequired,
   setEditingFolderDesc: PropTypes.func.isRequired,
   setFolderMetadata: PropTypes.func.isRequired,
-  setSellModalData: PropTypes.func.isRequired,
-  setShowSellModal: PropTypes.func.isRequired,
   onDeleteFolder: PropTypes.func,
   isUnsorted: PropTypes.bool
 };

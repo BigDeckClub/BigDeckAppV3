@@ -383,15 +383,6 @@ export const DeckCardTile = memo(function DeckCardTile({
                       Copy to Inventory
                     </button>
                   )}
-                  {onArchidektSync && (
-                    <button
-                      onClick={handleAction(onArchidektSync)}
-                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white"
-                    >
-                      <Link2 className="w-4 h-4" />
-                      Archidekt Sync
-                    </button>
-                  )}
                   {onDelete && (
                     <>
                       <div className="my-1 border-t border-[var(--bda-border)]" />

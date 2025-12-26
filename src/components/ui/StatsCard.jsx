@@ -234,6 +234,35 @@ export const StatsCard = memo(function StatsCard({
     glass: 'glass-panel border-white/5',
   };
 
+  // Calculate dynamic font size based on value length and card size
+  const getDynamicFontSize = (val, baseSize) => {
+    const len = String(val).length;
+
+    if (baseSize === 'sm') {
+      if (len > 10) return 'text-xs';
+      if (len > 7) return 'text-sm';
+      return 'text-lg';
+    }
+
+    if (baseSize === 'md') {
+      if (len > 12) return 'text-lg';
+      if (len > 9) return 'text-xl';
+      if (len > 6) return 'text-2xl';
+      return 'text-3xl tracking-tight';
+    }
+
+    if (baseSize === 'lg') {
+      if (len > 12) return 'text-xl';
+      if (len > 9) return 'text-2xl';
+      if (len > 7) return 'text-3xl';
+      return 'text-4xl tracking-tight';
+    }
+
+    return 'text-xl';
+  };
+
+  const dynamicFontSize = getDynamicFontSize(formattedValue, size);
+
   return (
     <div
       className={`
@@ -255,7 +284,7 @@ export const StatsCard = memo(function StatsCard({
           </p>
 
           {/* Value */}
-          <p className={`${sizeConfig.value} font-bold ${colorConfig.text} truncate`}>
+          <p className={`${dynamicFontSize} font-bold ${colorConfig.text} truncate`}>
             {formattedValue}
           </p>
 

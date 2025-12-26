@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import { X, Trash2, ChevronDown, FileEdit, Link2, ShoppingCart, Tag, Crown } from 'lucide-react';
-import EbayListingModal from '../ebay/EbayListingModal';
+
 import { getSetDisplayName } from '../../utils/cardHelpers';
 import { normalizeName, computeCompletion } from '../../utils/deckHelpers';
 import { BuyButton } from '../buy/BuyButton';
@@ -23,7 +23,7 @@ export function DeckDetailsView({
 }) {
   const [showMissing, setShowMissing] = useState(false);
   const [showBuyModal, setShowBuyModal] = useState(false);
-  const [showEbayModal, setShowEbayModal] = useState(false);
+
   const [commanderLocal, setCommanderLocal] = useState(deck.commander || '');
   const [settingCommanderFor, setSettingCommanderFor] = useState(null);
   const [enrichedCards, setEnrichedCards] = useState([]);
@@ -109,16 +109,6 @@ export function DeckDetailsView({
                 Buy Missing
               </button>
             )}
-            {onArchidektSync && (
-              <button
-                onClick={() => onArchidektSync(deck)}
-                className="text-slate-100 bg-blue-600 hover:bg-blue-500 transition-colors px-3 py-2 rounded-lg flex items-center gap-2 font-medium"
-                title="Sync with Archidekt"
-              >
-                <Link2 className="w-4 h-4" />
-                Archidekt
-              </button>
-            )}
             {onEditCards && (
               <button
                 onClick={() => onEditCards(deck)}
@@ -129,14 +119,6 @@ export function DeckDetailsView({
                 Edit Cards
               </button>
             )}
-            <button
-              onClick={() => setShowEbayModal(true)}
-              className="text-slate-100 bg-emerald-600 hover:bg-emerald-500 transition-colors px-3 py-2 rounded-lg flex items-center gap-2 font-medium"
-              title="Create eBay listing"
-            >
-              <Tag className="w-4 h-4" />
-              List on eBay
-            </button>
             <button
               onClick={() => onDelete(deck.id)}
               className="text-[var(--text-muted)] hover:text-red-400 transition-colors"
@@ -316,14 +298,7 @@ export function DeckDetailsView({
         deckName={deck.name}
       />
 
-      <EbayListingModal
-        open={showEbayModal}
-        onClose={() => setShowEbayModal(false)}
-        deckId={deck.id}
-        initialPrice={0}
-        deckName={deck.name}
-        commander={commanderLocal || deck.commander}
-      />
+
     </div>
   );
 }

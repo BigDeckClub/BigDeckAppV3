@@ -3,8 +3,6 @@ import { Database, Loader2, CheckCircle2, AlertCircle, User, Bell, Shield } from
 import { useToast, TOAST_TYPES } from '../../context/ToastContext';
 import { api } from '../../utils/apiClient';
 import { SettingsSection, Toggle } from '../ui';
-import { EbaySettings } from './EbaySettings';
-import { TcgPlayerSettings } from './TcgPlayerSettings';
 
 /**
  * AccountSettings component - Account settings tab
@@ -59,13 +57,6 @@ export const AccountSettings = () => {
       >
         <p className="text-[var(--text-muted)] text-sm">More account options coming soon...</p>
       </SettingsSection>
-
-
-      {/* TCGPlayer Settings Section */}
-      <TcgPlayerSettings />
-
-      {/* eBay Integration Section */}
-      <EbaySettings />
 
       {/* Notifications Section */}
       <SettingsSection

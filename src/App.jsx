@@ -27,13 +27,12 @@ const DashboardTab = lazy(() => import("./components/DashboardTab"));
 const DeckTab = lazy(() => import("./components/DeckTab"));
 const DeckBuilderTab = lazy(() => import("./components/aidbuilder/AIDeckBuilder"));
 const SettingsTab = lazy(() => import("./components/SettingsTab"));
-const AdminTab = lazy(() => import("./components/admin/AdminTab"));
-const AutobuyTab = lazy(() => import("./components/AutobuyTab"));
+
 
 function MTGInventoryTrackerContent() {
   // ALL hooks must be called before any conditional returns
   const { user, loading: authLoading } = useAuth();
-  const { post, get } = useApi();
+  const { get } = useApi();
   const { showToast } = useToast();
 
   // Custom hooks for extracted functionality
@@ -142,20 +141,6 @@ function MTGInventoryTrackerContent() {
     loadAllData();
   }, [user, loadInventory, loadAllSets, loadDecks]);
 
-  const handleSell = useCallback(async (saleData) => {
-    try {
-      await post('/sales', saleData);
-      if (saleData.itemType === 'deck') {
-        setDeckRefreshTrigger(prev => prev + 1);
-        await loadInventory();
-        await loadDecks({ silentError: true }); // Reload decks after sale
-      }
-      showToast(`${saleData.itemName} sold successfully!`, TOAST_TYPES.SUCCESS);
-    } catch (_error) {
-      showToast("Failed to record sale", TOAST_TYPES.ERROR);
-      throw _error;
-    }
-  }, [post, loadInventory, showToast]);
 
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
@@ -203,7 +188,6 @@ function MTGInventoryTrackerContent() {
                     expandedCards={expandedCards}
                     setExpandedCards={setExpandedCards}
                     deckRefreshTrigger={deckRefreshTrigger}
-                    onSell={handleSell}
                     searchRef={searchInputRef}
                     onNavigate={setActiveTab}
                   />
@@ -223,14 +207,6 @@ function MTGInventoryTrackerContent() {
                     searchIsLoading={searchIsLoading}
                     addInventoryItem={addInventoryItem}
                   />
-                </Suspense>
-              </ErrorBoundaryWithRetry>
-            )}
-
-            {activeTab === "autobuy" && (
-              <ErrorBoundaryWithRetry>
-                <Suspense fallback={<TabLoadingSpinner />}>
-                  <AutobuyTab inventory={inventory} decks={decks} />
                 </Suspense>
               </ErrorBoundaryWithRetry>
             )}
@@ -257,7 +233,12 @@ function MTGInventoryTrackerContent() {
 
             {activeTab === "ai" && (
               <Suspense fallback={<TabLoadingSpinner />}>
-                <DeckBuilderTab />
+                <DeckBuilderTab onComplete={() => {
+                  setDeckRefreshTrigger(prev => prev + 1);
+                  loadDecks();
+                  setActiveTab("decks");
+                  showToast("Deck conjured successfully!", TOAST_TYPES.SUCCESS);
+                }} />
               </Suspense>
             )}
 
@@ -267,11 +248,7 @@ function MTGInventoryTrackerContent() {
               </Suspense>
             )}
 
-            {activeTab === "marketplace" && (
-              <Suspense fallback={<TabLoadingSpinner />}>
-                <AdminTab />
-              </Suspense>
-            )}
+
           </div>
         )}
       </main>

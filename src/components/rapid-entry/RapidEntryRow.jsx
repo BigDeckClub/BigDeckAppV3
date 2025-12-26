@@ -167,7 +167,7 @@ export function RapidEntryRow({
         <div className="md:col-span-1">
           <label className="md:hidden text-xs text-[var(--text-muted)] mb-1 block">Price</label>
           <div className="relative">
-            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[var(--text-muted)] text-sm">$</span>
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm pointer-events-none select-none">$</span>
             <input
               type="number"
               step="0.01"
@@ -177,7 +177,7 @@ export function RapidEntryRow({
               onChange={(e) => updateRowField(rowIndex, 'price', e.target.value)}
               onKeyDown={(e) => handleKeyDown(e, rowIndex, 'price')}
               disabled={row.status === 'added' || lotModeEnabled}
-              className={`w-full bg-[var(--muted-surface)] border border-[var(--border)] rounded pl-5 pr-2 py-2 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-600)] disabled:opacity-50 ${lotModeEnabled ? 'cursor-not-allowed' : ''}`}
+              className={`w-full bg-[var(--muted-surface)] border border-[var(--border)] rounded pl-7 pr-2 py-2 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-600)] disabled:opacity-50 ${lotModeEnabled ? 'cursor-not-allowed' : ''}`}
               title={lotModeEnabled ? 'Price is calculated from lot total' : ''}
             />
           </div>

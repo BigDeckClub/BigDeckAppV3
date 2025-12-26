@@ -14,17 +14,17 @@ export const MarketplaceSelector = memo(function MarketplaceSelector({
 }) {
   const marketplaceStyles = {
     tcgplayer: {
-      base: 'border-blue-600/50 bg-[var(--surface)]',
+      base: 'border-blue-600/50 bg-slate-800',
       selected: 'border-blue-500 bg-blue-900/40 ring-2 ring-blue-500/50',
       hover: 'hover:border-blue-500/70 hover:bg-blue-900/20',
     },
     manapool: {
-      base: 'border-green-600/50 bg-[var(--surface)]',
+      base: 'border-green-600/50 bg-slate-800',
       selected: 'border-green-500 bg-green-900/40 ring-2 ring-green-500/50',
       hover: 'hover:border-green-500/70 hover:bg-green-900/20',
     },
     cardkingdom: {
-      base: 'border-purple-600/50 bg-[var(--surface)]',
+      base: 'border-purple-600/50 bg-slate-800',
       selected: 'border-purple-500 bg-purple-900/40 ring-2 ring-purple-500/50',
       hover: 'hover:border-purple-500/70 hover:bg-purple-900/20',
     },
@@ -32,7 +32,7 @@ export const MarketplaceSelector = memo(function MarketplaceSelector({
 
   return (
     <div className="space-y-3">
-      <label className="block text-sm font-medium text-[var(--text-muted)]">
+      <label className="block text-sm font-medium text-slate-300">
         Select Marketplace:
       </label>
       <div className="flex flex-wrap gap-2">
@@ -43,7 +43,6 @@ export const MarketplaceSelector = memo(function MarketplaceSelector({
             <button
               key={key}
               type="button"
-              aria-pressed={isSelected}
               onClick={() => onSelect(key)}
               className={`
                 flex items-center gap-2 px-4 py-2 rounded-lg border transition-all duration-200
@@ -52,7 +51,7 @@ export const MarketplaceSelector = memo(function MarketplaceSelector({
               `}
             >
               <span className="text-lg">{marketplace.icon}</span>
-              <span className={`font-medium ${isSelected ? 'text-white' : 'text-[var(--text-muted)]'}`}>
+              <span className={`font-medium ${isSelected ? 'text-white' : 'text-slate-300'}`}>
                 {marketplace.name}
               </span>
             </button>
@@ -60,7 +59,7 @@ export const MarketplaceSelector = memo(function MarketplaceSelector({
         })}
       </div>
       {showRememberOption && (
-        <label className="flex items-center gap-2 text-sm text-[var(--text-muted)] cursor-pointer mt-2">
+        <label className="flex items-center gap-2 text-sm text-slate-400 cursor-pointer mt-2">
           <input
             type="checkbox"
             checked={remember}

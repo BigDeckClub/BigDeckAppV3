@@ -6,30 +6,33 @@ import { apiLimiter } from '../middleware/index.js';
 
 const router = express.Router();
 
+console.log('[ANALYTICS] Router module loaded');
+
 // Apply rate limiting to prevent abuse
 router.use(apiLimiter);
 
 // ========== ANALYTICS ENDPOINTS ==========
 router.get('/analytics/market-values', authenticate, async (req, res) => {
+  console.log('[ANALYTICS] GET /analytics/market-values hit');
   const userId = req.userId;
   try {
     const result = await pool.query('SELECT scryfall_id, quantity FROM inventory WHERE scryfall_id IS NOT NULL AND user_id = $1', [userId]);
     const items = result.rows || [];
-    
+
     let cardkingdomTotal = 0;
     let tcgplayerTotal = 0;
-    
+
     if (items.length === 0) {
       console.log('[ANALYTICS] No inventory items with Scryfall IDs found for market valuation');
       return res.json({ cardkingdom: 0, tcgplayer: 0 });
     }
-    
+
     for (const item of items) {
       const prices = mtgjsonService.getPricesByScryfallId(item.scryfall_id);
       if (prices && prices.cardkingdom) cardkingdomTotal += prices.cardkingdom * (item.quantity || 0);
       if (prices && prices.tcgplayer) tcgplayerTotal += prices.tcgplayer * (item.quantity || 0);
     }
-    
+
     console.log(`[ANALYTICS] Market values calculated: CK=$${cardkingdomTotal.toFixed(2)}, TCG=$${tcgplayerTotal.toFixed(2)} from ${items.length} items`);
     res.json({ cardkingdom: cardkingdomTotal, tcgplayer: tcgplayerTotal });
   } catch (error) {
@@ -46,7 +49,7 @@ router.get('/analytics/card-metrics', authenticate, async (req, res) => {
     const totalRow = totalResult.rows[0];
     const totalCards = parseInt(totalRow.total_count) || 0;
     const uniqueCards = parseInt(totalRow.unique_count) || 0;
-    
+
     // Available cards (total - reserved)
     const availableResult = await pool.query(`
       SELECT COALESCE(SUM(
@@ -60,51 +63,74 @@ router.get('/analytics/card-metrics', authenticate, async (req, res) => {
       WHERE i.user_id = $1
     `, [userId]);
     const totalAvailable = parseInt(availableResult.rows[0].available_count) || 0;
-    
-    // Sold in last 60 days (from transaction history)
-    const soldResult = await pool.query(
-      'SELECT SUM(quantity) as count FROM inventory_transactions WHERE transaction_type = $1 AND transaction_date >= CURRENT_DATE - INTERVAL \'60 days\' AND user_id = $2',
-      ['SALE', userId]
-    );
-    const totalSoldLast60d = parseInt(soldResult.rows[0].count) || 0;
-    
-    // Purchased in last 60 days = current inventory + sold in period (since current reflects post-sale)
-    const purchasedLast60d = totalCards + totalSoldLast60d;
-    
-    // Lifetime totals = sum all SALE transactions
-    const lifetimeSoldResult = await pool.query(
-      'SELECT SUM(quantity) as count FROM inventory_transactions WHERE transaction_type = $1 AND user_id = $2',
-      ['SALE', userId]
-    );
-    const lifetimeTotalCards = parseInt(lifetimeSoldResult.rows[0].count) || 0;
-    
-    // Lifetime value = sum all PURCHASE transaction values (correct equation)
-    const lifetimePurchaseValueResult = await pool.query(
-      'SELECT COALESCE(SUM(quantity * purchase_price), 0) as value FROM inventory_transactions WHERE transaction_type = $1 AND user_id = $2',
-      ['PURCHASE', userId]
-    );
-    const lifetimeTotalValue = parseFloat(lifetimePurchaseValueResult.rows[0].value) || 0;
-    
+
     res.json({
       totalCards,
       totalAvailable,
-      uniqueCards,
-      totalSoldLast60d,
-      totalPurchasedLast60d: purchasedLast60d,
-      lifetimeTotalCards,
-      lifetimeTotalValue
+      uniqueCards
     });
   } catch (error) {
     console.error('[ANALYTICS] Error calculating card metrics:', error.message);
     res.json({
       totalCards: 0,
       totalAvailable: 0,
-      uniqueCards: 0,
-      totalSoldLast60d: 0,
-      totalPurchasedLast60d: 0,
-      lifetimeTotalCards: 0,
-      lifetimeTotalValue: 0
+      uniqueCards: 0
     });
+  }
+});
+
+router.get('/analytics/top-cards', authenticate, async (req, res) => {
+  console.log('[ANALYTICS] GET /analytics/top-cards hit');
+  const userId = req.userId;
+  try {
+    const result = await pool.query('SELECT id, name, quantity, scryfall_id, purchase_price, image_url, folder FROM inventory WHERE user_id = $1', [userId]);
+    const items = result.rows || [];
+
+    const pricedItems = items.map(item => {
+      let unitPrice = 0;
+      let priceSource = 'purchase';
+
+      if (item.scryfall_id) {
+        const prices = mtgjsonService.getPricesByScryfallId(item.scryfall_id);
+        // Prefer TCGPlayer, then CardKingdom, then purchase_price
+        if (prices && prices.tcgplayer) {
+          unitPrice = prices.tcgplayer;
+          priceSource = 'tcgplayer';
+        } else if (prices && prices.cardkingdom) {
+          unitPrice = prices.cardkingdom;
+          priceSource = 'cardkingdom';
+        } else {
+          unitPrice = parseFloat(item.purchase_price) || 0;
+        }
+      } else {
+        unitPrice = parseFloat(item.purchase_price) || 0;
+      }
+
+      return {
+        ...item,
+        unitPrice,
+        totalValue: unitPrice * (item.quantity || 0),
+        priceSource
+      };
+    });
+
+    // Sort by total value descending
+    const topCards = pricedItems
+      .sort((a, b) => b.totalValue - a.totalValue)
+      .slice(0, 5)
+      .map(card => ({
+        id: card.id, // Wait, I didn't select ID. I should select ID.
+        name: card.name,
+        quantity: card.quantity,
+        value: card.totalValue,
+        unitPrice: card.unitPrice,
+        priceSource: card.priceSource
+      }));
+
+    res.json(topCards);
+  } catch (error) {
+    console.error('[ANALYTICS] Error fetching top cards:', error.message);
+    res.status(500).json({ error: 'Failed to fetch top cards' });
   }
 });
 

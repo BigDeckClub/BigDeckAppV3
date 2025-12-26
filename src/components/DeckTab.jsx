@@ -206,20 +206,6 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate, decks: exte
                 <>
                   <button
                     onClick={() => {
-                      setShowImportArchidekt(!showImportArchidekt);
-                      setShowImportDecklist(false);
-                    }}
-                    className={`px-3 sm:px-4 py-2 rounded-lg flex items-center justify-center sm:justify-start gap-2 transition-colors text-[var(--bda-primary-foreground)] text-sm ${showImportArchidekt
-                      ? 'bg-blue-500 shadow-lg shadow-blue-500/50'
-                      : 'bg-blue-600 hover:bg-blue-700'
-                      }`}
-                  >
-                    <Download className="w-4 h-4 flex-shrink-0" />
-                    <span className="hidden sm:inline">Import from Archidekt</span>
-                    <span className="sm:hidden">Archidekt</span>
-                  </button>
-                  <button
-                    onClick={() => {
                       setShowImportDecklist(!showImportDecklist);
                       setShowImportArchidekt(false);
                     }}
@@ -286,15 +272,15 @@ export const DeckTab = ({ onDeckCreatedOrDeleted, onInventoryUpdate, decks: exte
               </div>
               <h3 className="text-2xl font-bold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">Your Deck Library is Empty</h3>
               <p className="text-[var(--bda-muted)] max-w-md mb-8 text-lg">
-                Start by importing a deck from Archidekt or pasting a decklist to begin tracking your collection.
+                Start by pasting a decklist to begin tracking your collection.
               </p>
               <div className="flex gap-4">
                 <button
-                  onClick={() => setShowImportArchidekt(true)}
-                  className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold shadow-lg shadow-blue-500/20 transition-all hover:scale-105 active:scale-95"
+                  onClick={() => setShowImportDecklist(true)}
+                  className="flex items-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-500 text-white rounded-lg font-bold shadow-lg shadow-purple-500/20 transition-all hover:scale-105 active:scale-95"
                 >
                   <Download className="w-5 h-5" />
-                  Import from Archidekt
+                  Import Decklist
                 </button>
               </div>
             </div>

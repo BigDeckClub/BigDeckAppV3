@@ -2,11 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { useInventory } from '../../context/InventoryContext';
 import { useApi } from '../../hooks/useApi';
 import { useToast, TOAST_TYPES } from '../../context/ToastContext';
-import { Sparkles, Save, Search, RefreshCw, Check, ShoppingCart } from 'lucide-react';
-import { buildCartUrl } from '../../utils/marketplaceUrls';
+import { Sparkles, Save, Search, RefreshCw, Check, ShoppingCart, Dices, Wallet, Lock, Layers } from 'lucide-react';
 import { TCGPlayerBrandIcon, CardKingdomBrandIcon } from '../icons/VendorIcons';
+import { BuyCardsModal } from '../buy/BuyCardsModal';
+import CommanderPicker from './CommanderPicker';
+import OrbDropdown from './OrbDropdown';
 import Card from '../ui/Card';
 import Button from '../ui/Button';
+import MysticOrb from '../ui/MysticOrb';
+import WizardOptionCard from './WizardOptionCard';
+import { ChevronLeft } from 'lucide-react';
 
 const LOADING_STEPS = [
     { step: 0, msg: 'Identifying Commander...', icon: '🔮' },
@@ -18,62 +23,125 @@ const LOADING_STEPS = [
     { step: 6, msg: 'Finalizing deck...', icon: '✨' },
 ];
 
-export default function AIDeckBuilder() {
+export default function AIDeckBuilder({ onComplete }) {
     const { post, put } = useApi();
     const { inventory } = useInventory();
     const { showToast } = useToast();
 
-    const [prompt, setPrompt] = useState('');
-    const [loading, setLoading] = useState(false);
+    const [wizardState, setWizardState] = useState('idle'); // 'idle' | 'step_commander' | 'step_input' | 'step_picker_show_card' | 'step_budget' | 'step_source' | 'generating' | 'ready' | 'cracking' | 'complete'
+    const [selectionAnim, setSelectionAnim] = useState(null); // { id: string, type: 'absorb' }
+    const [orbAbsorbing, setOrbAbsorbing] = useState(false);
+    const [showPickerFlipped, setShowPickerFlipped] = useState(false);
+
+    // Wizard Configuration State
+    const [deckConfig, setDeckConfig] = useState({
+        commanderMode: null, // 'random' | 'specific'
+        commander: null, // { name, ... } if specific
+        prompt: '',
+        budget: 200,
+        source: 'multiverse' // 'multiverse' | 'inventory'
+    });
+
     const [loadingStep, setLoadingStep] = useState(0);
     const [result, setResult] = useState(null);
-    const [viewMode, setViewMode] = useState('grid'); // 'list' | 'grid'
-    const [activeMobileTab, setActiveMobileTab] = useState('deck'); // 'deck' | 'stats'
-    const [budget, setBudget] = useState(200); // Dollar budget
-    const [useBudget, setUseBudget] = useState(false); // Budget toggle
-    const [showPrintModal, setShowPrintModal] = useState(false); // Print options modal
-    const [inventoryOnly, setInventoryOnly] = useState(false); // Inventory-only mode
+    const [viewMode, setViewMode] = useState('grid');
+    const [activeMobileTab, setActiveMobileTab] = useState('deck');
+    const [showPrintModal, setShowPrintModal] = useState(false);
+    const [showBuyModal, setShowBuyModal] = useState(false);
 
-    // Animate through loading steps
+    // Legacy state for CommanderPicker refactoring compatibility (temporary)
+    const [showCommanderPicker, setShowCommanderPicker] = useState(false);
+    const [selectedCommander, setSelectedCommander] = useState(null);
+
+    // Update loading effect to track wizardState
     useEffect(() => {
-        if (!loading) {
+        if (wizardState !== 'generating') {
             setLoadingStep(0);
             return;
         }
         const interval = setInterval(() => {
             setLoadingStep(prev => (prev < LOADING_STEPS.length - 1 ? prev + 1 : prev));
-        }, 2500); // Progress every 2.5 seconds
+        }, 2500);
         return () => clearInterval(interval);
-    }, [loading]);
+    }, [wizardState]);
 
-
-
-
-
-    const handleGenerate = async (e) => {
-        e.preventDefault();
-        if (!prompt) return;
-
-        setLoading(true);
+    // Handle deck generation
+    const handleGenerate = async () => {
+        setWizardState('generating');
         setResult(null);
 
         try {
             const data = await post('/ai/generate', {
-                commander: prompt,
-                theme: 'General Prompt',
-                budget: useBudget ? budget : null, // Only send if enabled
-                bracket: 3, // Default mid-power, can be specified in prompt
-                inventoryOnly: inventoryOnly // Inventory-only mode
+                commanderMode: deckConfig.commanderMode, // 'random' or 'specific'
+                commander: deckConfig.commanderMode === 'specific' ? deckConfig.commander?.name : null,
+                theme: deckConfig.prompt,
+                budget: deckConfig.budget === 'Unlimited' ? null : deckConfig.budget,
+                bracket: 3,
+                inventoryOnly: deckConfig.source === 'inventory'
             });
 
             setResult(data);
+            setWizardState('ready');
         } catch (error) {
             console.error('Generation failed', error);
-            showToast('Failed to generate deck. Try again.', TOAST_TYPES.ERROR);
-        } finally {
-            setLoading(false);
+
+            // Check for specific error types
+            if (error.data?.requiredCount && error.data?.availableCount) {
+                // Inventory-only mode doesn't have enough cards
+                showToast(
+                    `Need at least ${error.data.requiredCount} available cards for inventory-only mode. You have ${error.data.availableCount}.`,
+                    TOAST_TYPES.ERROR
+                );
+            } else if (error.message) {
+                showToast(error.message, TOAST_TYPES.ERROR);
+            } else {
+                showToast('Failed to generate deck. Please try again.', TOAST_TYPES.ERROR);
+            }
+
+            setWizardState('step_final_input'); // Go back to input step on error
         }
     };
+
+    // Wizard Navigation Helpers
+    const updateConfig = (key, value) => {
+        setDeckConfig(prev => ({ ...prev, [key]: value }));
+    };
+
+    const handleOrbCrack = () => {
+        setWizardState('cracking');
+        setTimeout(() => {
+            setWizardState('complete');
+        }, 1200);
+    };
+
+    // Auto-trigger commander card insertion after brief display
+    useEffect(() => {
+        if (wizardState === 'step_picker_show_card') {
+            const timer = setTimeout(async () => {
+                // Trigger insertion animation
+                await handleWizardSelection('commander-card', () => {
+                    setWizardState('step_source');
+                    setShowPickerFlipped(false); // Reset for next time
+                });
+            }, 800); // Show card for 800ms before inserting
+            return () => clearTimeout(timer);
+        }
+    }, [wizardState]);
+
+    const handleNewDeck = () => {
+        setResult(null);
+        setDeckConfig({
+            commanderMode: null,
+            commander: null,
+            prompt: '',
+            budget: 200,
+            source: 'multiverse'
+        });
+        setWizardState('idle');
+    };
+
+    // Legacy support for helper function
+    const inventoryOnly = deckConfig.source === 'inventory';
 
     // Helper to check ownership and availability
     const checkOwnership = (cardName) => {
@@ -93,6 +161,40 @@ export default function AIDeckBuilder() {
         const reserved = parseInt(c.reserved_quantity) || 0;
         return (total - reserved) > 0;
     }).length;
+
+    // Calculate total value of available inventory
+    const availableInventoryValue = inventory.reduce((total, card) => {
+        const qty = parseInt(card.quantity) || 0;
+        const reserved = parseInt(card.reserved_quantity) || 0;
+        const available = qty - reserved;
+        const price = parseFloat(card.purchase_price) || 0;
+        return total + (available * price);
+    }, 0);
+
+    // Handle "Use Inventory Value" button
+    const handleUseInventoryValue = () => {
+        const roundedValue = Math.round(availableInventoryValue / 10) * 10; // Round to nearest $10
+        setBudget(Math.max(50, Math.min(2000, roundedValue))); // Clamp between $50-$2000
+        setUseBudget(true);
+    };
+
+    // Get unavailable cards (missing + reserved) for buy modal
+    const getUnavailableCards = () => {
+        if (!result) return [];
+
+        return result.deck.cards.filter(card => {
+            const { available } = checkOwnership(card.name);
+            const neededQty = card.quantity || 1;
+            return available < neededQty;
+        }).map(card => {
+            const { available } = checkOwnership(card.name);
+            const neededQty = card.quantity || 1;
+            return {
+                name: card.name,
+                quantity: neededQty - available
+            };
+        });
+    };
 
     const handleSaveDeck = async () => {
         if (!result) return;
@@ -204,144 +306,354 @@ export default function AIDeckBuilder() {
         isCommander: c.category === 'Commander' || c.name.toLowerCase() === result.commander.name.toLowerCase()
     })) : [];
 
-    // ... (rest of logic) ...
+
+
+    // Helper to animate selection before moving to next step
+    const handleWizardSelection = async (selectionId, onComplete) => {
+        setSelectionAnim(selectionId);
+
+        // Wait for card to reach "Ready to Insert" phase (50% of animation)
+        await new Promise(r => setTimeout(r, 625));
+
+        // NOW trigger orb absorption as card is being inserted
+        setOrbAbsorbing(true);
+
+        // Wait for remaining absorption animation
+        await new Promise(r => setTimeout(r, 625));
+
+        setOrbAbsorbing(false);
+        setSelectionAnim(null);
+        onComplete();
+    };
+
+    // Helper: is the orb loop active?
+    const isGenerating = ['generating', 'ready', 'cracking'].includes(wizardState);
+    const isWizardActive = ['step_commander', 'step_picker_show_card', 'step_source', 'step_budget', 'step_final_input'].includes(wizardState);
+
+    // Dynamic Title based on step
+    const getStepTitle = () => {
+        if (selectionAnim) return ""; // Hide title during transition
+        switch (wizardState) {
+            case 'step_commander': return "Choose your path";
+            case 'step_picker': return "Summon your legend";
+            case 'step_picker_show_card': return ""; // Hide during card display
+            case 'step_source': return "Choose your source";
+            case 'step_budget': return "Set your limits";
+            case 'step_final_input': return deckConfig.commanderMode === 'specific' ? "Your command?" : "What do you seek?";
+            default: return "";
+        }
+    };
+
+    // Dynamic Scale based on progress
+    const getOrbScale = () => {
+        if (!isWizardActive) return 1.0;
+        switch (wizardState) {
+            case 'step_commander': return 1.0;
+            case 'step_picker_show_card': return 1.1; // Card selected
+            case 'step_source': return 1.15; // Source loop
+            case 'step_budget': return 1.25; // Budget loop
+            case 'step_final_input': return 1.35; // Ready to conjure
+            default: return 1.0;
+        }
+    };
 
     return (
-        <div className="md:h-full flex flex-col p-4 gap-4 max-w-7xl mx-auto">
-            {/* Header / Input Section */}
-            <Card className="p-6">
-                <div className="flex items-center gap-3 mb-6">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-fuchsia-600 to-purple-600 flex items-center justify-center shadow-lg shadow-purple-500/20">
-                        <Sparkles className="w-5 h-5 text-white animate-pulse" />
-                    </div>
-                    <div>
-                        <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-fuchsia-400 to-purple-400">
-                            The Orb
-                        </h1>
-                        <p className="text-[var(--text-muted)] text-sm">
-                            Consult the oracle to build your next masterpiece
-                        </p>
-                    </div>
-                </div>
+        <div className="md:h-full flex flex-col p-4 gap-4 max-w-7xl mx-auto h-[calc(100vh-100px)]">
 
-                <form onSubmit={handleGenerate} className="flex flex-col gap-4">
-                    <div className="flex-1">
-                        <label className="block text-sm font-medium mb-1 text-[var(--text-muted)]">What do you seek?</label>
-                        <div className="relative">
-                            <input
-                                type="text"
-                                value={prompt}
-                                onChange={(e) => setPrompt(e.target.value)}
-                                placeholder="e.g. A deck led by Atraxa focused on +1/+1 counters..."
-                                className="w-full bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg px-4 py-3 pl-10 focus:ring-2 focus:ring-fuchsia-500/50 outline-none transition-all"
-                            />
-                            <Search className="w-4 h-4 absolute left-3 top-3.5 text-[var(--text-muted)]" />
-                        </div>
-                    </div>
+            {/* Wizard & Orb Section */}
+            {(wizardState === 'idle' || isGenerating || isWizardActive) && (
+                <div className="flex-1 flex flex-col items-center justify-center transition-all duration-500">
 
-
-                    {/* Budget Slider (Optional) */}
-                    <div className="flex items-start gap-4">
-                        <label className="flex items-center gap-2 cursor-pointer mt-1">
-                            <input
-                                type="checkbox"
-                                checked={useBudget}
-                                onChange={(e) => setUseBudget(e.target.checked)}
-                                className="w-4 h-4 rounded border-[var(--border)] bg-[var(--bg-secondary)] accent-purple-600"
-                            />
-                            <span className="text-sm text-[var(--text-muted)]">Set Budget</span>
-                        </label>
-                        {useBudget && (
-                            <div className="flex-1">
-                                <label className="block text-sm font-medium mb-2 text-[var(--text-muted)]">
-                                    Budget: <span className="text-[var(--accent)] font-bold">${budget}</span>
-                                </label>
-                                <input
-                                    type="range"
-                                    min="50"
-                                    max="2000"
-                                    step="50"
-                                    value={budget}
-                                    onChange={(e) => setBudget(parseInt(e.target.value))}
-                                    className="w-full h-2 bg-[var(--bg-tertiary)] rounded-lg appearance-none cursor-pointer accent-purple-600"
-                                />
-                                <div className="flex justify-between text-xs text-[var(--text-muted)] mt-1">
-                                    <span>$50</span>
-                                    <span>$500</span>
-                                    <span>$2000</span>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Inventory-Only Mode Toggle */}
-                    <div className="flex flex-col gap-2">
-                        <label className="flex items-center gap-2 cursor-pointer">
-                            <input
-                                type="checkbox"
-                                checked={inventoryOnly}
-                                onChange={(e) => setInventoryOnly(e.target.checked)}
-                                className="w-4 h-4 rounded border-[var(--border)] bg-[var(--bg-secondary)] accent-purple-600"
-                            />
-                            <span className="text-sm text-[var(--text-muted)]">
-                                Build using ONLY my inventory (no external cards)
-                            </span>
-                        </label>
-                        {inventoryOnly && availableCount < 64 && (
-                            <div className="text-sm text-amber-600 bg-amber-600/10 border border-amber-600/20 rounded p-2">
-                                ⚠️ Warning: You have only {availableCount} available cards.
-                                Commander decks need 64+ non-land spells. The AI may not generate a complete deck.
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="flex justify-end">
-                        <Button
-                            type="submit"
-                            disabled={loading || !prompt}
-                            className="bg-purple-600 hover:bg-purple-700 w-full md:w-auto"
-                        >
-                            {loading ? (
-                                <><RefreshCw className="w-4 h-4 animate-spin mr-2" /> Conjuring...</>
-                            ) : (
-                                <><Sparkles className="w-4 h-4 mr-2" /> Conjure Deck</>
-                            )}
-                        </Button>
-                    </div>
-                </form>
-            </Card>
-
-            {/* Loading Progress */}
-            {loading && (
-                <Card className="p-6 animate-fade-in">
-                    <div className="flex items-center gap-4 mb-4">
-                        <div className="text-3xl animate-bounce">{LOADING_STEPS[loadingStep]?.icon}</div>
-                        <div className="flex-1">
-                            <h3 className="font-semibold text-lg">{LOADING_STEPS[loadingStep]?.msg}</h3>
-                            <p className="text-sm text-[var(--text-muted)]">Building your 100-card deck...</p>
-                        </div>
-                    </div>
-                    <div className="w-full bg-[var(--bg-secondary)] rounded-full h-2 overflow-hidden">
-                        <div
-                            className="h-full bg-gradient-to-r from-purple-600 to-fuchsia-500 transition-all duration-500 ease-out"
-                            style={{ width: `${((loadingStep + 1) / LOADING_STEPS.length) * 100}%` }}
+                    {/* The Mystic Orb */}
+                    <div className={`relative z-10 mb-5 transition-all duration-500 ${orbAbsorbing ? 'orb-container absorbing' : ''}`}>
+                        <MysticOrb
+                            state={wizardState === 'generating' ? 'loading' : (isGenerating ? wizardState : 'idle')}
+                            size={isWizardActive ? 'small' : 'large'}
+                            scale={getOrbScale()}
+                            onClick={() => {
+                                if (wizardState === 'idle') {
+                                    setWizardState('step_commander');
+                                } else if (wizardState === 'ready' && result) {
+                                    setWizardState('cracking');
+                                }
+                            }}
+                            loadingText={LOADING_STEPS[loadingStep]?.msg}
+                            loadingIcon={LOADING_STEPS[loadingStep]?.icon}
+                            onCrackComplete={() => {
+                                // Animation finished, check result
+                                if (result && !result.error) {
+                                    onComplete(result);
+                                } else {
+                                    setWizardState('idle');
+                                }
+                            }}
                         />
                     </div>
-                    <div className="flex justify-between text-xs text-[var(--text-muted)] mt-2">
-                        {LOADING_STEPS.map((step, idx) => (
-                            <span
-                                key={idx}
-                                className={`transition-colors ${idx <= loadingStep ? 'text-purple-400' : ''}`}
-                            >
-                                {idx <= loadingStep ? '✓' : '○'}
-                            </span>
-                        ))}
-                    </div>
-                </Card>
+                    {/* Step Title with Back Button */}
+                    {isWizardActive && !selectionAnim && (
+                        <div className="w-full max-w-md flex items-center justify-between mb-6 animate-in slide-in-from-bottom-2 fade-in duration-500">
+                            {wizardState !== 'step_commander' || showPickerFlipped ? (
+                                <button
+                                    onClick={() => {
+                                        if (wizardState === 'step_commander' && showPickerFlipped) {
+                                            setShowPickerFlipped(false);
+                                        }
+                                        else if (wizardState === 'step_picker_show_card') {
+                                            // Go back to commander selection
+                                            setShowPickerFlipped(false);
+                                            setWizardState('step_commander');
+                                        }
+                                        else if (wizardState === 'step_picker') {
+                                            setWizardState('step_commander');
+                                            setShowPickerFlipped(false);
+                                        }
+                                        else if (wizardState === 'step_source') {
+                                            if (deckConfig.commanderMode === 'specific') {
+                                                // Go back to commander selection with picker open
+                                                setShowPickerFlipped(true);
+                                                setWizardState('step_commander');
+                                            } else {
+                                                setShowPickerFlipped(false);
+                                                setWizardState('step_commander');
+                                            }
+                                        }
+                                        else if (wizardState === 'step_budget') setWizardState('step_source');
+                                        else if (wizardState === 'step_final_input') {
+                                            setWizardState(deckConfig.source === 'inventory' ? 'step_source' : 'step_budget');
+                                        }
+                                    }}
+                                    className="text-gray-400 hover:text-white flex items-center gap-1 transition-colors"
+                                >
+                                    <ChevronLeft className="w-5 h-5" />
+                                    <span className="text-sm">Back</span>
+                                </button>
+                            ) : (
+                                <div className="w-16" /> // Empty spacer for first step
+                            )}
+                            <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-200 to-white">
+                                {getStepTitle()}
+                            </h2>
+                            <div className="w-16"></div> {/* Spacer for balance */}
+                        </div>
+                    )}
+
+                    {/* 1. Commander Step - NOW FIRST */}
+                    {wizardState === 'step_commander' && (
+                        <div className="w-full max-w-md grid grid-cols-1 md:grid-cols-2 gap-3 card-3d-wrapper">
+                            <WizardOptionCard
+                                icon={Dices}
+                                title="Random Commander"
+                                description="Let the Orb decide based on your theme or prompt."
+                                className={selectionAnim === 'random' ? 'animate-insert-slot-left' : (selectionAnim ? 'opacity-0 transition-opacity duration-300' : 'animate-in slide-in-from-bottom-8 fade-in duration-500')}
+                                onClick={() => handleWizardSelection('random', () => {
+                                    updateConfig('commanderMode', 'random');
+                                    setShowPickerFlipped(false);
+                                    setWizardState('step_source');
+                                })}
+                            />
+                            <WizardOptionCard
+                                icon={Search}
+                                title="Specific Commander"
+                                description="Search for a specific legendary creature."
+                                className={
+                                    selectionAnim === 'specific' ? 'animate-insert-slot' :
+                                        selectionAnim ? 'opacity-0 transition-opacity duration-300' :
+                                            showPickerFlipped ? 'animate-card-flip' :
+                                                'animate-in slide-in-from-bottom-8 fade-in duration-500'
+                                }
+                                onClick={() => {
+                                    if (!showPickerFlipped) {
+                                        updateConfig('commanderMode', 'specific');
+                                        setShowPickerFlipped(true);
+                                        // Do NOT setWizardState('step_picker_show_card') here.
+                                        // We stay in step_commander until a card is actually selected in the picker.
+                                    }
+                                }}
+                                backContent={showPickerFlipped ? (
+                                    <div className="h-full p-6 bg-[#0d0d15] border border-white/10 rounded-xl flex flex-col overflow-hidden">
+                                        <h3 className="text-lg font-bold text-white mb-3">Summon your Legend</h3>
+                                        <div className="flex-1 overflow-auto">
+                                            <CommanderPicker
+                                                isOpen={true}
+                                                onSelect={async (cmd) => {
+                                                    updateConfig('commander', cmd);
+                                                    updateConfig('commanderMode', 'specific');
+                                                    setWizardState('step_picker_show_card');
+                                                    setShowPickerFlipped(false);
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+                                ) : null}
+                            />
+                        </div>
+                    )}
+
+                    {/* 1b. Show Commander Card Before Insert */}
+                    {wizardState === 'step_picker_show_card' && deckConfig.commander && (
+                        <div className="w-full max-w-md grid grid-cols-1 md:grid-cols-2 gap-3 card-3d-wrapper">
+                            {/* Empty first column to match layout */}
+                            <div className="hidden md:block" />
+                            <div
+                                className={`aspect-[3/4] rounded-xl overflow-hidden shadow-2xl ${selectionAnim === 'commander-card' ? 'animate-insert-slot' : 'animate-commander-summon'}`}
+                                style={{
+                                    backgroundImage: deckConfig.commander.imageUrl ? `url(${deckConfig.commander.imageUrl})` : 'none',
+                                    backgroundSize: 'cover',
+                                    backgroundPosition: 'center',
+                                    border: '2px solid rgba(250, 204, 21, 0.5)',
+                                    boxShadow: '0 0 40px rgba(250, 204, 21, 0.3)'
+                                }}
+                            />
+                        </div>
+                    )}
+
+                    {/* 2. Source Step - NOW SECOND */}
+                    {wizardState === 'step_source' && (
+                        <div className="w-full max-w-md grid grid-cols-1 md:grid-cols-2 gap-3 card-3d-wrapper">
+                            <WizardOptionCard
+                                icon={Layers}
+                                title="Multiverse"
+                                description="Access the full Magic multiverse."
+                                selected={deckConfig.source === 'multiverse'}
+                                className={selectionAnim === 'multiverse' ? 'animate-insert-slot-left' : (selectionAnim ? 'opacity-0 transition-opacity duration-300' : 'animate-in slide-in-from-bottom-8 fade-in duration-500')}
+                                onClick={() => handleWizardSelection('multiverse', () => {
+                                    updateConfig('source', 'multiverse');
+                                    setWizardState('step_budget');
+                                })}
+                            />
+                            <WizardOptionCard
+                                icon={Lock}
+                                title="Stash Only"
+                                description="Build strictly from your inventory."
+                                selected={deckConfig.source === 'inventory'}
+                                className={selectionAnim === 'inventory' ? 'animate-insert-slot' : (selectionAnim ? 'opacity-0 transition-opacity duration-300' : 'animate-in slide-in-from-bottom-8 fade-in duration-500')}
+                                onClick={() => handleWizardSelection('inventory', () => {
+                                    updateConfig('source', 'inventory');
+                                    setWizardState('step_final_input');
+                                })}
+                            />
+                        </div>
+                    )}
+
+                    {/* 3. Budget Step */}
+                    {wizardState === 'step_budget' && (
+                        <div className="w-full max-w-md flex flex-col items-center gap-6 animate-in slide-in-from-bottom-8 fade-in duration-500">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full card-3d-wrapper">
+                                <WizardOptionCard
+                                    title="Limited"
+                                    description={deckConfig.budget !== 'Unlimited' ? null : "Set a specific budget cap."}
+                                    selected={deckConfig.budget !== 'Unlimited'}
+                                    className={selectionAnim === 'limited' ? 'animate-insert-slot-left' : (selectionAnim ? 'opacity-0 transition-opacity duration-300' : '')}
+                                    onClick={() => {
+                                        if (deckConfig.budget === 'Unlimited') updateConfig('budget', 200);
+                                    }}
+                                >
+                                    {deckConfig.budget !== 'Unlimited' && (
+                                        <div className="w-full mt-2 space-y-2 animate-in fade-in slide-in-from-bottom-2" onClick={(e) => e.stopPropagation()}>
+                                            <div className="flex justify-between items-center text-sm">
+                                                <span className="text-gray-400">Limit</span>
+                                                <span className="text-xl font-bold text-green-400">${deckConfig.budget}</span>
+                                            </div>
+                                            <input
+                                                type="range"
+                                                min="50"
+                                                max="1000"
+                                                step="50"
+                                                value={deckConfig.budget || 200}
+                                                onChange={(e) => updateConfig('budget', Number(e.target.value))}
+                                                className="w-full h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-purple-500"
+                                            />
+                                            <div className="flex justify-between text-[10px] text-gray-500 font-mono">
+                                                <span>$50</span>
+                                                <span>$1000+</span>
+                                            </div>
+                                            <div className="pt-2 flex justify-center">
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleWizardSelection('limited', () => setWizardState('step_final_input'));
+                                                    }}
+                                                    className="w-full px-4 py-2 bg-white text-black text-sm font-bold rounded-lg hover:scale-105 transition-transform shadow-lg hover:shadow-white/20"
+                                                >
+                                                    Next
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </WizardOptionCard>
+                                <WizardOptionCard
+                                    icon={Wallet}
+                                    title="Unlimited"
+                                    description="No budget constraints."
+                                    selected={deckConfig.budget === 'Unlimited'}
+                                    className={selectionAnim === 'unlimited' ? 'animate-insert-slot' : (selectionAnim ? 'opacity-0 transition-opacity duration-300' : '')}
+                                    onClick={() => handleWizardSelection('unlimited', () => {
+                                        updateConfig('budget', 'Unlimited');
+                                        setWizardState('step_final_input');
+                                    })}
+                                />
+                            </div>
+
+
+                        </div>
+                    )}
+
+                    {/* 4. Final Input Step - LAST */}
+                    {/* 4. Final Input Step - LAST */}
+                    {wizardState === 'step_final_input' && !selectionAnim && (
+                        <div className="w-full max-w-md flex justify-center card-3d-wrapper">
+                            <div className="w-full md:w-[calc(50%-0.375rem)] aspect-[3/4] animate-in slide-in-from-bottom-8 fade-in duration-500 relative">
+                                <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl opacity-0 group-hover:opacity-100 transition duration-500 blur pointer-events-none"></div>
+                                <Card className="relative h-full p-4 border transition-all duration-300 flex flex-col items-center justify-between text-center gap-2 bg-[#0d0d15] border-white/10 hover:bg-white/5 group">
+                                    <div className="flex-1 flex flex-col justify-center w-full">
+                                        <h3 className="text-lg font-bold mb-2 text-gray-200">
+                                            Your command?
+                                        </h3>
+
+                                        <input
+                                            type="text"
+                                            value={deckConfig.prompt}
+                                            onChange={(e) => updateConfig('prompt', e.target.value)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    handleGenerate();
+                                                }
+                                            }}
+                                            placeholder={deckConfig.commanderMode === 'specific'
+                                                ? `Theme? (Optional)`
+                                                : "E.g. 'Dragon Deck'"
+                                            }
+                                            className="w-full bg-[var(--input-bg)] border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 transition-colors mb-2"
+                                            autoFocus
+                                        />
+
+                                        {deckConfig.commanderMode === 'specific' && (
+                                            <p className="text-[10px] text-gray-500 mb-2 leading-tight">
+                                                Leave blank to let the AI decide.
+                                            </p>
+                                        )}
+
+                                        <button
+                                            onClick={handleGenerate}
+                                            disabled={wizardState !== 'step_final_input'}
+                                            className={`w-full px-4 py-2 rounded-lg font-bold text-sm flex items-center justify-center gap-2 transition-all ${wizardState !== 'step_final_input'
+                                                ? 'bg-white/5 text-gray-500 cursor-not-allowed'
+                                                : 'bg-white text-black hover:scale-105 shadow-lg hover:shadow-white/20'
+                                                }`}
+                                        >
+                                            <Sparkles className="w-4 h-4" />
+                                            <span>Conjure</span>
+                                        </button>
+                                    </div>
+                                </Card>
+                            </div>
+                        </div>
+                    )}
+                </div>
             )}
 
-            {/* Results Section */}
-            {result && (
+            {/* Results Section - shown after orb reveal */}
+            {wizardState === 'complete' && result && (
                 <div className="flex-1 md:overflow-hidden flex flex-col gap-4 animate-fade-in">
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                         <div className="flex flex-col gap-1 w-full md:w-auto">
@@ -386,6 +698,19 @@ export default function AIDeckBuilder() {
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
                                     <span className="hidden sm:inline">Print Proxies</span><span className="sm:hidden">Print</span>
                                 </div>
+                            </Button>
+                            <Button
+                                onClick={() => setShowBuyModal(true)}
+                                variant="primary"
+                                className="bg-green-600 hover:bg-green-700"
+                                disabled={getUnavailableCards().length === 0}
+                            >
+                                <ShoppingCart className="w-4 h-4 mr-2" />
+                                <span className="hidden sm:inline">Buy Unavailable</span><span className="sm:hidden">Buy</span>
+                            </Button>
+                            <Button onClick={handleNewDeck} variant="secondary" className="border-purple-500/50 text-purple-300 hover:bg-purple-500/20">
+                                <RefreshCw className="w-4 h-4 mr-2" />
+                                <span className="hidden sm:inline">New Deck</span><span className="sm:hidden">New</span>
                             </Button>
                         </div>
                     </div>
@@ -580,55 +905,29 @@ export default function AIDeckBuilder() {
                                 <h4 className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-2">Estimated Market Cost</h4>
                                 <div className="space-y-2">
                                     <div className="flex flex-col gap-3 mt-2">
-                                        <button
-                                            onClick={() => window.open(buildCartUrl('tcgplayer', result.deck.cards), '_blank')}
-                                            className="group relative flex items-center justify-between p-3 rounded-lg border border-[var(--border)] bg-[var(--bg-primary)] hover:border-blue-500/50 hover:bg-blue-500/5 transition-all w-full overflow-hidden"
-                                        >
-                                            <div className="flex items-center gap-3 relative z-10">
-                                                <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center group-hover:bg-blue-500/20 transition-colors">
+                                        <div className="p-3 rounded-lg border border-[var(--border)] bg-[var(--bg-primary)] opacity-50 cursor-not-allowed w-full">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center">
                                                     <TCGPlayerBrandIcon className="w-5 h-5" />
                                                 </div>
                                                 <div className="text-left">
-                                                    <div className="text-xs text-[var(--text-muted)] group-hover:text-blue-400 transition-colors">Buy from</div>
+                                                    <div className="text-xs text-[var(--text-muted)]">Marketplace Removed</div>
                                                     <div className="font-semibold text-sm">TCGPlayer</div>
                                                 </div>
                                             </div>
-                                            <div className="flex items-center gap-3 relative z-10">
-                                                <div className="text-right">
-                                                    <div className="text-sm font-bold text-blue-400">
-                                                        ${result.deck.cards.reduce((sum, c) => sum + (parseFloat(c.tcgPrice) || 0) * (c.quantity || 1), 0).toFixed(2)}
-                                                    </div>
-                                                    <div className="text-[10px] text-[var(--text-muted)]">Market Price</div>
-                                                </div>
-                                                <ShoppingCart className="w-4 h-4 text-[var(--text-muted)] group-hover:text-blue-400 transition-colors" />
-                                            </div>
-                                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-500/5 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
-                                        </button>
+                                        </div>
 
-                                        <button
-                                            onClick={() => window.open(buildCartUrl('cardkingdom', result.deck.cards), '_blank')}
-                                            className="group relative flex items-center justify-between p-3 rounded-lg border border-[var(--border)] bg-[var(--bg-primary)] hover:border-amber-500/50 hover:bg-amber-500/5 transition-all w-full overflow-hidden"
-                                        >
-                                            <div className="flex items-center gap-3 relative z-10">
-                                                <div className="w-8 h-8 rounded-full bg-amber-500/10 flex items-center justify-center group-hover:bg-amber-500/20 transition-colors">
+                                        <div className="p-3 rounded-lg border border-[var(--border)] bg-[var(--bg-primary)] opacity-50 cursor-not-allowed w-full">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-full bg-amber-500/10 flex items-center justify-center">
                                                     <CardKingdomBrandIcon className="w-5 h-5" />
                                                 </div>
                                                 <div className="text-left">
-                                                    <div className="text-xs text-[var(--text-muted)] group-hover:text-amber-400 transition-colors">Buy from</div>
+                                                    <div className="text-xs text-[var(--text-muted)]">Marketplace Removed</div>
                                                     <div className="font-semibold text-sm">Card Kingdom</div>
                                                 </div>
                                             </div>
-                                            <div className="flex items-center gap-3 relative z-10">
-                                                <div className="text-right">
-                                                    <div className="text-sm font-bold text-amber-400">
-                                                        ${result.deck.cards.reduce((sum, c) => sum + (parseFloat(c.ckPrice) || 0) * (c.quantity || 1), 0).toFixed(2)}
-                                                    </div>
-                                                    <div className="text-[10px] text-[var(--text-muted)]">Market Price</div>
-                                                </div>
-                                                <ShoppingCart className="w-4 h-4 text-[var(--text-muted)] group-hover:text-amber-400 transition-colors" />
-                                            </div>
-                                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-amber-500/5 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
-                                        </button>
+                                        </div>
                                     </div>
                                 </div>
                             </Card>
@@ -739,182 +1038,197 @@ export default function AIDeckBuilder() {
                         </div>
                     </div>
                 </div>
-            )}
+            )
+            }
 
             {/* Print Proxies Modal */}
-            {showPrintModal && result && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg max-w-md w-full p-6">
-                        <h2 className="text-xl font-bold mb-4">Print Proxy Cards</h2>
+            {
+                showPrintModal && result && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg max-w-md w-full p-6">
+                            <h2 className="text-xl font-bold mb-4">Print Proxy Cards</h2>
 
-                        {(() => {
-                            const totalCards = result.deck.cards.reduce((sum, c) => sum + (c.quantity || 1), 0);
+                            {(() => {
+                                const totalCards = result.deck.cards.reduce((sum, c) => sum + (c.quantity || 1), 0);
 
-                            // Calculate missing cards (don't own at all)
-                            const missingCount = result.deck.cards.reduce((sum, card) => {
-                                const { total } = checkOwnership(card.name);
-                                const neededQty = card.quantity || 1;
-                                return sum + Math.max(0, neededQty - total);
-                            }, 0);
+                                // Calculate missing cards (don't own at all)
+                                const missingCount = result.deck.cards.reduce((sum, card) => {
+                                    const { total } = checkOwnership(card.name);
+                                    const neededQty = card.quantity || 1;
+                                    return sum + Math.max(0, neededQty - total);
+                                }, 0);
 
-                            // Calculate unavailable cards (missing + reserved)
-                            const unavailableCount = result.deck.cards.reduce((sum, card) => {
-                                const { available } = checkOwnership(card.name);
-                                const neededQty = card.quantity || 1;
-                                return sum + Math.max(0, neededQty - available);
-                            }, 0);
+                                // Calculate unavailable cards (missing + reserved)
+                                const unavailableCount = result.deck.cards.reduce((sum, card) => {
+                                    const { available } = checkOwnership(card.name);
+                                    const neededQty = card.quantity || 1;
+                                    return sum + Math.max(0, neededQty - available);
+                                }, 0);
 
-                            const ownedCount = totalCards - missingCount;
-                            const reservedCount = unavailableCount - missingCount;
+                                const ownedCount = totalCards - missingCount;
+                                const reservedCount = unavailableCount - missingCount;
 
-                            return (
-                                <>
-                                    <div className="space-y-3 mb-6">
-                                        <div className="p-4 bg-[var(--bg-secondary)] rounded-lg">
-                                            <div className="flex items-center justify-between text-sm mb-2">
-                                                <span className="text-[var(--text-muted)]">Total cards in deck:</span>
-                                                <span className="font-semibold">{totalCards}</span>
-                                            </div>
-                                            <div className="flex items-center justify-between text-sm mb-2">
-                                                <span className="text-[var(--text-muted)]">Cards you own:</span>
-                                                <span className="font-semibold text-green-400">{ownedCount}</span>
-                                            </div>
-                                            <div className="flex items-center justify-between text-sm mb-2">
-                                                <span className="text-[var(--text-muted)]">Missing cards:</span>
-                                                <span className="font-semibold text-amber-400">{missingCount}</span>
-                                            </div>
-                                            {reservedCount > 0 && (
-                                                <div className="flex items-center justify-between text-sm">
-                                                    <span className="text-[var(--text-muted)]">Reserved in decks:</span>
-                                                    <span className="font-semibold text-blue-400">{reservedCount}</span>
+                                return (
+                                    <>
+                                        <div className="space-y-3 mb-6">
+                                            <div className="p-4 bg-[var(--bg-secondary)] rounded-lg">
+                                                <div className="flex items-center justify-between text-sm mb-2">
+                                                    <span className="text-[var(--text-muted)]">Total cards in deck:</span>
+                                                    <span className="font-semibold">{totalCards}</span>
                                                 </div>
-                                            )}
+                                                <div className="flex items-center justify-between text-sm mb-2">
+                                                    <span className="text-[var(--text-muted)]">Cards you own:</span>
+                                                    <span className="font-semibold text-green-400">{ownedCount}</span>
+                                                </div>
+                                                <div className="flex items-center justify-between text-sm mb-2">
+                                                    <span className="text-[var(--text-muted)]">Missing cards:</span>
+                                                    <span className="font-semibold text-amber-400">{missingCount}</span>
+                                                </div>
+                                                {reservedCount > 0 && (
+                                                    <div className="flex items-center justify-between text-sm">
+                                                        <span className="text-[var(--text-muted)]">Reserved in decks:</span>
+                                                        <span className="font-semibold text-blue-400">{reservedCount}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <button
+                                                onClick={() => {
+                                                    setShowPrintModal(false);
+                                                    handlePrintProxies('all');
+                                                }}
+                                                className="w-full p-4 bg-[var(--bg-secondary)] hover:bg-[var(--surface-highlight)] border border-[var(--border)] rounded-lg text-left transition-colors"
+                                            >
+                                                <div className="flex items-center justify-between">
+                                                    <div>
+                                                        <div className="font-semibold">Print All Cards</div>
+                                                        <div className="text-sm text-[var(--text-muted)]">{totalCards} cards total</div>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <div className="text-lg font-bold text-amber-400">${(totalCards * 0.01).toFixed(2)}</div>
+                                                        <div className="text-xs text-[var(--text-muted)]">$0.01/card</div>
+                                                    </div>
+                                                </div>
+                                            </button>
+
+                                            <button
+                                                onClick={() => {
+                                                    if (missingCount === 0) return;
+                                                    setShowPrintModal(false);
+                                                    handlePrintProxies('missing');
+                                                }}
+                                                disabled={missingCount === 0}
+                                                className={`w-full p-4 border rounded-lg text-left transition-colors ${missingCount > 0
+                                                    ? 'bg-amber-600/10 hover:bg-amber-600/20 border-amber-600/30 cursor-pointer'
+                                                    : 'bg-[var(--bg-secondary)]/50 border-[var(--border)]/50 cursor-not-allowed opacity-50'
+                                                    }`}
+                                            >
+                                                <div className="flex items-center justify-between">
+                                                    <div>
+                                                        <div className="font-semibold flex items-center gap-2">
+                                                            Print Missing Cards Only
+                                                            {missingCount > 0 && (
+                                                                <span className="px-2 py-0.5 bg-amber-600 text-white text-xs rounded-full">Recommended</span>
+                                                            )}
+                                                            {missingCount === 0 && (
+                                                                <span className="px-2 py-0.5 bg-green-600/50 text-[var(--text-muted)] text-xs rounded-full flex items-center gap-1">
+                                                                    <Check className="w-3 h-3" />
+                                                                    All Owned
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <div className="text-sm text-[var(--text-muted)]">
+                                                            {missingCount > 0
+                                                                ? `${missingCount} cards you don't own`
+                                                                : 'You already own all cards in this deck'
+                                                            }
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        {missingCount > 0 ? (
+                                                            <>
+                                                                <div className="text-lg font-bold text-amber-400">${(missingCount * 0.01).toFixed(2)}</div>
+                                                                <div className="text-xs text-green-400">Save ${((totalCards - missingCount) * 0.01).toFixed(2)}</div>
+                                                            </>
+                                                        ) : (
+                                                            <div className="text-sm text-[var(--text-muted)]">—</div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </button>
+
+                                            <button
+                                                onClick={() => {
+                                                    if (unavailableCount === 0) return;
+                                                    setShowPrintModal(false);
+                                                    handlePrintProxies('unavailable');
+                                                }}
+                                                disabled={unavailableCount === 0}
+                                                className={`w-full p-4 border rounded-lg text-left transition-colors ${unavailableCount > 0
+                                                    ? 'bg-blue-600/10 hover:bg-blue-600/20 border-blue-600/30 cursor-pointer'
+                                                    : 'bg-[var(--bg-secondary)]/50 border-[var(--border)]/50 cursor-not-allowed opacity-50'
+                                                    }`}
+                                            >
+                                                <div className="flex items-center justify-between">
+                                                    <div>
+                                                        <div className="font-semibold flex items-center gap-2">
+                                                            Print Unavailable Cards
+                                                            {unavailableCount > missingCount && (
+                                                                <span className="px-2 py-0.5 bg-blue-600 text-white text-xs rounded-full">Best Value</span>
+                                                            )}
+                                                            {unavailableCount === 0 && (
+                                                                <span className="px-2 py-0.5 bg-green-600/50 text-[var(--text-muted)] text-xs rounded-full flex items-center gap-1">
+                                                                    <Check className="w-3 h-3" />
+                                                                    All Available
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <div className="text-sm text-[var(--text-muted)]">
+                                                            {unavailableCount > 0
+                                                                ? `${unavailableCount} cards (${missingCount} missing + ${reservedCount} reserved)`
+                                                                : 'All cards are available in your inventory'
+                                                            }
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        {unavailableCount > 0 ? (
+                                                            <>
+                                                                <div className="text-lg font-bold text-blue-400">${(unavailableCount * 0.01).toFixed(2)}</div>
+                                                                <div className="text-xs text-green-400">Save ${((totalCards - unavailableCount) * 0.01).toFixed(2)}</div>
+                                                            </>
+                                                        ) : (
+                                                            <div className="text-sm text-[var(--text-muted)]">—</div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </button>
                                         </div>
 
                                         <button
-                                            onClick={() => {
-                                                setShowPrintModal(false);
-                                                handlePrintProxies('all');
-                                            }}
-                                            className="w-full p-4 bg-[var(--bg-secondary)] hover:bg-[var(--surface-highlight)] border border-[var(--border)] rounded-lg text-left transition-colors"
+                                            onClick={() => setShowPrintModal(false)}
+                                            className="w-full py-2 text-[var(--text-muted)] hover:text-white transition-colors"
                                         >
-                                            <div className="flex items-center justify-between">
-                                                <div>
-                                                    <div className="font-semibold">Print All Cards</div>
-                                                    <div className="text-sm text-[var(--text-muted)]">{totalCards} cards total</div>
-                                                </div>
-                                                <div className="text-right">
-                                                    <div className="text-lg font-bold text-amber-400">${(totalCards * 0.01).toFixed(2)}</div>
-                                                    <div className="text-xs text-[var(--text-muted)]">$0.01/card</div>
-                                                </div>
-                                            </div>
+                                            Cancel
                                         </button>
-
-                                        <button
-                                            onClick={() => {
-                                                if (missingCount === 0) return;
-                                                setShowPrintModal(false);
-                                                handlePrintProxies('missing');
-                                            }}
-                                            disabled={missingCount === 0}
-                                            className={`w-full p-4 border rounded-lg text-left transition-colors ${missingCount > 0
-                                                ? 'bg-amber-600/10 hover:bg-amber-600/20 border-amber-600/30 cursor-pointer'
-                                                : 'bg-[var(--bg-secondary)]/50 border-[var(--border)]/50 cursor-not-allowed opacity-50'
-                                                }`}
-                                        >
-                                            <div className="flex items-center justify-between">
-                                                <div>
-                                                    <div className="font-semibold flex items-center gap-2">
-                                                        Print Missing Cards Only
-                                                        {missingCount > 0 && (
-                                                            <span className="px-2 py-0.5 bg-amber-600 text-white text-xs rounded-full">Recommended</span>
-                                                        )}
-                                                        {missingCount === 0 && (
-                                                            <span className="px-2 py-0.5 bg-green-600/50 text-[var(--text-muted)] text-xs rounded-full flex items-center gap-1">
-                                                                <Check className="w-3 h-3" />
-                                                                All Owned
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                    <div className="text-sm text-[var(--text-muted)]">
-                                                        {missingCount > 0
-                                                            ? `${missingCount} cards you don't own`
-                                                            : 'You already own all cards in this deck'
-                                                        }
-                                                    </div>
-                                                </div>
-                                                <div className="text-right">
-                                                    {missingCount > 0 ? (
-                                                        <>
-                                                            <div className="text-lg font-bold text-amber-400">${(missingCount * 0.01).toFixed(2)}</div>
-                                                            <div className="text-xs text-green-400">Save ${((totalCards - missingCount) * 0.01).toFixed(2)}</div>
-                                                        </>
-                                                    ) : (
-                                                        <div className="text-sm text-[var(--text-muted)]">—</div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </button>
-
-                                        <button
-                                            onClick={() => {
-                                                if (unavailableCount === 0) return;
-                                                setShowPrintModal(false);
-                                                handlePrintProxies('unavailable');
-                                            }}
-                                            disabled={unavailableCount === 0}
-                                            className={`w-full p-4 border rounded-lg text-left transition-colors ${unavailableCount > 0
-                                                ? 'bg-blue-600/10 hover:bg-blue-600/20 border-blue-600/30 cursor-pointer'
-                                                : 'bg-[var(--bg-secondary)]/50 border-[var(--border)]/50 cursor-not-allowed opacity-50'
-                                                }`}
-                                        >
-                                            <div className="flex items-center justify-between">
-                                                <div>
-                                                    <div className="font-semibold flex items-center gap-2">
-                                                        Print Unavailable Cards
-                                                        {unavailableCount > missingCount && (
-                                                            <span className="px-2 py-0.5 bg-blue-600 text-white text-xs rounded-full">Best Value</span>
-                                                        )}
-                                                        {unavailableCount === 0 && (
-                                                            <span className="px-2 py-0.5 bg-green-600/50 text-[var(--text-muted)] text-xs rounded-full flex items-center gap-1">
-                                                                <Check className="w-3 h-3" />
-                                                                All Available
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                    <div className="text-sm text-[var(--text-muted)]">
-                                                        {unavailableCount > 0
-                                                            ? `${unavailableCount} cards (${missingCount} missing + ${reservedCount} reserved)`
-                                                            : 'All cards are available in your inventory'
-                                                        }
-                                                    </div>
-                                                </div>
-                                                <div className="text-right">
-                                                    {unavailableCount > 0 ? (
-                                                        <>
-                                                            <div className="text-lg font-bold text-blue-400">${(unavailableCount * 0.01).toFixed(2)}</div>
-                                                            <div className="text-xs text-green-400">Save ${((totalCards - unavailableCount) * 0.01).toFixed(2)}</div>
-                                                        </>
-                                                    ) : (
-                                                        <div className="text-sm text-[var(--text-muted)]">—</div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </button>
-                                    </div>
-
-                                    <button
-                                        onClick={() => setShowPrintModal(false)}
-                                        className="w-full py-2 text-[var(--text-muted)] hover:text-white transition-colors"
-                                    >
-                                        Cancel
-                                    </button>
-                                </>
-                            );
-                        })()}
+                                    </>
+                                );
+                            })()}
+                        </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+
+            {/* Buy Unavailable Cards Modal */}
+            {
+                showBuyModal && result && (
+                    <BuyCardsModal
+                        isOpen={showBuyModal}
+                        onClose={() => setShowBuyModal(false)}
+                        cards={getUnavailableCards()}
+                        deckName={result.commander.name}
+                    />
+                )
+            }
+        </div >
     );
 }

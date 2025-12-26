@@ -1,4 +1,5 @@
 import express from 'express';
+import fs from 'fs';
 import { authenticate } from '../middleware/index.js';
 import OpenAI from 'openai';
 import { pool } from '../db/pool.js';
@@ -26,6 +27,60 @@ router.get('/ping', (req, res) => {
 });
 
 console.log('[AI] Router loaded (OpenAI)');
+
+// ========== COMMANDER SEARCH ENDPOINT ==========
+// Returns a list of legendary creatures matching the user's query for selection
+router.get('/search-commanders', async (req, res) => {
+  const { q } = req.query;
+
+  if (!q || q.trim().length < 2) {
+    return res.json({ commanders: [] });
+  }
+
+  try {
+    console.log(`[AI] Searching commanders for: "${q}"`);
+
+    // Search Scryfall for legendary creatures that can be commanders
+    // Include: legendary creatures, planeswalkers with "can be your commander", backgrounds, etc.
+    const searchQuery = encodeURIComponent(`${q} (is:commander OR t:legendary t:creature OR o:"can be your commander")`);
+    const url = `https://api.scryfall.com/cards/search?q=${searchQuery}&unique=cards&order=edhrec`;
+
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        // No results found
+        console.log(`[AI] No commanders found for: "${q}"`);
+        return res.json({ commanders: [] });
+      }
+      throw new Error(`Scryfall returned ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    // Map Scryfall response to our commander format
+    const commanders = (data.data || []).slice(0, 20).map(card => ({
+      scryfallId: card.id,
+      name: card.name,
+      typeLine: card.type_line,
+      colorIdentity: card.color_identity || [],
+      imageUrl: card.image_uris?.normal || card.card_faces?.[0]?.image_uris?.normal || '',
+      oracleText: card.oracle_text || '',
+      manaCost: card.mana_cost || '',
+    }));
+
+    console.log(`[AI] Found ${commanders.length} commanders for "${q}"`);
+    res.json({ commanders });
+
+  } catch (error) {
+    console.error('[AI] Commander search error:', error);
+    res.status(500).json({
+      error: 'Failed to search commanders',
+      message: error.message
+    });
+  }
+});
+
 
 // Helper: Get MTGGoldfish popular cards for a Commander
 async function getMtgGoldfishData(commanderName) {
@@ -80,13 +135,8 @@ async function getCommanderDetails(query) {
     let response = await fetch(`https://api.scryfall.com/cards/named?exact=${encodeURIComponent(query)}`);
     if (response.ok) return await response.json();
 
-    // Try fuzzy
-    response = await fetch(`https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(query)}`);
-    if (response.ok) {
-      return await response.json();
-    }
-
-    // Try search (for partial names or nicknames)
+    // Try search (Better for "Avatar Aang" -> "Aang, the Last Airbender")
+    // Use order=edhrec to get the most relevant card first
     response = await fetch(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(query)}&unique=cards&order=edhrec`);
     if (response.ok) {
       const data = await response.json();
@@ -94,6 +144,12 @@ async function getCommanderDetails(query) {
         console.log(`[AI] Scryfall search found: ${data.data[0].name}`);
         return data.data[0];
       }
+    }
+
+    // Try fuzzy (Last resort for typos)
+    response = await fetch(`https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(query)}`);
+    if (response.ok) {
+      return await response.json();
     }
 
     return null;
@@ -123,9 +179,9 @@ async function getInventoryForDeck(userId) {
     FROM inventory i
     WHERE i.user_id = $1
     ORDER BY i.purchase_price DESC NULLS LAST
-    LIMIT 300
   `;
   const result = await pool.query(query, [userId]);
+  console.log(`[AI] Loaded ${result.rows.length} inventory items for User ${userId}`);
   return result.rows;
 }
 
@@ -214,71 +270,99 @@ async function getEdhrecRecommendations(commanderName, budgetType = null) {
 
 router.post('/generate', authenticate, async (req, res) => {
   console.log('[AI] (OpenAI) /generate endpoint hit!');
+  console.log('[AI] Full request body:', JSON.stringify(req.body, null, 2));
 
-  const { commander: userPrompt, theme, budget, bracket, inventoryOnly = false } = req.body;
+  const { commanderMode, commander: providedCommander, theme, budget, bracket, inventoryOnly = false } = req.body;
 
-  if (!userPrompt) {
-    return res.status(400).json({ error: 'Prompt is required' });
+  console.log(`[AI] REQUEST: Mode="${commanderMode}", Commander="${providedCommander}", Theme="${theme}", InventoryOnly=${inventoryOnly}`);
+
+  // Validate: commanderMode is required
+  if (!commanderMode) {
+    return res.status(400).json({ error: 'Commander mode is required (random or specific)' });
+  }
+
+  // Validate: Specific mode needs a commander (theme is always optional)
+  // Note: theme is optional for both modes - AI will generate based on commander or random selection
+  if (commanderMode === 'specific' && !providedCommander) {
+    return res.status(400).json({ error: 'Commander is required for specific commander mode' });
+  }
+
+  // Validate: Random mode should have a theme (though we can provide a fallback)
+  if (commanderMode === 'random' && !theme) {
+    console.log('[AI] Warning: Random mode without theme - will use generic fallback');
   }
 
   try {
     const api = getOpenAI();
 
-    // 1. Identify Commander
-    let commanderName = userPrompt;
+    let commanderName = null;
     let strategyHint = theme || '';
+    let directHit = null;
 
-    // Robust extraction: If prompt clearly isn't just a name, or is long
-    const needsExtraction = userPrompt.length > 20 || /build|make|create|deck|commander|based on|theme/i.test(userPrompt);
+    if (commanderMode === 'specific') {
+      // SPECIFIC MODE: Use the provided commander name directly
+      console.log(`[AI] Specific Mode: Using provided commander "${providedCommander}"`);
+      commanderName = providedCommander;
+      directHit = await getCommanderDetails(providedCommander);
 
-    if (needsExtraction) {
-      console.log(`[AI] Extracting commander from: "${userPrompt}"`);
-      const completion = await api.chat.completions.create({
+      if (!directHit) {
+        return res.status(404).json({ error: `Could not find commander "${providedCommander}"` });
+      }
+    } else {
+      // RANDOM MODE: Ask AI to suggest a commander based on theme
+      const effectiveTheme = theme || 'a fun and synergistic Commander deck';
+      console.log(`[AI] Random Mode: Suggesting commander for theme "${effectiveTheme}"`);
+
+      const suggestion = await api.chat.completions.create({
         messages: [{
-          role: "user", content: `Identify the Magic: The Gathering Commander card name from this prompt.
-If it's a nickname (e.g., "Sad Robot"), return the real card name (e.g., "Solemn Simulacrum").
-If it helps, "Goose Mother" is "The Goose Mother".
-If the user mentions a character that might be from a recent set (e.g. "Avatar Aang", "Lara Croft"), return THAT NAME exactly, even if you are not sure it exists as a card.
+          role: "user",
+          content: `Recommend the SINGLE BEST Magic: The Gathering Legendary Creature to be the commander for this deck concept.
+Return ONLY the exact card name, nothing else.
 
-If the user is asking for a TYPE of deck but didn't name a commander (e.g. "Build me a dragon deck"), return "SUGGEST".
-
-Return ONLY the exact card name or "SUGGEST".
-
-Prompt: ${userPrompt}`
+Deck Concept: ${effectiveTheme}`
         }],
         model: "gpt-4o",
       });
-      commanderName = completion.choices[0].message.content.trim();
+      commanderName = suggestion.choices[0].message.content.trim();
+      console.log(`[AI] AI Suggested Commander: "${commanderName}"`);
 
-      // Handle Suggestion Case
-      if (commanderName === 'SUGGEST' || commanderName.includes('no specific Commander')) {
-        console.log(`[AI] No commander named, asking for suggestion...`);
-        const suggestion = await api.chat.completions.create({
-          messages: [{
-            role: "user",
-            content: `Recommend the SINGLE BEST Magic: The Gathering Legendary Creature to be the commander for this request.
-Return ONLY the exact card name.
+      directHit = await getCommanderDetails(commanderName);
 
-Request: ${userPrompt}`
-          }],
-          model: "gpt-4o",
-        });
-        commanderName = suggestion.choices[0].message.content.trim();
-        console.log(`[AI] Suggested Commander: "${commanderName}"`);
-      } else {
-        console.log(`[AI] Extracted Name: "${commanderName}"`);
+      // If AI suggestion didn't work, try a fallback search
+      if (!directHit) {
+        console.log(`[AI] AI suggestion "${commanderName}" not found, trying search...`);
+        const searchResponse = await fetch(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(commanderName)}+is:commander&unique=cards&order=edhrec`);
+        if (searchResponse.ok) {
+          const searchData = await searchResponse.json();
+          if (searchData.data && searchData.data.length > 0) {
+            directHit = searchData.data[0];
+            commanderName = directHit.name;
+            console.log(`[AI] Found via search: "${commanderName}"`);
+          }
+        }
       }
 
-      strategyHint = userPrompt;
-    } else {
-      console.log(`[AI] Using provided name directly: "${commanderName}"`);
+      // Last resort: If we still can't find anything, pick a popular commander for the theme
+      if (!directHit) {
+        console.log(`[AI] Using fallback popular commander search for theme`);
+        const fallbackSearch = await fetch(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(theme)}+is:commander&unique=cards&order=edhrec`);
+        if (fallbackSearch.ok) {
+          const fallbackData = await fallbackSearch.json();
+          if (fallbackData.data && fallbackData.data.length > 0) {
+            directHit = fallbackData.data[0];
+            commanderName = directHit.name;
+            console.log(`[AI] Fallback found: "${commanderName}"`);
+          }
+        }
+      }
+
+      if (!directHit) {
+        return res.status(404).json({ error: `Could not find a suitable commander for the theme "${theme}". Try being more specific.` });
+      }
     }
 
-    // 2. Get Commander Details (Scryfall)
-    const commanderCard = await getCommanderDetails(commanderName);
-    if (!commanderCard) {
-      return res.status(404).json({ error: `Could not identify a valid commander from "${commanderName}"` });
-    }
+    // Use the found commander
+    const commanderCard = directHit;
 
     const colorId = commanderCard.color_identity || [];
     const colorString = colorId.length > 0 ? colorId.join('') : 'Colorless';
@@ -298,6 +382,15 @@ Request: ${userPrompt}`
     const reservedCards = inventory
       .filter(c => c.reserved_quantity > 0)
       .map(c => c.reserved_quantity > 1 ? `${c.name} (x${c.reserved_quantity} reserved)` : `${c.name} (reserved)`);
+
+    // Validate inventory-only mode has enough cards
+    if (inventoryOnly && availableCards.length < 50) {
+      return res.status(400).json({
+        error: `Inventory-only mode requires at least 50 available cards. You currently have ${availableCards.length} available cards.`,
+        availableCount: availableCards.length,
+        requiredCount: 50
+      });
+    }
 
     const inventoryContext = inventoryOnly
       ? `
@@ -437,16 +530,22 @@ Format: JSON { "description": "...", "themes": ["theme1", "theme2", "theme3"] }`
     if (budget) {
       const avgCardBudget = (budget * 0.7) / 64; // 70% of budget for 64 spells
       let maxSingleCard = Math.min(avgCardBudget * 4, budget * 0.15); // Max single card is 4x avg or 15% of total
+
+      // Inventory awareness for budget
+      const inventoryBudgetNote = availableCards.length > 0
+        ? `IMPORTANT: Cards from YOUR AVAILABLE CARDS count as $0 towards the budget since you already own them. Only cards you need to purchase count against the $${budget} budget.`
+        : '';
+
       if (budget <= 100) {
-        budgetGuidance = `STRICT BUDGET: $${budget} total. Max $3 per card. NO expensive staples. Use budget alternatives (e.g., Llanowar Elves over Birds of Paradise, Swords to Plowshares over Path to Exile alternatives).`;
+        budgetGuidance = `STRICT BUDGET: $${budget} total for NEW cards only. ${inventoryBudgetNote} Max $3 per card. NO expensive staples. Use budget alternatives (e.g., Llanowar Elves over Birds of Paradise, Swords to Plowshares over Path to Exile alternatives).`;
       } else if (budget <= 300) {
-        budgetGuidance = `BUDGET: $${budget} total. Average $3-5 per card, max $10 for key pieces. Prefer budget-friendly options. Avoid cards over $10.`;
+        budgetGuidance = `BUDGET: $${budget} total for NEW cards only. ${inventoryBudgetNote} Average $3-5 per card, max $10 for key pieces. Prefer budget-friendly options. Avoid cards over $10.`;
       } else if (budget <= 600) {
-        budgetGuidance = `MODERATE BUDGET: $${budget} total. Average $5-10 per card, max $20 for key pieces. Can include some mid-range staples.`;
+        budgetGuidance = `MODERATE BUDGET: $${budget} total for NEW cards only. ${inventoryBudgetNote} Average $5-10 per card, max $20 for key pieces. Can include some mid-range staples.`;
       } else if (budget <= 1000) {
-        budgetGuidance = `GOOD BUDGET: $${budget} total. Average $10-15 per card, max $40 for key pieces. Include quality staples.`;
+        budgetGuidance = `GOOD BUDGET: $${budget} total for NEW cards only. ${inventoryBudgetNote} Average $10-15 per card, max $40 for key pieces. Include quality staples.`;
       } else {
-        budgetGuidance = `HIGH BUDGET: $${budget}+ total. Include premium staples and expensive cards. Optimize for power.`;
+        budgetGuidance = `HIGH BUDGET: $${budget}+ total for NEW cards only. ${inventoryBudgetNote} Include premium staples and expensive cards. Optimize for power.`;
       }
     }
 
@@ -516,8 +615,35 @@ Format: JSON { "cards": [{ "name": "Card Name", "category": "Ramp/Draw/Removal",
       })
     ]);
 
-    const heartData = JSON.parse(heartCompletion.choices[0].message.content);
-    const engineData = JSON.parse(engineCompletion.choices[0].message.content);
+    // Parse and validate AI responses
+    let heartData, engineData;
+    try {
+      const heartContent = heartCompletion.choices[0].message.content;
+      console.log(`[AI] Heart response (first 200 chars): ${heartContent.substring(0, 200)}`);
+      heartData = JSON.parse(heartContent);
+
+      if (!heartData || !heartData.cards) {
+        console.warn('[AI] Heart response missing cards array, using empty array');
+        heartData = { cards: [] };
+      }
+    } catch (err) {
+      console.error('[AI] Failed to parse Heart response:', err.message);
+      heartData = { cards: [] };
+    }
+
+    try {
+      const engineContent = engineCompletion.choices[0].message.content;
+      console.log(`[AI] Engine response (first 200 chars): ${engineContent.substring(0, 200)}`);
+      engineData = JSON.parse(engineContent);
+
+      if (!engineData || !engineData.cards) {
+        console.warn('[AI] Engine response missing cards array, using empty array');
+        engineData = { cards: [] };
+      }
+    } catch (err) {
+      console.error('[AI] Failed to parse Engine response:', err.message);
+      engineData = { cards: [] };
+    }
 
     console.log(`[AI] Pass 2 (Heart) generated ${heartData.cards?.length || 0} synergy cards.`);
     console.log(`[AI] Pass 3 (Engine) generated ${engineData.cards?.length || 0} staples.`);
@@ -539,6 +665,17 @@ Format: JSON { "cards": [{ "name": "Card Name", "category": "Ramp/Draw/Removal",
 
     rawSpells.forEach(card => {
       const normalized = card.name.toLowerCase().trim();
+
+      // STRICT INVENTORY FILTER FOR AI OUTPUT
+      if (inventoryOnly && card.category !== 'Commander') {
+        const invItem = inventory.find(i => i.name.toLowerCase() === normalized);
+        if (!invItem || invItem.available_quantity < 1) {
+          // AI suggested a card we don't have. Skip it.
+          console.log(`[AI] Strict Mode: Dropped unowned card "${card.name}"`);
+          return;
+        }
+      }
+
       if (!seenNames.has(normalized)) {
         seenNames.add(normalized);
         allSpells.push(card);
@@ -591,6 +728,7 @@ Format: JSON { "cards": [{ "name": "Card Name", "category": "Ramp/Draw/Removal",
 
       for (const cardName of fillSources) {
         if (currentSpells >= targetSpells) break;
+        if (!cardName) continue;
 
         // STRICT INVENTORY CHECK
         const normalized = cardName.toLowerCase().trim();

@@ -10,7 +10,6 @@ import {
   FolderSidebar,
   FolderView
 } from './inventory';
-import { SellModal } from './SellModal';
 import { useFolderOperations } from '../hooks/useFolderOperations';
 import { useDeckReservations } from '../hooks/useDeckReservations';
 import { useConfirm } from '../context/ConfirmContext';
@@ -30,7 +29,6 @@ export const InventoryTab = ({
   expandedCards,
   setExpandedCards,
   deckRefreshTrigger,
-  onSell,
   searchRef,
   onNavigate
 }) => {
@@ -59,8 +57,6 @@ export const InventoryTab = ({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [draggedTabData, setDraggedTabData] = useState(null);
   const [inventorySearch, setInventorySearch] = useState('');
-  const [showSellModal, setShowSellModal] = useState(false);
-  const [sellModalData, setSellModalData] = useState(null);
 
   // Sort State
   const [sortField, setSortField] = useState('name');
@@ -445,8 +441,6 @@ export const InventoryTab = ({
         openDeckTab={handleOpenDeckTab}
         moveCardBetweenDecks={deckOps.moveCardBetweenDecks}
         moveCardSkuToDeck={deckOps.moveCardSkuToDeck}
-        setShowSellModal={setShowSellModal}
-        setSellModalData={setSellModalData}
         emptyTrash={emptyTrash}
       />
 
@@ -510,8 +504,6 @@ export const InventoryTab = ({
             autoFillSingleCard={deckOps.autoFillSingleCard}
             releaseDeck={handleReleaseDeck}
             moveCardSkuToDeck={deckOps.moveCardSkuToDeck}
-            setSellModalData={setSellModalData}
-            setShowSellModal={setShowSellModal}
           />
         )}
 
@@ -723,8 +715,6 @@ export const InventoryTab = ({
                 inventorySearch={inventorySearch}
                 cardGridProps={cardGridProps}
                 folderOps={folderOps}
-                setSellModalData={setSellModalData}
-                setShowSellModal={setShowSellModal}
                 onDeleteFolder={handleDeleteFolder}
                 decklistFilter={decklistFilter}
                 setDecklistFilter={setDecklistFilter}
@@ -740,25 +730,6 @@ export const InventoryTab = ({
       </div>
 
       {/* Sell Modal */}
-      {sellModalData && (
-        <SellModal
-          isOpen={showSellModal}
-          itemName={sellModalData.itemName}
-          purchasePrice={sellModalData.purchasePrice}
-          itemType={sellModalData.itemType}
-          deckId={sellModalData.itemId}
-          quantity={sellModalData.quantity || 1}
-          onClose={() => {
-            setShowSellModal(false);
-            setSellModalData(null);
-          }}
-          onSell={async (saleData) => {
-            await onSell(saleData);
-            setShowSellModal(false);
-            setSellModalData(null);
-          }}
-        />
-      )}
     </div>
   );
 };
@@ -769,7 +740,6 @@ InventoryTab.propTypes = {
   expandedCards: PropTypes.object.isRequired,
   setExpandedCards: PropTypes.func.isRequired,
   deckRefreshTrigger: PropTypes.number,
-  onSell: PropTypes.func,
   /** Ref for the search input (used by keyboard shortcuts) */
   searchRef: PropTypes.oneOfType([
     PropTypes.func,

@@ -15,8 +15,6 @@ export function FolderView({
   inventorySearch,
   cardGridProps,
   folderOps,
-  setSellModalData,
-  setShowSellModal,
   onDeleteFolder,
   sortField = 'name',
   sortDirection = 'asc',
@@ -135,8 +133,6 @@ export function FolderView({
         editingFolderDesc={folderOps.editingFolderDesc}
         setEditingFolderDesc={folderOps.setEditingFolderDesc}
         setFolderMetadata={folderOps.setFolderMetadata}
-        setSellModalData={setSellModalData}
-        setShowSellModal={setShowSellModal}
         onDeleteFolder={onDeleteFolder}
         isUnsorted={folderName === 'Uncategorized'}
       />
@@ -263,8 +259,6 @@ FolderView.propTypes = {
     createdFolders: PropTypes.array,
     moveInventoryItemToFolder: PropTypes.func,
   }).isRequired,
-  setSellModalData: PropTypes.func.isRequired,
-  setShowSellModal: PropTypes.func.isRequired,
   onDeleteFolder: PropTypes.func.isRequired,
   sortField: PropTypes.oneOf(['name', 'price', 'quantity', 'set', 'dateAdded']),
   sortDirection: PropTypes.oneOf(['asc', 'desc']),

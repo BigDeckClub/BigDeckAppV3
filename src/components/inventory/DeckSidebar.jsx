@@ -1,6 +1,5 @@
 import React, { memo } from 'react';
 import PropTypes from 'prop-types';
-import { DollarSign } from 'lucide-react';
 
 /**
  * DeckSidebar - Deck section of the sidebar for deck navigation
@@ -11,9 +10,7 @@ export const DeckSidebar = memo(function DeckSidebar({
   openDecks,
   openDeckTab,
   moveCardBetweenDecks,
-  moveCardSkuToDeck,
-  setShowSellModal,
-  setSellModalData
+  moveCardSkuToDeck
 }) {
   if (deckInstances.length === 0) {
     return null;
@@ -67,23 +64,6 @@ export const DeckSidebar = memo(function DeckSidebar({
               <div className="flex-1 text-left">
                 <div className="font-medium text-sm text-slate-100">{deck.name}</div>
               </div>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setSellModalData({
-                    itemType: 'deck',
-                    itemId: deck.id,
-                    itemName: deck.name,
-                    purchasePrice: deckCost,
-                    quantity: deck.reserved_count || 1
-                  });
-                  setShowSellModal(true);
-                }}
-                className="ml-2 text-green-400 opacity-0 group-hover:opacity-100 transition-all duration-200 hover:text-green-200 hover:scale-125 hover:drop-shadow-lg"
-                title="Sell this deck"
-              >
-                <DollarSign className="w-4 h-4" />
-              </button>
             </div>
             <div className="text-xs flex flex-wrap gap-1">
               {(() => {
@@ -124,9 +104,7 @@ DeckSidebar.propTypes = {
   openDecks: PropTypes.array.isRequired,
   openDeckTab: PropTypes.func.isRequired,
   moveCardBetweenDecks: PropTypes.func.isRequired,
-  moveCardSkuToDeck: PropTypes.func.isRequired,
-  setShowSellModal: PropTypes.func.isRequired,
-  setSellModalData: PropTypes.func.isRequired
+  moveCardSkuToDeck: PropTypes.func.isRequired
 };
 
 export default DeckSidebar;

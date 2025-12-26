@@ -31,8 +31,6 @@ export const FolderSidebar = memo(function FolderSidebar({
   openDeckTab,
   moveCardBetweenDecks,
   moveCardSkuToDeck,
-  setShowSellModal,
-  setSellModalData,
   emptyTrash
 }) {
   const { confirm } = useConfirm();
@@ -403,8 +401,6 @@ export const FolderSidebar = memo(function FolderSidebar({
           openDeckTab={openDeckTab}
           moveCardBetweenDecks={moveCardBetweenDecks}
           moveCardSkuToDeck={moveCardSkuToDeck}
-          setShowSellModal={setShowSellModal}
-          setSellModalData={setSellModalData}
         />
       </div>
     </div>
@@ -434,8 +430,6 @@ FolderSidebar.propTypes = {
   openDeckTab: PropTypes.func.isRequired,
   moveCardBetweenDecks: PropTypes.func.isRequired,
   moveCardSkuToDeck: PropTypes.func.isRequired,
-  setShowSellModal: PropTypes.func.isRequired,
-  setSellModalData: PropTypes.func.isRequired,
   emptyTrash: PropTypes.func
 };
 

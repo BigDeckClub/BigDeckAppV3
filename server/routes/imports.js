@@ -2,7 +2,6 @@ import express from 'express';
 import { pool } from '../db/pool.js';
 import { validateId, apiLimiter } from '../middleware/index.js';
 import { authenticate } from '../middleware/auth.js';
-import { recordAudit, recordActivity } from './history.js';
 
 const router = express.Router();
 
@@ -55,30 +54,6 @@ router.post('/imports', authenticate, async (req, res) => {
       [title, description || null, cardList, source || 'wholesale', status || 'pending', userId]
     );
     
-    // Count cards in the import (basic estimate from card list)
-    const cardCount = cardList.split('\n').filter(line => line.trim().length > 0).length;
-    
-    // Record audit and activity for the import
-    const importRecord = result.rows[0];
-    await recordAudit({
-      actionType: 'bulk_import',
-      description: `Created import "${title}" with ~${cardCount} cards`,
-      entityType: 'import',
-      entityId: importRecord.id,
-      metadata: { title, source: source || 'wholesale', cardCount },
-      userId
-    });
-    
-    await recordActivity({
-      activityType: 'import_created',
-      title: `Import created: ${title}`,
-      description: `Started import with ~${cardCount} cards from ${source || 'wholesale'}`,
-      entityType: 'import',
-      entityId: importRecord.id,
-      metadata: { source: source || 'wholesale', cardCount },
-      userId
-    });
-    
     res.status(201).json(result.rows[0]);
   } catch (error) {
     console.error('[IMPORTS] Error creating import:', error.message);
@@ -122,31 +97,7 @@ router.patch('/imports/:id/complete', authenticate, validateId, async (req, res)
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Import not found' });
     }
-    
-    // Record audit and activity for completed import
-    const completedImport = result.rows[0];
-    const cardCount = completedImport.card_list ? 
-      completedImport.card_list.split('\n').filter(line => line.trim().length > 0).length : 0;
-    
-    await recordAudit({
-      actionType: 'import_completed',
-      description: `Completed import "${completedImport.title}"`,
-      entityType: 'import',
-      entityId: id,
-      metadata: { title: completedImport.title, cardCount },
-      userId
-    });
-    
-    await recordActivity({
-      activityType: 'import_completed',
-      title: `Import completed: ${completedImport.title}`,
-      description: `Successfully imported ~${cardCount} cards`,
-      entityType: 'import',
-      entityId: id,
-      metadata: { cardCount },
-      userId
-    });
-    
+
     res.json(result.rows[0]);
   } catch (error) {
     console.error('[IMPORTS] Error updating import:', error.message);
