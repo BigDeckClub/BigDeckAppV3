@@ -651,28 +651,45 @@
 
 
 /* CRACKING / REVEAL ANIMATIONS */
+.orb-container.cracking {
+  animation: scary-shake 1.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+/* Whiteout Flash Overlay */
+.orb-container.cracking::after {
+  content: '';
+  position: absolute;
+  inset: -100px;
+  background: white;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 100;
+  opacity: 0;
+  animation: whiteout 1.5s ease-out forwards;
+}
+
 .orb-container.cracking .orb-core {
-  animation: explode 0.5s ease-out forwards;
+  animation: explode 1.5s cubic-bezier(0.1, 0, 0.3, 1) forwards;
 }
 
 .orb-container.cracking .orb-fog-layer {
-  animation: fog-explode 0.5s ease-out forwards;
+  animation: fog-explode 1.5s cubic-bezier(0.1, 0, 0.3, 1) forwards;
 }
 
 .orb-container.cracking .orb-runes-layer {
-  animation: rune-explode 0.4s ease-out forwards;
+  animation: rune-explode 1.2s ease-out forwards;
 }
 
 .orb-container.cracking .orb-plasma {
-  animation: explode 0.5s ease-out forwards;
+  animation: explode 1.5s cubic-bezier(0.1, 0, 0.3, 1) forwards;
 }
 
 .orb-container.cracking .orb-particles {
-  animation: particles-scatter 0.5s ease-out forwards;
+  animation: particles-scatter 1.5s cubic-bezier(0.1, 0, 0.3, 1) forwards;
 }
 
 .orb-container.cracking .orb-cracks {
-  animation: cracks-reveal 0.5s cubic-bezier(0.1, 0, 0.3, 1) forwards;
+  animation: cracks-reveal 1.5s cubic-bezier(0.1, 0, 0.3, 1) forwards;
 }
 
 /* READY STATE - Show pulsing light pulse */
@@ -688,11 +705,43 @@
 
 /* Animate the Pseudo-elements specifically */
 .orb-container.cracking .orb-cracks::before {
-  animation: burst-core 0.5s cubic-bezier(0.1, 0, 0.3, 1) forwards;
+  animation: burst-core 1.5s cubic-bezier(0.1, 0, 0.3, 1) forwards;
 }
 
 .orb-container.cracking .orb-cracks::after {
-  animation: burst-rays 0.5s cubic-bezier(0.1, 0, 0.3, 1) forwards;
+  animation: burst-rays 1.5s cubic-bezier(0.1, 0, 0.3, 1) forwards;
+}
+
+/* ============================================
+   ABSORPTION PULSE (New)
+   ============================================ */
+.orb-pulse-ring {
+  position: absolute;
+  inset: -10px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 5;
+  /* Behind glass (10) but above env (2) */
+}
+
+.orb-pulse-ring::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.6) 0%, transparent 70%);
+  opacity: 0;
+  transform: scale(0.9);
+  filter: blur(20px);
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.orb-container.absorbing .orb-pulse-ring::after {
+  opacity: 1;
+  transform: scale(1.4);
+  filter: blur(10px);
+  transition: all 0.2s ease-out;
+  /* Fast expand */
 }
 
 /* LIGHT BURST / CRACKS LAYER REIMAGINED */
@@ -751,7 +800,7 @@
 }
 
 .orb-container.cracking .orb-cracks svg {
-  animation: cracks-expand 0.5s ease-out forwards;
+  animation: cracks-expand 1.5s ease-out forwards;
 }
 
 .orb-cracks svg {
@@ -770,22 +819,27 @@
     stroke-width: 0.2;
     stroke-dasharray: 1;
     stroke-dashoffset: 1;
-    /* Requires pathLength="1" on SVG */
   }
 
-  /* Rapid "drawing" of cracks */
-  30% {
+  /* BUILD UP: Cracks appear slowly */
+  20% {
     opacity: 1;
     stroke-dashoffset: 0;
-    /* Fully drawn */
     stroke-width: 0.8;
   }
 
+  /* HOLD: Cracks glow */
+  50% {
+    transform: scale(1.1);
+    stroke-width: 1.5;
+    filter: drop-shadow(0 0 10px white);
+  }
+
+  /* EXPLODE */
   100% {
     transform: scale(3);
     opacity: 0;
     stroke-width: 4;
-    stroke-dashoffset: 0;
   }
 }
 
@@ -794,15 +848,14 @@
     opacity: 0;
   }
 
-  10% {
-    opacity: 1;
-  }
-
   20% {
     opacity: 1;
   }
 
-  /* Longer afterimage */
+  60% {
+    opacity: 1;
+  }
+
   100% {
     opacity: 0;
   }
@@ -814,19 +867,21 @@
     opacity: 0;
   }
 
-  10% {
+  /* Build up */
+  30% {
     opacity: 1;
+    transform: scale(1.5);
   }
 
-  /* Shockwave expansion */
+  /* Explosion */
   60% {
-    opacity: 0.8;
+    opacity: 1;
     transform: scale(25);
   }
 
   100% {
     opacity: 0;
-    transform: scale(30);
+    transform: scale(40);
   }
 }
 
@@ -840,9 +895,14 @@
     opacity: 1;
   }
 
-  /* Dynamic rotation */
+  /* Spin faster during buildup */
+  60% {
+    transform: scale(1.5) rotate(180deg);
+    opacity: 1;
+  }
+
   100% {
-    transform: scale(2.5) rotate(180deg);
+    transform: scale(4) rotate(360deg);
     opacity: 0;
   }
 }
@@ -857,6 +917,76 @@
     opacity: 0.3;
     transform: scale(1.2);
   }
+}
+
+/* NEW ANIMATIONS */
+
+@keyframes scary-shake {
+  0% {
+    transform: translate(1px, 1px) rotate(0deg);
+  }
+
+  10% {
+    transform: translate(-1px, -2px) rotate(-1deg);
+  }
+
+  20% {
+    transform: translate(-3px, 0px) rotate(1deg);
+  }
+
+  30% {
+    transform: translate(3px, 2px) rotate(0deg);
+  }
+
+  40% {
+    transform: translate(1px, -1px) rotate(1deg);
+  }
+
+  50% {
+    transform: translate(-1px, 2px) rotate(-1deg);
+  }
+
+  60% {
+    transform: translate(-3px, 1px) rotate(0deg);
+  }
+
+  70% {
+    transform: translate(3px, 1px) rotate(-1deg);
+  }
+
+  80% {
+    transform: translate(-1px, -1px) rotate(1deg);
+  }
+
+  90% {
+    transform: translate(1px, 2px) rotate(0deg);
+  }
+
+  100% {
+    transform: translate(1px, -2px) rotate(-1deg);
+  }
+}
+
+@keyframes whiteout {
+  0% {
+    opacity: 0;
+  }
+
+  50% {
+    opacity: 0;
+  }
+
+  /* Wait for build up */
+  70% {
+    opacity: 1;
+  }
+
+  /* FLASH */
+  100% {
+    opacity: 0;
+  }
+
+  /* Fade out to reveal new screen */
 }
 
 
@@ -1321,32 +1451,32 @@
   }
 
   25% {
-    transform: translate3d(calc(-10%), -50px, 150px) rotateX(20deg) rotateY(-10deg) scale(1.1);
+    transform: translate3d(calc(-10%), -50px, 50px) rotateX(20deg) rotateY(-10deg) scale(0.9);
     filter: brightness(1.2);
   }
 
   50% {
-    transform: translate3d(calc(-50%), -200px, 0px) rotateX(60deg) rotateY(-5deg) scale(0.9);
+    transform: translate3d(calc(-50%), -100px, 20px) rotateX(60deg) rotateY(-5deg) scale(0.6);
     opacity: 1;
   }
 
   /* Deep Dive: Maintain elevation, just go deep */
   85% {
-    transform: translate3d(calc(-50%), -220px, -2000px) rotateX(75deg) rotateY(0deg) scale(0.1);
-    opacity: 1;
+    transform: translate3d(calc(-50%), -150px, -50px) rotateX(75deg) rotateY(0deg) scale(0.1);
+    opacity: 0.8;
     filter: brightness(3) blur(1px);
   }
 
-  /* IMPACT: Hit the core (approx -230px Y relative to start) */
+  /* IMPACT: Hit the core */
   98% {
-    transform: translate3d(calc(-50%), -230px, -4500px) rotateX(88deg) rotateY(0deg) scale(0.01);
-    opacity: 1;
+    transform: translate3d(calc(-50%), -180px, -100px) rotateX(88deg) rotateY(0deg) scale(0.01);
+    opacity: 0.2;
     filter: brightness(10) blur(2px);
   }
 
   /* Singularity */
   100% {
-    transform: translate3d(calc(-50%), -230px, -5000px) rotateX(90deg) rotateY(0deg) scale(0);
+    transform: translate3d(calc(-50%), -200px, -100px) rotateX(90deg) rotateY(0deg) scale(0);
     opacity: 0;
     filter: brightness(20) blur(2px);
   }
@@ -1361,29 +1491,29 @@
   }
 
   25% {
-    transform: translate3d(calc(10%), -50px, 150px) rotateX(20deg) rotateY(10deg) scale(1.1);
+    transform: translate3d(calc(10%), -50px, 50px) rotateX(20deg) rotateY(10deg) scale(0.9);
     filter: brightness(1.2);
   }
 
   50% {
-    transform: translate3d(calc(50%), -200px, 0px) rotateX(60deg) rotateY(5deg) scale(0.9);
+    transform: translate3d(calc(50%), -100px, 20px) rotateX(60deg) rotateY(5deg) scale(0.6);
     opacity: 1;
   }
 
   85% {
-    transform: translate3d(calc(50%), -220px, -2000px) rotateX(75deg) rotateY(0deg) scale(0.1);
-    opacity: 1;
+    transform: translate3d(calc(50%), -150px, -50px) rotateX(75deg) rotateY(0deg) scale(0.1);
+    opacity: 0.8;
     filter: brightness(3) blur(1px);
   }
 
   98% {
-    transform: translate3d(calc(50%), -230px, -4500px) rotateX(88deg) rotateY(0deg) scale(0.01);
-    opacity: 1;
+    transform: translate3d(calc(50%), -180px, -100px) rotateX(88deg) rotateY(0deg) scale(0.01);
+    opacity: 0.2;
     filter: brightness(10) blur(2px);
   }
 
   100% {
-    transform: translate3d(calc(50%), -230px, -5000px) rotateX(90deg) rotateY(0deg) scale(0);
+    transform: translate3d(calc(50%), -200px, -100px) rotateX(90deg) rotateY(0deg) scale(0);
     opacity: 0;
     filter: brightness(20) blur(2px);
   }
@@ -1407,6 +1537,50 @@
 
 .orb-container.absorbing {
   animation: orb-grow-pulse 0.4s ease-out;
+}
+
+/* Animation for CENTER card (moves STRAIGHT UP towards center) */
+@keyframes insert-slot-from-center {
+  0% {
+    transform: translate3d(0, 0, 0) rotateX(0) rotateY(0) scale(1);
+    opacity: 1;
+    filter: brightness(1) blur(0);
+  }
+
+  25% {
+    transform: translate3d(0, -50px, 50px) rotateX(20deg) rotateY(0deg) scale(0.9);
+    filter: brightness(1.2);
+  }
+
+  50% {
+    transform: translate3d(0, -100px, 20px) rotateX(60deg) rotateY(0deg) scale(0.6);
+    opacity: 1;
+  }
+
+  85% {
+    transform: translate3d(0, -150px, -50px) rotateX(75deg) rotateY(0deg) scale(0.1);
+    opacity: 0.8;
+    filter: brightness(3) blur(1px);
+  }
+
+  98% {
+    transform: translate3d(0, -180px, -100px) rotateX(88deg) rotateY(0deg) scale(0.01);
+    opacity: 0.2;
+    filter: brightness(10) blur(2px);
+  }
+
+  100% {
+    transform: translate3d(0, -200px, -100px) rotateX(90deg) rotateY(0deg) scale(0);
+    opacity: 0;
+    filter: brightness(20) blur(2px);
+  }
+}
+
+.animate-insert-slot-center {
+  animation: insert-slot-from-center 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  transform-style: preserve-3d;
+  z-index: 50;
+  position: relative;
 }
 
 @keyframes orb-grow-pulse {

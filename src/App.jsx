@@ -18,6 +18,8 @@ import { useCardSearch } from "./hooks/useCardSearch";
 import { getAllSets } from "./utils/scryfallApi";
 import { FullPageSpinner, KeyboardShortcutsHelp } from "./components/ui";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
+import { OrbAnimationProvider } from "./context/OrbAnimationContext";
+import OrbAnimationLayer from "./components/effects/OrbAnimationLayer";
 
 
 // Lazy load tab components for code splitting
@@ -56,6 +58,13 @@ function MTGInventoryTrackerContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [deckRefreshTrigger, setDeckRefreshTrigger] = useState(0);
   const [showKeyboardHelp, setShowKeyboardHelp] = useState(false);
+
+  // Check for pending deck config on mount or after auth
+  useEffect(() => {
+    if (user && sessionStorage.getItem('pending_deck_config')) {
+      setActiveTab('ai');
+    }
+  }, [user]);
 
   const [allSets, setAllSets] = useState([]);
   const [decks, setDecks] = useState([]); // Hoisted deck state
@@ -272,7 +281,10 @@ function MTGInventoryTracker() {
           <ConfirmProvider>
             <UndoProvider>
               <InventoryProvider>
-                <MTGInventoryTrackerContent />
+                <OrbAnimationProvider>
+                  <OrbAnimationLayer />
+                  <MTGInventoryTrackerContent />
+                </OrbAnimationProvider>
               </InventoryProvider>
             </UndoProvider>
           </ConfirmProvider>

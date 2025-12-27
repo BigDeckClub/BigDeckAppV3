@@ -13,7 +13,8 @@ export default function WizardOptionCard({
     selected,
     className = '',
     children,
-    backContent
+    backContent,
+    badge
 }) {
     return (
         <div
@@ -53,6 +54,12 @@ export default function WizardOptionCard({
                             </p>
                             {children}
                         </div>
+
+                        {badge && (
+                            <div className="absolute top-4 right-4 bg-red-500/20 border border-red-500/50 text-red-200 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider backdrop-blur-sm">
+                                {badge}
+                            </div>
+                        )}
                     </Card>
                 </div>
 

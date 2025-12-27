@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useInventory } from '../../context/InventoryContext';
+import { useOrbAnimation } from '../../context/OrbAnimationContext';
 import { useApi } from '../../hooks/useApi';
 import { useToast, TOAST_TYPES } from '../../context/ToastContext';
+import { useAuth } from '../../context/AuthContext';
+import { Input, Alert } from '../ui';
 import { Sparkles, Save, Search, RefreshCw, Check, ShoppingCart, Dices, Wallet, Lock, Layers } from 'lucide-react';
 import { TCGPlayerBrandIcon, CardKingdomBrandIcon } from '../icons/VendorIcons';
 import { BuyCardsModal } from '../buy/BuyCardsModal';
@@ -23,7 +26,8 @@ const LOADING_STEPS = [
     { step: 6, msg: 'Finalizing deck...', icon: '✨' },
 ];
 
-export default function AIDeckBuilder({ onComplete }) {
+export default function AIDeckBuilder({ onComplete, isGuest = false, onAuthSuccess }) {
+    const { login, signup } = useAuth();
     const { post, put } = useApi();
     const { inventory } = useInventory();
     const { showToast } = useToast();
@@ -49,6 +53,36 @@ export default function AIDeckBuilder({ onComplete }) {
     const [showPrintModal, setShowPrintModal] = useState(false);
     const [showBuyModal, setShowBuyModal] = useState(false);
 
+    // Auth State for Guest Mode
+    const [authMode, setAuthMode] = useState('signup'); // 'login' | 'signup'
+    const [authEmail, setAuthEmail] = useState('');
+    const [authPassword, setAuthPassword] = useState('');
+    const [authError, setAuthError] = useState('');
+    const [authLoading, setAuthLoading] = useState(false);
+    const [shouldAutoGenerate, setShouldAutoGenerate] = useState(false);
+
+    // Restore state from session if post-auth
+    useEffect(() => {
+        const pendingConfig = sessionStorage.getItem('pending_deck_config');
+        if (pendingConfig && !isGuest) {
+            try {
+                const config = JSON.parse(pendingConfig);
+                setDeckConfig(config);
+                sessionStorage.removeItem('pending_deck_config');
+                setShouldAutoGenerate(true);
+            } catch (e) {
+                console.error("Failed to restore config", e);
+            }
+        }
+    }, [isGuest]);
+
+    useEffect(() => {
+        if (shouldAutoGenerate) {
+            setShouldAutoGenerate(false);
+            handleGenerate();
+        }
+    }, [shouldAutoGenerate, deckConfig]);
+
     // Legacy state for CommanderPicker refactoring compatibility (temporary)
     const [showCommanderPicker, setShowCommanderPicker] = useState(false);
     const [selectedCommander, setSelectedCommander] = useState(null);
@@ -67,6 +101,13 @@ export default function AIDeckBuilder({ onComplete }) {
 
     // Handle deck generation
     const handleGenerate = async () => {
+        if (isGuest) {
+            handleWizardSelection('final_input', () => {
+                setWizardState('step_auth');
+            });
+            return;
+        }
+
         setWizardState('generating');
         setResult(null);
 
@@ -112,6 +153,27 @@ export default function AIDeckBuilder({ onComplete }) {
         setTimeout(() => {
             setWizardState('complete');
         }, 1200);
+    };
+
+    const handleGuestAuth = async (e) => {
+        e.preventDefault();
+        setAuthError('');
+        setAuthLoading(true);
+        try {
+            if (authMode === 'signup') {
+                await signup(authEmail, authPassword);
+            } else {
+                await login(authEmail, authPassword);
+            }
+            // Save config to session storage
+            sessionStorage.setItem('pending_deck_config', JSON.stringify(deckConfig));
+
+            if (onAuthSuccess) onAuthSuccess();
+        } catch (err) {
+            setAuthError(err.message || 'Authentication failed');
+        } finally {
+            setAuthLoading(false);
+        }
     };
 
     // Auto-trigger commander card insertion after brief display
@@ -223,6 +285,7 @@ export default function AIDeckBuilder({ onComplete }) {
             });
 
             showToast(`Deck "${deckName}" saved successfully!`, TOAST_TYPES.SUCCESS);
+            if (onComplete) onComplete(result);
         } catch (error) {
             console.error('Failed to save deck', error);
             showToast('Failed to save deck. Please try again.', TOAST_TYPES.ERROR);
@@ -308,18 +371,41 @@ export default function AIDeckBuilder({ onComplete }) {
 
 
 
-    // Helper to animate selection before moving to next step
-    const handleWizardSelection = async (selectionId, onComplete) => {
+    // Use Orb Animation Context
+    const { absorbCard, registerOrb, ejectCard } = useOrbAnimation();
+
+    // Helper to animate selection
+    const handleWizardSelection = async (selectionId, e, onComplete) => {
+        // 1. Capture start position from the clicked element
+        let startRect = null;
+        if (e && e.currentTarget) {
+            startRect = e.currentTarget.getBoundingClientRect();
+        }
+
+        // 2. Trigger global absorption if we have coordinates
+        if (startRect) {
+            absorbCard(
+                {
+                    top: startRect.top,
+                    left: startRect.left,
+                    width: startRect.width,
+                    height: startRect.height
+                },
+                { id: selectionId, title: selectionId }, // Card data
+                () => {
+                    // Optional: Callback when animation physically ends
+                }
+            );
+        }
+
+        // 3. Local state for hiding the original card (immediate or slight delay)
         setSelectionAnim(selectionId);
 
-        // Wait for card to reach "Ready to Insert" phase (50% of animation)
-        await new Promise(r => setTimeout(r, 625));
-
-        // NOW trigger orb absorption as card is being inserted
+        // 4. Trigger Orb Reaction
         setOrbAbsorbing(true);
 
-        // Wait for remaining absorption animation
-        await new Promise(r => setTimeout(r, 625));
+        // 5. Wait for visual "entry" before moving state (match animation duration approx)
+        await new Promise(r => setTimeout(r, 1000));
 
         setOrbAbsorbing(false);
         setSelectionAnim(null);
@@ -328,7 +414,7 @@ export default function AIDeckBuilder({ onComplete }) {
 
     // Helper: is the orb loop active?
     const isGenerating = ['generating', 'ready', 'cracking'].includes(wizardState);
-    const isWizardActive = ['step_commander', 'step_picker_show_card', 'step_source', 'step_budget', 'step_final_input'].includes(wizardState);
+    const isWizardActive = ['step_commander', 'step_picker_show_card', 'step_source', 'step_budget', 'step_final_input', 'step_auth'].includes(wizardState);
 
     // Dynamic Title based on step
     const getStepTitle = () => {
@@ -340,6 +426,7 @@ export default function AIDeckBuilder({ onComplete }) {
             case 'step_source': return "Choose your source";
             case 'step_budget': return "Set your limits";
             case 'step_final_input': return deckConfig.commanderMode === 'specific' ? "Your command?" : "What do you seek?";
+            case 'step_auth': return "Identify Yourself";
             default: return "";
         }
     };
@@ -353,12 +440,13 @@ export default function AIDeckBuilder({ onComplete }) {
             case 'step_source': return 1.15; // Source loop
             case 'step_budget': return 1.25; // Budget loop
             case 'step_final_input': return 1.35; // Ready to conjure
+            case 'step_auth': return 1.4; // Auth step
             default: return 1.0;
         }
     };
 
     return (
-        <div className="md:h-full flex flex-col p-4 gap-4 max-w-7xl mx-auto h-[calc(100vh-100px)]">
+        <div className={`flex flex-col p-4 gap-4 max-w-7xl mx-auto ${isGuest ? 'w-full h-full' : 'md:h-full h-[calc(100vh-100px)]'}`}>
 
             {/* Wizard & Orb Section */}
             {(wizardState === 'idle' || isGenerating || isWizardActive) && (
@@ -367,6 +455,7 @@ export default function AIDeckBuilder({ onComplete }) {
                     {/* The Mystic Orb */}
                     <div className={`relative z-10 mb-5 transition-all duration-500 ${orbAbsorbing ? 'orb-container absorbing' : ''}`}>
                         <MysticOrb
+                            ref={registerOrb}
                             state={wizardState === 'generating' ? 'loading' : (isGenerating ? wizardState : 'idle')}
                             size={isWizardActive ? 'small' : 'large'}
                             scale={getOrbScale()}
@@ -382,11 +471,31 @@ export default function AIDeckBuilder({ onComplete }) {
                             onCrackComplete={() => {
                                 // Animation finished, check result
                                 if (result && !result.error) {
-                                    onComplete(result);
+                                    // Trigger Ejection Animation
+                                    // Target: Center of screen approx, or where the result card will be
+                                    // Let's assume a central position for now
+                                    const targetRect = {
+                                        top: window.innerHeight / 2 - 150, // Approx center y - half height
+                                        left: window.innerWidth / 2 - 100, // Approx center x - half width
+                                        width: 200,
+                                        height: 300
+                                    };
+
+                                    ejectCard(
+                                        targetRect,
+                                        {
+                                            title: result.commander?.name || 'Your Deck',
+                                            // You could pass icon/image here if available in 'result'
+                                        },
+                                        () => {
+                                            setWizardState('complete');
+                                        }
+                                    );
                                 } else {
                                     setWizardState('idle');
                                 }
                             }}
+                            absorbing={orbAbsorbing}
                         />
                     </div>
                     {/* Step Title with Back Button */}
@@ -421,11 +530,12 @@ export default function AIDeckBuilder({ onComplete }) {
                                         else if (wizardState === 'step_final_input') {
                                             setWizardState(deckConfig.source === 'inventory' ? 'step_source' : 'step_budget');
                                         }
+                                        else if (wizardState === 'step_auth') setWizardState('step_final_input');
                                     }}
                                     className="text-gray-400 hover:text-white flex items-center gap-1 transition-colors"
                                 >
                                     <ChevronLeft className="w-5 h-5" />
-                                    <span className="text-sm">Back</span>
+                                    <span className="text-sm">{wizardState === 'step_auth' ? 'Cancel' : 'Back'}</span>
                                 </button>
                             ) : (
                                 <div className="w-16" /> // Empty spacer for first step
@@ -445,7 +555,7 @@ export default function AIDeckBuilder({ onComplete }) {
                                 title="Random Commander"
                                 description="Let the Orb decide based on your theme or prompt."
                                 className={selectionAnim === 'random' ? 'animate-insert-slot-left' : (selectionAnim ? 'opacity-0 transition-opacity duration-300' : 'animate-in slide-in-from-bottom-8 fade-in duration-500')}
-                                onClick={() => handleWizardSelection('random', () => {
+                                onClick={(e) => handleWizardSelection('random', e, () => {
                                     updateConfig('commanderMode', 'random');
                                     setShowPickerFlipped(false);
                                     setWizardState('step_source');
@@ -516,7 +626,7 @@ export default function AIDeckBuilder({ onComplete }) {
                                 description="Access the full Magic multiverse."
                                 selected={deckConfig.source === 'multiverse'}
                                 className={selectionAnim === 'multiverse' ? 'animate-insert-slot-left' : (selectionAnim ? 'opacity-0 transition-opacity duration-300' : 'animate-in slide-in-from-bottom-8 fade-in duration-500')}
-                                onClick={() => handleWizardSelection('multiverse', () => {
+                                onClick={(e) => handleWizardSelection('multiverse', e, () => {
                                     updateConfig('source', 'multiverse');
                                     setWizardState('step_budget');
                                 })}
@@ -527,10 +637,13 @@ export default function AIDeckBuilder({ onComplete }) {
                                 description="Build strictly from your inventory."
                                 selected={deckConfig.source === 'inventory'}
                                 className={selectionAnim === 'inventory' ? 'animate-insert-slot' : (selectionAnim ? 'opacity-0 transition-opacity duration-300' : 'animate-in slide-in-from-bottom-8 fade-in duration-500')}
-                                onClick={() => handleWizardSelection('inventory', () => {
+                                onClick={(e) => handleWizardSelection('inventory', e, () => {
+                                    if (isGuest) return; // Guests cannot use inventory
                                     updateConfig('source', 'inventory');
                                     setWizardState('step_final_input');
                                 })}
+                                disabled={isGuest}
+                                badge={isGuest ? "Login Required" : null}
                             />
                         </div>
                     )}
@@ -571,7 +684,7 @@ export default function AIDeckBuilder({ onComplete }) {
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        handleWizardSelection('limited', () => setWizardState('step_final_input'));
+                                                        handleWizardSelection('limited', e, () => setWizardState('step_final_input'));
                                                     }}
                                                     className="w-full px-4 py-2 bg-white text-black text-sm font-bold rounded-lg hover:scale-105 transition-transform shadow-lg hover:shadow-white/20"
                                                 >
@@ -587,7 +700,7 @@ export default function AIDeckBuilder({ onComplete }) {
                                     description="No budget constraints."
                                     selected={deckConfig.budget === 'Unlimited'}
                                     className={selectionAnim === 'unlimited' ? 'animate-insert-slot' : (selectionAnim ? 'opacity-0 transition-opacity duration-300' : '')}
-                                    onClick={() => handleWizardSelection('unlimited', () => {
+                                    onClick={(e) => handleWizardSelection('unlimited', e, () => {
                                         updateConfig('budget', 'Unlimited');
                                         setWizardState('step_final_input');
                                     })}
@@ -600,9 +713,9 @@ export default function AIDeckBuilder({ onComplete }) {
 
                     {/* 4. Final Input Step - LAST */}
                     {/* 4. Final Input Step - LAST */}
-                    {wizardState === 'step_final_input' && !selectionAnim && (
+                    {wizardState === 'step_final_input' && (
                         <div className="w-full max-w-md flex justify-center card-3d-wrapper">
-                            <div className="w-full md:w-[calc(50%-0.375rem)] aspect-[3/4] animate-in slide-in-from-bottom-8 fade-in duration-500 relative">
+                            <div className={`w-full md:w-[calc(50%-0.375rem)] aspect-[3/4] relative ${selectionAnim === 'final_input' ? 'animate-insert-slot-center' : (selectionAnim ? 'opacity-0 transition-opacity duration-300' : 'animate-in slide-in-from-bottom-8 fade-in duration-500')}`}>
                                 <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl opacity-0 group-hover:opacity-100 transition duration-500 blur pointer-events-none"></div>
                                 <Card className="relative h-full p-4 border transition-all duration-300 flex flex-col items-center justify-between text-center gap-2 bg-[#0d0d15] border-white/10 hover:bg-white/5 group">
                                     <div className="flex-1 flex flex-col justify-center w-full">
@@ -643,6 +756,76 @@ export default function AIDeckBuilder({ onComplete }) {
                                         >
                                             <Sparkles className="w-4 h-4" />
                                             <span>Conjure</span>
+                                        </button>
+                                    </div>
+                                </Card>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 5. Auth Step (Guest Only) */}
+                    {wizardState === 'step_auth' && (
+                        <div className="w-full max-w-sm flex justify-center card-3d-wrapper">
+                            <div className="w-full aspect-[3/4] animate-in slide-in-from-bottom-8 fade-in duration-500 relative">
+                                <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl opacity-75 blur"></div>
+                                <Card className="relative h-full p-6 bg-[#0d0d15] border-white/10 flex flex-col justify-center gap-4">
+                                    <div className="text-center mb-2">
+                                        <h3 className="text-xl font-bold text-white mb-1">
+                                            {authMode === 'signup' ? 'Begin Your Journey' : 'Welcome Back'}
+                                        </h3>
+                                        <p className="text-sm text-gray-400">
+                                            {authMode === 'signup'
+                                                ? 'Create an account to conjure your deck.'
+                                                : 'Sign in to access your wizardry.'}
+                                        </p>
+                                    </div>
+
+                                    <form onSubmit={handleGuestAuth} className="space-y-3">
+                                        <Input
+                                            label="Email"
+                                            type="email"
+                                            value={authEmail}
+                                            onChange={(e) => setAuthEmail(e.target.value)}
+                                            placeholder="wizard@example.com"
+                                            required
+                                            className="bg-[var(--input-bg)]"
+                                            autoFocus
+                                        />
+                                        <Input
+                                            label="Password"
+                                            type="password"
+                                            value={authPassword}
+                                            onChange={(e) => setAuthPassword(e.target.value)}
+                                            placeholder="••••••••"
+                                            required
+                                            className="bg-[var(--input-bg)]"
+                                        />
+
+                                        {authError && <Alert variant="error" className="py-2 text-xs">{authError}</Alert>}
+
+                                        <Button
+                                            type="submit"
+                                            variant="primary"
+                                            fullWidth
+                                            loading={authLoading}
+                                            className="mt-2 shadow-lg hover:shadow-purple-500/25"
+                                        >
+                                            {authLoading ? 'Authenticating...' : (authMode === 'signup' ? 'Summon Account' : 'Enter Vault')}
+                                        </Button>
+                                    </form>
+
+                                    <div className="pt-2 border-t border-white/10 text-center">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setAuthMode(authMode === 'signup' ? 'login' : 'signup');
+                                                setAuthError('');
+                                            }}
+                                            className="text-xs text-gray-400 hover:text-white transition-colors"
+                                        >
+                                            {authMode === 'signup'
+                                                ? 'Already have an account? Sign in'
+                                                : "Don't have an account? Sign up"}
                                         </button>
                                     </div>
                                 </Card>

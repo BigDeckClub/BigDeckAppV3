@@ -1,11 +1,17 @@
 # Logs
-logs
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 .pnpm-debug.log*
+
+# Debug and temporary files
+debug/
+cache/
+*.txt
+!README.txt
 
 # MTGJSON price cache
 .mtgjson-cache.json
@@ -150,8 +156,9 @@ migrate/unmapped.csv
 
 .env
 
-# Manual Logs
-sniff_log*.txt
+# Windows artifacts
+nul
+NUL
 
 # Environment
 .env

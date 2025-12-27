@@ -193,7 +193,7 @@ function OverviewSection({ inventory, onNavigate }) {
               </h3>
               <div className="space-y-2 flex-1">
                 {Object.entries(byFolder).map(([folder, data]) => (
-                  <div key={folder} className="flex justify-between items-center text-sm p-2 bg-[var(--input-bg)] rounded">
+                  <div key={folder} className="flex justify-between items-center text-sm p-2 bg-white/5 rounded border border-white/5 hover:bg-white/10 transition-colors">
                     <span className="text-[var(--bda-muted)]">{folder}</span>
                     <div className="flex gap-3">
                       <span className="text-[var(--bda-primary)] font-semibold">{data.count} cards</span>
@@ -212,7 +212,7 @@ function OverviewSection({ inventory, onNavigate }) {
               </h3>
               <div className="space-y-2 flex-1">
                 {topCards.map((card, idx) => (
-                  <div key={card.id} className="flex justify-between items-center text-sm p-2 bg-[var(--input-bg)] rounded">
+                  <div key={card.id} className="flex justify-between items-center text-sm p-2 bg-white/5 rounded border border-white/5 hover:bg-white/10 transition-colors">
                     <span className="text-[var(--bda-muted)]">{idx + 1}. {card.name}</span>
                     <div className="text-[var(--bda-text)] font-semibold" title={`$${(parseFloat(card.unitPrice) || 0).toFixed(2)}/unit (${card.priceSource || 'unknown'})`}>${(parseFloat(card.value) || 0).toFixed(2)}</div>
                   </div>
@@ -231,7 +231,7 @@ function OverviewSection({ inventory, onNavigate }) {
               {Object.entries(bySet)
                 .sort((a, b) => b[1].value - a[1].value)
                 .map(([set, data]) => (
-                  <div key={set} className="p-2 bg-[var(--input-bg)] rounded text-sm">
+                  <div key={set} className="p-2 bg-white/5 rounded text-sm border border-white/5 hover:bg-white/10 transition-colors">
                     <div className="font-semibold text-[var(--bda-heading)]">{set}</div>
                     <div className="text-xs text-[var(--bda-muted)]">{data.count} cards • ${data.value.toFixed(2)}</div>
                   </div>

@@ -21,7 +21,13 @@
       "Bash(ping:*)",
       "Bash(Get-Content \"C:\\\\Users\\\\kapa1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\d--Big-Deck-BigDeckAppV3\\\\tasks\\\\ba00e4f.output\" -Tail 50)",
       "Bash(test:*)",
-      "Bash(Get-Content \"C:\\\\Users\\\\kapa1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\d--Big-Deck-BigDeckAppV3\\\\tasks\\\\ba3ac43.output\" -Tail 50)"
+      "Bash(Get-Content \"C:\\\\Users\\\\kapa1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\d--Big-Deck-BigDeckAppV3\\\\tasks\\\\ba3ac43.output\" -Tail 50)",
+      "Bash(git -C \"d:\\\\Big Deck\\\\BigDeckAppV3\" status --short)",
+      "Bash(find:*)",
+      "Bash(npm install:*)",
+      "Bash(npm test:*)",
+      "Bash(magick:*)",
+      "Bash(node scripts/utils/generate-icons.mjs:*)"
     ]
   }
 }

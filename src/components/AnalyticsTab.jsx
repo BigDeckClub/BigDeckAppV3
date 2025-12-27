@@ -109,8 +109,8 @@ export const AnalyticsTab = ({ inventory }) => {
         <button
           onClick={() => setShowHistory(!showHistory)}
           className={`px-4 py-2 rounded-lg font-semibold flex items-center gap-2 transition-all ${showHistory
-              ? 'bg-amber-600 text-white shadow-lg'
-              : 'bg-[var(--surface)] text-[var(--text-muted)] hover:bg-[var(--muted-surface)]'
+            ? 'bg-amber-600 text-white shadow-lg'
+            : 'bg-[var(--surface)] text-[var(--text-muted)] hover:bg-[var(--muted-surface)]'
             }`}
         >
           <Bell className="w-4 h-4" />
@@ -130,8 +130,8 @@ export const AnalyticsTab = ({ inventory }) => {
                   key={tab.id}
                   onClick={() => setHistoryTab(tab.id)}
                   className={`flex-1 px-4 py-2.5 rounded-md font-medium text-sm flex items-center justify-center gap-2 transition-all ${historyTab === tab.id
-                      ? 'bg-[var(--bda-primary)] text-[var(--bda-primary-foreground)] shadow-md'
-                      : 'text-[var(--bda-muted)] hover:text-[var(--bda-text)] hover:bg-[var(--card-hover)]'
+                    ? 'bg-[var(--bda-primary)] text-[var(--bda-primary-foreground)] shadow-md'
+                    : 'text-[var(--bda-muted)] hover:text-[var(--bda-text)] hover:bg-[var(--card-hover)]'
                     }`}
                 >
                   <IconComponent className="w-4 h-4" />
@@ -235,7 +235,7 @@ export const AnalyticsTab = ({ inventory }) => {
               </h3>
               <div className="space-y-2">
                 {Object.entries(byFolder).map(([folder, data]) => (
-                  <div key={folder} className="flex justify-between items-center text-sm p-2 bg-[var(--input-bg)] rounded">
+                  <div key={folder} className="flex justify-between items-center text-sm p-2 bg-white/5 rounded border border-white/5 hover:bg-white/10 transition-colors">
                     <span className="text-[var(--bda-muted)]">{folder}</span>
                     <div className="flex gap-3">
                       <span className="text-[var(--bda-primary)] font-semibold">{data.count} cards</span>
@@ -254,7 +254,7 @@ export const AnalyticsTab = ({ inventory }) => {
               </h3>
               <div className="space-y-2">
                 {topCards.map((card, idx) => (
-                  <div key={card.id} className="flex justify-between items-center text-sm p-2 bg-[var(--input-bg)] rounded">
+                  <div key={card.id} className="flex justify-between items-center text-sm p-2 bg-white/5 rounded border border-white/5 hover:bg-white/10 transition-colors">
                     <span className="text-[var(--bda-muted)]">{idx + 1}. {card.name}</span>
                     <div className="text-[var(--bda-text)] font-semibold">${((card.quantity || 0) * (parseFloat(card.purchase_price) || 0)).toFixed(2)}</div>
                   </div>
@@ -273,7 +273,7 @@ export const AnalyticsTab = ({ inventory }) => {
               {Object.entries(bySet)
                 .sort((a, b) => b[1].value - a[1].value)
                 .map(([set, data]) => (
-                  <div key={set} className="p-2 bg-[var(--input-bg)] rounded text-sm">
+                  <div key={set} className="p-2 bg-white/5 rounded text-sm border border-white/5 hover:bg-white/10 transition-colors">
                     <div className="font-semibold text-[var(--bda-heading)]">{set}</div>
                     <div className="text-xs text-[var(--bda-muted)]">{data.count} cards • ${data.value.toFixed(2)}</div>
                   </div>
