@@ -8,9 +8,23 @@ export default function FlyingCard({ card, orbPosition }) {
 
     // 1. ABSORPTION (Default)
     if (card.type !== 'eject') {
-        // Center-to-center delta
-        const targetX = orbPosition.x - (card.startRect.left + card.startRect.width / 2);
-        const targetY = orbPosition.y - (card.startRect.top + card.startRect.height / 2);
+        // Calculate the delta to move from card center to orb center
+        const cardCenterX = card.startRect.left + card.startRect.width / 2;
+        const cardCenterY = card.startRect.top + card.startRect.height / 2;
+
+        const deltaX = orbPosition.x - cardCenterX;
+        const deltaY = orbPosition.y - cardCenterY;
+
+        // Debug logging (can be removed in production)
+        if (process.env.NODE_ENV === 'development') {
+            console.log('[FlyingCard] Absorption animation:', {
+                cardStart: { x: card.startRect.left, y: card.startRect.top },
+                cardCenter: { x: cardCenterX, y: cardCenterY },
+                orbCenter: { x: orbPosition.x, y: orbPosition.y },
+                delta: { x: deltaX, y: deltaY },
+                cardSize: { w: card.startRect.width, h: card.startRect.height }
+            });
+        }
 
         return (
             <div
@@ -21,7 +35,7 @@ export default function FlyingCard({ card, orbPosition }) {
                     width: card.startRect.width,
                     height: card.startRect.height,
                     zIndex: 9999,
-                    perspective: '1000px', // Increased perspective for deeper 3D effect
+                    perspective: '1200px', // Increased perspective for deeper 3D effect
                     pointerEvents: 'none'
                 }}
             >
@@ -34,8 +48,8 @@ export default function FlyingCard({ card, orbPosition }) {
                         opacity: 1,
                     }}
                     animate={{
-                        x: targetX,
-                        y: targetY,
+                        x: deltaX,
+                        y: deltaY,
                         scale: 0.18,          // User spec: 0.18 scale
                         rotateX: 55,          // User spec: 55deg rotation
                         opacity: [1, 1, 0.8, 0.4, 0],  // User spec: fade sequence
@@ -45,7 +59,11 @@ export default function FlyingCard({ card, orbPosition }) {
                         ease: [0.25, 0.8, 0.25, 1], // User spec: smooth magical easing
                     }}
                     onAnimationComplete={card.onComplete}
-                    className="w-full h-full transform-style-3d origin-center"
+                    style={{
+                        transformStyle: 'preserve-3d',
+                        transformOrigin: 'center center'
+                    }}
+                    className="w-full h-full"
                 >
                     <CardVisual card={card} />
                 </motion.div>
@@ -127,6 +145,25 @@ export default function FlyingCard({ card, orbPosition }) {
 }
 
 function CardVisual({ card }) {
+    const hasImage = card.cardData?.image || card.cardData?.imageUrl;
+
+    // If we have a real image URL, render the actual card
+    if (hasImage) {
+        return (
+            <div className="w-full h-full relative rounded-xl overflow-hidden shadow-2xl">
+                <img
+                    src={card.cardData.image || card.cardData.imageUrl}
+                    alt={card.cardData.title || 'Card'}
+                    className="w-full h-full object-cover"
+                    draggable={false}
+                />
+                {/* Subtle holographic sheen over real card */}
+                <div className="absolute inset-0 bg-gradient-to-tr from-purple-500/20 to-cyan-500/20 opacity-40 mix-blend-overlay pointer-events-none"></div>
+            </div>
+        );
+    }
+
+    // Fallback: Generic card placeholder (for cases without image)
     return (
         <div className={`w-full h-full relative rounded-xl overflow-hidden border border-white/20 bg-[#0d0d15] shadow-2xl ${card.cardData?.className || ''}`}>
             {/* Holographic Sheen */}
