@@ -79,7 +79,7 @@ export default function AIDeckBuilder({ onComplete, isGuest = false, onAuthSucce
     useEffect(() => {
         if (shouldAutoGenerate) {
             setShouldAutoGenerate(false);
-            handleGenerate();
+            generateDeck();
         }
     }, [shouldAutoGenerate, deckConfig]);
 
@@ -99,15 +99,8 @@ export default function AIDeckBuilder({ onComplete, isGuest = false, onAuthSucce
         return () => clearInterval(interval);
     }, [wizardState]);
 
-    // Handle deck generation
-    const handleGenerate = async () => {
-        if (isGuest) {
-            handleWizardSelection('final_input', () => {
-                setWizardState('step_auth');
-            });
-            return;
-        }
-
+    // Handle deck generation (API Call only)
+    const generateDeck = async () => {
         setWizardState('generating');
         setResult(null);
 
@@ -414,7 +407,7 @@ export default function AIDeckBuilder({ onComplete, isGuest = false, onAuthSucce
 
     // Helper: is the orb loop active?
     const isGenerating = ['generating', 'ready', 'cracking'].includes(wizardState);
-    const isWizardActive = ['step_commander', 'step_picker_show_card', 'step_source', 'step_budget', 'step_final_input', 'step_auth'].includes(wizardState);
+    const isWizardActive = ['step_commander', 'step_picker', 'step_picker_show_card', 'step_source', 'step_budget', 'step_final_input', 'step_auth'].includes(wizardState);
 
     // Dynamic Title based on step
     const getStepTitle = () => {
@@ -767,13 +760,7 @@ export default function AIDeckBuilder({ onComplete, isGuest = false, onAuthSucce
                                                             if (isGuest) {
                                                                 setWizardState('step_auth');
                                                             } else {
-                                                                onGenerate({
-                                                                    ...deckConfig,
-                                                                    commanderName: deckConfig.commander?.name,
-                                                                    theme: deckConfig.prompt,
-                                                                    budget: deckConfig.budget === 'Unlimited' ? null : deckConfig.budget
-                                                                });
-                                                                setWizardState('generating');
+                                                                generateDeck();
                                                             }
                                                         });
                                                     }
@@ -801,13 +788,7 @@ export default function AIDeckBuilder({ onComplete, isGuest = false, onAuthSucce
                                                         if (isGuest) {
                                                             setWizardState('step_auth');
                                                         } else {
-                                                            onGenerate({
-                                                                ...deckConfig,
-                                                                commanderName: deckConfig.commander?.name,
-                                                                theme: deckConfig.prompt,
-                                                                budget: deckConfig.budget === 'Unlimited' ? null : deckConfig.budget
-                                                            });
-                                                            setWizardState('generating');
+                                                            generateDeck();
                                                         }
                                                     });
                                                 }

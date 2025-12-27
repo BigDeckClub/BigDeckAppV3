@@ -12,7 +12,7 @@ import { Search, Loader2 } from 'lucide-react';
  *   - onSelect: (commander) => void - Called when user selects a commander
  *   - initialQuery: string - Pre-fill the search box (e.g., from prompt)
  */
-export default function CommanderPicker({ isOpen, onSelect, initialQuery = '' }) {
+export default function CommanderPicker({ isOpen, onSelect, initialQuery = '', hiddenId = null }) {
     const { get } = useApi();
     const [query, setQuery] = useState(initialQuery);
     const [results, setResults] = useState([]);
@@ -94,7 +94,7 @@ export default function CommanderPicker({ isOpen, onSelect, initialQuery = '' })
                     <button
                         key={commander.scryfallId}
                         onClick={(e) => onSelect(commander, e)}
-                        className="w-full flex items-center gap-2 p-1.5 rounded-lg border border-white/10 bg-black/20 hover:border-purple-500 hover:bg-purple-500/10 transition-all"
+                        className={`w-full flex items-center gap-2 p-1.5 rounded-lg border border-white/10 bg-black/20 hover:border-purple-500 hover:bg-purple-500/10 transition-all ${hiddenId === commander.scryfallId ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
                     >
                         {commander.imageUrl && (
                             <img
