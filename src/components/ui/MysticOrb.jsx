@@ -6,6 +6,8 @@
 import React, { forwardRef, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { motion } from 'framer-motion';
+import SparkParticles from '../effects/SparkParticles';
+import GravityWarp from '../effects/GravityWarp';
 import './MysticOrb.css';
 
 /**
@@ -168,8 +170,18 @@ const MysticOrb = forwardRef(({
                 role={isClickable ? 'button' : undefined}
                 tabIndex={isClickable ? 0 : undefined}
             >
-                {/* 
-                    PORTAL MASKING LAYER (New) 
+                {/* --- NEW EFFECTS (Bottom Layer) --- */}
+
+                {/* Gravity Warp - Cosmic distortion effect (z-index: 5) */}
+                <GravityWarp intensity={absorbing ? 1 : 0} />
+
+                {/* Spark Particles - Magic particle system (z-index: 10) */}
+                <SparkParticles active={absorbing} />
+
+                {/* --- PORTAL LAYERS --- */}
+
+                {/*
+                    PORTAL MASKING LAYER
                     This handles the "hole" and overflow-masking for the portal effect.
                     It sits inside the container but can mask content.
                  */}
@@ -187,7 +199,7 @@ const MysticOrb = forwardRef(({
                         transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
                     />
 
-                    {/* Particle Canvas */}
+                    {/* Old Particle Canvas (can be removed later if new SparkParticles replaces it) */}
                     <canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none" />
                 </div>
 
