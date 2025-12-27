@@ -3,7 +3,7 @@
  * Provides offline functionality and asset caching
  */
 
-const CACHE_NAME = 'bigdeck-v1';
+const CACHE_NAME = 'bigdeck-v2'; // BUMPED: Force cache refresh after fixes
 const OFFLINE_URL = '/offline.html';
 
 // Assets to cache immediately on install
@@ -65,8 +65,9 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Skip external font requests - let browser handle directly
-  if (url.hostname.includes('fonts.googleapis.com') || url.hostname.includes('fonts.gstatic.com')) {
+  // FIXED: Skip ALL cross-origin requests (Scryfall images, Google Fonts, etc.)
+  // Let the browser handle them directly - don't cache opaque responses
+  if (url.origin !== self.location.origin) {
     return;
   }
 

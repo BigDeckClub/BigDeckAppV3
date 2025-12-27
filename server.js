@@ -86,8 +86,10 @@ app.use(helmet({
       scriptSrc: ["'self'", "'unsafe-inline'"],
       // Allow Google Fonts stylesheets in development/preview environments
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-      imgSrc: ["'self'", "data:", "https:", "http:"],
-      connectSrc: ["'self'", "https://api.scryfall.com", "https://*.supabase.co"],
+      // FIXED: Explicitly allow Scryfall card images (cards.scryfall.io, c1/c2 CDNs)
+      imgSrc: ["'self'", "data:", "blob:", "https://cards.scryfall.io", "https://c1.scryfall.com", "https://c2.scryfall.com", "https:", "http:"],
+      // FIXED: Allow Scryfall API and image CDN connections
+      connectSrc: ["'self'", "https://api.scryfall.com", "https://cards.scryfall.io", "https://c1.scryfall.com", "https://c2.scryfall.com", "https://*.supabase.co"],
       // Allow font files from Google Fonts
       fontSrc: ["'self'", "data:", "https://fonts.gstatic.com"],
       objectSrc: ["'none'"],
