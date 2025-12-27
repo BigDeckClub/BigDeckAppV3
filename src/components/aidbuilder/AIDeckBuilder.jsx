@@ -87,6 +87,8 @@ export default function AIDeckBuilder({ onComplete, isGuest = false, onAuthSucce
     const [showCommanderPicker, setShowCommanderPicker] = useState(false);
     const [selectedCommander, setSelectedCommander] = useState(null);
 
+    const [hiddenCommanderId, setHiddenCommanderId] = useState(null);
+
     // Update loading effect to track wizardState
     useEffect(() => {
         if (wizardState !== 'generating') {
@@ -446,50 +448,52 @@ export default function AIDeckBuilder({ onComplete, isGuest = false, onAuthSucce
                 <div className="flex-1 flex flex-col items-center justify-start pt-12 md:pt-24 transition-all duration-500">
 
                     {/* The Mystic Orb */}
-                    <div className={`relative z-10 mb-5 transition-all duration-500 ${orbAbsorbing ? 'orb-container absorbing' : ''}`}>
-                        <MysticOrb
-                            ref={registerOrb}
-                            state={wizardState === 'generating' ? 'loading' : (isGenerating ? wizardState : 'idle')}
-                            size={isWizardActive ? 'small' : 'large'}
-                            scale={getOrbScale()}
-                            onClick={() => {
-                                if (wizardState === 'idle') {
-                                    setWizardState('step_commander');
-                                } else if (wizardState === 'ready' && result) {
-                                    setWizardState('cracking');
-                                }
-                            }}
-                            loadingText={LOADING_STEPS[loadingStep]?.msg}
-                            loadingIcon={LOADING_STEPS[loadingStep]?.icon}
-                            onCrackComplete={() => {
-                                // Animation finished, check result
-                                if (result && !result.error) {
-                                    // Trigger Ejection Animation
-                                    // Target: Center of screen approx, or where the result card will be
-                                    // Let's assume a central position for now
-                                    const targetRect = {
-                                        top: window.innerHeight / 2 - 150, // Approx center y - half height
-                                        left: window.innerWidth / 2 - 100, // Approx center x - half width
-                                        width: 200,
-                                        height: 300
-                                    };
+                    <div className="relative z-10 w-full flex items-center justify-center h-80 mb-5 transition-all duration-500">
+                        <div className={`relative transition-all duration-500 ${orbAbsorbing ? 'orb-container absorbing' : ''}`}>
+                            <MysticOrb
+                                ref={registerOrb}
+                                state={wizardState === 'generating' ? 'loading' : (isGenerating ? wizardState : 'idle')}
+                                size={isWizardActive ? 'small' : 'large'}
+                                scale={getOrbScale()}
+                                onClick={() => {
+                                    if (wizardState === 'idle') {
+                                        setWizardState('step_commander');
+                                    } else if (wizardState === 'ready' && result) {
+                                        setWizardState('cracking');
+                                    }
+                                }}
+                                loadingText={LOADING_STEPS[loadingStep]?.msg}
+                                loadingIcon={LOADING_STEPS[loadingStep]?.icon}
+                                onCrackComplete={() => {
+                                    // Animation finished, check result
+                                    if (result && !result.error) {
+                                        // Trigger Ejection Animation
+                                        // Target: Center of screen approx, or where the result card will be
+                                        // Let's assume a central position for now
+                                        const targetRect = {
+                                            top: window.innerHeight / 2 - 150, // Approx center y - half height
+                                            left: window.innerWidth / 2 - 100, // Approx center x - half width
+                                            width: 200,
+                                            height: 300
+                                        };
 
-                                    ejectCard(
-                                        targetRect,
-                                        {
-                                            title: result.commander?.name || 'Your Deck',
-                                            // You could pass icon/image here if available in 'result'
-                                        },
-                                        () => {
-                                            setWizardState('complete');
-                                        }
-                                    );
-                                } else {
-                                    setWizardState('idle');
-                                }
-                            }}
-                            absorbing={orbAbsorbing}
-                        />
+                                        ejectCard(
+                                            targetRect,
+                                            {
+                                                title: result.commander?.name || 'Your Deck',
+                                                // You could pass icon/image here if available in 'result'
+                                            },
+                                            () => {
+                                                setWizardState('complete');
+                                            }
+                                        );
+                                    } else {
+                                        setWizardState('idle');
+                                    }
+                                }}
+                                absorbing={orbAbsorbing}
+                            />
+                        </div>
                     </div>
                     {/* Step Title with Back Button */}
                     {isWizardActive && !selectionAnim && (
