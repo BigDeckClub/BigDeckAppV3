@@ -93,7 +93,7 @@ export default function CommanderPicker({ isOpen, onSelect, initialQuery = '' })
                 {results.map((commander) => (
                     <button
                         key={commander.scryfallId}
-                        onClick={() => onSelect(commander)}
+                        onClick={(e) => onSelect(commander, e)}
                         className="w-full flex items-center gap-2 p-1.5 rounded-lg border border-white/10 bg-black/20 hover:border-purple-500 hover:bg-purple-500/10 transition-all"
                     >
                         {commander.imageUrl && (

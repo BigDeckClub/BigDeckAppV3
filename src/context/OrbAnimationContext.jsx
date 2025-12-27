@@ -58,14 +58,17 @@ export function OrbAnimationProvider({ children }) {
 
         // Trigger Orb Pulse (Visual Burst)
         if (orbRef.current) {
-            orbRef.current.classList.remove('pulse-portal'); // Reset if active
+            orbRef.current.classList.remove('pulse-portal');
+            orbRef.current.classList.remove('pulse-portal-final');
             void orbRef.current.offsetWidth; // Force reflow
-            orbRef.current.classList.add('pulse-portal');
 
-            // Cleanup class after animation (approx 600ms matching CSS)
+            // Use the STRONG final pulse
+            orbRef.current.classList.add('pulse-portal-final');
+
+            // Cleanup class after animation (approx 400ms matching CSS)
             setTimeout(() => {
-                if (orbRef.current) orbRef.current.classList.remove('pulse-portal');
-            }, 600);
+                if (orbRef.current) orbRef.current.classList.remove('pulse-portal-final');
+            }, 400);
         }
 
         const id = uuidv4();
@@ -85,7 +88,6 @@ export function OrbAnimationProvider({ children }) {
 
     return (
         <OrbAnimationContext.Provider value={{
-            registerOrb,
             registerOrb,
             absorbCard,
             ejectCard,

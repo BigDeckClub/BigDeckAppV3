@@ -102,6 +102,18 @@ export default function FlyingCard({ card, orbPosition }) {
                             scale: 1,
                             opacity: 1,
                             transition: { duration: 0.9, ease: "easeInOut" } // Total ~1.4s
+                        },
+                        // Stage 3: Impact / Overshoot (New)
+                        {
+                            scale: 1.08,
+                            rotateX: 2,
+                            transition: { duration: 0.15, ease: "easeOut" }
+                        },
+                        // Stage 4: Settle
+                        {
+                            scale: 1,
+                            rotateX: 0,
+                            transition: { duration: 0.2, ease: "easeOutBack" }
                         }
                     ]}
                     onAnimationComplete={card.onComplete}
